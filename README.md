@@ -14,12 +14,12 @@ Build:
 dotnet build
 ```
 
-Run sample (M0):
+Run sample:
 ```bash
 dotnet run --project samples/HelloWorld/HelloWorld.csproj
 ```
 
-> M0 sample is a plain Blazor WebAssembly app. MAUI integration begins in M1.
+> Current sample includes M1 slice 1: open `/maui` to view a MAUI `Label` rendered through the runtime pipeline.
 
 ## Repo layout
 

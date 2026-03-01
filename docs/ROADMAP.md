@@ -31,7 +31,7 @@
 - renderer pipeline exists (even if only for Label)
 - architecture doc updated with pipeline + core interfaces
 
-- [ ] `MauiBrowser.Runtime` runtime package
+- [x] `MauiBrowser.Runtime` runtime package
 - [ ] `MauiBrowser.Sdk` MSBuild SDK package (composes Blazor WASM pipeline)
 - [x] Minimal renderer registry + Label renderer
 - [x] Sample: MAUI Label rendered
