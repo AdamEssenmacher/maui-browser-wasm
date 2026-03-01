@@ -24,9 +24,10 @@ MAUI Virtual View Tree
   - `IMauiViewRenderer` + `MauiViewRenderer` orchestration
   - `MauiLabelRendererFactory` for `Microsoft.Maui.Controls.Label`
   - `MauiStackLayoutRendererFactory` for `Microsoft.Maui.Controls.StackLayout` (`display:flex`)
+  - `MauiGridRendererFactory` for `Microsoft.Maui.Controls.Grid` (`display:grid`)
 - Sample integration:
   - `samples/HelloWorld` registers runtime services via DI
-  - `/maui` route renders real MAUI `Label` and `StackLayout` via runtime -> Blazor DOM pipeline
+  - `/maui` route renders real MAUI `Label`, `StackLayout`, and `Grid` via runtime -> Blazor DOM pipeline
 - Accessibility baseline:
   - label semantics can project to `aria-label` through `RenderContext.Semantics`
 - SDK composition:
@@ -34,8 +35,8 @@ MAUI Virtual View Tree
   - default runtime reference wiring is provided through SDK properties/targets
   - target framework validation defaults to `net10.0` with configurable opt-outs
 - Deferred to follow-up:
-  - additional controls/layout mappings beyond `Label` and `StackLayout`
-  - grid/button/styling bridge work from M2
+  - additional controls/layout mappings beyond `Label`, `StackLayout`, and `Grid`
+  - button/styling bridge work from M2
 
 ## Key Packages
 - `MauiBrowser.Runtime`: runtime platform backend + handler set + services (Browser)
