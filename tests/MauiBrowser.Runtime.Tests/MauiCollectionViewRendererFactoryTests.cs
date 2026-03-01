@@ -200,6 +200,29 @@ public sealed class MauiCollectionViewRendererFactoryTests
     }
 
     [Fact]
+    public void Create_AssignsStableKeysFromItems()
+    {
+        var registry = new RendererRegistry();
+        var factory = new MauiCollectionViewRendererFactory(registry);
+        registry.Register<CollectionView>(factory);
+
+        var first = new object();
+        var second = new object();
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new[] { first, second }
+        };
+
+        var fragment = factory.Create(collectionView, RenderContext.Empty);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        var keys = FindElementKeys(builder);
+        Assert.Contains(first, keys);
+        Assert.Contains(second, keys);
+    }
+
+    [Fact]
     public void Create_DisabledCollection_DisablesTemplatedButtons()
     {
         var registry = new RendererRegistry();
@@ -375,6 +398,24 @@ public sealed class MauiCollectionViewRendererFactoryTests
         }
 
         return text;
+    }
+
+    private static IReadOnlyList<object> FindElementKeys(RenderTreeBuilder builder)
+    {
+        var frames = builder.GetFrames();
+        var keys = new List<object>();
+
+        for (var i = 0; i < frames.Count; i++)
+        {
+            var frame = frames.Array[i];
+            if (frame.FrameType == RenderTreeFrameType.Element
+                && frame.ElementKey is not null)
+            {
+                keys.Add(frame.ElementKey);
+            }
+        }
+
+        return keys;
     }
 
     private sealed class CollectionTemplateSelector : DataTemplateSelector

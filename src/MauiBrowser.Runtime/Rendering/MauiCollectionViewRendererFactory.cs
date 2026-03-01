@@ -83,6 +83,7 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
                     }
 
                     builder.OpenElement(sequence++, "div");
+                    builder.SetKey(CreateItemKey(item, itemIndex));
                     builder.AddAttribute(sequence++, "class", "maui-collectionview-item");
                     builder.AddAttribute(sequence++, "role", "listitem");
                     builder.AddAttribute(sequence++, "data-maui-item-index", itemIndex.ToString(CultureInfo.InvariantCulture));
@@ -181,6 +182,11 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
         }
 
         return itemTemplate;
+    }
+
+    private static object CreateItemKey(object? item, int itemIndex)
+    {
+        return item ?? $"maui-null-item-{itemIndex.ToString(CultureInfo.InvariantCulture)}";
     }
 
     private static View CreateTemplatedView(DataTemplate itemTemplate, object? item)
