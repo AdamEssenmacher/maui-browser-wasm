@@ -19,7 +19,7 @@ Run sample:
 dotnet run --project samples/HelloWorld/HelloWorld.csproj
 ```
 
-> Current sample includes M1 and M2 slices 1-2: open `/maui` to view MAUI `Label`, `StackLayout`, and `Grid` rendered through the runtime pipeline.
+> Current sample includes M1 and M2 slices 1-3: open `/maui` to view MAUI `Label`, `StackLayout`, `Grid`, and `Button` rendered through the runtime pipeline.
 
 ## Repo layout
 

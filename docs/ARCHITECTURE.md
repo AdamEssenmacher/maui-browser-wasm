@@ -23,20 +23,21 @@ MAUI Virtual View Tree
   - `IRendererFactory` contract
   - `IMauiViewRenderer` + `MauiViewRenderer` orchestration
   - `MauiLabelRendererFactory` for `Microsoft.Maui.Controls.Label`
+  - `MauiButtonRendererFactory` for `Microsoft.Maui.Controls.Button` (`<button>`, click + command)
   - `MauiStackLayoutRendererFactory` for `Microsoft.Maui.Controls.StackLayout` (`display:flex`)
   - `MauiGridRendererFactory` for `Microsoft.Maui.Controls.Grid` (`display:grid`)
 - Sample integration:
   - `samples/HelloWorld` registers runtime services via DI
-  - `/maui` route renders real MAUI `Label`, `StackLayout`, and `Grid` via runtime -> Blazor DOM pipeline
+  - `/maui` route renders real MAUI `Label`, `StackLayout`, `Grid`, and `Button` via runtime -> Blazor DOM pipeline
 - Accessibility baseline:
-  - label semantics can project to `aria-label` through `RenderContext.Semantics`
+  - label and button semantics can project to role/label/disabled attributes through `RenderContext.Semantics`
 - SDK composition:
   - `MauiBrowser.Sdk` now imports `Microsoft.NET.Sdk.BlazorWebAssembly` props/targets
   - default runtime reference wiring is provided through SDK properties/targets
   - target framework validation defaults to `net10.0` with configurable opt-outs
 - Deferred to follow-up:
-  - additional controls/layout mappings beyond `Label`, `StackLayout`, and `Grid`
-  - button/styling bridge work from M2
+  - additional controls/layout mappings beyond `Label`, `Button`, `StackLayout`, and `Grid`
+  - styling bridge work from M2
 
 ## Key Packages
 - `MauiBrowser.Runtime`: runtime platform backend + handler set + services (Browser)
