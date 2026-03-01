@@ -67,6 +67,60 @@ public sealed class MauiCollectionViewRendererFactoryTests
     }
 
     [Fact]
+    public void Create_UsesGridLayoutForGridItemsLayout()
+    {
+        var registry = new RendererRegistry();
+        var factory = new MauiCollectionViewRendererFactory(registry);
+        registry.Register<CollectionView>(factory);
+
+        var collectionView = new CollectionView
+        {
+            ItemsLayout = new GridItemsLayout(2, ItemsLayoutOrientation.Vertical)
+            {
+                HorizontalItemSpacing = 7,
+                VerticalItemSpacing = 5
+            },
+            ItemsSource = new[] { "One", "Two" }
+        };
+
+        var fragment = factory.Create(collectionView, RenderContext.Empty);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        var styleValues = FindAttributeValues(builder, "style");
+        var rootStyle = styleValues.FirstOrDefault(value => value.Contains("display:grid", StringComparison.Ordinal));
+        Assert.NotNull(rootStyle);
+        Assert.Contains("grid-template-columns:repeat(2, minmax(0, 1fr))", rootStyle, StringComparison.Ordinal);
+        Assert.Contains("grid-auto-flow:row", rootStyle, StringComparison.Ordinal);
+        Assert.Contains("column-gap:7px", rootStyle, StringComparison.Ordinal);
+        Assert.Contains("row-gap:5px", rootStyle, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Create_UsesHorizontalGridFlowForHorizontalGridItemsLayout()
+    {
+        var registry = new RendererRegistry();
+        var factory = new MauiCollectionViewRendererFactory(registry);
+        registry.Register<CollectionView>(factory);
+
+        var collectionView = new CollectionView
+        {
+            ItemsLayout = new GridItemsLayout(3, ItemsLayoutOrientation.Horizontal),
+            ItemsSource = new[] { "One" }
+        };
+
+        var fragment = factory.Create(collectionView, RenderContext.Empty);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        var styleValues = FindAttributeValues(builder, "style");
+        var rootStyle = styleValues.FirstOrDefault(value => value.Contains("display:grid", StringComparison.Ordinal));
+        Assert.NotNull(rootStyle);
+        Assert.Contains("grid-template-rows:repeat(3, minmax(0, 1fr))", rootStyle, StringComparison.Ordinal);
+        Assert.Contains("grid-auto-flow:column", rootStyle, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Create_WithItemTemplate_RendersTemplatedViews()
     {
         var registry = new RendererRegistry();

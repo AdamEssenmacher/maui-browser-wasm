@@ -47,11 +47,7 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
                 builder.AddAttribute(sequence++, "class", classes);
             }
 
-            var inlineStyles = new Dictionary<string, string>(context.StyleTokens.InlineStyles)
-            {
-                ["display"] = "flex",
-                ["flex-direction"] = ResolveFlexDirection(collectionView.ItemsLayout)
-            };
+            var inlineStyles = BuildLayoutInlineStyles(collectionView.ItemsLayout, context.StyleTokens.InlineStyles);
             var style = DomRenderStyleBuilder.BuildStyleValue(inlineStyles, context.StyleTokens.CssVariables);
             if (!string.IsNullOrWhiteSpace(style))
             {
@@ -202,15 +198,53 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
         return string.Join(" ", allClasses);
     }
 
-    private static string ResolveFlexDirection(IItemsLayout? itemsLayout)
+    private static Dictionary<string, string> BuildLayoutInlineStyles(
+        IItemsLayout? itemsLayout,
+        IReadOnlyDictionary<string, string> baseInlineStyles)
     {
-        var orientation = itemsLayout switch
-        {
-            LinearItemsLayout linearItemsLayout => linearItemsLayout.Orientation,
-            GridItemsLayout gridItemsLayout => gridItemsLayout.Orientation,
-            _ => ItemsLayoutOrientation.Vertical
-        };
+        var inlineStyles = new Dictionary<string, string>(baseInlineStyles);
 
-        return orientation == ItemsLayoutOrientation.Horizontal ? "row" : "column";
+        switch (itemsLayout)
+        {
+            case GridItemsLayout gridItemsLayout:
+            {
+                var span = Math.Max(1, gridItemsLayout.Span);
+                inlineStyles["display"] = "grid";
+
+                if (gridItemsLayout.Orientation == ItemsLayoutOrientation.Horizontal)
+                {
+                    inlineStyles["grid-template-rows"] =
+                        $"repeat({span.ToString(CultureInfo.InvariantCulture)}, minmax(0, 1fr))";
+                    inlineStyles["grid-auto-flow"] = "column";
+                }
+                else
+                {
+                    inlineStyles["grid-template-columns"] =
+                        $"repeat({span.ToString(CultureInfo.InvariantCulture)}, minmax(0, 1fr))";
+                    inlineStyles["grid-auto-flow"] = "row";
+                }
+
+                if (gridItemsLayout.HorizontalItemSpacing > 0)
+                {
+                    inlineStyles["column-gap"] = $"{gridItemsLayout.HorizontalItemSpacing.ToString(CultureInfo.InvariantCulture)}px";
+                }
+
+                if (gridItemsLayout.VerticalItemSpacing > 0)
+                {
+                    inlineStyles["row-gap"] = $"{gridItemsLayout.VerticalItemSpacing.ToString(CultureInfo.InvariantCulture)}px";
+                }
+
+                return inlineStyles;
+            }
+            case LinearItemsLayout linearItemsLayout:
+                inlineStyles["display"] = "flex";
+                inlineStyles["flex-direction"] =
+                    linearItemsLayout.Orientation == ItemsLayoutOrientation.Horizontal ? "row" : "column";
+                return inlineStyles;
+            default:
+                inlineStyles["display"] = "flex";
+                inlineStyles["flex-direction"] = "column";
+                return inlineStyles;
+        }
     }
 }
