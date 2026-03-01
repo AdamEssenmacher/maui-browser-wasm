@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+
+    <!-- This project produces a NuGet that contains an MSBuild SDK layout:
+         /Sdk/Sdk.props and /Sdk/Sdk.targets. -->
+    <IsPackable>true</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <PackageId>MauiBrowser.Sdk</PackageId>
+    <Title>MauiBrowser.Sdk</Title>
+    <Description>MSBuild SDK for MAUI Browser/WASM (DOM via Blazor) - scaffolding.</Description>
+
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <NoBuild>true</NoBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Sdk\Sdk.props" Pack="true" PackagePath="Sdk\Sdk.props" />
+    <None Include="Sdk\Sdk.targets" Pack="true" PackagePath="Sdk\Sdk.targets" />
+    <None Include="Sdk\README.md" Pack="true" PackagePath="Sdk\README.md" />
+  </ItemGroup>
+
+</Project>

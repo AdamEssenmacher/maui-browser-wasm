@@ -1,0 +1,11 @@
+<Project>
+  <!--
+    Placeholder SDK. In M1 we'll:
+    - compose with Microsoft.NET.Sdk.BlazorWebAssembly
+    - establish conventions for a "MAUI Browser" app
+    - add targets that wire MAUI hosting + assets
+  -->
+  <PropertyGroup>
+    <MauiBrowserSdkVersion>0.0.1</MauiBrowserSdkVersion>
+  </PropertyGroup>
+</Project>

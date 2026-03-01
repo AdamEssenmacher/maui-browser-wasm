@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <PackageId>MauiBrowser.Interop</PackageId>
+    <Description>Interop helpers for MAUI Browser/WASM (JS batching, DOM helpers).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Placeholder: Microsoft.JSInterop references can be added when needed -->
+  </ItemGroup>
+
+</Project>

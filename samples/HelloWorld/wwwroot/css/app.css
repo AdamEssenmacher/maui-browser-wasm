@@ -1,0 +1,14 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+.page {
+    min-height: 100%;
+    display: flex;
+}
+
+main {
+    padding: 24px;
+}
