@@ -53,6 +53,25 @@ public sealed class MauiStackLayoutRendererFactoryTests
         Assert.Contains("Second", textContents, StringComparer.Ordinal);
     }
 
+    [Fact]
+    public void Create_ThrowsWhenChildRendererIsMissing()
+    {
+        var registry = new RendererRegistry();
+        var stackFactory = new MauiStackLayoutRendererFactory(registry);
+        registry.Register<StackLayout>(stackFactory);
+
+        var stackLayout = new StackLayout();
+        stackLayout.Children.Add(new Button { Text = "Not yet supported" });
+
+        var fragment = stackFactory.Create(stackLayout, RenderContext.Empty);
+        var builder = new RenderTreeBuilder();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => fragment(builder));
+        var expectedTypeName = typeof(Button).FullName ?? typeof(Button).Name;
+        Assert.Contains("No renderer factory registered for child view type", exception.Message, StringComparison.Ordinal);
+        Assert.Contains(expectedTypeName, exception.Message, StringComparison.Ordinal);
+    }
+
     private static string? FindAttributeValue(RenderTreeBuilder builder, string attributeName)
     {
         var frames = builder.GetFrames();

@@ -80,7 +80,8 @@ public sealed class MauiStackLayoutRendererFactory : IRendererFactory
             {
                 if (!_rendererRegistry.TryResolve(child, out var childFactory))
                 {
-                    continue;
+                    throw new InvalidOperationException(
+                        $"No renderer factory registered for child view type '{child.GetType().FullName}' in StackLayout.");
                 }
 
                 var childContext = RenderContextFactory.CreateFor(child);
