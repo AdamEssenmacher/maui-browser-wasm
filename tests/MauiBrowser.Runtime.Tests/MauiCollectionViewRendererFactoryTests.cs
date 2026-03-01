@@ -200,17 +200,16 @@ public sealed class MauiCollectionViewRendererFactoryTests
     }
 
     [Fact]
-    public void Create_AssignsStableKeysFromItems()
+    public void Create_AssignsUniqueKeysForDuplicateItems()
     {
         var registry = new RendererRegistry();
         var factory = new MauiCollectionViewRendererFactory(registry);
         registry.Register<CollectionView>(factory);
 
-        var first = new object();
-        var second = new object();
+        var items = new object?[] { "dup", "dup", null, null };
         var collectionView = new CollectionView
         {
-            ItemsSource = new[] { first, second }
+            ItemsSource = items
         };
 
         var fragment = factory.Create(collectionView, RenderContext.Empty);
@@ -218,8 +217,14 @@ public sealed class MauiCollectionViewRendererFactoryTests
         fragment(builder);
 
         var keys = FindElementKeys(builder);
-        Assert.Contains(first, keys);
-        Assert.Contains(second, keys);
+        var typedKeys = keys.Select(key => Assert.IsType<ValueTuple<object?, int>>(key)).ToList();
+
+        Assert.Equal(4, typedKeys.Count);
+        Assert.Equal(4, typedKeys.Distinct().Count());
+        Assert.Equal(("dup", 0), typedKeys[0]);
+        Assert.Equal(("dup", 1), typedKeys[1]);
+        Assert.Equal((null, 0), typedKeys[2]);
+        Assert.Equal((null, 1), typedKeys[3]);
     }
 
     [Fact]

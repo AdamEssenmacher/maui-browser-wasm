@@ -72,7 +72,9 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
             if (collectionView.ItemsSource is IEnumerable itemsSource)
             {
                 var itemIndex = 0;
+                var nullItemOccurrence = 0;
                 var hasMoreItems = false;
+                var itemOccurrenceByValue = new Dictionary<object, int>();
 
                 foreach (var item in itemsSource)
                 {
@@ -83,7 +85,7 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
                     }
 
                     builder.OpenElement(sequence++, "div");
-                    builder.SetKey(CreateItemKey(item, itemIndex));
+                    builder.SetKey(CreateItemKey(item, itemOccurrenceByValue, ref nullItemOccurrence));
                     builder.AddAttribute(sequence++, "class", "maui-collectionview-item");
                     builder.AddAttribute(sequence++, "role", "listitem");
                     builder.AddAttribute(sequence++, "data-maui-item-index", itemIndex.ToString(CultureInfo.InvariantCulture));
@@ -184,9 +186,21 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
         return itemTemplate;
     }
 
-    private static object CreateItemKey(object? item, int itemIndex)
+    private static (object? Item, int Occurrence) CreateItemKey(
+        object? item,
+        IDictionary<object, int> itemOccurrenceByValue,
+        ref int nullItemOccurrence)
     {
-        return item ?? $"maui-null-item-{itemIndex.ToString(CultureInfo.InvariantCulture)}";
+        if (item is null)
+        {
+            var currentNullOccurrence = nullItemOccurrence;
+            nullItemOccurrence++;
+            return (null, currentNullOccurrence);
+        }
+
+        itemOccurrenceByValue.TryGetValue(item, out var currentOccurrence);
+        itemOccurrenceByValue[item] = currentOccurrence + 1;
+        return (item, currentOccurrence);
     }
 
     private static View CreateTemplatedView(DataTemplate itemTemplate, object? item)
