@@ -118,6 +118,29 @@ public sealed class MauiStyleBridgeTests
         Assert.Contains("--maui-border-width:0px", style, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Render_Button_WithZeroPadding_ProjectsZeroPaddingVariable()
+    {
+        var registry = new RendererRegistry();
+        registry.Register<Button>(new MauiButtonRendererFactory());
+        var renderer = new MauiViewRenderer(registry);
+
+        var button = new Button
+        {
+            Text = "No padding",
+            Padding = new Thickness(0)
+        };
+
+        var fragment = renderer.Render(button);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        var style = FindAttributeValue(builder, "style")?.ToString();
+        Assert.NotNull(style);
+        Assert.Contains("padding:var(--maui-padding)", style, StringComparison.Ordinal);
+        Assert.Contains("--maui-padding:0px 0px 0px 0px", style, StringComparison.Ordinal);
+    }
+
     private static bool HasAttribute(RenderTreeBuilder builder, string attributeName)
     {
         return FindAttributeValue(builder, attributeName) is not null;

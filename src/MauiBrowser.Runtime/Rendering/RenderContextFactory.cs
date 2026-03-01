@@ -103,7 +103,7 @@ internal static class RenderContextFactory
                     cssVariables[BorderRadiusVar] = ToCssPx(button.CornerRadius);
                 }
 
-                if (HasNonZeroThickness(button.Padding))
+                if (IsFiniteThickness(button.Padding))
                 {
                     cssVariables[PaddingVar] = ToCssThickness(button.Padding);
                 }
@@ -188,6 +188,14 @@ internal static class RenderContextFactory
             || !AreClose(thickness.Top, 0)
             || !AreClose(thickness.Right, 0)
             || !AreClose(thickness.Bottom, 0);
+    }
+
+    private static bool IsFiniteThickness(Thickness thickness)
+    {
+        return double.IsFinite(thickness.Left)
+            && double.IsFinite(thickness.Top)
+            && double.IsFinite(thickness.Right)
+            && double.IsFinite(thickness.Bottom);
     }
 
     private static bool TryConvertColor(Color? color, out string cssColor)
