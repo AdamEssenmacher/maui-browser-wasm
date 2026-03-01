@@ -49,8 +49,8 @@
 - [x] Styling bridge v0 (CSS variables)
 
 ## M3 — Navigation (v0)
-- [ ] NavigationPage or minimal Shell support
-- [ ] Back stack + URL considerations documented
+- [x] NavigationPage or minimal Shell support
+- [x] Back stack + URL considerations documented
 
 ## M4 — Plugin System
 **Proof (runnable):**

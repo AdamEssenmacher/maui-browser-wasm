@@ -19,7 +19,7 @@ Run sample:
 dotnet run --project samples/HelloWorld/HelloWorld.csproj
 ```
 
-> Current sample includes M1 and M2 slices 1-4: open `/maui` to view MAUI `Label`, `StackLayout`, `Grid`, and `Button` rendered through the runtime pipeline with styling bridge v0.
+> Current sample includes M1-M3: open `/maui` to view MAUI `Label`, `StackLayout`, `Grid`, `Button`, and route-synced `NavigationPage` rendering (for example `/maui/details/settings/profile`).
 
 ## Repo layout
 
