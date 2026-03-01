@@ -34,8 +34,9 @@ public sealed class MudBlazorEntryRendererFactory : IRendererFactory
             builder.AddAttribute(sequence++, "Class", classes);
             builder.AddAttribute(sequence++, "Variant", Variant.Outlined);
             builder.AddAttribute(sequence++, "Immediate", true);
-            builder.AddAttribute(sequence++, "InputType", InputType.Text);
+            builder.AddAttribute(sequence++, "InputType", entry.IsPassword ? InputType.Password : InputType.Text);
             builder.AddAttribute(sequence++, "Disabled", context.Semantics.Disabled);
+            builder.AddAttribute(sequence++, "ReadOnly", entry.IsReadOnly);
             builder.AddAttribute(sequence++, "Value", entry.Text ?? string.Empty);
             builder.AddAttribute(
                 sequence++,

@@ -93,9 +93,42 @@ public sealed class MudBlazorRendererFactoryTests
         Assert.Contains("maui-mudblazor-entry", classes, StringComparison.Ordinal);
         Assert.Equal("Alpha", FindAttributeValue(builder, "Value")?.ToString());
         Assert.Equal("Type here", FindAttributeValue(builder, "Placeholder")?.ToString());
+        Assert.Equal(InputType.Text, FindAttributeValue(builder, "InputType"));
 
         var userAttributes = Assert.IsType<Dictionary<string, object>>(FindAttributeValue(builder, "UserAttributes"));
         Assert.Equal("mudblazor-entry", userAttributes["data-maui-plugin"]);
+    }
+
+    [Fact]
+    public void MudBlazorEntryRendererFactory_Create_MapsPasswordEntryToPasswordInputType()
+    {
+        var factory = new MudBlazorEntryRendererFactory();
+        var entry = new Entry
+        {
+            IsPassword = true
+        };
+
+        var fragment = factory.Create(entry, RenderContext.Empty);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        Assert.Equal(InputType.Password, FindAttributeValue(builder, "InputType"));
+    }
+
+    [Fact]
+    public void MudBlazorEntryRendererFactory_Create_MapsReadOnlyEntryToReadOnlyAttribute()
+    {
+        var factory = new MudBlazorEntryRendererFactory();
+        var entry = new Entry
+        {
+            IsReadOnly = true
+        };
+
+        var fragment = factory.Create(entry, RenderContext.Empty);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        Assert.Equal(true, FindAttributeValue(builder, "ReadOnly"));
     }
 
     private static bool HasComponent<TComponent>(RenderTreeBuilder builder)
