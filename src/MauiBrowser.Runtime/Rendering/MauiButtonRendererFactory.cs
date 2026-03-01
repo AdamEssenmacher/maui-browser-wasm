@@ -1,4 +1,5 @@
 using System;
+using System.Windows.Input;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Maui.Controls;
 
@@ -48,7 +49,9 @@ public sealed class MauiButtonRendererFactory : IRendererFactory
                 builder.AddAttribute(sequence++, "aria-label", context.Semantics.Label);
             }
 
-            var isDisabled = context.Semantics.Disabled || !button.IsEnabled;
+            var isDisabled = context.Semantics.Disabled
+                || !button.IsEnabled
+                || !CanExecuteCommand(button.Command, button.CommandParameter);
             if (isDisabled)
             {
                 builder.AddAttribute(sequence++, "disabled", true);
@@ -76,6 +79,16 @@ public sealed class MauiButtonRendererFactory : IRendererFactory
             return;
         }
 
+        if (!CanExecuteCommand(button.Command, button.CommandParameter))
+        {
+            return;
+        }
+
         button.SendClicked();
+    }
+
+    private static bool CanExecuteCommand(ICommand? command, object? commandParameter)
+    {
+        return command is null || command.CanExecute(commandParameter);
     }
 }
