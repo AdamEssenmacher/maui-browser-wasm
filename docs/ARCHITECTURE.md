@@ -28,8 +28,11 @@ MAUI Virtual View Tree
   - `/maui` route renders a real MAUI `Label` via runtime -> Blazor DOM pipeline
 - Accessibility baseline:
   - label semantics can project to `aria-label` through `RenderContext.Semantics`
+- SDK composition:
+  - `MauiBrowser.Sdk` now imports `Microsoft.NET.Sdk.BlazorWebAssembly` props/targets
+  - default runtime reference wiring is provided through SDK properties/targets
+  - target framework validation defaults to `net10.0` with configurable opt-outs
 - Deferred to follow-up:
-  - SDK composition work in `MauiBrowser.Sdk`
   - additional controls/layout mappings beyond `Label`
 
 ## Key Packages

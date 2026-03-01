@@ -1,11 +1,13 @@
 <Project>
-  <!--
-    Placeholder SDK. In M1 we'll:
-    - compose with Microsoft.NET.Sdk.BlazorWebAssembly
-    - establish conventions for a "MAUI Browser" app
-    - add targets that wire MAUI hosting + assets
-  -->
+  <Import Sdk="Microsoft.NET.Sdk.BlazorWebAssembly" Project="Sdk.props" />
+
   <PropertyGroup>
-    <MauiBrowserSdkVersion>0.0.1</MauiBrowserSdkVersion>
+    <MauiBrowserSdkVersion Condition="'$(MauiBrowserSdkVersion)' == ''">0.0.1</MauiBrowserSdkVersion>
+    <MauiBrowserRuntimePackageId Condition="'$(MauiBrowserRuntimePackageId)' == ''">MauiBrowser.Runtime</MauiBrowserRuntimePackageId>
+    <MauiBrowserRuntimeVersion Condition="'$(MauiBrowserRuntimeVersion)' == ''">$(MauiBrowserSdkVersion)</MauiBrowserRuntimeVersion>
+    <MauiBrowserEnableImplicitRuntimeReference Condition="'$(MauiBrowserEnableImplicitRuntimeReference)' == ''">true</MauiBrowserEnableImplicitRuntimeReference>
+    <MauiBrowserRuntimeProjectPath Condition="'$(MauiBrowserRuntimeProjectPath)' == ''"></MauiBrowserRuntimeProjectPath>
+    <MauiBrowserValidateTargetFramework Condition="'$(MauiBrowserValidateTargetFramework)' == ''">true</MauiBrowserValidateTargetFramework>
+    <MauiBrowserRequiredTargetFramework Condition="'$(MauiBrowserRequiredTargetFramework)' == ''">net10.0</MauiBrowserRequiredTargetFramework>
   </PropertyGroup>
 </Project>
