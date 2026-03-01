@@ -51,7 +51,7 @@ public sealed class MauiStyleBridgeTests
     }
 
     [Fact]
-    public void Render_Button_ProjectsCssVariables_AndKeepsCommandGuardOnClick()
+    public void Render_Button_ProjectsCssVariablesAndSemantics()
     {
         var registry = new RendererRegistry();
         registry.Register<Button>(new MauiButtonRendererFactory());
@@ -66,7 +66,7 @@ public sealed class MauiStyleBridgeTests
             BorderWidth = 2,
             CornerRadius = 12,
             Padding = new Thickness(12, 8),
-            Command = new DisabledCommand(),
+            Command = new EnabledCommand(),
             CommandParameter = "payload"
         };
 
@@ -141,6 +141,30 @@ public sealed class MauiStyleBridgeTests
         Assert.Contains("--maui-padding:0px 0px 0px 0px", style, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Render_Button_WithExplicitDisable_StaysDisabled_WhenCommandCannotExecute()
+    {
+        var registry = new RendererRegistry();
+        registry.Register<Button>(new MauiButtonRendererFactory());
+        var renderer = new MauiViewRenderer(registry);
+
+        var button = new Button
+        {
+            Text = "Disabled button",
+            IsEnabled = false,
+            Command = new DisabledCommand(),
+            CommandParameter = "payload"
+        };
+
+        var fragment = renderer.Render(button);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        Assert.True(HasAttribute(builder, "disabled"));
+        Assert.Equal("true", FindAttributeValue(builder, "aria-disabled")?.ToString());
+        Assert.False(HasAttribute(builder, "onclick"));
+    }
+
     private static bool HasAttribute(RenderTreeBuilder builder, string attributeName)
     {
         return FindAttributeValue(builder, attributeName) is not null;
@@ -191,6 +215,25 @@ public sealed class MauiStyleBridgeTests
         }
 
         public bool CanExecute(object? parameter) => false;
+
+        public void Execute(object? parameter)
+        {
+        }
+    }
+
+    private sealed class EnabledCommand : System.Windows.Input.ICommand
+    {
+        public event EventHandler? CanExecuteChanged
+        {
+            add
+            {
+            }
+            remove
+            {
+            }
+        }
+
+        public bool CanExecute(object? parameter) => true;
 
         public void Execute(object? parameter)
         {

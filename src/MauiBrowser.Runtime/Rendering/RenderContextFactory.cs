@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Windows.Input;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
@@ -35,7 +34,7 @@ internal static class RenderContextFactory
         };
         var semanticsDisabled = virtualView switch
         {
-            Button button => !button.IsEnabled && !IsCommandDisabled(button),
+            Button button => !button.IsEnabled,
             VisualElement visualElement => !visualElement.IsEnabled,
             _ => false
         };
@@ -191,16 +190,6 @@ internal static class RenderContextFactory
             && double.IsFinite(thickness.Top)
             && double.IsFinite(thickness.Right)
             && double.IsFinite(thickness.Bottom);
-    }
-
-    private static bool IsCommandDisabled(Button button)
-    {
-        return button.Command is not null && !CanExecuteCommand(button.Command, button.CommandParameter);
-    }
-
-    private static bool CanExecuteCommand(ICommand? command, object? commandParameter)
-    {
-        return command is null || command.CanExecute(commandParameter);
     }
 
     private static bool TryConvertColor(Color? color, out string cssColor)
