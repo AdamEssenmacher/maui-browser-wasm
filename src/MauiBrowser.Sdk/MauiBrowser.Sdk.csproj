@@ -7,10 +7,17 @@
          /Sdk/Sdk.props and /Sdk/Sdk.targets. -->
     <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+    <PackageType>MSBuildSdk</PackageType>
 
     <PackageId>MauiBrowser.Sdk</PackageId>
     <Title>MauiBrowser.Sdk</Title>
-    <Description>MSBuild SDK for MAUI Browser/WASM (DOM via Blazor) - scaffolding.</Description>
+    <Description>MSBuild SDK for MAUI Browser/WASM hosted in Blazor WebAssembly.</Description>
+    <PackageTags>maui;blazor;wasm;msbuild;sdk</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>Sdk/README.md</PackageReadmeFile>
 
     <IncludeBuildOutput>false</IncludeBuildOutput>
   </PropertyGroup>

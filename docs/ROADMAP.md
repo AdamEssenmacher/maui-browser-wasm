@@ -32,7 +32,7 @@
 - architecture doc updated with pipeline + core interfaces
 
 - [x] `MauiBrowser.Runtime` runtime package
-- [ ] `MauiBrowser.Sdk` MSBuild SDK package (composes Blazor WASM pipeline)
+- [x] `MauiBrowser.Sdk` MSBuild SDK package (composes Blazor WASM pipeline)
 - [x] Minimal renderer registry + Label renderer
 - [x] Sample: MAUI Label rendered
 
