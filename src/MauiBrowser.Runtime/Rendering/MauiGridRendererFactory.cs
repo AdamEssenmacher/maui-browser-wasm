@@ -103,7 +103,7 @@ public sealed class MauiGridRendererFactory : IRendererFactory
                         $"No renderer factory registered for child view type '{child.GetType().FullName}' in Grid.");
                 }
 
-                var childContext = RenderContextFactory.CreateFor(child);
+                var childContext = RenderContextFactory.CreateFor(child, context.Semantics.Disabled);
                 builder.OpenElement(sequence++, "div");
                 builder.AddAttribute(sequence++, "style", BuildChildPlacementStyle(child));
                 builder.AddContent(sequence++, childFactory.Create(child, childContext));

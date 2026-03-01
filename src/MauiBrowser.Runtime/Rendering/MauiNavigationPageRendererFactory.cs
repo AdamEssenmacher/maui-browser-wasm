@@ -72,7 +72,7 @@ public sealed class MauiNavigationPageRendererFactory : IRendererFactory
                         $"No renderer factory registered for page type '{currentPage.GetType().FullName}' in NavigationPage.");
                 }
 
-                var childContext = RenderContextFactory.CreateFor(currentPage);
+                var childContext = RenderContextFactory.CreateFor(currentPage, context.Semantics.Disabled);
                 builder.AddContent(sequence++, pageFactory.Create(currentPage, childContext));
             }
 

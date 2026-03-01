@@ -26,13 +26,14 @@ MAUI Virtual View Tree
   - `MauiButtonRendererFactory` for `Microsoft.Maui.Controls.Button` (`<button>`, click + command)
   - `MauiStackLayoutRendererFactory` for `Microsoft.Maui.Controls.StackLayout` (`display:flex`)
   - `MauiGridRendererFactory` for `Microsoft.Maui.Controls.Grid` (`display:grid`)
+  - `MauiCollectionViewRendererFactory` for `Microsoft.Maui.Controls.CollectionView` (prototype: item template rendering with capped materialization)
   - `MauiContentPageRendererFactory` for `Microsoft.Maui.Controls.ContentPage`
   - `MauiNavigationPageRendererFactory` for `Microsoft.Maui.Controls.NavigationPage`
   - `RenderContextFactory` style bridge v0 mapping MAUI style properties to CSS variables via `StyleTokens`
 - Sample integration:
   - `samples/HelloWorld` registers runtime services via DI
   - `samples/HelloWorld` applies plugin overrides at startup (`MauiBrowser.Plugins.MudBlazor`) to demonstrate higher-priority renderer replacement
-  - `/maui` route renders real MAUI `Label`, `StackLayout`, `Grid`, `Button`, `Entry`, and `NavigationPage` via runtime -> Blazor DOM pipeline with style-token to CSS variable projection
+  - `/maui` route renders real MAUI `Label`, `StackLayout`, `Grid`, `CollectionView`, `Button`, `Entry`, and `NavigationPage` via runtime -> Blazor DOM pipeline with style-token to CSS variable projection
   - `/maui/{*stackPath}` uses slash-separated route keys as the source of truth for MAUI navigation stack state (`/maui` root, arbitrary pushed depth up to current v0 cap)
 - Accessibility baseline:
   - label and button semantics can project to role/label/disabled attributes through `RenderContext.Semantics`
@@ -86,7 +87,7 @@ MAUI Virtual View Tree
 
 ## Non-Goals (initially)
 - Full parity with native MAUI controls
-- Perfect performance for CollectionView virtualization
+- Perfect performance for CollectionView virtualization (M5 v0 decision: no virtualization yet; see `docs/spikes/M5-collectionview-virtualization-decision.md`)
 - Complete accessibility parity (but we must provide basic semantics from day 1)
 
 ## Core Interfaces

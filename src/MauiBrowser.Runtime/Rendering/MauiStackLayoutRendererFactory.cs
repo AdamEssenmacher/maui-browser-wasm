@@ -84,7 +84,7 @@ public sealed class MauiStackLayoutRendererFactory : IRendererFactory
                         $"No renderer factory registered for child view type '{child.GetType().FullName}' in StackLayout.");
                 }
 
-                var childContext = RenderContextFactory.CreateFor(child);
+                var childContext = RenderContextFactory.CreateFor(child, context.Semantics.Disabled);
                 builder.AddContent(sequence++, childFactory.Create(child, childContext));
             }
 

@@ -31,3 +31,19 @@ main {
 .maui-mudblazor-entry {
     min-width: 260px;
 }
+
+.maui-collectionview {
+    gap: 8px;
+}
+
+.maui-collectionview-item {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 8px 10px;
+    background: #f8fafc;
+}
+
+.maui-collectionview-truncation {
+    font-size: 0.875rem;
+    color: #475569;
+}

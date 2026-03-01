@@ -2,7 +2,7 @@
 
 Runtime services for rendering MAUI virtual views into a Blazor component/DOM tree.
 
-## Current Scope (M1)
+## Current Scope
 
 - pluggable renderer registry (`IRendererRegistry`)
 - MAUI view renderer (`IMauiViewRenderer`)
@@ -10,6 +10,7 @@ Runtime services for rendering MAUI virtual views into a Blazor component/DOM tr
 - baseline `Button` renderer (`MauiButtonRendererFactory`, click + command)
 - baseline `StackLayout` renderer (`MauiStackLayoutRendererFactory`, CSS flex)
 - baseline `Grid` renderer (`MauiGridRendererFactory`, CSS grid)
+- baseline `CollectionView` prototype renderer (`MauiCollectionViewRendererFactory`, item template + capped materialization)
 - styling bridge v0 (`RenderContextFactory` maps baseline MAUI style properties into `StyleTokens` CSS variables)
 - DI registration via `AddMauiBrowserRuntime(IServiceCollection)`
 

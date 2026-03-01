@@ -29,6 +29,14 @@
     @MauiViewRenderer.Render(_grid)
 </div>
 
+<h2>CollectionView (M5 Slice 1 Prototype)</h2>
+<div class="maui-surface">
+    <p>
+        Prototype behavior: renders <code>CollectionView</code> item templates through the runtime renderer pipeline (current v0 cap: 200 items).
+    </p>
+    @MauiViewRenderer.Render(_collectionView)
+</div>
+
 <h2>Button (M2 Slice 3 + M4 MudBlazor Plugin Override)</h2>
 <div class="maui-surface">
     <p>
@@ -94,6 +102,7 @@
     };
 
     private readonly Grid _grid = CreateGrid();
+    private readonly CollectionView _collectionView = CreateCollectionView();
     private readonly Button _button = new()
     {
         Text = "Click MAUI Button",
@@ -176,6 +185,56 @@
         grid.Children.Add(right);
 
         return grid;
+    }
+
+    private static CollectionView CreateCollectionView()
+    {
+        return new CollectionView
+        {
+            SelectionMode = SelectionMode.None,
+            ItemsSource = new[]
+            {
+                new CollectionItem(
+                    "Renderer registry",
+                    "Resolves the highest-priority renderer for each virtual view."),
+                new CollectionItem(
+                    "Template rendering",
+                    "Each CollectionView item template is materialized and rendered via the registry."),
+                new CollectionItem(
+                    "DOM-first backend",
+                    "Output is Blazor component render tree -> browser DOM."),
+                new CollectionItem(
+                    "Virtualization decision (M5)",
+                    "Current prototype intentionally ships non-virtualized with an item cap.")
+            },
+            ItemTemplate = new DataTemplate(() =>
+            {
+                var title = new Label
+                {
+                    FontSize = 15,
+                    TextColor = Color.FromArgb("#0F172A")
+                };
+                title.SetBinding(Label.TextProperty, nameof(CollectionItem.Title));
+
+                var detail = new Label
+                {
+                    FontSize = 13,
+                    TextColor = Color.FromArgb("#334155")
+                };
+                detail.SetBinding(Label.TextProperty, nameof(CollectionItem.Detail));
+
+                return new StackLayout
+                {
+                    Spacing = 2,
+                    Margin = new Thickness(0, 0, 0, 8),
+                    Children =
+                    {
+                        title,
+                        detail
+                    }
+                };
+            })
+        };
     }
 
     private static string BuildRoute(IReadOnlyList<string> stackKeys)
@@ -416,5 +475,18 @@
     {
         _entryTextChangeCount++;
         _ = InvokeAsync(StateHasChanged);
+    }
+
+    private sealed class CollectionItem
+    {
+        public CollectionItem(string title, string detail)
+        {
+            Title = title;
+            Detail = detail;
+        }
+
+        public string Title { get; }
+
+        public string Detail { get; }
     }
 }
