@@ -2,7 +2,11 @@
   <Import Sdk="Microsoft.NET.Sdk.BlazorWebAssembly" Project="Sdk.props" />
 
   <PropertyGroup>
-    <MauiBrowserSdkVersion Condition="'$(MauiBrowserSdkVersion)' == ''">0.0.1</MauiBrowserSdkVersion>
+    <MauiBrowserSdkPackageRoot>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName('$(MSBuildThisFileFullPath)'))))</MauiBrowserSdkPackageRoot>
+    <MauiBrowserSdkVersionCandidate>$([System.IO.Path]::GetFileName('$(MauiBrowserSdkPackageRoot)'))</MauiBrowserSdkVersionCandidate>
+    <MauiBrowserSdkVersion
+      Condition="'$(MauiBrowserSdkVersion)' == ''
+        and $([System.Text.RegularExpressions.Regex]::IsMatch('$(MauiBrowserSdkVersionCandidate)', '^\d+\.\d+\.\d+([-+].*)?$'))">$(MauiBrowserSdkVersionCandidate)</MauiBrowserSdkVersion>
     <MauiBrowserRuntimePackageId Condition="'$(MauiBrowserRuntimePackageId)' == ''">MauiBrowser.Runtime</MauiBrowserRuntimePackageId>
     <MauiBrowserRuntimeVersion Condition="'$(MauiBrowserRuntimeVersion)' == ''">$(MauiBrowserSdkVersion)</MauiBrowserRuntimeVersion>
     <MauiBrowserEnableImplicitRuntimeReference Condition="'$(MauiBrowserEnableImplicitRuntimeReference)' == ''">true</MauiBrowserEnableImplicitRuntimeReference>

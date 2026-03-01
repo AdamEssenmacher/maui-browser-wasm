@@ -47,6 +47,21 @@ public sealed class SdkCompositionFilesTests
     }
 
     [Fact]
+    public void SdkProps_DerivesSdkVersionFromSdkPathInsteadOfHardcoding()
+    {
+        var sdkProps = LoadSdkProps();
+
+        var candidate = sdkProps.Descendants("MauiBrowserSdkVersionCandidate").SingleOrDefault();
+        Assert.NotNull(candidate);
+        Assert.Contains("MauiBrowserSdkPackageRoot", candidate!.Value, StringComparison.Ordinal);
+
+        var sdkVersion = sdkProps.Descendants("MauiBrowserSdkVersion").SingleOrDefault();
+        Assert.NotNull(sdkVersion);
+        Assert.Contains("Regex", (string?)sdkVersion!.Attribute("Condition"), StringComparison.Ordinal);
+        Assert.DoesNotContain("0.0.1", sdkVersion.Value, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void SdkTargets_DefinesImplicitRuntimePackageReference()
     {
         var sdkTargets = LoadSdkTargets();

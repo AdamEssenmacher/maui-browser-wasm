@@ -22,7 +22,7 @@ MSBuild SDK that composes Blazor WebAssembly defaults with MAUI Browser runtime 
 ## Configuration Knobs
 
 - `MauiBrowserRuntimePackageId` (default: `MauiBrowser.Runtime`)
-- `MauiBrowserRuntimeVersion` (default: `$(MauiBrowserSdkVersion)`)
+- `MauiBrowserRuntimeVersion` (default: SDK package version inferred from `Sdk.props` location)
 - `MauiBrowserEnableImplicitRuntimeReference` (default: `true`)
 - `MauiBrowserRuntimeProjectPath` (default: empty)
 - `MauiBrowserValidateTargetFramework` (default: `true`)
