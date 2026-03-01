@@ -10,6 +10,7 @@ Runtime services for rendering MAUI virtual views into a Blazor component/DOM tr
 - baseline `Button` renderer (`MauiButtonRendererFactory`, click + command)
 - baseline `StackLayout` renderer (`MauiStackLayoutRendererFactory`, CSS flex)
 - baseline `Grid` renderer (`MauiGridRendererFactory`, CSS grid)
+- styling bridge v0 (`RenderContextFactory` maps baseline MAUI style properties into `StyleTokens` CSS variables)
 - DI registration via `AddMauiBrowserRuntime(IServiceCollection)`
 
 ## Usage

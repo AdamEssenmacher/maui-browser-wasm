@@ -28,8 +28,17 @@ public sealed class MauiButtonRendererFactoryTests
             Text = "Click me",
             IsEnabled = false
         };
+        var context = new RenderContext
+        {
+            StyleTokens = StyleTokens.Empty,
+            Semantics = new MauiBrowser.Runtime.Rendering.Semantics
+            {
+                Disabled = true
+            },
+            Events = EventDispatcher.None
+        };
 
-        var fragment = factory.Create(button, RenderContext.Empty);
+        var fragment = factory.Create(button, context);
         var builder = new RenderTreeBuilder();
         fragment(builder);
 
@@ -45,7 +54,7 @@ public sealed class MauiButtonRendererFactoryTests
     public async Task Create_ClickInvokesClickedAndCommand()
     {
         var factory = new MauiButtonRendererFactory();
-        var command = new RecordingCommand();
+        var command = new RecordingCommand(_ => true);
         var button = new Button
         {
             Text = "Run action",
@@ -88,6 +97,33 @@ public sealed class MauiButtonRendererFactoryTests
 
         Assert.False(HasAttribute(builder, "onclick"));
         Assert.True(HasAttribute(builder, "disabled"));
+    }
+
+    [Fact]
+    public async Task Create_ClickDoesNotInvokeWhenCommandCannotExecute()
+    {
+        var factory = new MauiButtonRendererFactory();
+        var command = new RecordingCommand(_ => false);
+        var button = new Button
+        {
+            Text = "Cannot execute",
+            Command = command,
+            CommandParameter = "payload"
+        };
+        var clickedCount = 0;
+        button.Clicked += (_, _) => clickedCount++;
+
+        var fragment = factory.Create(button, RenderContext.Empty);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        Assert.True(HasAttribute(builder, "onclick"));
+        Assert.False(HasAttribute(builder, "disabled"));
+
+        await InvokeCallback(builder, "onclick");
+
+        Assert.Equal(0, clickedCount);
+        Assert.Equal(0, command.ExecuteCount);
     }
 
     private static bool HasElement(RenderTreeBuilder builder, string elementName)
@@ -179,6 +215,13 @@ public sealed class MauiButtonRendererFactoryTests
 
     private sealed class RecordingCommand : ICommand
     {
+        private readonly Func<object?, bool> _canExecute;
+
+        public RecordingCommand(Func<object?, bool> canExecute)
+        {
+            _canExecute = canExecute ?? throw new ArgumentNullException(nameof(canExecute));
+        }
+
         public event EventHandler? CanExecuteChanged
         {
             add
@@ -193,7 +236,7 @@ public sealed class MauiButtonRendererFactoryTests
 
         public object? LastParameter { get; private set; }
 
-        public bool CanExecute(object? parameter) => true;
+        public bool CanExecute(object? parameter) => _canExecute(parameter);
 
         public void Execute(object? parameter)
         {

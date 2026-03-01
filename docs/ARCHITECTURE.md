@@ -26,9 +26,10 @@ MAUI Virtual View Tree
   - `MauiButtonRendererFactory` for `Microsoft.Maui.Controls.Button` (`<button>`, click + command)
   - `MauiStackLayoutRendererFactory` for `Microsoft.Maui.Controls.StackLayout` (`display:flex`)
   - `MauiGridRendererFactory` for `Microsoft.Maui.Controls.Grid` (`display:grid`)
+  - `RenderContextFactory` style bridge v0 mapping MAUI style properties to CSS variables via `StyleTokens`
 - Sample integration:
   - `samples/HelloWorld` registers runtime services via DI
-  - `/maui` route renders real MAUI `Label`, `StackLayout`, `Grid`, and `Button` via runtime -> Blazor DOM pipeline
+  - `/maui` route renders real MAUI `Label`, `StackLayout`, `Grid`, and `Button` via runtime -> Blazor DOM pipeline with style-token to CSS variable projection
 - Accessibility baseline:
   - label and button semantics can project to role/label/disabled attributes through `RenderContext.Semantics`
 - SDK composition:
@@ -37,7 +38,19 @@ MAUI Virtual View Tree
   - target framework validation defaults to `net10.0` with configurable opt-outs
 - Deferred to follow-up:
   - additional controls/layout mappings beyond `Label`, `Button`, `StackLayout`, and `Grid`
-  - styling bridge work from M2
+  - richer style parity and advanced theming beyond styling bridge v0
+
+## Styling Bridge v0 Tokens
+- `--maui-background-color`
+- `--maui-text-color`
+- `--maui-font-size`
+- `--maui-font-family`
+- `--maui-opacity`
+- `--maui-margin`
+- `--maui-border-color` (button)
+- `--maui-border-width` (button)
+- `--maui-border-radius` (button)
+- `--maui-padding` (button)
 
 ## Key Packages
 - `MauiBrowser.Runtime`: runtime platform backend + handler set + services (Browser)

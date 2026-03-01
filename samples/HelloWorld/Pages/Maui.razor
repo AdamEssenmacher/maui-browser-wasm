@@ -2,12 +2,13 @@
 @using MauiBrowser.Runtime.Rendering
 @using Microsoft.Maui
 @using Microsoft.Maui.Controls
+@using Microsoft.Maui.Graphics
 @inject IMauiViewRenderer MauiViewRenderer
 
 <h1>MAUI Runtime Demo</h1>
 
 <p>
-    This page renders real MAUI controls through the browser runtime pipeline.
+    This page renders real MAUI controls through the browser runtime pipeline, including styling bridge v0 via CSS variables.
 </p>
 
 <h2>Label (M1)</h2>
@@ -35,12 +36,18 @@
     private readonly Label _label = new()
     {
         Text = "Hello from MAUI Label rendered via Blazor DOM.",
+        TextColor = Color.FromArgb("#0F172A"),
+        BackgroundColor = Color.FromArgb("#FEF3C7"),
+        FontSize = 20,
+        Margin = new Thickness(0, 0, 0, 8)
     };
 
     private readonly StackLayout _stackLayout = new()
     {
         Orientation = StackOrientation.Vertical,
         Spacing = 8,
+        BackgroundColor = Color.FromArgb("#EFF6FF"),
+        Margin = new Thickness(0, 0, 0, 8),
         Children =
         {
             new Label { Text = "Stack item one" },
@@ -52,7 +59,13 @@
     private readonly Grid _grid = CreateGrid();
     private readonly Button _button = new()
     {
-        Text = "Click MAUI Button"
+        Text = "Click MAUI Button",
+        TextColor = Color.FromArgb("#FFFFFF"),
+        BackgroundColor = Color.FromArgb("#1D4ED8"),
+        BorderColor = Color.FromArgb("#1E40AF"),
+        BorderWidth = 2,
+        CornerRadius = 10,
+        Padding = new Thickness(12, 8)
     };
     private int _clickedCount;
     private int _commandCount;
@@ -69,7 +82,8 @@
         var grid = new Grid
         {
             RowSpacing = 8,
-            ColumnSpacing = 8
+            ColumnSpacing = 8,
+            BackgroundColor = Color.FromArgb("#ECFDF5")
         };
 
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
