@@ -73,6 +73,31 @@ public sealed class MauiGridRendererFactoryTests
     }
 
     [Fact]
+    public void Create_PreservesZeroStarTrackSize()
+    {
+        var registry = new RendererRegistry();
+        var gridFactory = new MauiGridRendererFactory(registry);
+        registry.Register<Grid>(gridFactory);
+
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(0, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.RowDefinitions.Add(new RowDefinition { Height = new GridLength(0, GridUnitType.Star) });
+
+        var fragment = gridFactory.Create(grid, RenderContext.Empty);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        var styleAttributes = FindAttributeValues(builder, "style");
+        var rootStyle = styleAttributes.FirstOrDefault(style =>
+            style.Contains("display:grid", StringComparison.Ordinal));
+
+        Assert.NotNull(rootStyle);
+        Assert.Contains("grid-template-columns:0fr 1fr", rootStyle, StringComparison.Ordinal);
+        Assert.Contains("grid-template-rows:0fr", rootStyle, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Create_ThrowsWhenChildRendererIsMissing()
     {
         var registry = new RendererRegistry();

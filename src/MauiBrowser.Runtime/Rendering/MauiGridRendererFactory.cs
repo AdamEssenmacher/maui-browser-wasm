@@ -173,8 +173,7 @@ public sealed class MauiGridRendererFactory : IRendererFactory
 
         if (gridLength.IsStar)
         {
-            var starSize = gridLength.Value > 0 ? gridLength.Value : 1d;
-            return $"{starSize.ToString(CultureInfo.InvariantCulture)}fr";
+            return $"{gridLength.Value.ToString(CultureInfo.InvariantCulture)}fr";
         }
 
         return "auto";
