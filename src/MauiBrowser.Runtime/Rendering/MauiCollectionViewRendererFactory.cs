@@ -86,7 +86,12 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
                     builder.AddAttribute(sequence++, "class", "maui-collectionview-item");
                     builder.AddAttribute(sequence++, "role", "listitem");
                     builder.AddAttribute(sequence++, "data-maui-item-index", itemIndex.ToString(CultureInfo.InvariantCulture));
-                    RenderItemContent(builder, ref sequence, collectionView, item);
+                    RenderItemContent(
+                        builder,
+                        ref sequence,
+                        collectionView,
+                        item,
+                        parentDisabled: context.Semantics.Disabled);
                     builder.CloseElement();
 
                     itemIndex++;
@@ -113,7 +118,8 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
         RenderTreeBuilder builder,
         ref int sequence,
         CollectionView collectionView,
-        object? item)
+        object? item,
+        bool parentDisabled)
     {
         var itemTemplate = ResolveItemTemplate(collectionView, item);
         if (itemTemplate is null)
@@ -129,8 +135,29 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
                 $"No renderer factory registered for item view type '{templatedView.GetType().FullName}' in CollectionView.");
         }
 
-        var childContext = RenderContextFactory.CreateFor(templatedView);
+        var childContext = CreateChildRenderContext(templatedView, parentDisabled);
         builder.AddContent(sequence++, childFactory.Create(templatedView, childContext));
+    }
+
+    private static RenderContext CreateChildRenderContext(object templatedView, bool parentDisabled)
+    {
+        var childContext = RenderContextFactory.CreateFor(templatedView);
+        if (!parentDisabled)
+        {
+            return childContext;
+        }
+
+        return new RenderContext
+        {
+            StyleTokens = childContext.StyleTokens,
+            Semantics = new Semantics
+            {
+                Role = childContext.Semantics.Role,
+                Label = childContext.Semantics.Label,
+                Disabled = true
+            },
+            Events = childContext.Events
+        };
     }
 
     private static DataTemplate? ResolveItemTemplate(CollectionView collectionView, object? item)
@@ -240,6 +267,12 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
                 inlineStyles["display"] = "flex";
                 inlineStyles["flex-direction"] =
                     linearItemsLayout.Orientation == ItemsLayoutOrientation.Horizontal ? "row" : "column";
+
+                if (linearItemsLayout.ItemSpacing > 0)
+                {
+                    inlineStyles["gap"] = $"{linearItemsLayout.ItemSpacing.ToString(CultureInfo.InvariantCulture)}px";
+                }
+
                 return inlineStyles;
             default:
                 inlineStyles["display"] = "flex";

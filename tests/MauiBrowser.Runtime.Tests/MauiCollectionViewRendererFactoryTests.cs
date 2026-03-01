@@ -67,6 +67,32 @@ public sealed class MauiCollectionViewRendererFactoryTests
     }
 
     [Fact]
+    public void Create_UsesLinearItemsLayoutItemSpacingAsGap()
+    {
+        var registry = new RendererRegistry();
+        var factory = new MauiCollectionViewRendererFactory(registry);
+        registry.Register<CollectionView>(factory);
+
+        var collectionView = new CollectionView
+        {
+            ItemsLayout = new LinearItemsLayout(ItemsLayoutOrientation.Vertical)
+            {
+                ItemSpacing = 6
+            },
+            ItemsSource = new[] { "One", "Two" }
+        };
+
+        var fragment = factory.Create(collectionView, RenderContext.Empty);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        var styleValues = FindAttributeValues(builder, "style");
+        var rootStyle = styleValues.FirstOrDefault(value => value.Contains("display:flex", StringComparison.Ordinal));
+        Assert.NotNull(rootStyle);
+        Assert.Contains("gap:6px", rootStyle, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Create_UsesGridLayoutForGridItemsLayout()
     {
         var registry = new RendererRegistry();
@@ -174,6 +200,42 @@ public sealed class MauiCollectionViewRendererFactoryTests
     }
 
     [Fact]
+    public void Create_DisabledCollection_DisablesTemplatedButtons()
+    {
+        var registry = new RendererRegistry();
+        var buttonFactory = new MauiButtonRendererFactory();
+        var collectionFactory = new MauiCollectionViewRendererFactory(registry);
+        registry.Register<Button>(buttonFactory);
+        registry.Register<CollectionView>(collectionFactory);
+
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new[] { "A" },
+            ItemTemplate = new DataTemplate(() => new Button { Text = "Item button" })
+        };
+
+        var disabledContext = new RenderContext
+        {
+            StyleTokens = StyleTokens.Empty,
+            Semantics = new MauiBrowser.Runtime.Rendering.Semantics
+            {
+                Disabled = true
+            },
+            Events = EventDispatcher.None
+        };
+
+        var fragment = collectionFactory.Create(collectionView, disabledContext);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        var disabledAttributes = FindAttributeObjects(builder, "disabled");
+        Assert.Contains(disabledAttributes, value => value is bool boolValue && boolValue);
+
+        var clickAttributes = FindAttributeObjects(builder, "onclick");
+        Assert.Empty(clickAttributes);
+    }
+
+    [Fact]
     public void Create_ThrowsWhenItemTemplateViewRendererIsMissing()
     {
         var registry = new RendererRegistry();
@@ -274,6 +336,24 @@ public sealed class MauiCollectionViewRendererFactoryTests
                 && frame.AttributeValue?.ToString() is { } value)
             {
                 values.Add(value);
+            }
+        }
+
+        return values;
+    }
+
+    private static IReadOnlyList<object?> FindAttributeObjects(RenderTreeBuilder builder, string attributeName)
+    {
+        var frames = builder.GetFrames();
+        var values = new List<object?>();
+
+        for (var i = 0; i < frames.Count; i++)
+        {
+            var frame = frames.Array[i];
+            if (frame.FrameType == RenderTreeFrameType.Attribute
+                && string.Equals(frame.AttributeName, attributeName, StringComparison.Ordinal))
+            {
+                values.Add(frame.AttributeValue);
             }
         }
 
