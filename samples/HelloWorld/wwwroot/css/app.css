@@ -20,3 +20,10 @@ main {
     border: 1px solid #d0d7de;
     border-radius: 8px;
 }
+
+.maui-plugin-button {
+    border-style: dashed;
+    border-width: 2px;
+    border-color: #0f766e;
+    box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.15);
+}
