@@ -26,10 +26,13 @@ MAUI Virtual View Tree
   - `MauiButtonRendererFactory` for `Microsoft.Maui.Controls.Button` (`<button>`, click + command)
   - `MauiStackLayoutRendererFactory` for `Microsoft.Maui.Controls.StackLayout` (`display:flex`)
   - `MauiGridRendererFactory` for `Microsoft.Maui.Controls.Grid` (`display:grid`)
+  - `MauiContentPageRendererFactory` for `Microsoft.Maui.Controls.ContentPage`
+  - `MauiNavigationPageRendererFactory` for `Microsoft.Maui.Controls.NavigationPage`
   - `RenderContextFactory` style bridge v0 mapping MAUI style properties to CSS variables via `StyleTokens`
 - Sample integration:
   - `samples/HelloWorld` registers runtime services via DI
-  - `/maui` route renders real MAUI `Label`, `StackLayout`, `Grid`, and `Button` via runtime -> Blazor DOM pipeline with style-token to CSS variable projection
+  - `/maui` route renders real MAUI `Label`, `StackLayout`, `Grid`, `Button`, and `NavigationPage` via runtime -> Blazor DOM pipeline with style-token to CSS variable projection
+  - `/maui/{*stackPath}` uses slash-separated route keys as the source of truth for MAUI navigation stack state (`/maui` root, arbitrary pushed depth up to current v0 cap)
 - Accessibility baseline:
   - label and button semantics can project to role/label/disabled attributes through `RenderContext.Semantics`
 - SDK composition:
@@ -51,6 +54,18 @@ MAUI Virtual View Tree
 - `--maui-border-width` (button)
 - `--maui-border-radius` (button)
 - `--maui-padding` (button)
+
+## Navigation v0 Behavior
+- Scope: `NavigationPage` only. Shell is intentionally out of scope in this milestone.
+- Route model:
+  - Root route: `/maui` (implicit root page key)
+  - Pushed pages: `/maui/{*stackPath}` with slash-separated keys (for example `/maui/details/settings/profile`)
+  - Known keys in sample: `details`, `settings`, `profile` (case-insensitive normalization)
+- State model:
+  - Browser URL is authoritative
+  - Sample command handlers issue `NavigationManager.NavigateTo(...)`
+  - `OnParametersSetAsync` parses route keys, then synchronizes `NavigationPage` by pop-to-common-prefix then push-remaining
+  - Unknown keys render a MAUI NotFound page and preserve the requested URL (no redirect rewrite)
 
 ## Key Packages
 - `MauiBrowser.Runtime`: runtime platform backend + handler set + services (Browser)

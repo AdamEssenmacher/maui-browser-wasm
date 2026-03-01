@@ -1,9 +1,12 @@
 @page "/maui"
+@page "/maui/{*StackPath}"
 @using MauiBrowser.Runtime.Rendering
+@using Microsoft.AspNetCore.Components
 @using Microsoft.Maui
 @using Microsoft.Maui.Controls
 @using Microsoft.Maui.Graphics
 @inject IMauiViewRenderer MauiViewRenderer
+@inject NavigationManager NavigationManager
 
 <h1>MAUI Runtime Demo</h1>
 
@@ -32,7 +35,29 @@
     <p>Clicked events: @_clickedCount | Command executions: @_commandCount</p>
 </div>
 
+<h2>NavigationPage (M3)</h2>
+<p>
+    The M3 demo uses URL-synced MAUI navigation. Try deep links such as <code>/maui/details/settings/profile</code>.
+</p>
+<div class="maui-surface">
+    @MauiViewRenderer.Render(_m3RenderRoot)
+    <p>Requested route: <code>@CurrentRequestedPath</code></p>
+    <p>Resolved stack route: <code>@CurrentResolvedRoute</code></p>
+</div>
+
 @code {
+    private const int MaxStackDepth = 32;
+
+    private static readonly HashSet<string> KnownPageKeys = new(StringComparer.Ordinal)
+    {
+        "details",
+        "settings",
+        "profile"
+    };
+
+    [Parameter]
+    public string? StackPath { get; set; }
+
     private readonly Label _label = new()
     {
         Text = "Hello from MAUI Label rendered via Blazor DOM.",
@@ -67,14 +92,37 @@
         CornerRadius = 10,
         Padding = new Thickness(12, 8)
     };
+
+    private readonly List<string> _currentStackKeys = new();
+    private NavigationPage _navigationPage = null!;
+    private object _m3RenderRoot = null!;
     private int _clickedCount;
     private int _commandCount;
+
+    private string CurrentRequestedPath => NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+
+    private string CurrentResolvedRoute => BuildRoute(_currentStackKeys);
 
     protected override void OnInitialized()
     {
         _button.Command = new Command(OnButtonCommandExecuted);
         _button.CommandParameter = "maui-button";
         _button.Clicked += OnButtonClicked;
+
+        _navigationPage = new NavigationPage(CreateRootPage());
+        _m3RenderRoot = _navigationPage;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!TryParseStackPath(StackPath, out var desiredStackKeys, out var routeError))
+        {
+            _m3RenderRoot = CreateNotFoundPage(routeError);
+            return;
+        }
+
+        await SynchronizeNavigationStackAsync(desiredStackKeys);
+        _m3RenderRoot = _navigationPage;
     }
 
     private static Grid CreateGrid()
@@ -109,6 +157,228 @@
         grid.Children.Add(right);
 
         return grid;
+    }
+
+    private static string BuildRoute(IReadOnlyList<string> stackKeys)
+    {
+        if (stackKeys.Count == 0)
+        {
+            return "/maui";
+        }
+
+        return "/maui/" + string.Join('/', stackKeys);
+    }
+
+    private static string GetPageTitle(string pageKey)
+    {
+        return pageKey switch
+        {
+            "details" => "Details",
+            "settings" => "Settings",
+            "profile" => "Profile",
+            _ => "Unknown"
+        };
+    }
+
+    private static bool TryParseStackPath(
+        string? stackPath,
+        out List<string> stackKeys,
+        out string routeError)
+    {
+        stackKeys = new List<string>();
+        routeError = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(stackPath))
+        {
+            return true;
+        }
+
+        var segments = stackPath.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (segments.Length > MaxStackDepth)
+        {
+            routeError = $"Route exceeds the maximum stack depth of {MaxStackDepth}.";
+            return false;
+        }
+
+        foreach (var segment in segments)
+        {
+            var normalizedSegment = segment.ToLowerInvariant();
+            if (!KnownPageKeys.Contains(normalizedSegment))
+            {
+                routeError = $"Unknown page key '{segment}'.";
+                return false;
+            }
+
+            stackKeys.Add(normalizedSegment);
+        }
+
+        return true;
+    }
+
+    private async Task SynchronizeNavigationStackAsync(IReadOnlyList<string> desiredStackKeys)
+    {
+        var commonPrefixLength = 0;
+        var sharedLength = Math.Min(_currentStackKeys.Count, desiredStackKeys.Count);
+        while (commonPrefixLength < sharedLength
+            && string.Equals(
+                _currentStackKeys[commonPrefixLength],
+                desiredStackKeys[commonPrefixLength],
+                StringComparison.Ordinal))
+        {
+            commonPrefixLength++;
+        }
+
+        for (var i = _currentStackKeys.Count - 1; i >= commonPrefixLength; i--)
+        {
+            if (_navigationPage.Navigation.NavigationStack.Count <= 1)
+            {
+                break;
+            }
+
+            await _navigationPage.PopAsync(animated: false);
+        }
+
+        for (var i = commonPrefixLength; i < desiredStackKeys.Count; i++)
+        {
+            var page = CreatePageForKey(desiredStackKeys[i], desiredStackKeys);
+            await _navigationPage.PushAsync(page, animated: false);
+        }
+
+        _currentStackKeys.Clear();
+        for (var i = 0; i < desiredStackKeys.Count; i++)
+        {
+            _currentStackKeys.Add(desiredStackKeys[i]);
+        }
+    }
+
+    private ContentPage CreateRootPage()
+    {
+        return new ContentPage
+        {
+            Title = "Home",
+            Content = new StackLayout
+            {
+                Spacing = 8,
+                Children =
+                {
+                    new Label { Text = "M3 Navigation root page." },
+                    new Label { Text = "Push route keys into the URL-backed stack." },
+                    CreatePushButton("Push details", "details"),
+                    CreatePushButton("Push settings", "settings"),
+                    CreatePushButton("Push profile", "profile")
+                }
+            }
+        };
+    }
+
+    private ContentPage CreatePageForKey(string pageKey, IReadOnlyList<string> targetStackKeys)
+    {
+        var pageTitle = GetPageTitle(pageKey);
+        return new ContentPage
+        {
+            Title = pageTitle,
+            Content = new StackLayout
+            {
+                Spacing = 8,
+                Children =
+                {
+                    new Label { Text = $"{pageTitle} page" },
+                    new Label { Text = $"Stack route: {BuildRoute(targetStackKeys)}" },
+                    CreatePushButton("Push details", "details"),
+                    CreatePushButton("Push settings", "settings"),
+                    CreatePushButton("Push profile", "profile"),
+                    new Button
+                    {
+                        Text = "Pop current page",
+                        Command = new Command(NavigateBackOneLevel)
+                    },
+                    new Button
+                    {
+                        Text = "Back to root",
+                        Command = new Command(NavigateHome)
+                    }
+                }
+            }
+        };
+    }
+
+    private ContentPage CreateNotFoundPage(string routeError)
+    {
+        var message = string.IsNullOrWhiteSpace(routeError)
+            ? "Unknown navigation route."
+            : routeError;
+
+        return new ContentPage
+        {
+            Title = "Not Found",
+            Content = new StackLayout
+            {
+                Spacing = 8,
+                Children =
+                {
+                    new Label { Text = "M3 route could not be resolved." },
+                    new Label { Text = message },
+                    new Button
+                    {
+                        Text = "Go to /maui",
+                        Command = new Command(NavigateHome)
+                    }
+                }
+            }
+        };
+    }
+
+    private Button CreatePushButton(string text, string pageKey)
+    {
+        return new Button
+        {
+            Text = text,
+            Command = new Command(() => NavigateToChild(pageKey))
+        };
+    }
+
+    private void NavigateToChild(string pageKey)
+    {
+        var normalizedPageKey = pageKey.ToLowerInvariant();
+        if (!KnownPageKeys.Contains(normalizedPageKey))
+        {
+            return;
+        }
+
+        if (_currentStackKeys.Count >= MaxStackDepth)
+        {
+            return;
+        }
+
+        var nextStackKeys = new List<string>(_currentStackKeys.Count + 1);
+        for (var i = 0; i < _currentStackKeys.Count; i++)
+        {
+            nextStackKeys.Add(_currentStackKeys[i]);
+        }
+
+        nextStackKeys.Add(normalizedPageKey);
+        NavigationManager.NavigateTo(BuildRoute(nextStackKeys));
+    }
+
+    private void NavigateBackOneLevel()
+    {
+        if (_currentStackKeys.Count == 0)
+        {
+            return;
+        }
+
+        var nextStackKeys = new List<string>(_currentStackKeys.Count - 1);
+        for (var i = 0; i < _currentStackKeys.Count - 1; i++)
+        {
+            nextStackKeys.Add(_currentStackKeys[i]);
+        }
+
+        NavigationManager.NavigateTo(BuildRoute(nextStackKeys));
+    }
+
+    private void NavigateHome()
+    {
+        NavigationManager.NavigateTo("/maui");
     }
 
     private void OnButtonClicked(object? sender, EventArgs args)
