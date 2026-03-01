@@ -17,6 +17,21 @@ MAUI Virtual View Tree
   -> Blazor Component Tree (RenderFragments / IComponents)
   -> DOM (Blazor diffing)
 
+## Current M1 Slice
+- Runtime includes a minimal pluggable renderer pipeline:
+  - `IRendererRegistry` + `RendererRegistry` with priority-based resolution
+  - `IRendererFactory` contract
+  - `IMauiViewRenderer` + `MauiViewRenderer` orchestration
+  - `MauiLabelRendererFactory` for `Microsoft.Maui.Controls.Label`
+- Sample integration:
+  - `samples/HelloWorld` registers runtime services via DI
+  - `/maui` route renders a real MAUI `Label` via runtime -> Blazor DOM pipeline
+- Accessibility baseline:
+  - label semantics can project to `aria-label` through `RenderContext.Semantics`
+- Deferred to follow-up:
+  - SDK composition work in `MauiBrowser.Sdk`
+  - additional controls/layout mappings beyond `Label`
+
 ## Key Packages
 - `MauiBrowser.Runtime`: runtime platform backend + handler set + services (Browser)
 - `MauiBrowser.Sdk`: MSBuild SDK that composes MAUI + Blazor WASM build pipeline
@@ -28,8 +43,8 @@ MAUI Virtual View Tree
 - Perfect performance for CollectionView virtualization
 - Complete accessibility parity (but we must provide basic semantics from day 1)
 
-## Core Interfaces (draft)
-These are intentionally small and should evolve incrementally.
+## Core Interfaces
+These remain intentionally small and evolve incrementally.
 
 ```csharp
 namespace MauiBrowser.Runtime.Rendering;
@@ -47,6 +62,11 @@ public interface IRendererFactory
     bool CanRender(object virtualView);
 }
 
+public interface IMauiViewRenderer
+{
+    Microsoft.AspNetCore.Components.RenderFragment Render(object virtualView);
+}
+
 public sealed class RenderContext
 {
     public required StyleTokens StyleTokens { get; init; }
@@ -54,11 +74,19 @@ public sealed class RenderContext
     public required EventDispatcher Events { get; init; }
 }
 
-public sealed record StyleTokens(IReadOnlyDictionary<string, string> CssVariables,
-                                 IReadOnlyDictionary<string, string> InlineStyles,
-                                 IReadOnlyCollection<string> CssClasses);
+public sealed class StyleTokens
+{
+    public IReadOnlyDictionary<string, string> CssVariables { get; init; }
+    public IReadOnlyDictionary<string, string> InlineStyles { get; init; }
+    public IReadOnlyCollection<string> CssClasses { get; init; }
+}
 
-public sealed record Semantics(string? Role, string? Label, bool Disabled);
+public sealed class Semantics
+{
+    public string? Role { get; init; }
+    public string? Label { get; init; }
+    public bool Disabled { get; init; }
+}
 
 public sealed class EventDispatcher
 {
