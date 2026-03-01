@@ -71,7 +71,7 @@ public sealed class MauiContentPageRendererFactory : IRendererFactory
                         $"No renderer factory registered for child view type '{contentPage.Content.GetType().FullName}' in ContentPage.");
                 }
 
-                var childContext = RenderContextFactory.CreateFor(contentPage.Content);
+                var childContext = RenderContextFactory.CreateFor(contentPage.Content, context.Semantics.Disabled);
                 builder.AddContent(sequence++, childFactory.Create(contentPage.Content, childContext));
             }
 

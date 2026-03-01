@@ -20,6 +20,27 @@ internal static class RenderContextFactory
     private const string BorderRadiusVar = "maui-border-radius";
     private const string PaddingVar = "maui-padding";
 
+    public static RenderContext CreateFor(object virtualView, bool parentDisabled)
+    {
+        var context = CreateFor(virtualView);
+        if (!parentDisabled || context.Semantics.Disabled)
+        {
+            return context;
+        }
+
+        return new RenderContext
+        {
+            StyleTokens = context.StyleTokens,
+            Semantics = new Semantics
+            {
+                Role = context.Semantics.Role,
+                Label = context.Semantics.Label,
+                Disabled = true
+            },
+            Events = context.Events
+        };
+    }
+
     public static RenderContext CreateFor(object virtualView)
     {
         ArgumentNullException.ThrowIfNull(virtualView);

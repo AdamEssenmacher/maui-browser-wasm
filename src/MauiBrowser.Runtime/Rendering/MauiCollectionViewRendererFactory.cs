@@ -138,29 +138,8 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
                 $"No renderer factory registered for item view type '{templatedView.GetType().FullName}' in CollectionView.");
         }
 
-        var childContext = CreateChildRenderContext(templatedView, parentDisabled);
+        var childContext = RenderContextFactory.CreateFor(templatedView, parentDisabled);
         builder.AddContent(sequence++, childFactory.Create(templatedView, childContext));
-    }
-
-    private static RenderContext CreateChildRenderContext(object templatedView, bool parentDisabled)
-    {
-        var childContext = RenderContextFactory.CreateFor(templatedView);
-        if (!parentDisabled)
-        {
-            return childContext;
-        }
-
-        return new RenderContext
-        {
-            StyleTokens = childContext.StyleTokens,
-            Semantics = new Semantics
-            {
-                Role = childContext.Semantics.Role,
-                Label = childContext.Semantics.Label,
-                Disabled = true
-            },
-            Events = childContext.Events
-        };
     }
 
     private static DataTemplate? ResolveItemTemplate(CollectionView collectionView, object? item)

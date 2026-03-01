@@ -264,6 +264,50 @@ public sealed class MauiCollectionViewRendererFactoryTests
     }
 
     [Fact]
+    public void Create_DisabledCollection_DisablesButtonsInsideTemplatedLayouts()
+    {
+        var registry = new RendererRegistry();
+        var buttonFactory = new MauiButtonRendererFactory();
+        var stackLayoutFactory = new MauiStackLayoutRendererFactory(registry);
+        var collectionFactory = new MauiCollectionViewRendererFactory(registry);
+        registry.Register<Button>(buttonFactory);
+        registry.Register<StackLayout>(stackLayoutFactory);
+        registry.Register<CollectionView>(collectionFactory);
+
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new[] { "A" },
+            ItemTemplate = new DataTemplate(() => new StackLayout
+            {
+                Children =
+                {
+                    new Button { Text = "Nested button" }
+                }
+            })
+        };
+
+        var disabledContext = new RenderContext
+        {
+            StyleTokens = StyleTokens.Empty,
+            Semantics = new MauiBrowser.Runtime.Rendering.Semantics
+            {
+                Disabled = true
+            },
+            Events = EventDispatcher.None
+        };
+
+        var fragment = collectionFactory.Create(collectionView, disabledContext);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        var disabledAttributes = FindAttributeObjects(builder, "disabled");
+        Assert.Contains(disabledAttributes, value => value is bool boolValue && boolValue);
+
+        var clickAttributes = FindAttributeObjects(builder, "onclick");
+        Assert.Empty(clickAttributes);
+    }
+
+    [Fact]
     public void Create_ThrowsWhenItemTemplateViewRendererIsMissing()
     {
         var registry = new RendererRegistry();
