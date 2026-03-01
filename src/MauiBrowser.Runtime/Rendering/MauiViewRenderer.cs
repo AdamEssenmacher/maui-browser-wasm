@@ -1,6 +1,5 @@
 using System;
 using Microsoft.AspNetCore.Components;
-using Microsoft.Maui.Controls;
 
 namespace MauiBrowser.Runtime.Rendering;
 
@@ -31,21 +30,6 @@ public sealed class MauiViewRenderer : IMauiViewRenderer
                 $"No renderer factory registered for view type '{virtualView.GetType().FullName}'.");
         }
 
-        return factory.Create(virtualView, CreateContext(virtualView));
-    }
-
-    private static RenderContext CreateContext(object virtualView)
-    {
-        var semanticsLabel = virtualView is Label label ? label.Text : null;
-
-        return new RenderContext
-        {
-            StyleTokens = StyleTokens.Empty,
-            Semantics = new Semantics
-            {
-                Label = semanticsLabel
-            },
-            Events = EventDispatcher.None
-        };
+        return factory.Create(virtualView, RenderContextFactory.CreateFor(virtualView));
     }
 }

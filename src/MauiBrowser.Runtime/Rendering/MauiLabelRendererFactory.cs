@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Maui.Controls;
 
@@ -26,13 +25,13 @@ public sealed class MauiLabelRendererFactory : IRendererFactory
             var sequence = 0;
             builder.OpenElement(sequence++, "span");
 
-            var classes = BuildClassValue(context.StyleTokens.CssClasses);
+            var classes = DomRenderStyleBuilder.BuildClassValue(context.StyleTokens.CssClasses);
             if (!string.IsNullOrWhiteSpace(classes))
             {
                 builder.AddAttribute(sequence++, "class", classes);
             }
 
-            var style = BuildStyleValue(context.StyleTokens.InlineStyles, context.StyleTokens.CssVariables);
+            var style = DomRenderStyleBuilder.BuildStyleValue(context.StyleTokens.InlineStyles, context.StyleTokens.CssVariables);
             if (!string.IsNullOrWhiteSpace(style))
             {
                 builder.AddAttribute(sequence++, "style", style);
@@ -60,37 +59,4 @@ public sealed class MauiLabelRendererFactory : IRendererFactory
 
     /// <inheritdoc />
     public bool CanRender(object virtualView) => virtualView is Label;
-
-    private static string? BuildClassValue(IReadOnlyCollection<string> classes)
-    {
-        if (classes.Count == 0)
-        {
-            return null;
-        }
-
-        return string.Join(" ", classes);
-    }
-
-    private static string? BuildStyleValue(
-        IReadOnlyDictionary<string, string> inlineStyles,
-        IReadOnlyDictionary<string, string> cssVariables)
-    {
-        if (inlineStyles.Count == 0 && cssVariables.Count == 0)
-        {
-            return null;
-        }
-
-        var styleFragments = new List<string>(inlineStyles.Count + cssVariables.Count);
-        foreach (var pair in inlineStyles)
-        {
-            styleFragments.Add($"{pair.Key}:{pair.Value}");
-        }
-
-        foreach (var pair in cssVariables)
-        {
-            styleFragments.Add($"--{pair.Key}:{pair.Value}");
-        }
-
-        return string.Join(";", styleFragments);
-    }
 }

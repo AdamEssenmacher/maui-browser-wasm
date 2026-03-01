@@ -43,7 +43,7 @@
 **Scope exclusions:**
 - No advanced styling system; just basic mapping to CSS vars/classes.
 
-- [ ] StackLayout (CSS flex)
+- [x] StackLayout (CSS flex)
 - [ ] Grid (CSS grid)
 - [ ] Button (click + command)
 - [ ] Styling bridge v0 (CSS variables)

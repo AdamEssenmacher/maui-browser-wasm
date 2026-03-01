@@ -3,19 +3,37 @@
 @using Microsoft.Maui.Controls
 @inject IMauiViewRenderer MauiViewRenderer
 
-<h1>MAUI Label (M1 Slice 1)</h1>
+<h1>MAUI Runtime Demo</h1>
 
 <p>
-    This page renders a real <code>Microsoft.Maui.Controls.Label</code> through the browser runtime pipeline.
+    This page renders real MAUI controls through the browser runtime pipeline.
 </p>
 
+<h2>Label (M1)</h2>
 <div class="maui-surface">
     @MauiViewRenderer.Render(_label)
+</div>
+
+<h2>StackLayout (M2 Slice 1)</h2>
+<div class="maui-surface">
+    @MauiViewRenderer.Render(_stackLayout)
 </div>
 
 @code {
     private readonly Label _label = new()
     {
         Text = "Hello from MAUI Label rendered via Blazor DOM.",
+    };
+
+    private readonly StackLayout _stackLayout = new()
+    {
+        Orientation = StackOrientation.Vertical,
+        Spacing = 8,
+        Children =
+        {
+            new Label { Text = "Stack item one" },
+            new Label { Text = "Stack item two" },
+            new Label { Text = "Stack item three" }
+        }
     };
 }

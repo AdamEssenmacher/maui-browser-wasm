@@ -30,5 +30,6 @@ public sealed class MauiBrowserRuntimeServiceCollectionExtensionsTests
         Assert.NotNull(renderer);
         Assert.NotNull(registry);
         Assert.True(registry.TryResolve(new Label(), out _));
+        Assert.True(registry.TryResolve(new StackLayout(), out _));
     }
 }
