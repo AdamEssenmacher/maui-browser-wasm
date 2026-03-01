@@ -29,13 +29,22 @@
     @MauiViewRenderer.Render(_grid)
 </div>
 
-<h2>Button (M2 Slice 3 + M4 Plugin Override)</h2>
+<h2>Button (M2 Slice 3 + M4 MudBlazor Plugin Override)</h2>
 <div class="maui-surface">
     <p>
-        Buttons on this page are currently rendered by the sample plugin override (`maui-plugin-button` class, higher registry priority).
+        Buttons on this page are rendered by the MudBlazor plugin override (`maui-mudblazor-button`, higher registry priority).
     </p>
     @MauiViewRenderer.Render(_button)
     <p>Clicked events: @_clickedCount | Command executions: @_commandCount</p>
+</div>
+
+<h2>Entry (M4 MudBlazor Plugin Override)</h2>
+<div class="maui-surface">
+    <p>
+        This MAUI <code>Entry</code> is rendered through MudBlazor (`maui-mudblazor-entry`).
+    </p>
+    @MauiViewRenderer.Render(_entry)
+    <p>Entry text: @_entry.Text | Text change events: @_entryTextChangeCount</p>
 </div>
 
 <h2>NavigationPage (M3)</h2>
@@ -95,12 +104,18 @@
         CornerRadius = 10,
         Padding = new Thickness(12, 8)
     };
+    private readonly Entry _entry = new()
+    {
+        Text = "MudBlazor entry value",
+        Placeholder = "Type a value"
+    };
 
     private readonly List<string> _currentStackKeys = new();
     private NavigationPage _navigationPage = null!;
     private object _m3RenderRoot = null!;
     private int _clickedCount;
     private int _commandCount;
+    private int _entryTextChangeCount;
 
     private string CurrentRequestedPath => NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
 
@@ -111,6 +126,7 @@
         _button.Command = new Command(OnButtonCommandExecuted);
         _button.CommandParameter = "maui-button";
         _button.Clicked += OnButtonClicked;
+        _entry.TextChanged += OnEntryTextChanged;
 
         _navigationPage = new NavigationPage(CreateRootPage());
         _m3RenderRoot = _navigationPage;
@@ -393,6 +409,12 @@
     private void OnButtonCommandExecuted()
     {
         _commandCount++;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void OnEntryTextChanged(object? sender, TextChangedEventArgs args)
+    {
+        _entryTextChangeCount++;
         _ = InvokeAsync(StateHasChanged);
     }
 }
