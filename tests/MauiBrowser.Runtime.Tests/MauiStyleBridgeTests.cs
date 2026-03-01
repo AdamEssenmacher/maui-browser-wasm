@@ -31,6 +31,8 @@ public sealed class MauiStyleBridgeTests
         var builder = new RenderTreeBuilder();
         fragment(builder);
 
+        Assert.True(HasElement(builder, "div"));
+
         var style = FindAttributeValue(builder, "style")?.ToString();
         Assert.NotNull(style);
         Assert.Contains("color:var(--maui-text-color)", style, StringComparison.Ordinal);
@@ -49,7 +51,7 @@ public sealed class MauiStyleBridgeTests
     }
 
     [Fact]
-    public void Render_Button_ProjectsCssVariablesAndDisablesForCannotExecuteCommand()
+    public void Render_Button_ProjectsCssVariables_AndKeepsCommandGuardOnClick()
     {
         var registry = new RendererRegistry();
         registry.Register<Button>(new MauiButtonRendererFactory());
@@ -86,11 +88,9 @@ public sealed class MauiStyleBridgeTests
         Assert.Contains("--maui-border-width:2px", style, StringComparison.Ordinal);
         Assert.Contains("--maui-border-radius:12px", style, StringComparison.Ordinal);
         Assert.Contains("--maui-padding:8px 12px 8px 12px", style, StringComparison.Ordinal);
-        Assert.True(HasAttribute(builder, "disabled"));
-        Assert.Equal("true", FindAttributeValue(builder, "aria-disabled")?.ToString());
         Assert.Equal("button", FindAttributeValue(builder, "role")?.ToString());
         Assert.Equal("Styled button", FindAttributeValue(builder, "aria-label")?.ToString());
-        Assert.False(HasAttribute(builder, "onclick"));
+        Assert.True(HasAttribute(builder, "onclick"));
     }
 
     [Fact]
@@ -144,6 +144,22 @@ public sealed class MauiStyleBridgeTests
     private static bool HasAttribute(RenderTreeBuilder builder, string attributeName)
     {
         return FindAttributeValue(builder, attributeName) is not null;
+    }
+
+    private static bool HasElement(RenderTreeBuilder builder, string elementName)
+    {
+        var frames = builder.GetFrames();
+        for (var i = 0; i < frames.Count; i++)
+        {
+            var frame = frames.Array[i];
+            if (frame.FrameType == RenderTreeFrameType.Element
+                && string.Equals(frame.ElementName, elementName, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static object? FindAttributeValue(RenderTreeBuilder builder, string attributeName)

@@ -23,7 +23,7 @@ public sealed class MauiLabelRendererFactory : IRendererFactory
         return builder =>
         {
             var sequence = 0;
-            builder.OpenElement(sequence++, "span");
+            builder.OpenElement(sequence++, "div");
 
             var classes = DomRenderStyleBuilder.BuildClassValue(context.StyleTokens.CssClasses);
             if (!string.IsNullOrWhiteSpace(classes))

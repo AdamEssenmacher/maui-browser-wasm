@@ -49,9 +49,7 @@ public sealed class MauiButtonRendererFactory : IRendererFactory
                 builder.AddAttribute(sequence++, "aria-label", context.Semantics.Label);
             }
 
-            var isDisabled = context.Semantics.Disabled
-                || !button.IsEnabled
-                || !CanExecuteCommand(button.Command, button.CommandParameter);
+            var isDisabled = context.Semantics.Disabled;
             if (isDisabled)
             {
                 builder.AddAttribute(sequence++, "disabled", true);

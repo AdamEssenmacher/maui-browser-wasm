@@ -28,8 +28,17 @@ public sealed class MauiButtonRendererFactoryTests
             Text = "Click me",
             IsEnabled = false
         };
+        var context = new RenderContext
+        {
+            StyleTokens = StyleTokens.Empty,
+            Semantics = new MauiBrowser.Runtime.Rendering.Semantics
+            {
+                Disabled = true
+            },
+            Events = EventDispatcher.None
+        };
 
-        var fragment = factory.Create(button, RenderContext.Empty);
+        var fragment = factory.Create(button, context);
         var builder = new RenderTreeBuilder();
         fragment(builder);
 
@@ -91,23 +100,30 @@ public sealed class MauiButtonRendererFactoryTests
     }
 
     [Fact]
-    public void Create_DoesNotEmitOnClickWhenCommandCannotExecute()
+    public async Task Create_ClickDoesNotInvokeWhenCommandCannotExecute()
     {
         var factory = new MauiButtonRendererFactory();
+        var command = new RecordingCommand(_ => false);
         var button = new Button
         {
             Text = "Cannot execute",
-            Command = new RecordingCommand(_ => false),
+            Command = command,
             CommandParameter = "payload"
         };
+        var clickedCount = 0;
+        button.Clicked += (_, _) => clickedCount++;
 
         var fragment = factory.Create(button, RenderContext.Empty);
         var builder = new RenderTreeBuilder();
         fragment(builder);
 
-        Assert.False(HasAttribute(builder, "onclick"));
-        Assert.True(HasAttribute(builder, "disabled"));
-        Assert.Equal("true", FindAttributeValue(builder, "aria-disabled")?.ToString());
+        Assert.True(HasAttribute(builder, "onclick"));
+        Assert.False(HasAttribute(builder, "disabled"));
+
+        await InvokeCallback(builder, "onclick");
+
+        Assert.Equal(0, clickedCount);
+        Assert.Equal(0, command.ExecuteCount);
     }
 
     private static bool HasElement(RenderTreeBuilder builder, string elementName)
