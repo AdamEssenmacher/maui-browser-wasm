@@ -93,7 +93,7 @@ internal static class RenderContextFactory
                     cssVariables[BorderColorVar] = borderColor;
                 }
 
-                if (button.BorderWidth > 0 && double.IsFinite(button.BorderWidth))
+                if (button.BorderWidth >= 0 && double.IsFinite(button.BorderWidth))
                 {
                     cssVariables[BorderWidthVar] = ToCssPx(button.BorderWidth);
                 }

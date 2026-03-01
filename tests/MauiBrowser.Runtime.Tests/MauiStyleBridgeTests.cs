@@ -93,6 +93,31 @@ public sealed class MauiStyleBridgeTests
         Assert.False(HasAttribute(builder, "onclick"));
     }
 
+    [Fact]
+    public void Render_Button_WithZeroBorderWidth_ProjectsZeroPxBorderWidth()
+    {
+        var registry = new RendererRegistry();
+        registry.Register<Button>(new MauiButtonRendererFactory());
+        var renderer = new MauiViewRenderer(registry);
+
+        var button = new Button
+        {
+            Text = "No border width",
+            BorderColor = Color.FromArgb("#22C55E"),
+            BorderWidth = 0
+        };
+
+        var fragment = renderer.Render(button);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        var style = FindAttributeValue(builder, "style")?.ToString();
+        Assert.NotNull(style);
+        Assert.Contains("border-style:solid", style, StringComparison.Ordinal);
+        Assert.Contains("border-width:var(--maui-border-width)", style, StringComparison.Ordinal);
+        Assert.Contains("--maui-border-width:0px", style, StringComparison.Ordinal);
+    }
+
     private static bool HasAttribute(RenderTreeBuilder builder, string attributeName)
     {
         return FindAttributeValue(builder, attributeName) is not null;
