@@ -63,7 +63,7 @@ public sealed class MudBlazorButtonRendererFactory : IRendererFactory
 
             builder.AddAttribute(sequence++, "ChildContent", (RenderFragment)(contentBuilder =>
             {
-                contentBuilder.AddContent(0, $"[MudBlazor Plugin] {button.Text ?? string.Empty}");
+                contentBuilder.AddContent(0, button.Text ?? string.Empty);
             }));
 
             builder.CloseComponent();

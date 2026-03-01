@@ -1,6 +1,7 @@
 #pragma warning disable BL0006
 using MauiBrowser.Plugins.MudBlazor.Rendering;
 using MauiBrowser.Runtime.Rendering;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.RenderTree;
 using Microsoft.AspNetCore.Components.Rendering;
 using Microsoft.Maui.Controls;
@@ -39,6 +40,7 @@ public sealed class MudBlazorRendererFactoryTests
 
         var userAttributes = Assert.IsType<Dictionary<string, object>>(FindAttributeValue(builder, "UserAttributes"));
         Assert.Equal("mudblazor-button", userAttributes["data-maui-plugin"]);
+        Assert.Equal("Run", GetChildContentText(builder));
     }
 
     [Fact]
@@ -157,6 +159,25 @@ public sealed class MudBlazorRendererFactoryTests
                 && string.Equals(frame.AttributeName, attributeName, StringComparison.Ordinal))
             {
                 return frame.AttributeValue;
+            }
+        }
+
+        return null;
+    }
+
+    private static string? GetChildContentText(RenderTreeBuilder builder)
+    {
+        var fragment = Assert.IsType<RenderFragment>(FindAttributeValue(builder, "ChildContent"));
+        var childBuilder = new RenderTreeBuilder();
+        fragment(childBuilder);
+
+        var frames = childBuilder.GetFrames();
+        for (var i = 0; i < frames.Count; i++)
+        {
+            var frame = frames.Array[i];
+            if (frame.FrameType == RenderTreeFrameType.Text)
+            {
+                return frame.TextContent;
             }
         }
 
