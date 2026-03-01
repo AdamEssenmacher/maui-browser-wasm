@@ -21,9 +21,13 @@ main {
     border-radius: 8px;
 }
 
-.maui-plugin-button {
+.maui-mudblazor-button {
     border-style: dashed;
     border-width: 2px;
     border-color: #0f766e;
     box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.15);
+}
+
+.maui-mudblazor-entry {
+    min-width: 260px;
 }
