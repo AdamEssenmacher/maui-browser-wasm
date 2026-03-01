@@ -44,6 +44,29 @@ public sealed class MauiCollectionViewRendererFactoryTests
     }
 
     [Fact]
+    public void Create_UsesHorizontalItemsLayoutForFlexDirection()
+    {
+        var registry = new RendererRegistry();
+        var factory = new MauiCollectionViewRendererFactory(registry);
+        registry.Register<CollectionView>(factory);
+
+        var collectionView = new CollectionView
+        {
+            ItemsLayout = new LinearItemsLayout(ItemsLayoutOrientation.Horizontal),
+            ItemsSource = new[] { "One" }
+        };
+
+        var fragment = factory.Create(collectionView, RenderContext.Empty);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        var styleValues = FindAttributeValues(builder, "style");
+        var rootStyle = styleValues.FirstOrDefault(value => value.Contains("display:flex", StringComparison.Ordinal));
+        Assert.NotNull(rootStyle);
+        Assert.Contains("flex-direction:row", rootStyle, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Create_WithItemTemplate_RendersTemplatedViews()
     {
         var registry = new RendererRegistry();
@@ -70,6 +93,30 @@ public sealed class MauiCollectionViewRendererFactoryTests
         var textContents = FindTextFrames(builder);
         Assert.Contains("A", textContents, StringComparer.Ordinal);
         Assert.Contains("B", textContents, StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void Create_WithDataTemplateSelector_UsesSelectedTemplate()
+    {
+        var registry = new RendererRegistry();
+        var labelFactory = new MauiLabelRendererFactory();
+        var collectionFactory = new MauiCollectionViewRendererFactory(registry);
+        registry.Register<Label>(labelFactory);
+        registry.Register<CollectionView>(collectionFactory);
+
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new[] { "A", "B" },
+            ItemTemplate = new CollectionTemplateSelector()
+        };
+
+        var fragment = collectionFactory.Create(collectionView, RenderContext.Empty);
+        var builder = new RenderTreeBuilder();
+        fragment(builder);
+
+        var textContents = FindTextFrames(builder);
+        Assert.Contains("Template A", textContents, StringComparer.Ordinal);
+        Assert.Contains("Template B", textContents, StringComparer.Ordinal);
     }
 
     [Fact]
@@ -194,6 +241,18 @@ public sealed class MauiCollectionViewRendererFactoryTests
         }
 
         return text;
+    }
+
+    private sealed class CollectionTemplateSelector : DataTemplateSelector
+    {
+        protected override DataTemplate OnSelectTemplate(object item, BindableObject container)
+        {
+            return item?.ToString() switch
+            {
+                "A" => new DataTemplate(() => new Label { Text = "Template A" }),
+                _ => new DataTemplate(() => new Label { Text = "Template B" })
+            };
+        }
     }
 }
 #pragma warning restore BL0006

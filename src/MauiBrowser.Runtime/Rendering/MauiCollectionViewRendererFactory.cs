@@ -50,7 +50,7 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
             var inlineStyles = new Dictionary<string, string>(context.StyleTokens.InlineStyles)
             {
                 ["display"] = "flex",
-                ["flex-direction"] = "column"
+                ["flex-direction"] = ResolveFlexDirection(collectionView.ItemsLayout)
             };
             var style = DomRenderStyleBuilder.BuildStyleValue(inlineStyles, context.StyleTokens.CssVariables);
             if (!string.IsNullOrWhiteSpace(style))
@@ -119,13 +119,14 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
         CollectionView collectionView,
         object? item)
     {
-        if (collectionView.ItemTemplate is null)
+        var itemTemplate = ResolveItemTemplate(collectionView, item);
+        if (itemTemplate is null)
         {
             builder.AddContent(sequence++, item?.ToString() ?? string.Empty);
             return;
         }
 
-        var templatedView = CreateTemplatedView(collectionView.ItemTemplate, item);
+        var templatedView = CreateTemplatedView(itemTemplate, item);
         if (!_rendererRegistry.TryResolve(templatedView, out var childFactory))
         {
             throw new InvalidOperationException(
@@ -134,6 +135,29 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
 
         var childContext = RenderContextFactory.CreateFor(templatedView);
         builder.AddContent(sequence++, childFactory.Create(templatedView, childContext));
+    }
+
+    private static DataTemplate? ResolveItemTemplate(CollectionView collectionView, object? item)
+    {
+        var itemTemplate = collectionView.ItemTemplate;
+        if (itemTemplate is null)
+        {
+            return null;
+        }
+
+        if (itemTemplate is DataTemplateSelector selector)
+        {
+            var selectedTemplate = selector.SelectTemplate(item, collectionView);
+            if (selectedTemplate is null)
+            {
+                throw new InvalidOperationException(
+                    "CollectionView DataTemplateSelector returned null template.");
+            }
+
+            return selectedTemplate;
+        }
+
+        return itemTemplate;
     }
 
     private static View CreateTemplatedView(DataTemplate itemTemplate, object? item)
@@ -176,5 +200,17 @@ public sealed class MauiCollectionViewRendererFactory : IRendererFactory
         }
 
         return string.Join(" ", allClasses);
+    }
+
+    private static string ResolveFlexDirection(IItemsLayout? itemsLayout)
+    {
+        var orientation = itemsLayout switch
+        {
+            LinearItemsLayout linearItemsLayout => linearItemsLayout.Orientation,
+            GridItemsLayout gridItemsLayout => gridItemsLayout.Orientation,
+            _ => ItemsLayoutOrientation.Vertical
+        };
+
+        return orientation == ItemsLayoutOrientation.Horizontal ? "row" : "column";
     }
 }
