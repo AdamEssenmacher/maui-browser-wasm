@@ -25,6 +25,7 @@ public static class MauiBrowserRuntimeServiceCollectionExtensions
         {
             var registry = new RendererRegistry();
             registry.Register<Label>(sp.GetRequiredService<MauiLabelRendererFactory>());
+            registry.Register<StackLayout>(new MauiStackLayoutRendererFactory(registry));
             return registry;
         });
 

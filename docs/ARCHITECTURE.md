@@ -17,15 +17,16 @@ MAUI Virtual View Tree
   -> Blazor Component Tree (RenderFragments / IComponents)
   -> DOM (Blazor diffing)
 
-## Current M1 Slice
+## Current Implementation Status
 - Runtime includes a minimal pluggable renderer pipeline:
   - `IRendererRegistry` + `RendererRegistry` with priority-based resolution
   - `IRendererFactory` contract
   - `IMauiViewRenderer` + `MauiViewRenderer` orchestration
   - `MauiLabelRendererFactory` for `Microsoft.Maui.Controls.Label`
+  - `MauiStackLayoutRendererFactory` for `Microsoft.Maui.Controls.StackLayout` (`display:flex`)
 - Sample integration:
   - `samples/HelloWorld` registers runtime services via DI
-  - `/maui` route renders a real MAUI `Label` via runtime -> Blazor DOM pipeline
+  - `/maui` route renders real MAUI `Label` and `StackLayout` via runtime -> Blazor DOM pipeline
 - Accessibility baseline:
   - label semantics can project to `aria-label` through `RenderContext.Semantics`
 - SDK composition:
@@ -33,7 +34,8 @@ MAUI Virtual View Tree
   - default runtime reference wiring is provided through SDK properties/targets
   - target framework validation defaults to `net10.0` with configurable opt-outs
 - Deferred to follow-up:
-  - additional controls/layout mappings beyond `Label`
+  - additional controls/layout mappings beyond `Label` and `StackLayout`
+  - grid/button/styling bridge work from M2
 
 ## Key Packages
 - `MauiBrowser.Runtime`: runtime platform backend + handler set + services (Browser)

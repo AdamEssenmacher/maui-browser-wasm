@@ -12,3 +12,11 @@ html, body {
 main {
     padding: 24px;
 }
+
+.maui-surface {
+    margin-top: 8px;
+    margin-bottom: 16px;
+    padding: 12px;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+}
