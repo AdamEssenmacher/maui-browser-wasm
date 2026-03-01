@@ -29,8 +29,11 @@
     @MauiViewRenderer.Render(_grid)
 </div>
 
-<h2>Button (M2 Slice 3)</h2>
+<h2>Button (M2 Slice 3 + M4 Plugin Override)</h2>
 <div class="maui-surface">
+    <p>
+        Buttons on this page are currently rendered by the sample plugin override (`maui-plugin-button` class, higher registry priority).
+    </p>
     @MauiViewRenderer.Render(_button)
     <p>Clicked events: @_clickedCount | Command executions: @_commandCount</p>
 </div>

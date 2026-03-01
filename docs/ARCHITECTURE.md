@@ -31,6 +31,7 @@ MAUI Virtual View Tree
   - `RenderContextFactory` style bridge v0 mapping MAUI style properties to CSS variables via `StyleTokens`
 - Sample integration:
   - `samples/HelloWorld` registers runtime services via DI
+  - `samples/HelloWorld` also applies in-repo sample plugin overrides (`MauiBrowser.Plugins.Sample`) to demonstrate higher-priority renderer replacement
   - `/maui` route renders real MAUI `Label`, `StackLayout`, `Grid`, `Button`, and `NavigationPage` via runtime -> Blazor DOM pipeline with style-token to CSS variable projection
   - `/maui/{*stackPath}` uses slash-separated route keys as the source of truth for MAUI navigation stack state (`/maui` root, arbitrary pushed depth up to current v0 cap)
 - Accessibility baseline:
@@ -66,6 +67,14 @@ MAUI Virtual View Tree
   - Sample command handlers issue `NavigationManager.NavigateTo(...)`
   - `OnParametersSetAsync` parses route keys, then synchronizes `NavigationPage` by pop-to-common-prefix then push-remaining
   - Unknown keys render a MAUI NotFound page and preserve the requested URL (no redirect rewrite)
+
+## Plugin Override Model (M4 Slice 1)
+- Runtime `RendererRegistry` resolves the matching renderer with highest priority; later registrations only win ties.
+- Third-party/plugin packages can register renderers into the same registry and override core renderers without forking runtime code.
+- In-repo proof package:
+  - `MauiBrowser.Plugins.Sample`
+  - registers `SamplePluginButtonRendererFactory` for `Button` at higher priority than core default
+  - sample app applies this registration at startup so rendered MAUI buttons visibly demonstrate override behavior
 
 ## Key Packages
 - `MauiBrowser.Runtime`: runtime platform backend + handler set + services (Browser)

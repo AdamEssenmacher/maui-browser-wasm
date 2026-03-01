@@ -56,7 +56,7 @@
 **Proof (runnable):**
 - sample uses a plugin package to override Button rendering.
 
-- [ ] Renderer registry priorities
+- [x] Renderer registry priorities
 - [ ] Sample plugin: MudBlazor overrides Button/Entry
 
 ## M5 — Hard Controls Spike

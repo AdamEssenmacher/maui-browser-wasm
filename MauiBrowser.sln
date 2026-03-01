@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiBrowser.Interop", "src/
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiBrowser.Sdk", "src/MauiBrowser.Sdk/MauiBrowser.Sdk.csproj", "{D099A942-915C-4CE3-9FC8-4F6B12E9B5D2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiBrowser.Plugins.Sample", "src/MauiBrowser.Plugins.Sample/MauiBrowser.Plugins.Sample.csproj", "{5AC07E5E-71FA-41C1-9EE4-F3B69EB1CE0A}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HelloWorld", "samples/HelloWorld/HelloWorld.csproj", "{7D58F9CB-DA66-4D5B-9F25-FA2A9BE174E2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiBrowser.SmokeTests", "tests/MauiBrowser.SmokeTests/MauiBrowser.SmokeTests.csproj", "{F33B5C0E-4939-41C3-8E63-5DB0ED6FD00D}"
@@ -15,6 +17,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiBrowser.Runtime.Tests", "tests/MauiBrowser.Runtime.Tests/MauiBrowser.Runtime.Tests.csproj", "{CA8D35A9-6D39-4F3C-BD10-5281F0FB64AE}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiBrowser.Sdk.Tests", "tests/MauiBrowser.Sdk.Tests/MauiBrowser.Sdk.Tests.csproj", "{ED5FC216-F648-42A7-ACAB-8F9282DFAD37}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MauiBrowser.Plugins.Sample.Tests", "tests/MauiBrowser.Plugins.Sample.Tests/MauiBrowser.Plugins.Sample.Tests.csproj", "{3CD812D5-BC6C-410A-8407-17615036BDD0}"
 EndProject
 Global
   GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -37,6 +41,11 @@ Global
     {D099A942-915C-4CE3-9FC8-4F6B12E9B5D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
     {D099A942-915C-4CE3-9FC8-4F6B12E9B5D2}.Release|Any CPU.Build.0 = Release|Any CPU
 
+    {5AC07E5E-71FA-41C1-9EE4-F3B69EB1CE0A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {5AC07E5E-71FA-41C1-9EE4-F3B69EB1CE0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {5AC07E5E-71FA-41C1-9EE4-F3B69EB1CE0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {5AC07E5E-71FA-41C1-9EE4-F3B69EB1CE0A}.Release|Any CPU.Build.0 = Release|Any CPU
+
     {7D58F9CB-DA66-4D5B-9F25-FA2A9BE174E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
     {7D58F9CB-DA66-4D5B-9F25-FA2A9BE174E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
     {7D58F9CB-DA66-4D5B-9F25-FA2A9BE174E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -56,5 +65,10 @@ Global
     {ED5FC216-F648-42A7-ACAB-8F9282DFAD37}.Debug|Any CPU.Build.0 = Debug|Any CPU
     {ED5FC216-F648-42A7-ACAB-8F9282DFAD37}.Release|Any CPU.ActiveCfg = Release|Any CPU
     {ED5FC216-F648-42A7-ACAB-8F9282DFAD37}.Release|Any CPU.Build.0 = Release|Any CPU
+
+    {3CD812D5-BC6C-410A-8407-17615036BDD0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+    {3CD812D5-BC6C-410A-8407-17615036BDD0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+    {3CD812D5-BC6C-410A-8407-17615036BDD0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+    {3CD812D5-BC6C-410A-8407-17615036BDD0}.Release|Any CPU.Build.0 = Release|Any CPU
   EndGlobalSection
 EndGlobal
