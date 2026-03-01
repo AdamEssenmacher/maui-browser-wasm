@@ -1,5 +1,6 @@
 @page "/maui"
 @using MauiBrowser.Runtime.Rendering
+@using Microsoft.Maui
 @using Microsoft.Maui.Controls
 @inject IMauiViewRenderer MauiViewRenderer
 
@@ -19,6 +20,11 @@
     @MauiViewRenderer.Render(_stackLayout)
 </div>
 
+<h2>Grid (M2 Slice 2)</h2>
+<div class="maui-surface">
+    @MauiViewRenderer.Render(_grid)
+</div>
+
 @code {
     private readonly Label _label = new()
     {
@@ -36,4 +42,39 @@
             new Label { Text = "Stack item three" }
         }
     };
+
+    private readonly Grid _grid = CreateGrid();
+
+    private static Grid CreateGrid()
+    {
+        var grid = new Grid
+        {
+            RowSpacing = 8,
+            ColumnSpacing = 8
+        };
+
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(2, GridUnitType.Star) });
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+
+        var title = new Label { Text = "Grid title (spans two columns)" };
+        Grid.SetRow(title, 0);
+        Grid.SetColumn(title, 0);
+        Grid.SetColumnSpan(title, 2);
+
+        var left = new Label { Text = "Left cell" };
+        Grid.SetRow(left, 1);
+        Grid.SetColumn(left, 0);
+
+        var right = new Label { Text = "Right cell" };
+        Grid.SetRow(right, 1);
+        Grid.SetColumn(right, 1);
+
+        grid.Children.Add(title);
+        grid.Children.Add(left);
+        grid.Children.Add(right);
+
+        return grid;
+    }
 }

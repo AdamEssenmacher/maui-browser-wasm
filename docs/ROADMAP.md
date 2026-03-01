@@ -44,7 +44,7 @@
 - No advanced styling system; just basic mapping to CSS vars/classes.
 
 - [x] StackLayout (CSS flex)
-- [ ] Grid (CSS grid)
+- [x] Grid (CSS grid)
 - [ ] Button (click + command)
 - [ ] Styling bridge v0 (CSS variables)
 
