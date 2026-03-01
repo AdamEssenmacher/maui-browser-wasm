@@ -1,0 +1,21 @@
+@page "/maui"
+@using MauiBrowser.Runtime.Rendering
+@using Microsoft.Maui.Controls
+@inject IMauiViewRenderer MauiViewRenderer
+
+<h1>MAUI Label (M1 Slice 1)</h1>
+
+<p>
+    This page renders a real <code>Microsoft.Maui.Controls.Label</code> through the browser runtime pipeline.
+</p>
+
+<div class="maui-surface">
+    @MauiViewRenderer.Render(_label)
+</div>
+
+@code {
+    private readonly Label _label = new()
+    {
+        Text = "Hello from MAUI Label rendered via Blazor DOM.",
+    };
+}

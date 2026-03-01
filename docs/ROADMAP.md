@@ -33,8 +33,8 @@
 
 - [ ] `MauiBrowser.Runtime` runtime package
 - [ ] `MauiBrowser.Sdk` MSBuild SDK package (composes Blazor WASM pipeline)
-- [ ] Minimal renderer registry + Label renderer
-- [ ] Sample: MAUI Label rendered
+- [x] Minimal renderer registry + Label renderer
+- [x] Sample: MAUI Label rendered
 
 ## M2 — Core Controls & Layout (v0)
 **Proof (runnable):**
