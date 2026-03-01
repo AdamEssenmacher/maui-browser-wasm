@@ -45,7 +45,7 @@
 
 - [x] StackLayout (CSS flex)
 - [x] Grid (CSS grid)
-- [ ] Button (click + command)
+- [x] Button (click + command)
 - [ ] Styling bridge v0 (CSS variables)
 
 ## M3 — Navigation (v0)

@@ -25,6 +25,12 @@
     @MauiViewRenderer.Render(_grid)
 </div>
 
+<h2>Button (M2 Slice 3)</h2>
+<div class="maui-surface">
+    @MauiViewRenderer.Render(_button)
+    <p>Clicked events: @_clickedCount | Command executions: @_commandCount</p>
+</div>
+
 @code {
     private readonly Label _label = new()
     {
@@ -44,6 +50,19 @@
     };
 
     private readonly Grid _grid = CreateGrid();
+    private readonly Button _button = new()
+    {
+        Text = "Click MAUI Button"
+    };
+    private int _clickedCount;
+    private int _commandCount;
+
+    protected override void OnInitialized()
+    {
+        _button.Command = new Command(OnButtonCommandExecuted);
+        _button.CommandParameter = "maui-button";
+        _button.Clicked += OnButtonClicked;
+    }
 
     private static Grid CreateGrid()
     {
@@ -76,5 +95,17 @@
         grid.Children.Add(right);
 
         return grid;
+    }
+
+    private void OnButtonClicked(object? sender, EventArgs args)
+    {
+        _clickedCount++;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void OnButtonCommandExecuted()
+    {
+        _commandCount++;
+        _ = InvokeAsync(StateHasChanged);
     }
 }
