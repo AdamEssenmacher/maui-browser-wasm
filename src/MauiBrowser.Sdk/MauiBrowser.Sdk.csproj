@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
 
     <!-- This project produces a NuGet that contains an MSBuild SDK layout:
          /Sdk/Sdk.props and /Sdk/Sdk.targets. -->
@@ -13,7 +13,6 @@
     <Description>MSBuild SDK for MAUI Browser/WASM (DOM via Blazor) - scaffolding.</Description>
 
     <IncludeBuildOutput>false</IncludeBuildOutput>
-    <NoBuild>true</NoBuild>
   </PropertyGroup>
 
   <ItemGroup>

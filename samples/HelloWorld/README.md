@@ -2,7 +2,7 @@
 
 Run:
 ```bash
-dotnet run
+dotnet run --project samples/HelloWorld/HelloWorld.csproj
 ```
 
 This sample is plain Blazor WebAssembly.

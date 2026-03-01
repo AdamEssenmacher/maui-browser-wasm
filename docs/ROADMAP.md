@@ -12,9 +12,9 @@
 - CI passes on PR
 - sample runs
 
-- [ ] Solution + projects layout
-- [ ] CI: build/test
-- [ ] Sample: Blazor WASM "Hello"
+- [x] Solution + projects layout
+- [x] CI: build/test
+- [x] Sample: Blazor WASM "Hello"
 
 ## M1 — MAUI Host in Blazor WASM
 **Goal:** render a minimal MAUI visual tree inside a Blazor WASM app.

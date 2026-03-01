@@ -7,7 +7,7 @@ This repo is intentionally incremental: every milestone must produce a runnable 
 ## Quickstart
 
 Prereqs:
-- .NET SDK 9+ installed
+- .NET SDK 10.0.102 (pinned via `global.json`)
 
 Build:
 ```bash
