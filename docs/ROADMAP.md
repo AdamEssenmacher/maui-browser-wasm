@@ -61,5 +61,5 @@
 
 ## M5 — Hard Controls Spike
 - [x] CollectionView prototype + virtualization decision
-- [ ] Text input/IME plan documented
-- [ ] Accessibility audit checklist started
+- [x] Text input/IME plan documented (`docs/spikes/M5-text-input-ime-plan.md`)
+- [x] Accessibility audit checklist started (`docs/checklists/M5-accessibility-audit-checklist.md`)
