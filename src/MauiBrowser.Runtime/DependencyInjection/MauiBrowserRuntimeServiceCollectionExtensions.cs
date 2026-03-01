@@ -28,6 +28,7 @@ public static class MauiBrowserRuntimeServiceCollectionExtensions
             registry.Register<Button>(new MauiButtonRendererFactory());
             registry.Register<StackLayout>(new MauiStackLayoutRendererFactory(registry));
             registry.Register<Grid>(new MauiGridRendererFactory(registry));
+            registry.Register<CollectionView>(new MauiCollectionViewRendererFactory(registry));
             registry.Register<ContentPage>(new MauiContentPageRendererFactory(registry));
             registry.Register<NavigationPage>(new MauiNavigationPageRendererFactory(registry));
             return registry;

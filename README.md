@@ -19,7 +19,7 @@ Run sample:
 dotnet run --project samples/HelloWorld/HelloWorld.csproj
 ```
 
-> Current sample includes M1-M4: open `/maui` to view MAUI `Label`, `StackLayout`, `Grid`, `Button`, `Entry`, and route-synced `NavigationPage` rendering (MudBlazor plugin now overrides `Button` and `Entry`).
+> Current sample includes M1-M5 slice 1: open `/maui` to view MAUI `Label`, `StackLayout`, `Grid`, `CollectionView` prototype, `Button`, `Entry`, and route-synced `NavigationPage` rendering (MudBlazor plugin overrides `Button` and `Entry`).
 
 ## Repo layout
 

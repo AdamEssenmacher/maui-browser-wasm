@@ -60,6 +60,6 @@
 - [x] Sample plugin: MudBlazor overrides Button/Entry
 
 ## M5 — Hard Controls Spike
-- [ ] CollectionView prototype + virtualization decision
+- [x] CollectionView prototype + virtualization decision
 - [ ] Text input/IME plan documented
 - [ ] Accessibility audit checklist started

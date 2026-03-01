@@ -33,6 +33,7 @@ public sealed class MauiBrowserRuntimeServiceCollectionExtensionsTests
         Assert.True(registry.TryResolve(new Button(), out _));
         Assert.True(registry.TryResolve(new StackLayout(), out _));
         Assert.True(registry.TryResolve(new Grid(), out _));
+        Assert.True(registry.TryResolve(new CollectionView(), out _));
         Assert.True(registry.TryResolve(new ContentPage(), out _));
         Assert.True(registry.TryResolve(new NavigationPage(), out _));
     }
