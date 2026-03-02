@@ -21,6 +21,14 @@ dotnet run --project samples/HelloWorld/HelloWorld.csproj
 
 > Current sample includes M1-M5 slice 1: open `/maui` to view MAUI `Label`, `StackLayout`, `Grid`, `CollectionView` prototype, `Button`, `Entry`, and route-synced `NavigationPage` rendering (MudBlazor plugin overrides `Button` and `Entry`).
 
+## Current Maturity
+
+The repo currently demonstrates MAUI control rendering in Blazor WASM with a pluggable renderer pipeline.  
+Next milestone focus is M6 handler-path feasibility and platform discovery:
+- `docs/spikes/M6-handler-platform-feasibility.md`
+- `docs/checklists/M6-platform-service-inventory.md`
+- `docs/spikes/M6-handler-de-risk-experiments.md`
+
 ## Repo layout
 
 - `src/` Production packages (runtime + SDK + interop)

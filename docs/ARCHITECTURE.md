@@ -45,6 +45,36 @@ MAUI Virtual View Tree
   - additional controls/layout mappings beyond `Label`, `Button`, `StackLayout`, and `Grid`
   - richer style parity and advanced theming beyond styling bridge v0
 
+## Handler Bridge Path (M6)
+M6 shifts the project from "renderer-only proof" to "handler-path feasibility validation" without replacing the existing runtime pipeline yet.
+
+### Why Hybrid Bridge (Not Immediate Rewrite)
+- Current renderer pipeline is already working, test-covered, and plugin-extensible.
+- MAUI handler contracts (`IElementHandler`, `IMauiContext`, `IMauiHandlersFactory`, mappers) introduce lifecycle and service assumptions that need controlled validation in browser host constraints.
+- A hybrid bridge allows incremental migration and regression isolation per control.
+
+### Migration Stages and Compatibility Guarantees
+1. Stage A: feasibility and service inventory (docs + probes only).
+2. Stage B: activate handler bridge for one simple control behind compatibility fallback.
+3. Stage C: expand control-by-control where handler path is validated.
+4. Stage D: keep renderer fallback for unsupported or blocked surfaces.
+
+Compatibility guarantees for M6+:
+- Existing `IMauiViewRenderer` entrypoint remains stable.
+- Existing `IRendererRegistry`/`IRendererFactory` plugin override model remains valid.
+- No big-bang cutover of all controls.
+
+### Plugin Override Implications Under Bridge
+- Plugins that currently register higher-priority renderers continue to work for controls still on renderer path.
+- As controls migrate to handler-backed path, precedence rules must be explicit (plugin renderer override vs handler-backed default).
+- Bridge work must document deterministic precedence and avoid mixed ambiguous resolution.
+
+### M6 Non-Goals
+- No claim of full MAUI platform target parity in this milestone.
+- No immediate multi-window parity for browser host.
+- No full input/IME parity or virtualization parity; these are explicit de-risk tracks.
+- No SDK/package target rearchitecture in this slice (runtime-first focus).
+
 ## Styling Bridge v0 Tokens
 - `--maui-background-color`
 - `--maui-text-color`

@@ -63,3 +63,19 @@
 - [x] CollectionView prototype + virtualization decision
 - [x] Text input/IME plan documented (`docs/spikes/M5-text-input-ime-plan.md`)
 - [x] Accessibility audit checklist started (`docs/checklists/M5-accessibility-audit-checklist.md`)
+
+## M6 — Handler Path Feasibility and Platform Discovery
+**Goal:** define a decision-complete bridge from renderer-centric runtime to handler-capable browser platform architecture.
+
+**Proof (runnable):**
+- existing sample remains runnable while M6 delivers decision-ready feasibility docs and de-risk plan.
+
+**Scope exclusions:**
+- No full handler rewrite in this slice.
+- No runtime/platform behavior changes beyond documentation.
+
+- [x] Handler/platform feasibility dossier complete (`docs/spikes/M6-handler-platform-feasibility.md`)
+- [x] DI shadow map complete (`docs/checklists/M6-platform-service-inventory.md`)
+- [x] Top-10 gotchas register complete (`docs/spikes/M6-handler-platform-feasibility.md`)
+- [x] De-risk experiment plan complete (`docs/spikes/M6-handler-de-risk-experiments.md`)
+- [ ] First handler bridge code slice planned (next PR)
