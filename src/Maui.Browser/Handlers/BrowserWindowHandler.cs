@@ -16,6 +16,9 @@ public sealed class BrowserWindowHandler : ElementHandler<Window, DomElement>
 
     private Page? _currentPage;
     private IElementHandler? _currentPageHandler;
+    private double _lastArrangedWidth;
+    private double _lastArrangedHeight;
+    private bool _hasArrangedWindowFrame;
 
     public BrowserWindowHandler()
         : base(Mapper)
@@ -41,6 +44,10 @@ public sealed class BrowserWindowHandler : ElementHandler<Window, DomElement>
     public void ArrangeWindow(double width, double height)
     {
         var frame = new Rect(0, 0, Math.Max(0, width), Math.Max(0, height));
+        _lastArrangedWidth = frame.Width;
+        _lastArrangedHeight = frame.Height;
+        _hasArrangedWindowFrame = true;
+
         BrowserViewMapper.ApplyFrame(PlatformView, frame);
 
         if (VirtualView.Page is IView pageView)
@@ -53,6 +60,7 @@ public sealed class BrowserWindowHandler : ElementHandler<Window, DomElement>
     public static void MapPage(BrowserWindowHandler handler, Window window)
     {
         handler.SetPage(window.Page);
+        handler.ArrangeCurrentPageIfPossible();
     }
 
     private void SetPage(Page? page)
@@ -78,6 +86,26 @@ public sealed class BrowserWindowHandler : ElementHandler<Window, DomElement>
         PlatformView.Append(pageElement);
         _currentPage = page;
         _currentPageHandler = pageHandler;
+    }
+
+    private void ArrangeCurrentPageIfPossible()
+    {
+        if (VirtualView.Page is not IView)
+        {
+            return;
+        }
+
+        if (_hasArrangedWindowFrame)
+        {
+            ArrangeWindow(_lastArrangedWidth, _lastArrangedHeight);
+            return;
+        }
+
+        var clientSize = PlatformView.ClientSize();
+        if (clientSize.Width > 0 && clientSize.Height > 0)
+        {
+            ArrangeWindow(clientSize.Width, clientSize.Height);
+        }
     }
 
     private void DisconnectCurrentPage()
