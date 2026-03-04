@@ -129,13 +129,13 @@ public sealed class BrowserHostFixture : IAsyncLifetime
 
         _hostLogs.Enqueue(line);
 
-        const string httpPrefix = "App url: http://";
-        if (!line.StartsWith(httpPrefix, StringComparison.OrdinalIgnoreCase))
+        const string appUrlPrefix = "App url:";
+        if (!line.StartsWith(appUrlPrefix, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
-        var urlText = line["App url: ".Length..].Trim();
+        var urlText = line[appUrlPrefix.Length..].Trim();
         if (Uri.TryCreate(urlText, UriKind.Absolute, out var uri))
         {
             urlSource.TrySetResult(uri);
