@@ -115,7 +115,9 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
 
     public static void MapPadding(BrowserLayoutHandler handler, MauiLayout layout)
     {
-        BrowserViewMapper.MapPadding(layout, handler.PlatformView);
+        // Child frames are already arranged with MAUI padding applied, so adding CSS padding
+        // here would double-inset absolutely-positioned children.
+        handler.PlatformView.Style("padding", string.Empty);
     }
 
     public static void MapVisibility(BrowserLayoutHandler handler, MauiLayout layout)
