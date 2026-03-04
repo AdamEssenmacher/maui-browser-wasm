@@ -10,7 +10,8 @@ internal static partial class DomApi
 {
     // JSImport uses a logical module name; the actual URL is loaded via JSHost.ImportAsync.
     private const string Module = "maui-dom";
-    private const string ModuleUrl = "/_framework/dom.js";
+    // Resolve relative to dotnet.js in _framework so subpath hosting also works.
+    private const string ModuleUrl = "../_framework/dom.js";
     private static Task? s_moduleImportTask;
     private static JSObject? s_moduleInstance;
 

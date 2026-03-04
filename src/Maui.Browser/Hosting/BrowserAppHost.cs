@@ -17,6 +17,7 @@ public static class BrowserAppHost
 {
     private static readonly List<Action> s_resizeCallbacks = [];
     private static readonly List<int> s_resizeSubscriptions = [];
+    private static IElementHandler? s_rootHandler;
 
     public static async Task RunAsync(MauiApp mauiApp, IView rootView, string rootElementId = "app")
     {
@@ -37,8 +38,15 @@ public static class BrowserAppHost
         s_resizeSubscriptions.Clear();
         s_resizeCallbacks.Clear();
 
+        if (s_rootHandler is not null)
+        {
+            s_rootHandler.DisconnectHandler();
+            s_rootHandler = null;
+        }
+
         var mauiContext = new MauiContext(mauiApp.Services);
         var rootHandler = rootView.ToHandler(mauiContext);
+        s_rootHandler = rootHandler;
 
         if (rootHandler.PlatformView is not DomElement rootPlatformView)
         {
