@@ -175,6 +175,14 @@ export function unsubscribeWindowResize(subscriptionId) {
   resizeSubscriptions.delete(subscriptionId);
 }
 
+export function getDiagnostics() {
+  return [
+    elementByHandle.size,
+    eventSubscriptions.size,
+    resizeSubscriptions.size
+  ];
+}
+
 let measurementCanvas;
 
 function getMeasurementContext() {

@@ -1,6 +1,5 @@
 using Maui.Browser.Hosting;
 using Maui.Browser.Sample.Demo;
-using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Hosting;
 using Microsoft.Maui.Hosting;
 
@@ -20,14 +19,17 @@ public static class Program
         builder.UseMauiBrowser();
 
         var mauiApp = builder.Build();
-        var rootView = DemoPageFactory.CreateRootView();
-        await BrowserAppHost.RunAsync(mauiApp, rootView, rootElementId: "app");
+        await BrowserAppHost.RunAsync(mauiApp, rootElementId: "app");
 
         // Keep the browser runtime alive after mounting the root view.
         await Task.Delay(Timeout.InfiniteTimeSpan);
     }
 }
 
-internal sealed class SampleApp : Application
+internal sealed class SampleApp : Microsoft.Maui.Controls.Application
 {
+    protected override Microsoft.Maui.Controls.Window CreateWindow(Microsoft.Maui.IActivationState? activationState)
+    {
+        return new Microsoft.Maui.Controls.Window(DemoPageFactory.CreateMainPage());
+    }
 }

@@ -1,56 +1,87 @@
-# MAUI -> WASM (DOM) Vertical Slice
+# MAUI -> WASM (DOM) Prototype
 
-This repository hosts a DOM-backed Browser platform experiment for .NET MAUI:
+This repository is an experiment for running .NET MAUI on `net10.0-browser` with the DOM as the platform UI:
 
 MAUI virtual views -> MAUI handlers -> DOM elements + CSS + JS interop.
 
-Current slice status:
-- Root-view-first browser host bootstrap is implemented (`BrowserAppHost`).
-- DOM platform view wrapper is `DomElement`; all JS interop is isolated in `DomApi`.
-- First handlers are implemented: `Label`, `Button`, `Entry`, `Layout`, `ContentView`.
-- Sample app is pure C# (no Razor, no XAML) and demonstrates live updates, click handling, resize, visibility, and opacity.
+Current state:
+- App startup supports real MAUI `Application -> Window` bootstrap (`BrowserAppHost.RunAsync(MauiApp, ...)`).
+- Root-view bootstrap (`BrowserAppHost.RunAsync(MauiApp, IView, ...)`) remains as a compatibility path.
+- DOM platform view wrapper is `DomElement`; JSImport entrypoints are centralized in `DomApi`.
+- Implemented handlers: `Window`, `ContentPage`, `Label`, `Button`, `Entry`, `Layout`, `ContentView`.
+- Sample app is C# only (no Razor/XAML) and demonstrates binding, input, click, resize, visibility, opacity, and stress add/remove cleanup.
 
 ## Repo layout
 
 - `src/Maui.Browser/`
-  Browser backend: DOM interop, handlers, hosting, and measurement services.
+  Browser backend: DOM interop, handlers, hosting, measurement.
 - `src/Maui.Browser.Sample/`
-  `net10.0-browser` sample host app that mounts to `#app`.
+  `net10.0-browser` host app mounted under `#app`.
+- `tests/Maui.Browser.E2E.Tests/`
+  Playwright smoke and stress validation.
 - `docs/DECISIONS.md`
-  Short architecture and implementation decision log.
+  Architecture/implementation decision log.
 
 ## Prerequisites
 
 1. .NET SDK `10.0.102` (or compatible .NET 10 SDK).
-2. MAUI assemblies are resolved via explicit NuGet package references (`Microsoft.Maui.Core`, `Microsoft.Maui.Controls`) pinned in `Directory.Build.props`.
-3. Required WebAssembly tooling:
+2. Required workloads:
    - `dotnet workload install maui wasm-tools`
+3. Playwright browser runtime for E2E tests:
+   - `pwsh tests/Maui.Browser.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium`
 
-## Build and run
+## Build and run sample
 
-1. Build solution:
+1. Build:
    - `dotnet build MauiDomWasm.sln`
 2. Run sample:
    - `dotnet run --project src/Maui.Browser.Sample/Maui.Browser.Sample.csproj`
-3. Open the launched browser URL (default from launch profile: `http://localhost:5057`).
+3. Open the launched app URL (default launch profile uses `http://localhost:5057`).
 
 Important:
-- Do not execute `src/Maui.Browser.Sample/bin/.../Maui.Browser.Sample` directly. That runs as a native host process and `JSImport` will throw `PlatformNotSupportedException`.
+- Do not execute `src/Maui.Browser.Sample/bin/.../Maui.Browser.Sample` directly. That runs as a native host process and `JSImport` throws `PlatformNotSupportedException`.
 - If `WasmAppHost` reports `no perHostConfigs found`, run:
   - `dotnet clean src/Maui.Browser.Sample/Maui.Browser.Sample.csproj`
   - `dotnet build src/Maui.Browser.Sample/Maui.Browser.Sample.csproj -t:Rebuild`
 
-## Smoke checklist
+## Automated smoke checks
 
-- `Label` text updates as you type in `Entry`.
-- `Button` click increments a counter label.
-- Resizing the browser updates the viewport/layout status label.
-- Probe label responds to visibility toggle and opacity cycle buttons.
+1. Build release artifacts:
+   - `dotnet build MauiDomWasm.sln --configuration Release`
+2. Install Playwright browser:
+   - `pwsh tests/Maui.Browser.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium`
+3. Run smoke tests:
+   - `dotnet test tests/Maui.Browser.E2E.Tests/Maui.Browser.E2E.Tests.csproj --configuration Release --no-build`
+
+Expected pass signals:
+- All E2E tests pass.
+- Entry -> label binding works.
+- Button click updates count.
+- Resize updates viewport text.
+- Visibility/opacity transitions apply correctly.
+- Stress mutation test keeps DOM handle/subscription counts near baseline.
+
+## Manual runtime checklist
+
+- Page renders under `#app`.
+- Typing into `Entry` updates the live text label.
+- Clicking increment button updates click summary.
+- Resizing browser updates viewport/layout status text.
+- Toggling visibility moves probe through `visible <-> collapsed`.
+- Cycling opacity updates probe opacity summary.
+- Running leak stress increments stress run count and remains interactive.
+
+## Prototype proof checklist
+
+- Lifecycle proof: app boots from `UseMauiApp<App>()` via `Application -> Window` host path.
+- Handler proof: controls/layout/page/window mapping stays in `Maui.Browser` handlers.
+- Automated proof: Playwright smoke runs in CI alongside solution build.
+- Leak-resistance proof: stress scenario validates handle/subscription cleanup near baseline.
 
 ## Notes
 
 - Layout uses absolute frame projection for correctness-first behavior.
-- Text measurement uses a minimal canvas `measureText` service.
-- Font-load synchronization is intentionally deferred for this first slice.
+- Text measurement is currently canvas `measureText` based.
+- Font-load synchronization remains deferred.
 
-See `AGENTS.md` for project guardrails.
+See `AGENTS.md` for repository guardrails.

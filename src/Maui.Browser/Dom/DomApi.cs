@@ -84,4 +84,9 @@ internal static partial class DomApi
 
     [JSImport("measureText", Module)]
     internal static partial double[] MeasureText(string? text, string? font);
+
+#if DEBUG
+    [JSImport("getDiagnostics", Module)]
+    internal static partial int[] GetDiagnostics();
+#endif
 }
