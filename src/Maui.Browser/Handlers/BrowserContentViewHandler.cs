@@ -21,6 +21,9 @@ public sealed class BrowserContentViewHandler : BrowserViewHandler<IContentView>
     {
     }
 
+    private IView? _currentContent;
+    private IElementHandler? _currentContentHandler;
+
     IContentView IContentViewHandler.VirtualView => VirtualView;
 
     object IContentViewHandler.PlatformView => PlatformView;
@@ -45,6 +48,12 @@ public sealed class BrowserContentViewHandler : BrowserViewHandler<IContentView>
         base.ConnectHandler(platformView);
     }
 
+    protected override void DisconnectHandler(DomElement platformView)
+    {
+        DisconnectCurrentContent();
+        base.DisconnectHandler(platformView);
+    }
+
     public static void MapContent(BrowserContentViewHandler handler, IContentView contentView)
     {
         handler.SetContent(contentView.PresentedContent);
@@ -62,6 +71,11 @@ public sealed class BrowserContentViewHandler : BrowserViewHandler<IContentView>
 
     private void SetContent(IView? content)
     {
+        if (_currentContentHandler is not null && !ReferenceEquals(_currentContent, content))
+        {
+            DisconnectCurrentContent();
+        }
+
         PlatformView.ClearChildren();
 
         if (content is null || MauiContext is null)
@@ -73,6 +87,21 @@ public sealed class BrowserContentViewHandler : BrowserViewHandler<IContentView>
         if (contentHandler.PlatformView is DomElement childElement)
         {
             PlatformView.Append(childElement);
+            _currentContent = content;
+            _currentContentHandler = contentHandler;
         }
+    }
+
+    private void DisconnectCurrentContent()
+    {
+        if (_currentContentHandler is null)
+        {
+            _currentContent = null;
+            return;
+        }
+
+        _currentContentHandler.DisconnectHandler();
+        _currentContentHandler = null;
+        _currentContent = null;
     }
 }

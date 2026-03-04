@@ -33,6 +33,8 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
     {
     }
 
+    private readonly Dictionary<IView, IElementHandler> _childHandlers = new();
+
     MauiLayout ILayoutHandler.VirtualView => VirtualView;
 
     object ILayoutHandler.PlatformView => PlatformView;
@@ -57,29 +59,32 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         base.ConnectHandler(platformView);
     }
 
+    protected override void DisconnectHandler(DomElement platformView)
+    {
+        DisconnectAllChildren();
+        base.DisconnectHandler(platformView);
+    }
+
     public void Add(IView view)
     {
-        if (!TryGetChildPlatformView(view, out var childPlatformView))
+        if (!TryGetChild(view, out var childHandler, out var childPlatformView))
         {
             return;
         }
 
+        _childHandlers[view] = childHandler;
         PlatformView.Append(childPlatformView);
         UpdateZIndex(view);
     }
 
     public void Remove(IView view)
     {
-        if (!TryGetChildPlatformView(view, out var childPlatformView))
-        {
-            return;
-        }
-
-        PlatformView.Remove(childPlatformView);
+        DisconnectChild(view, removeFromDom: true);
     }
 
     public void Clear()
     {
+        DisconnectAllChildren();
         PlatformView.ClearChildren();
     }
 
@@ -95,7 +100,7 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
 
     public void UpdateZIndex(IView view)
     {
-        if (!TryGetChildPlatformView(view, out var childPlatformView))
+        if (!TryGetChild(view, out _, out var childPlatformView))
         {
             return;
         }
@@ -182,36 +187,79 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
 
     private void RebuildChildren()
     {
+        var currentChildren = new HashSet<IView>(VirtualView);
+        var removedChildren = _childHandlers.Keys.Where(child => !currentChildren.Contains(child)).ToArray();
+        foreach (var removedChild in removedChildren)
+        {
+            DisconnectChild(removedChild, removeFromDom: false);
+        }
+
         PlatformView.ClearChildren();
 
         foreach (var child in VirtualView)
         {
-            if (!TryGetChildPlatformView(child, out var childPlatformView))
+            if (!TryGetChild(child, out var childHandler, out var childPlatformView))
             {
                 continue;
             }
 
+            _childHandlers[child] = childHandler;
             PlatformView.Append(childPlatformView);
             UpdateZIndex(child);
         }
     }
 
-    private bool TryGetChildPlatformView(IView view, out DomElement childPlatformView)
+    private bool TryGetChild(IView view, out IElementHandler childHandler, out DomElement childPlatformView)
     {
         if (MauiContext is null)
         {
+            childHandler = null!;
             childPlatformView = null!;
             return false;
         }
 
-        var childHandler = view.ToHandler(MauiContext);
+        childHandler = view.ToHandler(MauiContext);
         if (childHandler.PlatformView is DomElement domElement)
         {
             childPlatformView = domElement;
             return true;
         }
 
+        childHandler = null!;
         childPlatformView = null!;
         return false;
+    }
+
+    private void DisconnectAllChildren()
+    {
+        foreach (var child in _childHandlers.Keys.ToArray())
+        {
+            DisconnectChild(child, removeFromDom: false);
+        }
+
+        _childHandlers.Clear();
+    }
+
+    private void DisconnectChild(IView child, bool removeFromDom)
+    {
+        if (!_childHandlers.TryGetValue(child, out var childHandler))
+        {
+            return;
+        }
+
+        if (removeFromDom && childHandler.PlatformView is DomElement childPlatformView)
+        {
+            try
+            {
+                PlatformView.Remove(childPlatformView);
+            }
+            catch
+            {
+                // Child may already be detached; continue with handler cleanup.
+            }
+        }
+
+        childHandler.DisconnectHandler();
+        _childHandlers.Remove(child);
     }
 }
