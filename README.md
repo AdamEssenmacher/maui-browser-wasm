@@ -9,7 +9,7 @@ Current state:
 - Root-view bootstrap (`BrowserAppHost.RunAsync(MauiApp, IView, ...)`) remains as a compatibility path.
 - DOM platform view wrapper is `DomElement`; JSImport entrypoints are centralized in `DomApi`.
 - Implemented handlers: `Window`, `ContentPage`, `Label`, `Button`, `Entry`, `Layout`, `ContentView`.
-- Sample app is C# only (no Razor/XAML) and demonstrates binding, input, click, resize, visibility, opacity, and stress add/remove cleanup.
+- Sample app demonstrates a real `.xaml` `ContentPage` (with code-behind) and covers binding, input, click, resize, visibility, opacity, and stress add/remove cleanup.
 
 ## Repo layout
 

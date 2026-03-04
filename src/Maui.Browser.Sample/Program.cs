@@ -30,6 +30,6 @@ internal sealed class SampleApp : Microsoft.Maui.Controls.Application
 {
     protected override Microsoft.Maui.Controls.Window CreateWindow(Microsoft.Maui.IActivationState? activationState)
     {
-        return new Microsoft.Maui.Controls.Window(DemoPageFactory.CreateMainPage());
+        return new Microsoft.Maui.Controls.Window(new XamlDemoPage());
     }
 }

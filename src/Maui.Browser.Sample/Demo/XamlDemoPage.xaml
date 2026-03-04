@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Maui.Browser.Sample.Demo.XamlDemoPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
+    Title="MAUI Browser DOM XAML Demo">
+
+    <VerticalStackLayout
+        x:Name="RootLayout"
+        x:DataType="demo:DemoState"
+        Padding="16"
+        Spacing="10">
+
+        <Label
+            AutomationId="live-text-label"
+            FontSize="22"
+            Text="{Binding LiveText}"
+            TextColor="Black" />
+
+        <Entry
+            AutomationId="live-input-entry"
+            FontSize="16"
+            Placeholder="Type here..."
+            Text="{Binding InputText}" />
+
+        <Button
+            AutomationId="click-button"
+            Clicked="OnIncrementClicked"
+            Padding="12,8"
+            Text="Click to increment count"
+            TextColor="Black" />
+
+        <Label
+            AutomationId="click-summary-label"
+            FontSize="14"
+            Text="{Binding ClickSummary}"
+            TextColor="DarkSlateGray" />
+
+        <Label
+            AutomationId="viewport-label"
+            FontSize="12"
+            Text="{Binding ViewportText}"
+            TextColor="DarkSlateBlue" />
+
+        <Button
+            AutomationId="visibility-button"
+            Clicked="OnToggleVisibilityClicked"
+            Padding="12,8"
+            Text="Toggle probe visibility"
+            TextColor="Black" />
+
+        <Button
+            AutomationId="opacity-button"
+            Clicked="OnCycleOpacityClicked"
+            Padding="12,8"
+            Text="Cycle probe opacity"
+            TextColor="Black" />
+
+        <Label
+            x:Name="ProbeLabel"
+            AutomationId="probe-label"
+            FontSize="15"
+            IsVisible="{Binding ProbeIsVisible}"
+            Opacity="{Binding ProbeOpacity}"
+            Text="Visibility and opacity probe"
+            TextColor="DarkBlue" />
+
+        <Label
+            AutomationId="probe-visibility-label"
+            FontSize="12"
+            Text="{Binding ProbeVisibilitySummary}"
+            TextColor="DarkSlateGray" />
+
+        <Label
+            AutomationId="probe-opacity-label"
+            FontSize="12"
+            Text="{Binding ProbeOpacitySummary}"
+            TextColor="DarkSlateGray" />
+
+        <Button
+            AutomationId="stress-button"
+            Clicked="OnStressClicked"
+            Padding="12,8"
+            Text="Run leak stress"
+            TextColor="Black" />
+
+        <Label
+            AutomationId="stress-summary-label"
+            FontSize="12"
+            Text="{Binding StressSummary}"
+            TextColor="DarkSlateGray" />
+
+        <VerticalStackLayout
+            x:Name="StressHost"
+            AutomationId="stress-host"
+            Spacing="2" />
+    </VerticalStackLayout>
+</ContentPage>

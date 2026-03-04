@@ -17,7 +17,6 @@ public static class MauiBrowserHostingExtensions
         builder.ConfigureMauiHandlers(handlers =>
         {
             handlers.AddHandler(typeof(Window), typeof(BrowserWindowHandler));
-            handlers.AddHandler(typeof(Page), typeof(BrowserContentPageHandler));
             handlers.AddHandler(typeof(ContentPage), typeof(BrowserContentPageHandler));
             handlers.AddHandler(typeof(Label), typeof(BrowserLabelHandler));
             handlers.AddHandler(typeof(Button), typeof(BrowserButtonHandler));
