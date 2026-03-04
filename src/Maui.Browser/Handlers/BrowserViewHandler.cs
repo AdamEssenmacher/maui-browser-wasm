@@ -30,4 +30,10 @@ public abstract class BrowserViewHandler<TVirtualView> : ViewHandler<TVirtualVie
 
         return new Size(width, height);
     }
+
+    protected override void DisconnectHandler(DomElement platformView)
+    {
+        base.DisconnectHandler(platformView);
+        platformView.Release();
+    }
 }

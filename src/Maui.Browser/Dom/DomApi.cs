@@ -48,6 +48,9 @@ internal static partial class DomApi
     [JSImport("clearChildren", Module)]
     internal static partial void ClearChildren(nint parent);
 
+    [JSImport("releaseElement", Module)]
+    internal static partial void ReleaseElement(nint element);
+
     [JSImport("setText", Module)]
     internal static partial void SetText(nint element, string? text);
 

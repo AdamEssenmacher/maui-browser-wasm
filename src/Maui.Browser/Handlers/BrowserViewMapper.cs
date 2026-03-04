@@ -20,7 +20,21 @@ internal static class BrowserViewMapper
 
     public static void MapVisibility(IView view, DomElement platformView)
     {
-        platformView.Style("display", view.Visibility == Visibility.Visible ? string.Empty : "none");
+        switch (view.Visibility)
+        {
+            case Visibility.Visible:
+                platformView.Style("display", string.Empty);
+                platformView.Style("visibility", "visible");
+                break;
+            case Visibility.Hidden:
+                platformView.Style("display", string.Empty);
+                platformView.Style("visibility", "hidden");
+                break;
+            default:
+                platformView.Style("display", "none");
+                platformView.Style("visibility", "hidden");
+                break;
+        }
     }
 
     public static void MapOpacity(IView view, DomElement platformView)

@@ -22,6 +22,8 @@ public sealed class DomElement
 
     public void ClearChildren() => DomApi.ClearChildren(Handle);
 
+    public void Release() => DomApi.ReleaseElement(Handle);
+
     public void Text(string? text) => DomApi.SetText(Handle, text);
 
     public void Attr(string name, string? value) => DomApi.SetAttr(Handle, name, value);

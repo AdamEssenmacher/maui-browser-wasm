@@ -89,6 +89,33 @@ export function getClientSize(elementHandle) {
 const eventSubscriptions = new Map();
 let nextEventSubscriptionId = 1;
 
+function removeElementSubscriptions(element) {
+  for (const [subscriptionId, subscription] of eventSubscriptions) {
+    if (subscription.element !== element) {
+      continue;
+    }
+
+    subscription.element.removeEventListener(subscription.eventName, subscription.listener);
+    eventSubscriptions.delete(subscriptionId);
+  }
+}
+
+function releaseElementRecursive(element) {
+  for (const child of Array.from(element.children)) {
+    releaseElementRecursive(child);
+  }
+
+  removeElementSubscriptions(element);
+
+  const handle = handleByElement.get(element);
+  if (handle === undefined) {
+    return;
+  }
+
+  handleByElement.delete(element);
+  elementByHandle.delete(handle);
+}
+
 export function subscribeEvent(elementHandle, eventName, callback) {
   const element = fromHandle(elementHandle);
   const subscriptionId = nextEventSubscriptionId++;
@@ -106,6 +133,15 @@ export function unsubscribeEvent(subscriptionId) {
 
   subscription.element.removeEventListener(subscription.eventName, subscription.listener);
   eventSubscriptions.delete(subscriptionId);
+}
+
+export function releaseElement(elementHandle) {
+  const element = elementByHandle.get(elementHandle);
+  if (!element) {
+    return;
+  }
+
+  releaseElementRecursive(element);
 }
 
 export function setInputValue(elementHandle, value) {
