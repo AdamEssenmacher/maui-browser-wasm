@@ -9,6 +9,8 @@ on:
 jobs:
   build-smoke:
     runs-on: ubuntu-latest
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.playwright-browsers
 
     steps:
       - name: Checkout
@@ -27,3 +29,10 @@ jobs:
 
       - name: Build
         run: dotnet build MauiDomWasm.sln --configuration Release --no-restore
+
+      - name: Install Playwright browser
+        run: |
+          pwsh tests/Maui.Browser.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+
+      - name: E2E smoke
+        run: dotnet test tests/Maui.Browser.E2E.Tests/Maui.Browser.E2E.Tests.csproj --configuration Release --no-build

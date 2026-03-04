@@ -16,6 +16,8 @@ public static class MauiBrowserHostingExtensions
 
         builder.ConfigureMauiHandlers(handlers =>
         {
+            handlers.AddHandler(typeof(Window), typeof(BrowserWindowHandler));
+            handlers.AddHandler(typeof(ContentPage), typeof(BrowserContentPageHandler));
             handlers.AddHandler(typeof(Label), typeof(BrowserLabelHandler));
             handlers.AddHandler(typeof(Button), typeof(BrowserButtonHandler));
             handlers.AddHandler(typeof(Entry), typeof(BrowserEntryHandler));
@@ -29,6 +31,7 @@ public static class MauiBrowserHostingExtensions
         builder.Services.AddSingleton<IDispatcherProvider>(dispatcherProvider);
         builder.Services.AddSingleton(sp => sp.GetRequiredService<IDispatcherProvider>().GetForCurrentThread() ?? new BrowserDispatcher());
         builder.Services.AddSingleton<IBrowserTextMeasurer, BrowserTextMeasurer>();
+        builder.Services.AddSingleton<IBrowserWindowHost, BrowserWindowHost>();
         return builder;
     }
 }

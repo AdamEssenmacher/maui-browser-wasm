@@ -53,4 +53,19 @@ public sealed class DomElement
         var metrics = DomApi.MeasureText(text, font);
         return (metrics.Length > 0 ? metrics[0] : 0, metrics.Length > 1 ? metrics[1] : 0);
     }
+
+#if DEBUG
+    public static DomDiagnostics GetDiagnostics()
+    {
+        var values = DomApi.GetDiagnostics();
+        return new DomDiagnostics(
+            values.Length > 0 ? values[0] : 0,
+            values.Length > 1 ? values[1] : 0,
+            values.Length > 2 ? values[2] : 0);
+    }
+#endif
 }
+
+#if DEBUG
+public readonly record struct DomDiagnostics(int ElementHandleCount, int EventSubscriptionCount, int ResizeSubscriptionCount);
+#endif

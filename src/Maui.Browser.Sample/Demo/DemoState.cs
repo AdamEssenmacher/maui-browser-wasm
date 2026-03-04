@@ -10,6 +10,7 @@ internal sealed class DemoState : INotifyPropertyChanged
     private string _viewportText = "Viewport: waiting for initial arrange";
     private bool _probeIsVisible = true;
     private double _probeOpacity = 1.0;
+    private int _stressRunCount;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -67,15 +68,31 @@ internal sealed class DemoState : INotifyPropertyChanged
         }
     }
 
+    public int StressRunCount
+    {
+        get => _stressRunCount;
+        set
+        {
+            if (SetProperty(ref _stressRunCount, value))
+            {
+                OnPropertyChanged(nameof(StressSummary));
+            }
+        }
+    }
+
     public string LiveText => $"Live text: {InputText}";
 
     public string ClickSummary => $"Button clicks: {ClickCount}";
 
     public string ProbeVisibilitySummary => ProbeIsVisible
         ? "Probe visibility: visible"
-        : "Probe visibility: hidden";
+        : "Probe visibility: collapsed";
 
     public string ProbeOpacitySummary => $"Probe opacity: {ProbeOpacity:0.00}";
+
+    public string StressSummary => StressRunCount == 0
+        ? "Stress runs: not started"
+        : $"Stress runs: {StressRunCount}";
 
     public void ToggleProbeVisibility()
     {
@@ -90,6 +107,11 @@ internal sealed class DemoState : INotifyPropertyChanged
             > 0.4 => 0.25,
             _ => 1.0
         };
+    }
+
+    public void RecordStressRun()
+    {
+        StressRunCount++;
     }
 
     private bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)
