@@ -1,0 +1,78 @@
+using Maui.Browser.Dom;
+using Microsoft.Maui;
+using Microsoft.Maui.Graphics;
+using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Platform;
+
+namespace Maui.Browser.Handlers;
+
+public sealed class BrowserContentViewHandler : BrowserViewHandler<IContentView>, IContentViewHandler
+{
+    public static IPropertyMapper<IContentView, BrowserContentViewHandler> Mapper =
+        new PropertyMapper<IContentView, BrowserContentViewHandler>(ViewHandler.ViewMapper)
+        {
+            [nameof(IContentView.Content)] = MapContent,
+            [nameof(IView.Visibility)] = MapVisibility,
+            [nameof(IView.Opacity)] = MapOpacity
+        };
+
+    public BrowserContentViewHandler()
+        : base(Mapper)
+    {
+    }
+
+    IContentView IContentViewHandler.VirtualView => VirtualView;
+
+    object IContentViewHandler.PlatformView => PlatformView;
+
+    protected override DomElement CreatePlatformView() => DomElement.Create("div");
+
+    public override Size GetDesiredSize(double widthConstraint, double heightConstraint)
+    {
+        return VirtualView.CrossPlatformMeasure(widthConstraint, heightConstraint);
+    }
+
+    public override void PlatformArrange(Rect frame)
+    {
+        base.PlatformArrange(frame);
+        VirtualView.CrossPlatformArrange(new Rect(0, 0, frame.Width, frame.Height));
+    }
+
+    protected override void ConnectHandler(DomElement platformView)
+    {
+        platformView.Style("overflow", "visible");
+        SetContent(VirtualView.PresentedContent);
+        base.ConnectHandler(platformView);
+    }
+
+    public static void MapContent(BrowserContentViewHandler handler, IContentView contentView)
+    {
+        handler.SetContent(contentView.PresentedContent);
+    }
+
+    public static void MapVisibility(BrowserContentViewHandler handler, IContentView contentView)
+    {
+        BrowserViewMapper.MapVisibility(contentView, handler.PlatformView);
+    }
+
+    public static void MapOpacity(BrowserContentViewHandler handler, IContentView contentView)
+    {
+        BrowserViewMapper.MapOpacity(contentView, handler.PlatformView);
+    }
+
+    private void SetContent(IView? content)
+    {
+        PlatformView.ClearChildren();
+
+        if (content is null || MauiContext is null)
+        {
+            return;
+        }
+
+        var contentHandler = content.ToHandler(MauiContext);
+        if (contentHandler.PlatformView is DomElement childElement)
+        {
+            PlatformView.Append(childElement);
+        }
+    }
+}

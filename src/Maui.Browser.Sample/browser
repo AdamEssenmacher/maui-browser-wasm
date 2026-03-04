@@ -1,0 +1,2 @@
+# Marker file for the WebAssembly HostConfig item named "browser".
+# The runtime host configuration is defined in Maui.Browser.Sample.csproj.

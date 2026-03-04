@@ -241,6 +241,8 @@ _pkginfo.txt
 
 # Local Rider workspace metadata
 .idea/.idea.MauiBrowser/
+.idea/
+.DS_Store
 
 # Visual Studio cache files
 # files ending in .cache can be ignored
