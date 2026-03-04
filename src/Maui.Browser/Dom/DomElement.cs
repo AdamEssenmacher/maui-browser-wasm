@@ -1,0 +1,56 @@
+namespace Maui.Browser.Dom;
+
+/// <summary>
+/// Minimal wrapper over an underlying DOM node handle.
+/// This is the Browser platform's "native view".
+/// </summary>
+public sealed class DomElement
+{
+    public DomElement(nint handle) => Handle = handle;
+
+    public nint Handle { get; }
+
+    public static Task EnsureInteropReadyAsync() => DomApi.EnsureModuleLoadedAsync();
+
+    public static DomElement RootById(string id) => new(DomApi.GetRootById(id));
+
+    public static DomElement Create(string tag) => new(DomApi.CreateElement(tag));
+
+    public void Append(DomElement child) => DomApi.AppendChild(Handle, child.Handle);
+
+    public void Remove(DomElement child) => DomApi.RemoveChild(Handle, child.Handle);
+
+    public void ClearChildren() => DomApi.ClearChildren(Handle);
+
+    public void Release() => DomApi.ReleaseElement(Handle);
+
+    public void Text(string? text) => DomApi.SetText(Handle, text);
+
+    public void Attr(string name, string? value) => DomApi.SetAttr(Handle, name, value);
+
+    public void Style(string name, string? value) => DomApi.SetStyle(Handle, name, value);
+
+    public (double Width, double Height) ClientSize()
+    {
+        var s = DomApi.GetClientSize(Handle);
+        return (s.Length > 0 ? s[0] : 0, s.Length > 1 ? s[1] : 0);
+    }
+
+    public int On(string eventName, Action callback) => DomApi.SubscribeEvent(Handle, eventName, callback);
+
+    public static void Off(int subscriptionId) => DomApi.UnsubscribeEvent(subscriptionId);
+
+    public void SetInputValue(string? value) => DomApi.SetInputValue(Handle, value);
+
+    public string GetInputValue() => DomApi.GetInputValue(Handle);
+
+    public static int SubscribeWindowResize(Action callback) => DomApi.SubscribeWindowResize(callback);
+
+    public static void UnsubscribeWindowResize(int subscriptionId) => DomApi.UnsubscribeWindowResize(subscriptionId);
+
+    public static (double Width, double Height) MeasureText(string? text, string? font)
+    {
+        var metrics = DomApi.MeasureText(text, font);
+        return (metrics.Length > 0 ? metrics[0] : 0, metrics.Length > 1 ? metrics[1] : 0);
+    }
+}

@@ -1,61 +1,61 @@
-# AGENTS.md — Contributor & Agent Operating Guide
+# AGENTS.md — Guardrails for Codex / Agents
 
-This repository builds a third-party Browser/WASM DOM backend for .NET MAUI,
-hosted inside a Blazor WebAssembly app. The project is incremental: every
-milestone must produce a runnable sample in `samples/`.
+This repository is an experimental skeleton for **making .NET MAUI run on WebAssembly with the DOM as the platform UI**.
 
-See also:
-- `docs/CONSTRAINTS.md` (non-negotiable invariants + guardrails)
-- `.agents/skills/` (repeatable playbooks)
+## Core vision (non-negotiable)
+1. **DOM is the “platform UI.”**
+   - Platform views are DOM nodes.
+   - Styling is CSS.
+   - Input is Pointer/Keyboard events.
+   - Accessibility maps to ARIA.
+2. **Use MAUI’s handler architecture, not external emulation.**
+   - Implement `IViewHandler`/`ViewHandler<,>`-style handlers for a Browser platform.
+   - Property updates flow through MAUI mappers into platform views.
+   - Do not create a parallel “MAUI-like” component system outside MAUI.
+3. **Avoid forking MAUI if at all possible.**
+   - Prefer extension points: `ConfigureMauiHandlers`, DI services, conditional compilation.
+   - If a MAUI internal seam blocks progress, document it and propose the smallest upstreamable change.
+4. **No “canvas-drawn UI” approach.**
+   - Do not implement a Skia/canvas renderer here.
+   - The goal is DOM parity and web-native semantics.
+5. **Razor is optional; do not require `.razor` files.**
+   - The host should be a plain `net10.0-browser` app. You may use Blazor runtime packages if needed for hosting, but do not build a component UI layer in Blazor.
 
-## Prime Directive
-Always keep the repo in a working state. Prefer small, verifiable changes over
-large refactors. If unsure, add a spike under `docs/spikes/` rather than
-shipping partial implementations.
+## Preferred implementation strategy
+- **PlatformView type**: `DomElement` (wrapper over a DOM `nint` handle).
+- **Interop**: all JS interop goes through `DomApi` (`JSImport`).
+- **Handlers**: implement minimal set first:
+  - `Label` → `<span>` / `<div>`
+  - `Button` → `<button>`
+  - `Entry` → `<input type="text">`
+  - Container (`ContentView`, `Layout`) → `<div>` that hosts children
+- **Layout**:
+  - Start with correctness: set `position:absolute` and apply MAUI-arranged rectangles to DOM styles (`left/top/width/height`).
+  - Later optimize: map certain layouts to Flex/Grid when semantics match.
+- **Measurement**:
+  - Add a `BrowserTextMeasurer` (canvas `measureText`) for Label.
+  - Use a hidden measurement root for complex styled elements if required.
+  - Beware async font loading: measurement must handle “fonts not loaded yet”.
 
-## Project Invariants (do not change without an ADR)
-1. Host runtime is **Blazor WebAssembly** (do not invent a custom host/bootloader).
-2. Rendering is **Blazor component-driven DOM** (DOM-first). JS interop is allowed but must be batched.
-3. Layout strategy prefers **CSS flex/grid**. Absolute positioning is allowed only behind a documented flag
-   or for specific controls with a rationale.
-4. Renderers must be **pluggable**. Third-party libraries (e.g., MudBlazor) can override control renderers
-   via DI/registry without forking the core.
-5. Accessibility is tracked from day 1: every rendered control must expose basic semantics
-   (even if full parity is deferred).
+## Anti-goals / traps to avoid (what failed last time)
+- Do **not** start from a plain Blazor UI project and “rebuild MAUI controls” as Blazor components.
+- Do **not** create a renderer per control that merely reads properties and attempts to mimic behavior without being a true MAUI platform backend.
+- Do **not** bake platform mapping logic into the sample host app; keep it in `Maui.Browser`.
 
-## Ground Rules
-1. No breaking changes to public APIs without an ADR under `docs/DECISIONS/`.
-2. Every feature must have:
-   - a sample demonstrating it OR a unit/integration test proving it
-   - documentation updates (README or docs)
-3. One PR = one idea. Avoid mixing refactors with features.
-4. Avoid forking upstream (dotnet/maui, dotnet/sdk) unless blocked. If blocked:
-   - document the block
-   - propose a workaround
-   - add an ADR justifying any fork/patch
+## Development workflow expectations
+- Keep changes small and incremental.
+- Every significant change should update `docs/DECISIONS.md` (add a short entry).
+- Prefer deterministic behavior over “magic” auto-measure.
+- Add at least one minimal test or demo per capability:
+  - property updates
+  - click/tap event
+  - resize
+  - visibility/opacity
 
-## Coding Standards
-- Nullable enabled everywhere
-- Treat warnings as errors (repo-wide)
-- Public APIs must be documented (`///` XML)
-- Prefer interfaces at boundaries: rendering, interop, services
-
-## Milestone Discipline
-Work must align to the current milestone in `docs/ROADMAP.md`.
-If a task doesn't fit, create a new milestone entry or a spike doc.
-
-## Definition of Done (for any milestone item)
-- `dotnet build` succeeds at repo root
-- sample runs and visually demonstrates the change
-- CI passes
-- docs updated
-
-## Repo Commands
-- Build: `dotnet build`
-- Test: `dotnet test`
-- Run sample: see `samples/HelloWorld/README.md`
-
-## What NOT to do
-- Do not attempt to implement everything at once.
-- Do not introduce new frameworks without an ADR.
-- Do not silently skip hard problems (IME, accessibility, virtualization). Track them.
+## “Definition of Done” for the first vertical slice
+A single page with:
+- `Label` (text updates live)
+- `Entry` (typing updates bound state)
+- `Button` (click triggers handler)
+- Layout responds to browser resize
+- No `.razor` files involved
