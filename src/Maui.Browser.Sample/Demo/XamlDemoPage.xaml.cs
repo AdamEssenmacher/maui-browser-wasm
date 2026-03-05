@@ -39,6 +39,11 @@ public partial class XamlDemoPage : ContentPage
         _state.CycleProbeOpacity();
     }
 
+    private void OnApplyProgrammaticFormUpdateClicked(object? sender, EventArgs e)
+    {
+        _state.ApplyProgrammaticFormUpdate();
+    }
+
     private void OnStressClicked(object? sender, EventArgs e)
     {
         var stressHost = FindByName("StressHost") as VerticalStackLayout;

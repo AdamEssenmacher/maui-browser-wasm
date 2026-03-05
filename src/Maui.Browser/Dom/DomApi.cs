@@ -76,6 +76,18 @@ internal static partial class DomApi
     [JSImport("getInputValue", Module)]
     internal static partial string GetInputValue(nint element);
 
+    [JSImport("setInputChecked", Module)]
+    internal static partial void SetInputChecked(nint element, bool value);
+
+    [JSImport("getInputChecked", Module)]
+    internal static partial bool GetInputChecked(nint element);
+
+    [JSImport("setSelectSelectedIndex", Module)]
+    internal static partial void SetSelectSelectedIndex(nint element, int value);
+
+    [JSImport("getSelectSelectedIndex", Module)]
+    internal static partial int GetSelectSelectedIndex(nint element);
+
     [JSImport("subscribeWindowResize", Module)]
     internal static partial int SubscribeWindowResize([JSMarshalAs<JSType.Function>] Action callback);
 

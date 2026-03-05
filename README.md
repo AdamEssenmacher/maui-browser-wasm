@@ -8,8 +8,8 @@ Current state:
 - App startup supports real MAUI `Application -> Window` bootstrap (`BrowserAppHost.RunAsync(MauiApp, ...)`).
 - Root-view bootstrap (`BrowserAppHost.RunAsync(MauiApp, IView, ...)`) remains as a compatibility path.
 - DOM platform view wrapper is `DomElement`; JSImport entrypoints are centralized in `DomApi`.
-- Implemented handlers: `Window`, `ContentPage`, `Label`, `Button`, `Entry`, `Layout`, `ContentView`.
-- Sample app demonstrates a real `.xaml` `ContentPage` (with code-behind) and covers binding, input, click, resize, visibility, opacity, and stress add/remove cleanup.
+- Implemented handlers: `Window`, `ContentPage`, `Label`, `Button`, `Entry`, `Switch`, `CheckBox`, `Slider`, `Picker`, `Layout`, `ContentView`.
+- Sample app demonstrates a real `.xaml` `ContentPage` (with code-behind) and covers binding, input, click, resize, visibility, opacity, form-input breadth, and stress add/remove cleanup.
 
 ## Repo layout
 
@@ -57,6 +57,10 @@ Expected pass signals:
 - All E2E tests pass.
 - Entry -> label binding works.
 - Button click updates count.
+- Switch and CheckBox toggles update bound summaries.
+- Slider movement updates bound numeric summary live.
+- Picker selection changes update bound index/text summary.
+- Programmatic form-state updates reflect back into control visuals.
 - Resize updates viewport text.
 - Visibility/opacity transitions apply correctly.
 - Stress mutation test keeps DOM handle/subscription counts near baseline.
@@ -69,6 +73,10 @@ Expected pass signals:
 - Resizing browser updates viewport/layout status text.
 - Toggling visibility moves probe through `visible <-> collapsed`.
 - Cycling opacity updates probe opacity summary.
+- Toggling `Switch` and `CheckBox` updates their summary labels.
+- Moving `Slider` updates slider summary value.
+- Changing `Picker` selection updates index/text summary.
+- Clicking `Apply programmatic form update` updates all form controls from state.
 - Running leak stress increments stress run count and remains interactive.
 
 ## Prototype proof checklist
@@ -83,5 +91,7 @@ Expected pass signals:
 - Layout uses absolute frame projection for correctness-first behavior.
 - Text measurement is currently canvas `measureText` based.
 - Font-load synchronization remains deferred.
+- `Switch` now renders as a dedicated toggle (`button[role=switch]` + track/thumb) with intrinsic hit width, so it stays visually distinct from `CheckBox` and does not stretch across the arranged row.
+- `CheckBox`/`Slider` color parity remains best-effort browser styling (`accent-color` plus slider background gradient); exact native visual parity is intentionally deferred.
 
 See `AGENTS.md` for repository guardrails.

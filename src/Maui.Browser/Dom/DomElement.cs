@@ -44,6 +44,14 @@ public sealed class DomElement
 
     public string GetInputValue() => DomApi.GetInputValue(Handle);
 
+    public void SetInputChecked(bool value) => DomApi.SetInputChecked(Handle, value);
+
+    public bool GetInputChecked() => DomApi.GetInputChecked(Handle);
+
+    public void SetSelectSelectedIndex(int value) => DomApi.SetSelectSelectedIndex(Handle, value);
+
+    public int GetSelectSelectedIndex() => DomApi.GetSelectSelectedIndex(Handle);
+
     public static int SubscribeWindowResize(Action callback) => DomApi.SubscribeWindowResize(callback);
 
     public static void UnsubscribeWindowResize(int subscriptionId) => DomApi.UnsubscribeWindowResize(subscriptionId);
