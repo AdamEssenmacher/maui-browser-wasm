@@ -39,6 +39,13 @@
             TextColor="DarkSlateGray" />
 
         <Label
+            AutomationId="stack-center-alignment-probe"
+            FontSize="12"
+            HorizontalOptions="Center"
+            Text="Center alignment probe"
+            TextColor="DarkSlateGray" />
+
+        <Label
             AutomationId="viewport-label"
             FontSize="12"
             Text="{Binding ViewportText}"
@@ -216,7 +223,8 @@
                     Clicked="OnUnfocusCoreEntryClicked"
                     Padding="12,8"
                     Text="Unfocus core entry"
-                    TextColor="Black" />
+                    TextColor="Black"
+                    VerticalOptions="End" />
             </HorizontalStackLayout>
 
             <Label

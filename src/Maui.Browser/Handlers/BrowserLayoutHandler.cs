@@ -87,7 +87,7 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         _childHandlers[view] = childHandler;
         PlatformView.Append(childPlatformView);
         UpdateZIndex(view);
-        ApplyChildProjectionStyles(childPlatformView, _projectionMode);
+        ApplyChildProjectionStyles(childPlatformView, view, _projectionMode);
     }
 
     public void Remove(IView view)
@@ -222,7 +222,7 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
             _childHandlers[child] = childHandler;
             PlatformView.Append(childPlatformView);
             UpdateZIndex(child);
-            ApplyChildProjectionStyles(childPlatformView, _projectionMode);
+            ApplyChildProjectionStyles(childPlatformView, child, _projectionMode);
         }
 
         ApplyProjectionStyles(_projectionMode);
@@ -288,14 +288,16 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         ApplyContainerProjectionStyles(PlatformView, VirtualView, projectionMode);
         ApplyPaddingStyle(VirtualView, projectionMode);
 
-        foreach (var handler in _childHandlers.Values)
+        foreach (var entry in _childHandlers)
         {
+            var childView = entry.Key;
+            var handler = entry.Value;
             if (handler.PlatformView is not DomElement childPlatformView)
             {
                 continue;
             }
 
-            ApplyChildProjectionStyles(childPlatformView, projectionMode);
+            ApplyChildProjectionStyles(childPlatformView, childView, projectionMode);
         }
     }
 
@@ -338,10 +340,11 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         platformView.Style("gap", CssUtil.Px(spacing));
     }
 
-    internal static void ApplyChildProjectionStyles(DomElement childPlatformView, BrowserLayoutProjectionMode projectionMode)
+    internal static void ApplyChildProjectionStyles(DomElement childPlatformView, IView childView, BrowserLayoutProjectionMode projectionMode)
     {
         if (projectionMode == BrowserLayoutProjectionMode.Absolute)
         {
+            childPlatformView.Style("alignSelf", null);
             return;
         }
 
@@ -350,6 +353,7 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         childPlatformView.Style("top", null);
         childPlatformView.Style("right", null);
         childPlatformView.Style("bottom", null);
+        childPlatformView.Style("alignSelf", ResolveChildAlignSelf(childView, projectionMode));
     }
 
     private static double GetLayoutSpacing(MauiLayout layout)
@@ -395,5 +399,20 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         }
 
         return Math.Max(0, value);
+    }
+
+    private static string ResolveChildAlignSelf(IView childView, BrowserLayoutProjectionMode projectionMode)
+    {
+        var alignment = projectionMode == BrowserLayoutProjectionMode.FlexColumn
+            ? childView.HorizontalLayoutAlignment
+            : childView.VerticalLayoutAlignment;
+
+        return alignment switch
+        {
+            Microsoft.Maui.Primitives.LayoutAlignment.Center => "center",
+            Microsoft.Maui.Primitives.LayoutAlignment.End => "flex-end",
+            Microsoft.Maui.Primitives.LayoutAlignment.Start => "flex-start",
+            _ => "stretch"
+        };
     }
 }

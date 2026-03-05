@@ -70,6 +70,12 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
         Assert.Equal("flex", rowDisplay);
         Assert.Equal("row", rowDirection);
 
+        var centeredAlignSelf = await ReadComputedStylePropertyAsync(page, "[data-automation-id='stack-center-alignment-probe']", "alignSelf");
+        Assert.Equal("center", centeredAlignSelf);
+
+        var rowEndAlignSelf = await ReadComputedStylePropertyAsync(page, "[data-automation-id='core-unfocus-button']", "alignSelf");
+        Assert.Equal("flex-end", rowEndAlignSelf);
+
         var verticalTops = await ReadBoundingTopsAsync(page, [
             "[data-automation-id='live-text-label']",
             "[data-automation-id='live-input-entry']",
