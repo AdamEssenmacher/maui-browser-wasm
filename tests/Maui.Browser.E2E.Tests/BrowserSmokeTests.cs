@@ -89,7 +89,7 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
                 const first = select.options[0];
                 return !!first && first.text === 'Pick an item' && first.disabled === true;
             }");
-        await pickerControl.SelectOptionAsync(new[] { new SelectOptionValue { Index = 3 } });
+        await pickerControl.SelectOptionAsync(new[] { new SelectOptionValue { Index = 4 } });
         await page.WaitForSelectorAsync("text=Picker selection: 3 (Delta)");
 
         await SetSelectIndexAsync(page, 0, 0);
@@ -107,7 +107,7 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
 
         var selectedIndex = await page.EvaluateAsync<int>(
             "() => document.querySelector('select')?.selectedIndex ?? -1");
-        Assert.Equal(2, selectedIndex);
+        Assert.Equal(3, selectedIndex);
 
         await AssertAccentColorPresentAsync(page, "input[type='checkbox']", 0, "checkbox");
         await AssertAccentColorPresentAsync(page, "input[type='range']", 0, "slider");
