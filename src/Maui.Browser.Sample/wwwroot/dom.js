@@ -86,6 +86,22 @@ export function getClientSize(elementHandle) {
   return [r.width, r.height];
 }
 
+export function focusElement(elementHandle) {
+  const element = fromHandle(elementHandle);
+  if (typeof element.focus === "function") {
+    element.focus();
+  }
+
+  return document.activeElement === element;
+}
+
+export function blurElement(elementHandle) {
+  const element = fromHandle(elementHandle);
+  if (typeof element.blur === "function") {
+    element.blur();
+  }
+}
+
 const eventSubscriptions = new Map();
 let nextEventSubscriptionId = 1;
 

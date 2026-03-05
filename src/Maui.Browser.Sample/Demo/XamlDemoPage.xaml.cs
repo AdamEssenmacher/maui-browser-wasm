@@ -44,6 +44,48 @@ public partial class XamlDemoPage : ContentPage
         _state.ApplyProgrammaticFormUpdate();
     }
 
+    private void OnToggleCoreFlowDirectionClicked(object? sender, EventArgs e)
+    {
+        _state.ToggleCoreFlowDirection();
+    }
+
+    private void OnToggleCoreInputTransparentClicked(object? sender, EventArgs e)
+    {
+        _state.ToggleCoreInputTransparent();
+    }
+
+    private void OnCoreTransparentProbeClicked(object? sender, EventArgs e)
+    {
+        _state.RecordCoreProbeClick();
+    }
+
+    private void OnFocusCoreEntryClicked(object? sender, EventArgs e)
+    {
+        var focusEntry = FindByName("CoreFocusEntry") as Entry;
+        focusEntry?.Focus();
+    }
+
+    private void OnUnfocusCoreEntryClicked(object? sender, EventArgs e)
+    {
+        var focusEntry = FindByName("CoreFocusEntry") as Entry;
+        focusEntry?.Unfocus();
+    }
+
+    private void OnToggleCoreTransformClicked(object? sender, EventArgs e)
+    {
+        _state.ToggleCoreTransformPreset();
+    }
+
+    private void OnToggleCoreBackgroundClicked(object? sender, EventArgs e)
+    {
+        _state.ToggleCoreProbeBackground();
+    }
+
+    private void OnUpdateCoreSemanticsClicked(object? sender, EventArgs e)
+    {
+        _state.AdvanceCoreSemantics();
+    }
+
     private void OnStressClicked(object? sender, EventArgs e)
     {
         var stressHost = FindByName("StressHost") as VerticalStackLayout;

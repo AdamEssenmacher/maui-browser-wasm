@@ -36,6 +36,10 @@ public sealed class DomElement
         return (s.Length > 0 ? s[0] : 0, s.Length > 1 ? s[1] : 0);
     }
 
+    public bool Focus() => DomApi.FocusElement(Handle);
+
+    public void Blur() => DomApi.BlurElement(Handle);
+
     public int On(string eventName, Action callback) => DomApi.SubscribeEvent(Handle, eventName, callback);
 
     public static void Off(int subscriptionId) => DomApi.UnsubscribeEvent(subscriptionId);

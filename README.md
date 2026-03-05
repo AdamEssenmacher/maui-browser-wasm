@@ -9,7 +9,8 @@ Current state:
 - Root-view bootstrap (`BrowserAppHost.RunAsync(MauiApp, IView, ...)`) remains as a compatibility path.
 - DOM platform view wrapper is `DomElement`; JSImport entrypoints are centralized in `DomApi`.
 - Implemented handlers: `Window`, `ContentPage`, `Label`, `Button`, `Entry`, `Switch`, `CheckBox`, `Slider`, `Picker`, `Layout`, `ContentView`.
-- Sample app demonstrates a real `.xaml` `ContentPage` (with code-behind) and covers binding, input, click, resize, visibility, opacity, form-input breadth, and stress add/remove cleanup.
+- Shared `IView`/`ITransform` mapping core is applied across handlers: automation id, flow direction, basic semantics (ARIA), interaction state (`IsEnabled` + `InputTransparent`), background (solid), z-index, focus/unfocus, and transform composition.
+- Sample app demonstrates a real `.xaml` `ContentPage` (with code-behind) and covers binding, input, click, resize, visibility, opacity, form-input breadth, IView core/transform behavior, and stress add/remove cleanup.
 
 ## Repo layout
 
@@ -63,6 +64,7 @@ Expected pass signals:
 - Programmatic form-state updates reflect back into control visuals.
 - Resize updates viewport text.
 - Visibility/opacity transitions apply correctly.
+- IView core checks pass: automation ids, flow direction, semantics ARIA updates, focus/unfocus, input transparency policy, transform and background updates.
 - Stress mutation test keeps DOM handle/subscription counts near baseline.
 
 ## Manual runtime checklist
@@ -77,6 +79,10 @@ Expected pass signals:
 - Moving `Slider` updates slider summary value.
 - Changing `Picker` selection updates index/text summary.
 - Clicking `Apply programmatic form update` updates all form controls from state.
+- Toggling core flow direction updates container direction (`ltr`/`rtl`).
+- Toggling core input transparency disables probe interaction without disabling the control.
+- Focus/unfocus buttons move focus to/from the core entry.
+- Transform/background/semantics actions update the probe style and ARIA attributes.
 - Running leak stress increments stress run count and remains interactive.
 
 ## Prototype proof checklist
@@ -93,5 +99,6 @@ Expected pass signals:
 - Font-load synchronization remains deferred.
 - `Switch` now renders as a dedicated toggle (`button[role=switch]` + track/thumb) with intrinsic hit width, so it stays visually distinct from `CheckBox` and does not stretch across the arranged row.
 - `CheckBox`/`Slider` color parity remains best-effort browser styling (`accent-color` plus slider background gradient); exact native visual parity is intentionally deferred.
+- `Clip` and `Shadow` are intentionally deferred in this slice: current behavior is no-op with DEBUG diagnostic warnings.
 
 See `AGENTS.md` for repository guardrails.

@@ -9,7 +9,7 @@ public abstract class BrowserViewHandler<TVirtualView> : ViewHandler<TVirtualVie
     where TVirtualView : class, IView
 {
     protected BrowserViewHandler(IPropertyMapper mapper, CommandMapper? commandMapper = null)
-        : base(mapper, commandMapper)
+        : base(mapper, commandMapper ?? BrowserViewMapper.CommonViewCommandMapper)
     {
     }
 

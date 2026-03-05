@@ -9,17 +9,14 @@ namespace Maui.Browser.Handlers;
 
 public sealed class BrowserSliderHandler : BrowserViewHandler<ISlider>
 {
-    public static IPropertyMapper<ISlider, BrowserSliderHandler> Mapper = new PropertyMapper<ISlider, BrowserSliderHandler>(ViewHandler.ViewMapper)
+    public static IPropertyMapper<ISlider, BrowserSliderHandler> Mapper = new PropertyMapper<ISlider, BrowserSliderHandler>(BrowserViewMapper.CommonViewMapper)
     {
         [nameof(IRange.Minimum)] = MapMinimum,
         [nameof(IRange.Maximum)] = MapMaximum,
         [nameof(IRange.Value)] = MapValue,
         [nameof(ISlider.MinimumTrackColor)] = MapMinimumTrackColor,
         [nameof(ISlider.MaximumTrackColor)] = MapMaximumTrackColor,
-        [nameof(ISlider.ThumbColor)] = MapThumbColor,
-        [nameof(IView.Visibility)] = MapVisibility,
-        [nameof(IView.Opacity)] = MapOpacity,
-        [nameof(IView.IsEnabled)] = MapIsEnabled
+        [nameof(ISlider.ThumbColor)] = MapThumbColor
     };
 
     private Action? _inputCallback;
@@ -168,21 +165,6 @@ public sealed class BrowserSliderHandler : BrowserViewHandler<ISlider>
     public static void MapThumbColor(BrowserSliderHandler handler, ISlider view)
     {
         UpdateTrackStyles(handler, view);
-    }
-
-    public static void MapVisibility(BrowserSliderHandler handler, ISlider view)
-    {
-        BrowserViewMapper.MapVisibility(view, handler.PlatformView);
-    }
-
-    public static void MapOpacity(BrowserSliderHandler handler, ISlider view)
-    {
-        BrowserViewMapper.MapOpacity(view, handler.PlatformView);
-    }
-
-    public static void MapIsEnabled(BrowserSliderHandler handler, ISlider view)
-    {
-        BrowserViewMapper.MapEnabled(view, handler.PlatformView);
     }
 
     private static void UpdateTrackStyles(BrowserSliderHandler handler, ISlider view)

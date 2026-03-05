@@ -10,15 +10,13 @@ namespace Maui.Browser.Handlers;
 
 public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayoutHandler
 {
-    public static IPropertyMapper<MauiLayout, BrowserLayoutHandler> Mapper = new PropertyMapper<MauiLayout, BrowserLayoutHandler>(ViewHandler.ViewMapper)
+    public static IPropertyMapper<MauiLayout, BrowserLayoutHandler> Mapper = new PropertyMapper<MauiLayout, BrowserLayoutHandler>(BrowserViewMapper.CommonViewMapper)
     {
         [nameof(MauiLayout.ClipsToBounds)] = MapClipsToBounds,
-        [nameof(MauiLayout.Padding)] = MapPadding,
-        [nameof(IView.Visibility)] = MapVisibility,
-        [nameof(IView.Opacity)] = MapOpacity
+        [nameof(MauiLayout.Padding)] = MapPadding
     };
 
-    public static CommandMapper<MauiLayout, BrowserLayoutHandler> CommandMapper = new(ViewHandler.ViewCommandMapper)
+    public static CommandMapper<MauiLayout, BrowserLayoutHandler> CommandMapper = new(BrowserViewMapper.CommonViewCommandMapper)
     {
         [nameof(ILayoutHandler.Add)] = MapAdd,
         [nameof(ILayoutHandler.Remove)] = MapRemove,
@@ -118,16 +116,6 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         // Child frames are already arranged with MAUI padding applied, so adding CSS padding
         // here would double-inset absolutely-positioned children.
         handler.PlatformView.Style("padding", string.Empty);
-    }
-
-    public static void MapVisibility(BrowserLayoutHandler handler, MauiLayout layout)
-    {
-        BrowserViewMapper.MapVisibility(layout, handler.PlatformView);
-    }
-
-    public static void MapOpacity(BrowserLayoutHandler handler, MauiLayout layout)
-    {
-        BrowserViewMapper.MapOpacity(layout, handler.PlatformView);
     }
 
     public static void MapAdd(BrowserLayoutHandler handler, MauiLayout layout, object? arg)

@@ -142,6 +142,134 @@
             Text="Apply programmatic form update"
             TextColor="Black" />
 
+        <Label
+            AutomationId="core-heading"
+            FontSize="16"
+            Text="IView core and transform"
+            TextColor="Black" />
+
+        <VerticalStackLayout
+            AutomationId="core-view-container"
+            FlowDirection="{Binding CoreFlowDirection}"
+            Spacing="8">
+
+            <Button
+                AutomationId="core-flow-direction-button"
+                Clicked="OnToggleCoreFlowDirectionClicked"
+                Padding="12,8"
+                Text="Toggle core flow direction"
+                TextColor="Black" />
+
+            <Label
+                AutomationId="core-flow-direction-summary-label"
+                FontSize="12"
+                Text="{Binding CoreFlowDirectionSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Button
+                AutomationId="core-input-transparent-toggle-button"
+                Clicked="OnToggleCoreInputTransparentClicked"
+                Padding="12,8"
+                Text="Toggle core input transparency"
+                TextColor="Black" />
+
+            <Button
+                AutomationId="core-input-transparent-probe-button"
+                Clicked="OnCoreTransparentProbeClicked"
+                InputTransparent="{Binding CoreInputTransparent}"
+                Padding="12,8"
+                Text="Core input transparency probe"
+                TextColor="Black" />
+
+            <Label
+                AutomationId="core-input-transparent-summary-label"
+                FontSize="12"
+                Text="{Binding CoreInputTransparentSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Label
+                AutomationId="core-input-transparent-click-summary-label"
+                FontSize="12"
+                Text="{Binding CoreProbeClickSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Entry
+                x:Name="CoreFocusEntry"
+                AutomationId="core-focus-entry"
+                FontSize="14"
+                Placeholder="Core focus target entry"
+                Text="Focus target" />
+
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    AutomationId="core-focus-button"
+                    Clicked="OnFocusCoreEntryClicked"
+                    Padding="12,8"
+                    Text="Focus core entry"
+                    TextColor="Black" />
+
+                <Button
+                    AutomationId="core-unfocus-button"
+                    Clicked="OnUnfocusCoreEntryClicked"
+                    Padding="12,8"
+                    Text="Unfocus core entry"
+                    TextColor="Black" />
+            </HorizontalStackLayout>
+
+            <Label
+                AutomationId="core-transform-probe"
+                AnchorX="{Binding CoreAnchorX}"
+                AnchorY="{Binding CoreAnchorY}"
+                BackgroundColor="{Binding CoreProbeBackground}"
+                FontSize="13"
+                Rotation="{Binding CoreRotation}"
+                RotationX="{Binding CoreRotationX}"
+                RotationY="{Binding CoreRotationY}"
+                Scale="{Binding CoreScale}"
+                SemanticProperties.Description="{Binding CoreSemanticDescription}"
+                SemanticProperties.HeadingLevel="Level2"
+                SemanticProperties.Hint="{Binding CoreSemanticHint}"
+                Text="{Binding CoreTransformSummary}"
+                TextColor="Black"
+                TranslationX="{Binding CoreTranslationX}"
+                TranslationY="{Binding CoreTranslationY}" />
+
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    AutomationId="core-transform-button"
+                    Clicked="OnToggleCoreTransformClicked"
+                    Padding="12,8"
+                    Text="Toggle core transform preset"
+                    TextColor="Black" />
+
+                <Button
+                    AutomationId="core-background-button"
+                    Clicked="OnToggleCoreBackgroundClicked"
+                    Padding="12,8"
+                    Text="Toggle core background"
+                    TextColor="Black" />
+
+                <Button
+                    AutomationId="core-semantics-button"
+                    Clicked="OnUpdateCoreSemanticsClicked"
+                    Padding="12,8"
+                    Text="Update core semantics"
+                    TextColor="Black" />
+            </HorizontalStackLayout>
+
+            <Label
+                AutomationId="core-background-summary-label"
+                FontSize="12"
+                Text="{Binding CoreBackgroundSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Label
+                AutomationId="core-semantics-summary-label"
+                FontSize="12"
+                Text="{Binding CoreSemanticsSummary}"
+                TextColor="DarkSlateGray" />
+        </VerticalStackLayout>
+
         <Button
             AutomationId="stress-button"
             Clicked="OnStressClicked"

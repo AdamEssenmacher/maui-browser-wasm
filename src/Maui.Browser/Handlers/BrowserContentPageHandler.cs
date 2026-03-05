@@ -10,11 +10,9 @@ namespace Maui.Browser.Handlers;
 public sealed class BrowserContentPageHandler : BrowserViewHandler<ContentPage>
 {
     public static IPropertyMapper<ContentPage, BrowserContentPageHandler> Mapper =
-        new PropertyMapper<ContentPage, BrowserContentPageHandler>(ViewHandler.ViewMapper)
+        new PropertyMapper<ContentPage, BrowserContentPageHandler>(BrowserViewMapper.CommonViewMapper)
         {
-            [nameof(ContentPage.Content)] = MapContent,
-            [nameof(IView.Visibility)] = MapVisibility,
-            [nameof(IView.Opacity)] = MapOpacity
+            [nameof(ContentPage.Content)] = MapContent
         };
 
     private View? _currentContent;
@@ -64,16 +62,6 @@ public sealed class BrowserContentPageHandler : BrowserViewHandler<ContentPage>
     public static void MapContent(BrowserContentPageHandler handler, ContentPage page)
     {
         handler.SetContent(page.Content);
-    }
-
-    public static void MapVisibility(BrowserContentPageHandler handler, ContentPage page)
-    {
-        BrowserViewMapper.MapVisibility(page, handler.PlatformView);
-    }
-
-    public static void MapOpacity(BrowserContentPageHandler handler, ContentPage page)
-    {
-        BrowserViewMapper.MapOpacity(page, handler.PlatformView);
     }
 
     private void SetContent(View? content)
