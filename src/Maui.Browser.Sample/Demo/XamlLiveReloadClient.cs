@@ -16,6 +16,7 @@ internal sealed class XamlLiveReloadClient : IAsyncDisposable
     private readonly CancellationTokenSource _shutdown = new();
     private Task? _eventLoop;
     private long _lastAppliedVersion;
+    private long _serverVersionHint;
 
     private XamlLiveReloadClient(Uri baseAddress)
     {
@@ -45,6 +46,7 @@ internal sealed class XamlLiveReloadClient : IAsyncDisposable
                 return null;
             }
 
+            await client.ApplyLatestXamlFromSourceAsync();
             client._eventLoop = Task.Run(() => client.RunLoopAsync(client._shutdown.Token));
             Console.WriteLine("[hot-reload] Live XAML SSE client started.");
             return client;
@@ -73,11 +75,45 @@ internal sealed class XamlLiveReloadClient : IAsyncDisposable
             }
 
             var payload = await response.Content.ReadAsStringAsync(_shutdown.Token);
-            return payload.Contains("\"enabled\":true", StringComparison.Ordinal);
+#pragma warning disable IL2026
+            using var json = JsonDocument.Parse(payload);
+#pragma warning restore IL2026
+            if (!json.RootElement.TryGetProperty("enabled", out var enabledElement) || !enabledElement.GetBoolean())
+            {
+                return false;
+            }
+
+            if (json.RootElement.TryGetProperty("currentVersion", out var versionElement) &&
+                versionElement.ValueKind == JsonValueKind.Number &&
+                versionElement.TryGetInt64(out var currentVersion))
+            {
+                _serverVersionHint = currentVersion;
+            }
+
+            return true;
         }
         catch
         {
             return false;
+        }
+    }
+
+    private async Task ApplyLatestXamlFromSourceAsync()
+    {
+        try
+        {
+            var requestedPath = Uri.EscapeDataString(TargetXamlPath);
+            var xaml = await _httpClient.GetStringAsync($"/_dev/xaml?path={requestedPath}", _shutdown.Token);
+            var applied = await ApplyXamlOnUiThreadAsync(xaml);
+            if (applied && _serverVersionHint > 0)
+            {
+                Interlocked.Exchange(ref _lastAppliedVersion, _serverVersionHint);
+                Console.WriteLine($"[hot-reload] Applied latest XAML source at startup (version {_serverVersionHint}).");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[hot-reload] Unable to apply startup XAML source: {ex.Message}");
         }
     }
 

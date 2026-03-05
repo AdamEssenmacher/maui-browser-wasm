@@ -382,6 +382,8 @@ internal sealed class XamlFileWatcher : IDisposable
     private readonly ConcurrentDictionary<string, long> _knownWriteTicks = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _debounceLock = new();
     private CancellationTokenSource? _debounceCts;
+    private CancellationTokenSource? _pollingCts;
+    private Task? _pollingTask;
     private FileSystemWatcher? _watcher;
 
     public XamlFileWatcher(string sampleProjectPath, IEnumerable<string> allowedPaths)
@@ -414,6 +416,9 @@ internal sealed class XamlFileWatcher : IDisposable
         _watcher.Renamed += (_, args) => OnXamlChanged(args.FullPath);
         _watcher.Deleted += (_, args) => OnXamlChanged(args.FullPath);
         _watcher.EnableRaisingEvents = true;
+
+        _pollingCts = new CancellationTokenSource();
+        _pollingTask = Task.Run(() => PollLoopAsync(_pollingCts.Token));
 
         Console.WriteLine("[devhost] XAML file watcher started.");
     }
@@ -464,6 +469,20 @@ internal sealed class XamlFileWatcher : IDisposable
             return;
         }
 
+        ScanForChanges();
+    }
+
+    private async Task PollLoopAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        while (await timer.WaitForNextTickAsync(cancellationToken))
+        {
+            ScanForChanges();
+        }
+    }
+
+    private void ScanForChanges()
+    {
         foreach (var allowedPath in _allowedFullPathByRelativePath)
         {
             var relativePath = allowedPath.Key;
@@ -518,6 +537,23 @@ internal sealed class XamlFileWatcher : IDisposable
     public void Dispose()
     {
         _watcher?.Dispose();
+        if (_pollingCts is not null)
+        {
+            _pollingCts.Cancel();
+            try
+            {
+                _pollingTask?.GetAwaiter().GetResult();
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected during disposal.
+            }
+
+            _pollingCts.Dispose();
+            _pollingCts = null;
+            _pollingTask = null;
+        }
+
         lock (_debounceLock)
         {
             _debounceCts?.Cancel();
