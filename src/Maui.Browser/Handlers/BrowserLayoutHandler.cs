@@ -345,6 +345,7 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         if (projectionMode == BrowserLayoutProjectionMode.Absolute)
         {
             childPlatformView.Style("alignSelf", null);
+            childPlatformView.Style("margin", null);
             return;
         }
 
@@ -354,6 +355,7 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         childPlatformView.Style("right", null);
         childPlatformView.Style("bottom", null);
         childPlatformView.Style("alignSelf", ResolveChildAlignSelf(childView, projectionMode));
+        childPlatformView.Style("margin", ToCssThickness(childView.Margin));
     }
 
     private static double GetLayoutSpacing(MauiLayout layout)
@@ -414,5 +416,24 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
             Microsoft.Maui.Primitives.LayoutAlignment.Start => "flex-start",
             _ => "stretch"
         };
+    }
+
+    private static string ToCssThickness(Thickness thickness)
+    {
+        var left = NormalizeThicknessValue(thickness.Left);
+        var top = NormalizeThicknessValue(thickness.Top);
+        var right = NormalizeThicknessValue(thickness.Right);
+        var bottom = NormalizeThicknessValue(thickness.Bottom);
+        return $"{CssUtil.Px(top)} {CssUtil.Px(right)} {CssUtil.Px(bottom)} {CssUtil.Px(left)}";
+    }
+
+    private static double NormalizeThicknessValue(double value)
+    {
+        if (double.IsNaN(value) || double.IsInfinity(value))
+        {
+            return 0;
+        }
+
+        return value;
     }
 }

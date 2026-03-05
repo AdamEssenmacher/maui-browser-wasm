@@ -42,6 +42,7 @@
             AutomationId="stack-center-alignment-probe"
             FontSize="12"
             HorizontalOptions="Center"
+            Margin="24,0,0,0"
             Text="Center alignment probe"
             TextColor="DarkSlateGray" />
 
