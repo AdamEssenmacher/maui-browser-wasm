@@ -129,7 +129,7 @@ public sealed class BrowserSliderHandler : BrowserViewHandler<ISlider>
         var maximum = Math.Max(VirtualView.Minimum, VirtualView.Maximum);
         var clamped = Math.Max(minimum, Math.Min(maximum, parsedValue));
 
-        if (Math.Abs(VirtualView.Value - clamped) > 0.0001)
+        if (Math.Abs(VirtualView.Value - clamped) > 1e-9)
         {
             VirtualView.Value = clamped;
         }
@@ -208,6 +208,6 @@ public sealed class BrowserSliderHandler : BrowserViewHandler<ISlider>
 
     private static string ToInputNumber(double value)
     {
-        return value.ToString("0.###", CultureInfo.InvariantCulture);
+        return value.ToString("G17", CultureInfo.InvariantCulture);
     }
 }

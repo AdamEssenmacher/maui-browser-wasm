@@ -74,9 +74,9 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
         await checkBoxControl.ClickAsync();
         await page.WaitForSelectorAsync("text=Checkbox is unchecked");
 
-        await SetRangeValueAsync(page, 0, 64.3);
-        await page.WaitForSelectorAsync("text=Slider value: 64.3");
-        Assert.InRange(await ReadInputNumericValueAsync(page, "input[type='range']", 0), 64.2, 64.4);
+        await SetRangeValueAsync(page, 0, 64.3756);
+        await page.WaitForSelectorAsync("text=Slider value: 64.38");
+        Assert.InRange(await ReadInputNumericValueAsync(page, "input[type='range']", 0), 64.3755, 64.3757);
 
         var pickerControl = page.Locator("select").First;
         await page.WaitForFunctionAsync(
