@@ -10,8 +10,7 @@ function setupHotReloadDiagnostics() {
     pageReloadCount,
     deltaApplyCount: 0,
     dotnetModifiableAssemblies: "<unknown>",
-    aspnetcoreBrowserTools: "<unknown>",
-    sampleVersion: null
+    aspnetcoreBrowserTools: "<unknown>"
   };
 
   globalThis.__mauiBrowserHotReload = diagnostics;
@@ -50,47 +49,9 @@ function setupHotReloadDiagnostics() {
   return diagnostics;
 }
 
-function startXamlRefreshFallback(diagnostics) {
-  const sampleVersionUrl = "/_dev/sample-version";
-  let currentVersion = null;
-
-  const poll = async () => {
-    try {
-      const response = await fetch(sampleVersionUrl, { cache: "no-store" });
-      if (!response.ok) {
-        return;
-      }
-
-      const payload = await response.json();
-      const version = payload?.version;
-      if (!Number.isFinite(version)) {
-        return;
-      }
-
-      diagnostics.sampleVersion = version;
-      if (currentVersion === null) {
-        currentVersion = version;
-        return;
-      }
-
-      if (version !== currentVersion) {
-        console.info(`[hot-reload] dev sample version changed ${currentVersion} -> ${version}; forcing page reload for XAML refresh`);
-        currentVersion = version;
-        globalThis.location.reload();
-      }
-    } catch {
-      // Dev endpoint is optional outside the watch host.
-    }
-  };
-
-  poll();
-  setInterval(poll, 1000);
-}
-
 async function start() {
   const appRoot = document.getElementById("app");
   const diagnostics = setupHotReloadDiagnostics();
-  startXamlRefreshFallback(diagnostics);
 
   try {
     let hotReloadModule = null;

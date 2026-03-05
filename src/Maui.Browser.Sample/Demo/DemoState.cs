@@ -11,15 +11,21 @@ internal sealed class DemoState : INotifyPropertyChanged
     private bool _probeIsVisible = true;
     private double _probeOpacity = 1.0;
     private int _stressRunCount;
+    private string _hotReloadSummary;
+    private string? _xamlApplyError;
 
     public DemoState()
     {
-        HotReloadSummary = HotReloadStatus.BuildSummary();
+        _hotReloadSummary = HotReloadStatus.BuildSummary();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public string HotReloadSummary { get; }
+    public string HotReloadSummary
+    {
+        get => _hotReloadSummary;
+        private set => SetProperty(ref _hotReloadSummary, value);
+    }
 
     public string InputText
     {
@@ -87,6 +93,12 @@ internal sealed class DemoState : INotifyPropertyChanged
         }
     }
 
+    public bool HasXamlApplyError => !string.IsNullOrWhiteSpace(_xamlApplyError);
+
+    public string XamlApplyErrorSummary => string.IsNullOrWhiteSpace(_xamlApplyError)
+        ? string.Empty
+        : $"Live XAML apply failed: {_xamlApplyError}";
+
     public string LiveText => $"Live text: {InputText}";
 
     public string ClickSummary => $"Button clicks: {ClickCount}";
@@ -119,6 +131,35 @@ internal sealed class DemoState : INotifyPropertyChanged
     public void RecordStressRun()
     {
         StressRunCount++;
+    }
+
+    public void RefreshHotReloadSummary()
+    {
+        HotReloadSummary = HotReloadStatus.BuildSummary();
+    }
+
+    public void RecordMetadataDeltaApplied()
+    {
+        RefreshHotReloadSummary();
+    }
+
+    public void RecordXamlLiveApplySuccess()
+    {
+        _xamlApplyError = null;
+        OnPropertyChanged(nameof(HasXamlApplyError));
+        OnPropertyChanged(nameof(XamlApplyErrorSummary));
+        RefreshHotReloadSummary();
+    }
+
+    public void RecordXamlLiveApplyFailure(string error)
+    {
+        _xamlApplyError = string.IsNullOrWhiteSpace(error)
+            ? "Unknown parse/apply failure."
+            : error;
+
+        OnPropertyChanged(nameof(HasXamlApplyError));
+        OnPropertyChanged(nameof(XamlApplyErrorSummary));
+        RefreshHotReloadSummary();
     }
 
     private bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)

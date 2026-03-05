@@ -24,6 +24,21 @@
             Text="{Binding HotReloadSummary}"
             TextColor="DarkOliveGreen" />
 
+        <Label
+            AutomationId="xaml-apply-error-label"
+            FontSize="12"
+            IsVisible="{Binding HasXamlApplyError}"
+            Text="{Binding XamlApplyErrorSummary}"
+            TextColor="DarkRed" />
+
+        <Button
+            AutomationId="force-full-reload-button"
+            Clicked="OnForceReloadClicked"
+            IsVisible="{Binding HasXamlApplyError}"
+            Padding="12,8"
+            Text="Force full reload"
+            TextColor="Black" />
+
         <Entry
             AutomationId="live-input-entry"
             FontSize="16"

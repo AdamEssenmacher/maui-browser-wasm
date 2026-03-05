@@ -47,6 +47,7 @@
   <ItemGroup>
     <None Include="wwwroot\**\*.*" CopyToOutputDirectory="PreserveNewest" />
     <None Update="wwwroot\dom.js" CopyToOutputDirectory="Never" />
+    <None Update="wwwroot\devhost-interop.js" CopyToOutputDirectory="Never" />
   </ItemGroup>
 
   <ItemGroup>
@@ -55,6 +56,9 @@
     </WasmExtraFilesToDeploy>
     <WasmExtraFilesToDeploy Include="wwwroot\dom.js">
       <TargetPath>_framework/dom.js</TargetPath>
+    </WasmExtraFilesToDeploy>
+    <WasmExtraFilesToDeploy Include="wwwroot\devhost-interop.js">
+      <TargetPath>_framework/devhost-interop.js</TargetPath>
     </WasmExtraFilesToDeploy>
   </ItemGroup>
 

@@ -31,3 +31,10 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Debug sample builds now opt in to hot reload intent via `WasmEnableHotReload=true` and `MetadataUpdaterSupport=true`; a Debug-only reference to `Microsoft.DotNet.HotReload.WebAssembly.Browser` is included so browser initializer assets are available when the runtime supports metadata deltas.
 - A lightweight prerequisite check script validates Debug runtime config flags and hot reload JS asset presence; this runs in CI as a proof guard.
 - Current XAML behavior uses fallback full-page refresh: DevHost watches `*.xaml`, rebuilds the sample app, and client-side diagnostics poll a version endpoint to force reload when the rebuilt output changes.
+
+## 2026-03-05 (Hot Reload UX v2)
+- Replaced polling-based XAML refresh with server push (`/_dev/events` SSE) and managed in-place `LoadFromXaml(string)` re-apply in the sample page to remove full-page reboot flashes for supported XAML edits.
+- Kept this slice sample/devhost scoped: no `Maui.Browser` public API changes, while adding dev-only endpoints for XAML source retrieval and synthetic event injection to support deterministic E2E coverage.
+- Added explicit managed metadata hot reload hooks via `MetadataUpdateHandler` and surfaced richer status (`mode`, `last update kind`, metadata delta count) in the sample UI.
+- Failure policy is fail-soft: live XAML apply errors preserve the previous visual tree, surface a non-fatal error banner, and provide a manual `Force full reload` action.
+- Non-goal remains full MAUI IDE XAML Hot Reload parity; this slice targets a practical `dotnet watch` loop for a single page (`Demo/XamlDemoPage.xaml`) only.

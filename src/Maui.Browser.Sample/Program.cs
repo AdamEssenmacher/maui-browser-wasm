@@ -5,6 +5,8 @@ using Microsoft.Maui.Hosting;
 
 public static class Program
 {
+    private static XamlLiveReloadClient? s_liveReloadClient;
+
     public static async Task Main()
     {
         if (!OperatingSystem.IsBrowser())
@@ -22,6 +24,12 @@ public static class Program
 
         var mauiApp = builder.Build();
         await BrowserAppHost.RunAsync(mauiApp, rootElementId: "app");
+
+        s_liveReloadClient = await XamlLiveReloadClient.TryStartAsync();
+        if (s_liveReloadClient is null)
+        {
+            Console.WriteLine("[hot-reload] Dev host endpoints were not detected. Live XAML reapply is disabled.");
+        }
 
         // Keep the browser runtime alive after mounting the root view.
         await Task.Delay(Timeout.InfiniteTimeSpan);

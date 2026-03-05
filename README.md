@@ -57,14 +57,25 @@ Important:
 4. Edit `src/Maui.Browser.Sample/Demo/DemoState.cs` method bodies and `src/Maui.Browser.Sample/Demo/XamlDemoPage.xaml` text/properties.
 5. Observe:
    - `metadata` mode: method-body edits apply without full page reload when supported.
-   - `refresh-only` mode: browser auto-refresh applies edits.
-   - XAML edits currently use full-page refresh fallback (you will briefly see `Bootstrapping app...`).
+   - `refresh-only` mode: C# edits still fall back to browser refresh behavior.
+   - `XamlDemoPage.xaml` text/property edits are pushed over SSE and applied in place (no `Bootstrapping app...` flash).
+   - status label includes `last update: ...` (`metadata-delta`, `xaml-live-apply`, `xaml-apply-failed`).
+   - when live XAML apply fails, the prior UI remains active and the page shows a non-fatal error with a `Force full reload` button.
 
 Diagnostics:
 - Browser console logs include:
   - page boot count (`[hot-reload] page boot #...`)
   - runtime env flags (`DOTNET_MODIFIABLE_ASSEMBLIES`, `__ASPNETCORE_BROWSER_TOOLS`)
   - delta apply callback count when available.
+- Dev host exposes:
+  - `/_dev/events` (SSE stream for XAML change events)
+  - `/_dev/xaml?path=Demo/XamlDemoPage.xaml` (current XAML source payload)
+  - `/_dev/emit-xaml-change` (test-only synthetic change trigger used by E2E tests)
+
+Known live-XAML limits in this slice:
+- scoped to `Demo/XamlDemoPage.xaml` only.
+- structural edits that require new generated members or new code-behind methods are out of scope for in-place apply and still require rebuild/restart.
+- malformed XAML does not crash the app, but surfaces `xaml-apply-failed` and keeps the previous visual tree.
 
 ## Automated smoke checks
 
