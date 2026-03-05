@@ -282,24 +282,81 @@
                 TextColor="DarkSlateGray" />
         </VerticalStackLayout>
 
+        <Label
+            AutomationId="grid-semantics-heading"
+            FontSize="16"
+            Text="Grid semantics probe"
+            TextColor="Black" />
+
         <Grid
-            AutomationId="layout-fallback-grid"
-            ColumnDefinitions="*,*"
-            ColumnSpacing="8">
+            AutomationId="grid-semantic-container"
+            ColumnDefinitions="90,*,2*"
+            ColumnSpacing="10"
+            Padding="6"
+            RowDefinitions="Auto,52,Auto"
+            RowSpacing="8">
             <Label
                 Grid.Column="0"
-                AutomationId="layout-fallback-grid-left"
+                Grid.Row="0"
+                AutomationId="grid-r0-c0"
                 FontSize="12"
-                Text="Grid fallback left"
+                Text="Grid r0c0"
                 TextColor="DarkSlateGray" />
             <Label
                 Grid.Column="1"
-                AutomationId="layout-fallback-grid-right"
+                Grid.Row="0"
+                AutomationId="grid-r0-c1"
                 FontSize="12"
-                HorizontalTextAlignment="End"
-                Text="Grid fallback right"
+                Text="Grid r0c1"
+                TextColor="DarkSlateGray" />
+            <Label
+                Grid.Column="2"
+                Grid.Row="0"
+                AutomationId="grid-r0-c2"
+                FontSize="12"
+                Text="Grid r0c2"
+                TextColor="DarkSlateGray" />
+            <Label
+                Grid.Column="0"
+                Grid.ColumnSpan="2"
+                Grid.Row="1"
+                AutomationId="grid-span-center"
+                FontSize="12"
+                HorizontalOptions="Center"
+                Margin="4,0,0,0"
+                Text="Grid span center"
+                TextColor="DarkSlateGray" />
+            <Label
+                Grid.Column="2"
+                Grid.Row="1"
+                AutomationId="grid-align-end"
+                FontSize="12"
+                HeightRequest="16"
+                HorizontalOptions="End"
+                Text="Grid align"
+                TextColor="DarkSlateGray"
+                VerticalOptions="End"
+                WidthRequest="60" />
+            <Label
+                Grid.Column="0"
+                Grid.Row="2"
+                AutomationId="grid-r2-c0"
+                FontSize="12"
+                Text="Grid r2c0"
                 TextColor="DarkSlateGray" />
         </Grid>
+
+        <AbsoluteLayout
+            AutomationId="layout-fallback-absolute"
+            HeightRequest="36">
+            <Label
+                AutomationId="layout-fallback-absolute-child"
+                AbsoluteLayout.LayoutBounds="4,4,140,20"
+                AbsoluteLayout.LayoutFlags="None"
+                FontSize="12"
+                Text="Absolute fallback child"
+                TextColor="DarkSlateGray" />
+        </AbsoluteLayout>
         <Button
             AutomationId="stress-button"
             Clicked="OnStressClicked"
