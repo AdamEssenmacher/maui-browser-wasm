@@ -64,6 +64,7 @@ Expected pass signals:
 - Programmatic form-state updates reflect back into control visuals.
 - Resize updates viewport text.
 - Visibility/opacity transitions apply correctly.
+- StackLayout semantic projection checks pass (`VerticalStackLayout`/`HorizontalStackLayout` compute to `display:flex` with expected direction).
 - IView core checks pass: automation ids, flow direction, semantics ARIA updates, focus/unfocus, input transparency policy, transform and background updates.
 - Stress mutation test keeps DOM handle/subscription counts near baseline.
 
@@ -83,6 +84,7 @@ Expected pass signals:
 - Toggling core input transparency disables probe interaction without disabling the control.
 - Focus/unfocus buttons move focus to/from the core entry.
 - Transform/background/semantics actions update the probe style and ARIA attributes.
+- Root vertical and key horizontal stack rows render with semantic flex styles while grid remains fallback/non-flex in this slice.
 - Running leak stress increments stress run count and remains interactive.
 
 ## Prototype proof checklist
@@ -94,11 +96,12 @@ Expected pass signals:
 
 ## Notes
 
-- Layout uses absolute frame projection for correctness-first behavior.
+- Layout now uses semantic flex projection for stack layouts (`VerticalStackLayout`/`HorizontalStackLayout`) with automatic fallback to absolute projection for other layouts (including `Grid` in this slice).
 - Text measurement is currently canvas `measureText` based.
 - Font-load synchronization remains deferred.
 - `Switch` now renders as a dedicated toggle (`button[role=switch]` + track/thumb) with intrinsic hit width, so it stays visually distinct from `CheckBox` and does not stretch across the arranged row.
 - `CheckBox`/`Slider` color parity remains best-effort browser styling (`accent-color` plus slider background gradient); exact native visual parity is intentionally deferred.
 - `Clip` and `Shadow` are intentionally deferred in this slice: current behavior is no-op with DEBUG diagnostic warnings.
+- `Grid -> CSS Grid` semantic projection is intentionally deferred to a later slice; grid currently stays on absolute-compatible projection.
 
 See `AGENTS.md` for repository guardrails.

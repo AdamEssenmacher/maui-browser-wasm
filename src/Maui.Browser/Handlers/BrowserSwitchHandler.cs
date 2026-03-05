@@ -49,6 +49,8 @@ public sealed class BrowserSwitchHandler : BrowserViewHandler<ISwitch>
         platformView.Style("outlineOffset", "2px");
         platformView.Style("boxSizing", "border-box");
         platformView.Style("overflow", "visible");
+        platformView.Style("minWidth", CssUtil.Px(IntrinsicWidth));
+        platformView.Style("minHeight", CssUtil.Px(IntrinsicHeight));
 
         _trackElement = DomElement.Create("span");
         _thumbElement = DomElement.Create("span");
@@ -107,15 +109,23 @@ public sealed class BrowserSwitchHandler : BrowserViewHandler<ISwitch>
         var arrangedWidth = Math.Max(0, frame.Width);
         var arrangedHeight = Math.Max(0, frame.Height);
 
-        var width = Math.Min(IntrinsicWidth, arrangedWidth);
-        var height = Math.Min(IntrinsicHeight, arrangedHeight);
+        var desiredWidth = arrangedWidth < 1
+            ? IntrinsicWidth
+            : Math.Min(IntrinsicWidth, arrangedWidth);
+        var desiredHeight = arrangedHeight < 1
+            ? IntrinsicHeight
+            : Math.Min(IntrinsicHeight, arrangedHeight);
 
-        var x = frame.X + ResolveAlignedOffset(arrangedWidth, width, VirtualView.HorizontalLayoutAlignment);
-        var y = frame.Y + ResolveAlignedOffset(arrangedHeight, height, VirtualView.VerticalLayoutAlignment);
+        // Track/thumb math must use the same rendered dimensions as the host element.
+        var renderedWidth = Math.Max(desiredWidth, IntrinsicWidth);
+        var renderedHeight = Math.Max(desiredHeight, IntrinsicHeight);
 
-        _arrangedWidth = width;
-        _arrangedHeight = height;
-        BrowserViewMapper.ApplyFrame(PlatformView, new Rect(x, y, width, height));
+        var x = frame.X + ResolveAlignedOffset(arrangedWidth, renderedWidth, VirtualView.HorizontalLayoutAlignment);
+        var y = frame.Y + ResolveAlignedOffset(arrangedHeight, renderedHeight, VirtualView.VerticalLayoutAlignment);
+
+        _arrangedWidth = renderedWidth;
+        _arrangedHeight = renderedHeight;
+        BrowserViewMapper.ApplyFrame(PlatformView, new Rect(x, y, renderedWidth, renderedHeight));
         UpdateSwitchVisual(this, VirtualView);
     }
 

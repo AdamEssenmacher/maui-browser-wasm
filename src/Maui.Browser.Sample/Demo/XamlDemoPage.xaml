@@ -7,6 +7,7 @@
     Title="MAUI Browser DOM XAML Demo">
 
     <VerticalStackLayout
+        AutomationId="root-stack-container"
         x:Name="RootLayout"
         x:DataType="demo:DemoState"
         Padding="16"
@@ -35,6 +36,14 @@
             AutomationId="click-summary-label"
             FontSize="14"
             Text="{Binding ClickSummary}"
+            TextColor="DarkSlateGray" />
+
+        <Label
+            AutomationId="stack-center-alignment-probe"
+            FontSize="12"
+            HorizontalOptions="Center"
+            Margin="24,0,0,0"
+            Text="Center alignment probe"
             TextColor="DarkSlateGray" />
 
         <Label
@@ -200,7 +209,9 @@
                 Placeholder="Core focus target entry"
                 Text="Focus target" />
 
-            <HorizontalStackLayout Spacing="8">
+            <HorizontalStackLayout
+                AutomationId="core-focus-row"
+                Spacing="8">
                 <Button
                     AutomationId="core-focus-button"
                     Clicked="OnFocusCoreEntryClicked"
@@ -213,7 +224,8 @@
                     Clicked="OnUnfocusCoreEntryClicked"
                     Padding="12,8"
                     Text="Unfocus core entry"
-                    TextColor="Black" />
+                    TextColor="Black"
+                    VerticalOptions="End" />
             </HorizontalStackLayout>
 
             <Label
@@ -270,6 +282,24 @@
                 TextColor="DarkSlateGray" />
         </VerticalStackLayout>
 
+        <Grid
+            AutomationId="layout-fallback-grid"
+            ColumnDefinitions="*,*"
+            ColumnSpacing="8">
+            <Label
+                Grid.Column="0"
+                AutomationId="layout-fallback-grid-left"
+                FontSize="12"
+                Text="Grid fallback left"
+                TextColor="DarkSlateGray" />
+            <Label
+                Grid.Column="1"
+                AutomationId="layout-fallback-grid-right"
+                FontSize="12"
+                HorizontalTextAlignment="End"
+                Text="Grid fallback right"
+                TextColor="DarkSlateGray" />
+        </Grid>
         <Button
             AutomationId="stress-button"
             Clicked="OnStressClicked"
