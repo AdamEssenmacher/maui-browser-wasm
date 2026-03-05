@@ -51,11 +51,13 @@ app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = sampleFiles,
     ContentTypeProvider = contentTypeProvider,
-    ServeUnknownFileTypes = true
+    ServeUnknownFileTypes = true,
+    OnPrepareResponse = static context => ApplyNoCacheHeaders(context.Context.Response)
 });
 
 app.MapGet("/", async context =>
 {
+    ApplyNoCacheHeaders(context.Response);
     context.Response.ContentType = "text/html; charset=utf-8";
     var html = await File.ReadAllTextAsync(indexPath, context.RequestAborted);
     await context.Response.WriteAsync(html, context.RequestAborted);
@@ -70,16 +72,27 @@ if (devEndpointsEnabled)
         appBundle = sampleAppBundlePath,
         currentVersion = xamlChangeStream.CurrentVersion,
         allowedXamlPaths = xamlStore.AllowedPaths
-    }));
+    }))
+    .AddEndpointFilter(static (context, next) =>
+    {
+        ApplyNoCacheHeaders(context.HttpContext.Response);
+        return next(context);
+    });
 
     app.MapGet("/_dev/sample-version", () => Results.Json(new
     {
         version = xamlChangeStream.CurrentVersion,
         state = "watching"
-    }));
+    }))
+    .AddEndpointFilter(static (context, next) =>
+    {
+        ApplyNoCacheHeaders(context.HttpContext.Response);
+        return next(context);
+    });
 
     app.MapGet("/_dev/xaml", (HttpContext context) =>
     {
+        ApplyNoCacheHeaders(context.Response);
         var rawPath = context.Request.Query["path"].ToString();
         var relativePath = DevPathUtil.NormalizeRelativePath(rawPath);
 
@@ -98,6 +111,7 @@ if (devEndpointsEnabled)
 
     app.MapGet("/_dev/events", async context =>
     {
+        ApplyNoCacheHeaders(context.Response);
         context.Response.Headers.CacheControl = "no-cache";
         context.Response.Headers.Connection = "keep-alive";
         context.Response.Headers.Append("X-Accel-Buffering", "no");
@@ -178,6 +192,7 @@ else
 
 app.MapFallback(async context =>
 {
+    ApplyNoCacheHeaders(context.Response);
     context.Response.ContentType = "text/html; charset=utf-8";
     var html = await File.ReadAllTextAsync(indexPath, context.RequestAborted);
     await context.Response.WriteAsync(html, context.RequestAborted);
@@ -218,6 +233,13 @@ static bool ResolveDevEndpointState(IHostEnvironment environment)
 #else
     return environment.IsDevelopment() || string.Equals(Environment.GetEnvironmentVariable("DOTNET_WATCH"), "1", StringComparison.Ordinal);
 #endif
+}
+
+static void ApplyNoCacheHeaders(HttpResponse response)
+{
+    response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+    response.Headers.Pragma = "no-cache";
+    response.Headers.Expires = "0";
 }
 
 internal sealed record XamlChangeEvent(long Version, string RelativePath, DateTimeOffset Utc);
