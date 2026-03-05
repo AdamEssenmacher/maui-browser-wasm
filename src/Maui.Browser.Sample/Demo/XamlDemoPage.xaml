@@ -291,7 +291,6 @@
                 Text="Grid fallback right"
                 TextColor="DarkSlateGray" />
         </Grid>
-
         <Button
             AutomationId="stress-button"
             Clicked="OnStressClicked"
