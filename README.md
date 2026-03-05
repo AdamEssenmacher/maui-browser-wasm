@@ -65,6 +65,7 @@ Expected pass signals:
 - Resize updates viewport text.
 - Visibility/opacity transitions apply correctly.
 - StackLayout semantic projection checks pass (`VerticalStackLayout`/`HorizontalStackLayout` compute to `display:flex` with expected direction).
+- Grid semantic projection checks pass (`Grid` computes to `display:grid` with expected track, gap, and placement styles).
 - IView core checks pass: automation ids, flow direction, semantics ARIA updates, focus/unfocus, input transparency policy, transform and background updates.
 - Stress mutation test keeps DOM handle/subscription counts near baseline.
 
@@ -84,7 +85,9 @@ Expected pass signals:
 - Toggling core input transparency disables probe interaction without disabling the control.
 - Focus/unfocus buttons move focus to/from the core entry.
 - Transform/background/semantics actions update the probe style and ARIA attributes.
-- Root vertical and key horizontal stack rows render with semantic flex styles while grid remains fallback/non-flex in this slice.
+- Root vertical and key horizontal stack rows render with semantic flex styles.
+- Grid probe section renders as CSS grid with expected row/column placement and span behavior.
+- AbsoluteLayout probe remains on absolute-compatible projection (non-grid fallback path).
 - Running leak stress increments stress run count and remains interactive.
 
 ## Prototype proof checklist
@@ -96,12 +99,12 @@ Expected pass signals:
 
 ## Notes
 
-- Layout now uses semantic flex projection for stack layouts (`VerticalStackLayout`/`HorizontalStackLayout`) with automatic fallback to absolute projection for other layouts (including `Grid` in this slice).
+- Layout now uses semantic projection for `VerticalStackLayout`/`HorizontalStackLayout` (flex) and `Grid` (CSS grid) with automatic fallback to absolute projection for unresolved layouts.
 - Text measurement is currently canvas `measureText` based.
 - Font-load synchronization remains deferred.
 - `Switch` now renders as a dedicated toggle (`button[role=switch]` + track/thumb) with intrinsic hit width, so it stays visually distinct from `CheckBox` and does not stretch across the arranged row.
 - `CheckBox`/`Slider` color parity remains best-effort browser styling (`accent-color` plus slider background gradient); exact native visual parity is intentionally deferred.
 - `Clip` and `Shadow` are intentionally deferred in this slice: current behavior is no-op with DEBUG diagnostic warnings.
-- `Grid -> CSS Grid` semantic projection is intentionally deferred to a later slice; grid currently stays on absolute-compatible projection.
+- Grid track mapping is currently: absolute -> `px`, auto -> `auto`, star -> `fr` (non-positive star defaults to `1fr`); invalid grid metadata falls back to absolute projection.
 
 See `AGENTS.md` for repository guardrails.

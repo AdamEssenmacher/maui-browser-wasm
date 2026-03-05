@@ -16,7 +16,8 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
     {
         Absolute,
         FlexColumn,
-        FlexRow
+        FlexRow,
+        CssGrid
     }
 
     public static IPropertyMapper<MauiLayout, BrowserLayoutHandler> Mapper = new PropertyMapper<MauiLayout, BrowserLayoutHandler>(BrowserViewMapper.CommonViewMapper)
@@ -307,6 +308,7 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         {
             VerticalStackLayout => BrowserLayoutProjectionMode.FlexColumn,
             HorizontalStackLayout => BrowserLayoutProjectionMode.FlexRow,
+            Grid grid when IsGridMetadataUsable(grid) => BrowserLayoutProjectionMode.CssGrid,
             _ => BrowserLayoutProjectionMode.Absolute
         };
     }
@@ -329,6 +331,36 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
             platformView.Style("alignItems", null);
             platformView.Style("justifyContent", null);
             platformView.Style("gap", null);
+            platformView.Style("gridTemplateColumns", null);
+            platformView.Style("gridTemplateRows", null);
+            platformView.Style("columnGap", null);
+            platformView.Style("rowGap", null);
+            return;
+        }
+
+        if (projectionMode == BrowserLayoutProjectionMode.CssGrid)
+        {
+            if (layout is not Grid grid
+                || !TryBuildGridTrackTemplate(grid.ColumnDefinitions.Select(definition => definition.Width), out var columnsTemplate)
+                || !TryBuildGridTrackTemplate(grid.RowDefinitions.Select(definition => definition.Height), out var rowsTemplate))
+            {
+                platformView.Style("display", null);
+                platformView.Style("gridTemplateColumns", null);
+                platformView.Style("gridTemplateRows", null);
+                platformView.Style("columnGap", null);
+                platformView.Style("rowGap", null);
+                return;
+            }
+
+            platformView.Style("display", "grid");
+            platformView.Style("gridTemplateColumns", columnsTemplate);
+            platformView.Style("gridTemplateRows", rowsTemplate);
+            platformView.Style("columnGap", CssUtil.Px(grid.ColumnSpacing));
+            platformView.Style("rowGap", CssUtil.Px(grid.RowSpacing));
+            platformView.Style("gap", $"{CssUtil.Px(grid.RowSpacing)} {CssUtil.Px(grid.ColumnSpacing)}");
+            platformView.Style("flexDirection", null);
+            platformView.Style("alignItems", null);
+            platformView.Style("justifyContent", null);
             return;
         }
 
@@ -338,6 +370,10 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         platformView.Style("alignItems", "stretch");
         platformView.Style("justifyContent", "flex-start");
         platformView.Style("gap", CssUtil.Px(spacing));
+        platformView.Style("gridTemplateColumns", null);
+        platformView.Style("gridTemplateRows", null);
+        platformView.Style("columnGap", null);
+        platformView.Style("rowGap", null);
     }
 
     internal static void ApplyChildProjectionStyles(DomElement childPlatformView, IView childView, BrowserLayoutProjectionMode projectionMode)
@@ -345,7 +381,30 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         if (projectionMode == BrowserLayoutProjectionMode.Absolute)
         {
             childPlatformView.Style("alignSelf", null);
+            childPlatformView.Style("justifySelf", null);
             childPlatformView.Style("margin", null);
+            childPlatformView.Style("gridRowStart", null);
+            childPlatformView.Style("gridRowEnd", null);
+            childPlatformView.Style("gridColumnStart", null);
+            childPlatformView.Style("gridColumnEnd", null);
+            return;
+        }
+
+        if (projectionMode == BrowserLayoutProjectionMode.CssGrid)
+        {
+            var (row, column, rowSpan, columnSpan) = GetGridPlacement(childView);
+            childPlatformView.Style("position", "relative");
+            childPlatformView.Style("left", null);
+            childPlatformView.Style("top", null);
+            childPlatformView.Style("right", null);
+            childPlatformView.Style("bottom", null);
+            childPlatformView.Style("margin", ToCssThickness(childView.Margin));
+            childPlatformView.Style("gridRowStart", (row + 1).ToString(CultureInfo.InvariantCulture));
+            childPlatformView.Style("gridRowEnd", $"span {rowSpan.ToString(CultureInfo.InvariantCulture)}");
+            childPlatformView.Style("gridColumnStart", (column + 1).ToString(CultureInfo.InvariantCulture));
+            childPlatformView.Style("gridColumnEnd", $"span {columnSpan.ToString(CultureInfo.InvariantCulture)}");
+            childPlatformView.Style("justifySelf", ResolveGridSelfAlignment(childView.HorizontalLayoutAlignment));
+            childPlatformView.Style("alignSelf", ResolveGridSelfAlignment(childView.VerticalLayoutAlignment));
             return;
         }
 
@@ -354,6 +413,11 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         childPlatformView.Style("top", null);
         childPlatformView.Style("right", null);
         childPlatformView.Style("bottom", null);
+        childPlatformView.Style("gridRowStart", null);
+        childPlatformView.Style("gridRowEnd", null);
+        childPlatformView.Style("gridColumnStart", null);
+        childPlatformView.Style("gridColumnEnd", null);
+        childPlatformView.Style("justifySelf", null);
         childPlatformView.Style("alignSelf", ResolveChildAlignSelf(childView, projectionMode));
         childPlatformView.Style("margin", ToCssThickness(childView.Margin));
     }
@@ -435,5 +499,107 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         }
 
         return value;
+    }
+
+    private static bool IsGridMetadataUsable(Grid grid)
+    {
+        if (!IsValidGridSpacing(grid.ColumnSpacing) || !IsValidGridSpacing(grid.RowSpacing))
+        {
+            return false;
+        }
+
+        return TryBuildGridTrackTemplate(grid.ColumnDefinitions.Select(definition => definition.Width), out _)
+            && TryBuildGridTrackTemplate(grid.RowDefinitions.Select(definition => definition.Height), out _);
+    }
+
+    private static bool IsValidGridSpacing(double value)
+    {
+        if (double.IsNaN(value) || double.IsInfinity(value))
+        {
+            return false;
+        }
+
+        return value >= 0;
+    }
+
+    private static bool TryBuildGridTrackTemplate(IEnumerable<GridLength> trackLengths, out string? template)
+    {
+        var parts = new List<string>();
+        foreach (var trackLength in trackLengths)
+        {
+            if (!TryConvertGridTrack(trackLength, out var trackPart))
+            {
+                template = null;
+                return false;
+            }
+
+            parts.Add(trackPart);
+        }
+
+        // MAUI Grid with no explicit definitions behaves as a single star track.
+        template = parts.Count > 0 ? string.Join(" ", parts) : "1fr";
+        return true;
+    }
+
+    private static bool TryConvertGridTrack(GridLength trackLength, out string cssTrack)
+    {
+        if (trackLength.IsAuto)
+        {
+            cssTrack = "auto";
+            return true;
+        }
+
+        if (trackLength.IsStar)
+        {
+            var starValue = trackLength.Value;
+            if (double.IsNaN(starValue) || double.IsInfinity(starValue) || starValue <= 0)
+            {
+                starValue = 1;
+            }
+
+            cssTrack = $"{starValue.ToString("0.###", CultureInfo.InvariantCulture)}fr";
+            return true;
+        }
+
+        if (trackLength.IsAbsolute)
+        {
+            var absoluteValue = trackLength.Value;
+            if (double.IsNaN(absoluteValue) || double.IsInfinity(absoluteValue) || absoluteValue < 0)
+            {
+                cssTrack = string.Empty;
+                return false;
+            }
+
+            cssTrack = CssUtil.Px(absoluteValue);
+            return true;
+        }
+
+        cssTrack = string.Empty;
+        return false;
+    }
+
+    private static (int Row, int Column, int RowSpan, int ColumnSpan) GetGridPlacement(IView childView)
+    {
+        if (childView is not BindableObject bindableObject)
+        {
+            return (0, 0, 1, 1);
+        }
+
+        var row = Math.Max(0, Grid.GetRow(bindableObject));
+        var column = Math.Max(0, Grid.GetColumn(bindableObject));
+        var rowSpan = Math.Max(1, Grid.GetRowSpan(bindableObject));
+        var columnSpan = Math.Max(1, Grid.GetColumnSpan(bindableObject));
+        return (row, column, rowSpan, columnSpan);
+    }
+
+    private static string ResolveGridSelfAlignment(Microsoft.Maui.Primitives.LayoutAlignment alignment)
+    {
+        return alignment switch
+        {
+            Microsoft.Maui.Primitives.LayoutAlignment.Start => "start",
+            Microsoft.Maui.Primitives.LayoutAlignment.Center => "center",
+            Microsoft.Maui.Primitives.LayoutAlignment.End => "end",
+            _ => "stretch"
+        };
     }
 }

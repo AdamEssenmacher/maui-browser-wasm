@@ -10,7 +10,7 @@ Current first-slice handlers:
 - `BrowserCheckBoxHandler` (`ICheckBox` -> `<input type="checkbox">`)
 - `BrowserSliderHandler` (`ISlider` -> `<input type="range">`)
 - `BrowserPickerHandler` (`IPicker` -> `<select>`)
-- `BrowserLayoutHandler` (`ILayout` -> `<div>` + child command mapping, stack semantic flex projection with absolute fallback)
+- `BrowserLayoutHandler` (`ILayout` -> `<div>` + child command mapping, stack semantic flex and grid semantic CSS-grid projection with absolute fallback)
 - `BrowserContentViewHandler` (`IContentView` -> `<div>` + presented content)
 
 Shared pieces:

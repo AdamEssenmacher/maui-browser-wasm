@@ -32,6 +32,11 @@ public sealed class BrowserButtonHandler : BrowserViewHandler<ITextButton>
     {
         platformView.Attr("type", "button");
         platformView.Style("cursor", "pointer");
+        // Desired-size currently measures button text on a single line; enforce no-wrap so
+        // runtime rendering matches measured height and avoids clipped wrapped text.
+        platformView.Style("whiteSpace", "nowrap");
+        platformView.Style("textOverflow", "ellipsis");
+        platformView.Style("overflow", "hidden");
 
         _clickCallback = OnClick;
         _clickSubscriptionId = platformView.On("click", _clickCallback);

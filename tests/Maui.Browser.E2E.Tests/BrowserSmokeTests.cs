@@ -91,11 +91,62 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
         ]);
         Assert.True(rowLefts[0] < rowLefts[1], "Expected horizontal stack items to remain in left-to-right order.");
 
-        var fallbackDisplay = await ReadComputedStylePropertyAsync(page, "[data-automation-id='layout-fallback-grid']", "display");
+        var fallbackDisplay = await ReadComputedStylePropertyAsync(page, "[data-automation-id='layout-fallback-absolute']", "display");
         Assert.NotEqual("flex", fallbackDisplay);
 
         await page.GetByRole(AriaRole.Button, new() { Name = "Click to increment count" }).ClickAsync();
         await page.WaitForSelectorAsync("text=Button clicks: 1");
+    }
+
+    [Fact]
+    public async Task GridSemanticProjectionWorks()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenDemoAsync(context);
+
+        const string gridSelector = "[data-automation-id='grid-semantic-container']";
+        var gridDisplay = await ReadComputedStylePropertyAsync(page, gridSelector, "display");
+        var gridGap = await ReadInlineStylePropertyAsync(page, gridSelector, "gap");
+        Assert.Equal("grid", gridDisplay);
+        Assert.Equal("8px 10px", gridGap);
+
+        var gridColumns = await ReadInlineStylePropertyAsync(page, gridSelector, "gridTemplateColumns");
+        var gridRows = await ReadInlineStylePropertyAsync(page, gridSelector, "gridTemplateRows");
+        Assert.Equal("90px 1fr 2fr", gridColumns);
+        Assert.Equal("auto 52px auto", gridRows);
+
+        Assert.Equal("2", await ReadInlineStylePropertyAsync(page, "[data-automation-id='grid-r0-c1']", "gridColumnStart"));
+        Assert.Equal("1", await ReadInlineStylePropertyAsync(page, "[data-automation-id='grid-r0-c1']", "gridRowStart"));
+        Assert.Equal("1", await ReadInlineStylePropertyAsync(page, "[data-automation-id='grid-span-center']", "gridColumnStart"));
+        Assert.Equal("2", await ReadInlineStylePropertyAsync(page, "[data-automation-id='grid-span-center']", "gridRowStart"));
+        Assert.Equal("span 2", await ReadInlineStylePropertyAsync(page, "[data-automation-id='grid-span-center']", "gridColumnEnd"));
+
+        Assert.Equal("center", await ReadInlineStylePropertyAsync(page, "[data-automation-id='grid-span-center']", "justifySelf"));
+        Assert.Equal("end", await ReadInlineStylePropertyAsync(page, "[data-automation-id='grid-align-end']", "justifySelf"));
+        Assert.Equal("end", await ReadInlineStylePropertyAsync(page, "[data-automation-id='grid-align-end']", "alignSelf"));
+
+        var gridRowTops = await ReadBoundingTopsAsync(page, [
+            "[data-automation-id='grid-r0-c0']",
+            "[data-automation-id='grid-span-center']",
+            "[data-automation-id='grid-r2-c0']"
+        ]);
+        Assert.True(gridRowTops[0] < gridRowTops[1] && gridRowTops[1] < gridRowTops[2], "Expected grid row probes to remain top-to-bottom.");
+
+        var gridColumnLefts = await ReadBoundingLeftsAsync(page, [
+            "[data-automation-id='grid-r0-c0']",
+            "[data-automation-id='grid-r0-c1']",
+            "[data-automation-id='grid-r0-c2']"
+        ]);
+        Assert.True(gridColumnLefts[0] < gridColumnLefts[1] && gridColumnLefts[1] < gridColumnLefts[2], "Expected grid column probes to remain left-to-right.");
+
+        var spanWidth = await ReadElementWidthAsync(page, "[data-automation-id='grid-span-center']");
+        var singleCellWidth = await ReadElementWidthAsync(page, "[data-automation-id='grid-r0-c0']");
+        Assert.True(spanWidth > singleCellWidth, "Expected span probe width to exceed single-cell probe width.");
+
+        var absoluteFallbackDisplay = await ReadComputedStylePropertyAsync(page, "[data-automation-id='layout-fallback-absolute']", "display");
+        var absoluteFallbackChildLeft = await ReadInlineStylePropertyAsync(page, "[data-automation-id='layout-fallback-absolute-child']", "left");
+        Assert.NotEqual("grid", absoluteFallbackDisplay);
+        Assert.EndsWith("px", absoluteFallbackChildLeft, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -324,7 +375,37 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
                 }
 
                 const styles = getComputedStyle(element);
-                return styles[propertyName] ?? '';
+                const directValue = styles[propertyName];
+                if (typeof directValue === 'string' && directValue.length > 0) {
+                    return directValue;
+                }
+
+                const kebabCaseName = propertyName.includes('-')
+                    ? propertyName
+                    : propertyName.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
+                return styles.getPropertyValue(kebabCaseName) ?? '';
+            }",
+            new { selector, propertyName });
+    }
+
+    private static async Task<string> ReadInlineStylePropertyAsync(IPage page, string selector, string propertyName)
+    {
+        return await page.EvaluateAsync<string>(
+            @"({ selector, propertyName }) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return '';
+                }
+
+                const directValue = element.style[propertyName];
+                if (typeof directValue === 'string' && directValue.length > 0) {
+                    return directValue;
+                }
+
+                const kebabCaseName = propertyName.includes('-')
+                    ? propertyName
+                    : propertyName.replace(/[A-Z]/g, (match) => `-${match.toLowerCase()}`);
+                return element.style.getPropertyValue(kebabCaseName) ?? '';
             }",
             new { selector, propertyName });
     }
