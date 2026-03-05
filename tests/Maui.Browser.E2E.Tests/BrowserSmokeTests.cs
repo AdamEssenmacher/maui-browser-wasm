@@ -58,8 +58,12 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
 
         var rootDisplay = await ReadComputedStylePropertyAsync(page, "[data-automation-id='root-stack-container']", "display");
         var rootDirection = await ReadComputedStylePropertyAsync(page, "[data-automation-id='root-stack-container']", "flexDirection");
+        var rootPaddingTop = await ReadComputedStylePropertyAsync(page, "[data-automation-id='root-stack-container']", "paddingTop");
+        var rootPaddingLeft = await ReadComputedStylePropertyAsync(page, "[data-automation-id='root-stack-container']", "paddingLeft");
         Assert.Equal("flex", rootDisplay);
         Assert.Equal("column", rootDirection);
+        Assert.Equal("16px", rootPaddingTop);
+        Assert.Equal("16px", rootPaddingLeft);
 
         var rowDisplay = await ReadComputedStylePropertyAsync(page, "[data-automation-id='core-focus-row']", "display");
         var rowDirection = await ReadComputedStylePropertyAsync(page, "[data-automation-id='core-focus-row']", "flexDirection");

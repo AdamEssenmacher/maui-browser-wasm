@@ -141,9 +141,7 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
 
     public static void MapPadding(BrowserLayoutHandler handler, MauiLayout layout)
     {
-        // Child frames are already arranged with MAUI padding applied, so adding CSS padding
-        // here would double-inset absolutely-positioned children.
-        handler.PlatformView.Style("padding", string.Empty);
+        handler.ApplyPaddingStyle(layout, ResolveProjectionMode(layout));
     }
 
     public static void MapAdd(BrowserLayoutHandler handler, MauiLayout layout, object? arg)
@@ -288,6 +286,7 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
     {
         _projectionMode = projectionMode;
         ApplyContainerProjectionStyles(PlatformView, VirtualView, projectionMode);
+        ApplyPaddingStyle(VirtualView, projectionMode);
 
         foreach (var handler in _childHandlers.Values)
         {
@@ -368,5 +367,33 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         }
 
         return Math.Max(0, spacing);
+    }
+
+    private void ApplyPaddingStyle(MauiLayout layout, BrowserLayoutProjectionMode projectionMode)
+    {
+        if (projectionMode == BrowserLayoutProjectionMode.Absolute)
+        {
+            // Child frames are already arranged with MAUI padding applied, so adding CSS padding
+            // here would double-inset absolutely-positioned children.
+            PlatformView.Style("padding", string.Empty);
+            return;
+        }
+
+        var padding = layout.Padding;
+        var left = NormalizePaddingValue(padding.Left);
+        var top = NormalizePaddingValue(padding.Top);
+        var right = NormalizePaddingValue(padding.Right);
+        var bottom = NormalizePaddingValue(padding.Bottom);
+        PlatformView.Style("padding", $"{CssUtil.Px(top)} {CssUtil.Px(right)} {CssUtil.Px(bottom)} {CssUtil.Px(left)}");
+    }
+
+    private static double NormalizePaddingValue(double value)
+    {
+        if (double.IsNaN(value) || double.IsInfinity(value))
+        {
+            return 0;
+        }
+
+        return Math.Max(0, value);
     }
 }
