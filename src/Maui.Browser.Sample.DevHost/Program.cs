@@ -356,22 +356,32 @@ internal sealed class XamlDocumentStore
 internal sealed class XamlFileWatcher : IDisposable
 {
     private readonly string _sampleProjectDirectory;
-    private readonly HashSet<string> _allowedPaths;
-    private readonly ConcurrentDictionary<string, long> _lastEventTicks = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _allowedFullPathByRelativePath;
+    private readonly ConcurrentDictionary<string, long> _knownWriteTicks = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _debounceLock = new();
+    private CancellationTokenSource? _debounceCts;
     private FileSystemWatcher? _watcher;
 
     public XamlFileWatcher(string sampleProjectPath, IEnumerable<string> allowedPaths)
     {
         _sampleProjectDirectory = Path.GetDirectoryName(sampleProjectPath)
             ?? throw new DirectoryNotFoundException($"Unable to resolve project directory from '{sampleProjectPath}'.");
-        _allowedPaths = new HashSet<string>(allowedPaths.Select(DevPathUtil.NormalizeRelativePath), StringComparer.OrdinalIgnoreCase);
+        _allowedFullPathByRelativePath = allowedPaths
+            .Select(DevPathUtil.NormalizeRelativePath)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                keySelector: relative => relative,
+                elementSelector: relative => Path.GetFullPath(Path.Combine(_sampleProjectDirectory, relative)),
+                comparer: StringComparer.OrdinalIgnoreCase);
+
+        SeedKnownWriteTicks();
     }
 
     public event Action<string>? XamlChanged;
 
     public void Start()
     {
-        _watcher = new FileSystemWatcher(_sampleProjectDirectory, "*.xaml")
+        _watcher = new FileSystemWatcher(_sampleProjectDirectory, "*")
         {
             IncludeSubdirectories = true,
             NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.CreationTime
@@ -394,41 +404,104 @@ internal sealed class XamlFileWatcher : IDisposable
         }
 
         var fileName = Path.GetFileName(fullPath);
-        if (fileName.EndsWith("~", StringComparison.Ordinal) || fileName.StartsWith(".", StringComparison.Ordinal))
+        if (ShouldIgnorePath(fileName))
         {
             return;
         }
 
-        var relativePath = DevPathUtil.NormalizeRelativePath(Path.GetRelativePath(_sampleProjectDirectory, fullPath));
-        if (relativePath.StartsWith("../", StringComparison.Ordinal) || !_allowedPaths.Contains(relativePath))
-        {
-            return;
-        }
-
-        if (IsDuplicateBurst(relativePath))
-        {
-            return;
-        }
-
-        XamlChanged?.Invoke(relativePath);
+        QueueScan();
     }
 
-    private bool IsDuplicateBurst(string relativePath)
+    private void SeedKnownWriteTicks()
     {
-        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        if (_lastEventTicks.TryGetValue(relativePath, out var previous) && (now - previous) < 200)
+        foreach (var allowedPath in _allowedFullPathByRelativePath)
         {
-            _lastEventTicks[relativePath] = now;
+            _knownWriteTicks[allowedPath.Key] = GetWriteTick(allowedPath.Value);
+        }
+    }
+
+    private void QueueScan()
+    {
+        lock (_debounceLock)
+        {
+            _debounceCts?.Cancel();
+            _debounceCts?.Dispose();
+            _debounceCts = new CancellationTokenSource();
+            _ = DebounceThenScanAsync(_debounceCts.Token);
+        }
+    }
+
+    private async Task DebounceThenScanAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(250, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        foreach (var allowedPath in _allowedFullPathByRelativePath)
+        {
+            var relativePath = allowedPath.Key;
+            var fullPath = allowedPath.Value;
+            var currentTick = GetWriteTick(fullPath);
+            var previousTick = _knownWriteTicks.GetValueOrDefault(relativePath, currentTick);
+            if (currentTick == previousTick)
+            {
+                continue;
+            }
+
+            _knownWriteTicks[relativePath] = currentTick;
+            XamlChanged?.Invoke(relativePath);
+        }
+    }
+
+    private static long GetWriteTick(string fullPath)
+    {
+        if (!File.Exists(fullPath))
+        {
+            return 0;
+        }
+
+        return File.GetLastWriteTimeUtc(fullPath).Ticks;
+    }
+
+    private static bool ShouldIgnorePath(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
             return true;
         }
 
-        _lastEventTicks[relativePath] = now;
-        return false;
+        if (fileName.StartsWith(".", StringComparison.Ordinal) && !fileName.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        if (fileName.EndsWith("~", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (fileName.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     public void Dispose()
     {
         _watcher?.Dispose();
+        lock (_debounceLock)
+        {
+            _debounceCts?.Cancel();
+            _debounceCts?.Dispose();
+            _debounceCts = null;
+        }
     }
 }
 
