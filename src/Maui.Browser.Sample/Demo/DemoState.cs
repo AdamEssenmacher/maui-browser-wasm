@@ -12,6 +12,11 @@ internal sealed class DemoState : INotifyPropertyChanged
     private double _probeOpacity = 1.0;
     private int _stressRunCount;
 
+    private bool _formSwitchOn = true;
+    private bool _formCheckBoxChecked;
+    private double _formSliderValue = 35;
+    private int _formPickerSelectedIndex = 1;
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public string InputText
@@ -80,6 +85,64 @@ internal sealed class DemoState : INotifyPropertyChanged
         }
     }
 
+    public bool FormSwitchOn
+    {
+        get => _formSwitchOn;
+        set
+        {
+            if (SetProperty(ref _formSwitchOn, value))
+            {
+                OnPropertyChanged(nameof(FormSwitchSummary));
+            }
+        }
+    }
+
+    public bool FormCheckBoxChecked
+    {
+        get => _formCheckBoxChecked;
+        set
+        {
+            if (SetProperty(ref _formCheckBoxChecked, value))
+            {
+                OnPropertyChanged(nameof(FormCheckBoxSummary));
+            }
+        }
+    }
+
+    public double FormSliderValue
+    {
+        get => _formSliderValue;
+        set
+        {
+            var normalizedValue = Math.Max(0, Math.Min(100, value));
+            if (SetProperty(ref _formSliderValue, normalizedValue))
+            {
+                OnPropertyChanged(nameof(FormSliderSummary));
+            }
+        }
+    }
+
+    public int FormPickerSelectedIndex
+    {
+        get => _formPickerSelectedIndex;
+        set
+        {
+            var maxIndex = FormPickerItems.Count - 1;
+            var normalizedIndex = value < -1
+                ? -1
+                : value > maxIndex
+                    ? maxIndex
+                    : value;
+
+            if (SetProperty(ref _formPickerSelectedIndex, normalizedIndex))
+            {
+                OnPropertyChanged(nameof(FormPickerSummary));
+            }
+        }
+    }
+
+    public IReadOnlyList<string> FormPickerItems { get; } = ["Alpha", "Beta", "Gamma", "Delta"];
+
     public string LiveText => $"Live text: {InputText}";
 
     public string ClickSummary => $"Button clicks: {ClickCount}";
@@ -94,6 +157,28 @@ internal sealed class DemoState : INotifyPropertyChanged
         ? "Stress runs: not started"
         : $"Stress runs: {StressRunCount}";
 
+    public string FormSwitchSummary => FormSwitchOn
+        ? "Switch is on"
+        : "Switch is off";
+
+    public string FormCheckBoxSummary => FormCheckBoxChecked
+        ? "Checkbox is checked"
+        : "Checkbox is unchecked";
+
+    public string FormSliderSummary => $"Slider value: {FormSliderValue:0.##}";
+
+    public string FormPickerSummary
+    {
+        get
+        {
+            var selectedText = FormPickerSelectedIndex >= 0 && FormPickerSelectedIndex < FormPickerItems.Count
+                ? FormPickerItems[FormPickerSelectedIndex]
+                : "<none>";
+
+            return $"Picker selection: {FormPickerSelectedIndex} ({selectedText})";
+        }
+    }
+
     public void ToggleProbeVisibility()
     {
         ProbeIsVisible = !ProbeIsVisible;
@@ -107,6 +192,14 @@ internal sealed class DemoState : INotifyPropertyChanged
             > 0.4 => 0.25,
             _ => 1.0
         };
+    }
+
+    public void ApplyProgrammaticFormUpdate()
+    {
+        FormSwitchOn = false;
+        FormCheckBoxChecked = true;
+        FormSliderValue = 82;
+        FormPickerSelectedIndex = 2;
     }
 
     public void RecordStressRun()

@@ -78,6 +78,70 @@
             Text="{Binding ProbeOpacitySummary}"
             TextColor="DarkSlateGray" />
 
+        <Label
+            AutomationId="form-inputs-heading"
+            FontSize="16"
+            Text="Form inputs breadth"
+            TextColor="Black" />
+
+        <Switch
+            AutomationId="form-switch"
+            IsToggled="{Binding FormSwitchOn}"
+            OnColor="MediumSeaGreen"
+            ThumbColor="White" />
+
+        <Label
+            AutomationId="form-switch-summary-label"
+            FontSize="12"
+            Text="{Binding FormSwitchSummary}"
+            TextColor="DarkSlateGray" />
+
+        <CheckBox
+            AutomationId="form-checkbox"
+            Color="SeaGreen"
+            IsChecked="{Binding FormCheckBoxChecked}" />
+
+        <Label
+            AutomationId="form-checkbox-summary-label"
+            FontSize="12"
+            Text="{Binding FormCheckBoxSummary}"
+            TextColor="DarkSlateGray" />
+
+        <Slider
+            AutomationId="form-slider"
+            Maximum="100"
+            MaximumTrackColor="#CBD5E1"
+            Minimum="0"
+            MinimumTrackColor="#0EA5E9"
+            ThumbColor="#1E293B"
+            Value="{Binding FormSliderValue}" />
+
+        <Label
+            AutomationId="form-slider-summary-label"
+            FontSize="12"
+            Text="{Binding FormSliderSummary}"
+            TextColor="DarkSlateGray" />
+
+        <Picker
+            AutomationId="form-picker"
+            ItemsSource="{Binding FormPickerItems}"
+            SelectedIndex="{Binding FormPickerSelectedIndex}"
+            Title="Pick an item"
+            TitleColor="DarkSlateGray" />
+
+        <Label
+            AutomationId="form-picker-summary-label"
+            FontSize="12"
+            Text="{Binding FormPickerSummary}"
+            TextColor="DarkSlateGray" />
+
+        <Button
+            AutomationId="form-programmatic-button"
+            Clicked="OnApplyProgrammaticFormUpdateClicked"
+            Padding="12,8"
+            Text="Apply programmatic form update"
+            TextColor="Black" />
+
         <Button
             AutomationId="stress-button"
             Clicked="OnStressClicked"

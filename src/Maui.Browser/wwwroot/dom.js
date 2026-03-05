@@ -154,6 +154,28 @@ export function getInputValue(elementHandle) {
   return element.value ?? "";
 }
 
+export function setInputChecked(elementHandle, value) {
+  const element = fromHandle(elementHandle);
+  element.checked = Boolean(value);
+}
+
+export function getInputChecked(elementHandle) {
+  const element = fromHandle(elementHandle);
+  return Boolean(element.checked);
+}
+
+export function setSelectSelectedIndex(elementHandle, value) {
+  const element = fromHandle(elementHandle);
+  const selectedIndex = Number.isInteger(value) ? value : -1;
+  element.selectedIndex = selectedIndex;
+}
+
+export function getSelectSelectedIndex(elementHandle) {
+  const element = fromHandle(elementHandle);
+  const selectedIndex = element.selectedIndex;
+  return Number.isInteger(selectedIndex) ? selectedIndex : -1;
+}
+
 const resizeSubscriptions = new Map();
 let nextResizeSubscriptionId = 1;
 
