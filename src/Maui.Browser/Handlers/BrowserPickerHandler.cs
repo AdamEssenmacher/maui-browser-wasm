@@ -75,15 +75,6 @@ public sealed class BrowserPickerHandler : BrowserViewHandler<IPicker>
         return Math.Max(0, Math.Min(fallback, constraint));
     }
 
-    private void OnChange()
-    {
-        var selectedIndex = PlatformView.GetSelectSelectedIndex();
-        if (VirtualView.SelectedIndex != selectedIndex)
-        {
-            VirtualView.SelectedIndex = selectedIndex;
-        }
-    }
-
     public static void MapItems(BrowserPickerHandler handler, IPicker picker)
     {
         handler.RebuildOptions(picker);
@@ -91,31 +82,24 @@ public sealed class BrowserPickerHandler : BrowserViewHandler<IPicker>
 
     public static void MapSelectedIndex(BrowserPickerHandler handler, IPicker picker)
     {
-        var selectedIndex = picker.SelectedIndex;
-        if (selectedIndex < -1 || selectedIndex >= picker.Items.Count)
-        {
-            selectedIndex = -1;
-        }
-
-        handler.PlatformView.SetSelectSelectedIndex(selectedIndex);
+        handler.PlatformView.SetSelectSelectedIndex(handler.ToDomSelectedIndex(picker, picker.SelectedIndex));
+        UpdateDisplayedTextColor(handler, picker);
     }
 
     public static void MapTitle(BrowserPickerHandler handler, IPicker picker)
     {
         handler.PlatformView.Attr("aria-label", string.IsNullOrWhiteSpace(picker.Title) ? null : picker.Title);
+        handler.RebuildOptions(picker);
     }
 
     public static void MapTitleColor(BrowserPickerHandler handler, IPicker picker)
     {
-        handler.PlatformView.Style("color", CssUtil.ToCssColor(picker.TitleColor));
+        UpdateDisplayedTextColor(handler, picker);
     }
 
     public static void MapTextColor(BrowserPickerHandler handler, IPicker picker)
     {
-        if (picker is ITextStyle textStyle)
-        {
-            BrowserViewMapper.MapTextColor(textStyle, handler.PlatformView);
-        }
+        UpdateDisplayedTextColor(handler, picker);
     }
 
     public static void MapFont(BrowserPickerHandler handler, IPicker picker)
@@ -153,6 +137,16 @@ public sealed class BrowserPickerHandler : BrowserViewHandler<IPicker>
     {
         ClearOptions();
 
+        if (HasPlaceholderOption(picker))
+        {
+            var placeholderOption = DomElement.Create("option");
+            placeholderOption.Attr("value", string.Empty);
+            placeholderOption.Attr("disabled", "disabled");
+            placeholderOption.Text(picker.Title);
+            PlatformView.Append(placeholderOption);
+            _optionElements.Add(placeholderOption);
+        }
+
         for (var i = 0; i < picker.Items.Count; i++)
         {
             var optionElement = DomElement.Create("option");
@@ -163,6 +157,82 @@ public sealed class BrowserPickerHandler : BrowserViewHandler<IPicker>
         }
 
         MapSelectedIndex(this, picker);
+    }
+
+    private void OnChange()
+    {
+        var selectedIndex = FromDomSelectedIndex(VirtualView, PlatformView.GetSelectSelectedIndex());
+        if (VirtualView.SelectedIndex != selectedIndex)
+        {
+            VirtualView.SelectedIndex = selectedIndex;
+        }
+
+        UpdateDisplayedTextColor(this, VirtualView);
+    }
+
+    private int ToDomSelectedIndex(IPicker picker, int mauiSelectedIndex)
+    {
+        var normalizedMauiIndex = NormalizeMauiSelectedIndex(picker, mauiSelectedIndex);
+        if (normalizedMauiIndex < 0)
+        {
+            return HasPlaceholderOption(picker) ? 0 : -1;
+        }
+
+        return HasPlaceholderOption(picker)
+            ? normalizedMauiIndex + 1
+            : normalizedMauiIndex;
+    }
+
+    private static int FromDomSelectedIndex(IPicker picker, int domSelectedIndex)
+    {
+        if (!HasPlaceholderOption(picker))
+        {
+            return NormalizeMauiSelectedIndex(picker, domSelectedIndex);
+        }
+
+        if (domSelectedIndex <= 0)
+        {
+            return -1;
+        }
+
+        return NormalizeMauiSelectedIndex(picker, domSelectedIndex - 1);
+    }
+
+    private static int NormalizeMauiSelectedIndex(IPicker picker, int selectedIndex)
+    {
+        if (selectedIndex < -1 || selectedIndex >= picker.Items.Count)
+        {
+            return -1;
+        }
+
+        return selectedIndex;
+    }
+
+    private static bool HasPlaceholderOption(IPicker picker)
+    {
+        return !string.IsNullOrWhiteSpace(picker.Title);
+    }
+
+    private static void UpdateDisplayedTextColor(BrowserPickerHandler handler, IPicker picker)
+    {
+        var showTitleColor = HasPlaceholderOption(picker) && picker.SelectedIndex < 0;
+        var cssColor = showTitleColor
+            ? CssUtil.ToCssColor(picker.TitleColor)
+            : GetPickerTextColor(picker);
+
+        if (cssColor is null && showTitleColor)
+        {
+            cssColor = GetPickerTextColor(picker);
+        }
+
+        handler.PlatformView.Style("color", cssColor);
+    }
+
+    private static string? GetPickerTextColor(IPicker picker)
+    {
+        return picker is ITextStyle textStyle
+            ? CssUtil.ToCssColor(textStyle.TextColor)
+            : null;
     }
 
     private void ClearOptions()

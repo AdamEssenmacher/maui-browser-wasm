@@ -74,12 +74,26 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
         await checkBoxControl.ClickAsync();
         await page.WaitForSelectorAsync("text=Checkbox is unchecked");
 
-        await SetRangeValueAsync(page, 0, 64);
-        await page.WaitForSelectorAsync("text=Slider value: 64");
+        await SetRangeValueAsync(page, 0, 64.3);
+        await page.WaitForSelectorAsync("text=Slider value: 64.3");
+        Assert.InRange(await ReadInputNumericValueAsync(page, "input[type='range']", 0), 64.2, 64.4);
 
         var pickerControl = page.Locator("select").First;
+        await page.WaitForFunctionAsync(
+            @"() => {
+                const select = document.querySelector('select');
+                if (!select) {
+                    return false;
+                }
+
+                const first = select.options[0];
+                return !!first && first.text === 'Pick an item' && first.disabled === true;
+            }");
         await pickerControl.SelectOptionAsync(new[] { new SelectOptionValue { Index = 3 } });
         await page.WaitForSelectorAsync("text=Picker selection: 3 (Delta)");
+
+        await SetSelectIndexAsync(page, 0, 0);
+        await page.WaitForSelectorAsync("text=Picker selection: -1 (<none>)");
 
         await page.GetByRole(AriaRole.Button, new() { Name = "Apply programmatic form update" }).ClickAsync();
         await page.WaitForSelectorAsync("text=Switch is off");
@@ -195,6 +209,22 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
                 return Number.parseFloat(input.value ?? '');
             }",
             new { selector, index });
+    }
+
+    private static async Task SetSelectIndexAsync(IPage page, int index, int selectedIndex)
+    {
+        await page.EvaluateAsync(
+            @"({ index, selectedIndex }) => {
+                const selects = document.querySelectorAll('select');
+                const select = selects[index];
+                if (!select) {
+                    return;
+                }
+
+                select.selectedIndex = selectedIndex;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            }",
+            new { index, selectedIndex });
     }
 
     private static async Task<double> ReadElementWidthAsync(IPage page, string selector)

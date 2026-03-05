@@ -38,6 +38,7 @@ public sealed class BrowserSliderHandler : BrowserViewHandler<ISlider>
     protected override void ConnectHandler(DomElement platformView)
     {
         platformView.Attr("type", "range");
+        platformView.Attr("step", "any");
         platformView.Style("cursor", "pointer");
         platformView.Style("boxSizing", "border-box");
 
