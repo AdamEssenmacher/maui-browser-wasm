@@ -536,7 +536,8 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
             parts.Add(trackPart);
         }
 
-        template = parts.Count > 0 ? string.Join(" ", parts) : null;
+        // MAUI Grid with no explicit definitions behaves as a single star track.
+        template = parts.Count > 0 ? string.Join(" ", parts) : "1fr";
         return true;
     }
 
