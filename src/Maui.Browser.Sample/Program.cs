@@ -18,6 +18,8 @@ public static class Program
         builder.UseMauiApp<SampleApp>();
         builder.UseMauiBrowser();
 
+        Console.WriteLine($"Hot reload capability: {(HotReloadStatus.MetadataUpdaterSupported ? "metadata" : "refresh-only")}.");
+
         var mauiApp = builder.Build();
         await BrowserAppHost.RunAsync(mauiApp, rootElementId: "app");
 

@@ -24,3 +24,10 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - MAUI Controls in this slice still expose `IsVisible` flow for probe interactions (collapsed semantics); explicit `Visibility.Hidden` authoring from controls is deferred and remains a known gap for a later slice.
 - Sample app now includes a real `.xaml` `ContentPage` rendered through Browser handlers; for this prototype the page is loaded from embedded XAML via `LoadFromXaml(typeof(...))` to keep startup deterministic in the `net10.0-browser` host without introducing additional platform tooling seams.
 - `Window.Page` remaps now trigger an immediate measure/arrange pass using the last known window frame (or current DOM client size fallback) so runtime root-page swaps do not wait for browser resize to become visible.
+
+## 2026-03-04 (Hot Reload Proof Slice)
+- Added a dedicated ASP.NET Core dev host (`Maui.Browser.Sample.DevHost`) for `dotnet watch` development so browser-refresh tooling can attach without changing the existing WasmAppHost runtime path.
+- Capability gate is explicit in-sample: UI now reports `Hot reload mode: metadata` or `refresh-only` using `MetadataUpdater.IsSupported` plus runtime env flags (`DOTNET_MODIFIABLE_ASSEMBLIES`, `__ASPNETCORE_BROWSER_TOOLS`).
+- Debug sample builds now opt in to hot reload intent via `WasmEnableHotReload=true` and `MetadataUpdaterSupport=true`; a Debug-only reference to `Microsoft.DotNet.HotReload.WebAssembly.Browser` is included so browser initializer assets are available when the runtime supports metadata deltas.
+- A lightweight prerequisite check script validates Debug runtime config flags and hot reload JS asset presence; this runs in CI as a proof guard.
+- Current XAML behavior uses fallback full-page refresh: DevHost watches `*.xaml`, rebuilds the sample app, and client-side diagnostics poll a version endpoint to force reload when the rebuilt output changes.

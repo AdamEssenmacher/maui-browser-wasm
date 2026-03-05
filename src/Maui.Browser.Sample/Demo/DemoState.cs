@@ -12,7 +12,14 @@ internal sealed class DemoState : INotifyPropertyChanged
     private double _probeOpacity = 1.0;
     private int _stressRunCount;
 
+    public DemoState()
+    {
+        HotReloadSummary = HotReloadStatus.BuildSummary();
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    public string HotReloadSummary { get; }
 
     public string InputText
     {

@@ -30,6 +30,12 @@ jobs:
       - name: Build
         run: dotnet build MauiDomWasm.sln --configuration Release --no-restore
 
+      - name: Build Debug sample for hot reload check
+        run: dotnet build src/Maui.Browser.Sample/Maui.Browser.Sample.csproj --configuration Debug
+
+      - name: Hot reload prerequisites
+        run: ./scripts/check-hotreload-prereqs.sh
+
       - name: Install Playwright browser
         run: |
           pwsh tests/Maui.Browser.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium

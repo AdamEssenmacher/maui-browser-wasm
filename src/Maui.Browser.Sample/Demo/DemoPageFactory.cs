@@ -17,6 +17,14 @@ internal static class DemoPageFactory
         };
         liveTextLabel.SetBinding(Label.TextProperty, static (DemoState vm) => vm.LiveText);
 
+        var hotReloadLabel = new Label
+        {
+            FontSize = 12,
+            TextColor = Colors.DarkOliveGreen,
+            AutomationId = "hot-reload-label"
+        };
+        hotReloadLabel.SetBinding(Label.TextProperty, static (DemoState vm) => vm.HotReloadSummary);
+
         var entry = new Entry
         {
             Placeholder = "Type here...",
@@ -128,6 +136,7 @@ internal static class DemoPageFactory
             Children =
             {
                 liveTextLabel,
+                hotReloadLabel,
                 entry,
                 clickButton,
                 clickSummaryLabel,

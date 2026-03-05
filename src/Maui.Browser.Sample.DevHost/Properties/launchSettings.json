@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Maui.Browser.Sample.DevHost": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:5173",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}

@@ -17,8 +17,12 @@ Current state:
   Browser backend: DOM interop, handlers, hosting, measurement.
 - `src/Maui.Browser.Sample/`
   `net10.0-browser` host app mounted under `#app`.
+- `src/Maui.Browser.Sample.DevHost/`
+  ASP.NET Core dev-only host used for `dotnet watch` browser refresh + hot reload plumbing.
 - `tests/Maui.Browser.E2E.Tests/`
   Playwright smoke and stress validation.
+- `scripts/check-hotreload-prereqs.sh`
+  Build-time check for hot reload prerequisites in Debug output.
 - `docs/DECISIONS.md`
   Architecture/implementation decision log.
 
@@ -44,13 +48,35 @@ Important:
   - `dotnet clean src/Maui.Browser.Sample/Maui.Browser.Sample.csproj`
   - `dotnet build src/Maui.Browser.Sample/Maui.Browser.Sample.csproj -t:Rebuild`
 
+## Hot reload dev loop
+
+1. Start the dev host with watch:
+   - `dotnet watch --project src/Maui.Browser.Sample.DevHost/Maui.Browser.Sample.DevHost.csproj run`
+2. Open `http://localhost:5173`.
+3. Confirm the page shows a `Hot reload mode: ...` status label.
+4. Edit `src/Maui.Browser.Sample/Demo/DemoState.cs` method bodies and `src/Maui.Browser.Sample/Demo/XamlDemoPage.xaml` text/properties.
+5. Observe:
+   - `metadata` mode: method-body edits apply without full page reload when supported.
+   - `refresh-only` mode: browser auto-refresh applies edits.
+   - XAML edits currently use full-page refresh fallback (you will briefly see `Bootstrapping app...`).
+
+Diagnostics:
+- Browser console logs include:
+  - page boot count (`[hot-reload] page boot #...`)
+  - runtime env flags (`DOTNET_MODIFIABLE_ASSEMBLIES`, `__ASPNETCORE_BROWSER_TOOLS`)
+  - delta apply callback count when available.
+
 ## Automated smoke checks
 
 1. Build release artifacts:
    - `dotnet build MauiDomWasm.sln --configuration Release`
-2. Install Playwright browser:
+2. Build Debug sample artifacts for hot reload proof:
+   - `dotnet build src/Maui.Browser.Sample/Maui.Browser.Sample.csproj --configuration Debug`
+3. Verify hot reload prerequisites (Debug):
+   - `./scripts/check-hotreload-prereqs.sh`
+4. Install Playwright browser:
    - `pwsh tests/Maui.Browser.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium`
-3. Run smoke tests:
+5. Run smoke tests:
    - `dotnet test tests/Maui.Browser.E2E.Tests/Maui.Browser.E2E.Tests.csproj --configuration Release --no-build`
 
 Expected pass signals:
@@ -64,6 +90,7 @@ Expected pass signals:
 ## Manual runtime checklist
 
 - Page renders under `#app`.
+- `Hot reload mode: ...` label appears and reports `metadata` or `refresh-only`.
 - Typing into `Entry` updates the live text label.
 - Clicking increment button updates click summary.
 - Resizing browser updates viewport/layout status text.

@@ -18,6 +18,12 @@
             Text="{Binding LiveText}"
             TextColor="Black" />
 
+        <Label
+            AutomationId="hot-reload-label"
+            FontSize="12"
+            Text="{Binding HotReloadSummary}"
+            TextColor="DarkOliveGreen" />
+
         <Entry
             AutomationId="live-input-entry"
             FontSize="16"

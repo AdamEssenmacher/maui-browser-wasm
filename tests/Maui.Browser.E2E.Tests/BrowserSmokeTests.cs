@@ -93,6 +93,7 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
             WaitUntil = WaitUntilState.DOMContentLoaded
         });
 
+        await page.WaitForSelectorAsync("text=Hot reload mode:");
         await page.WaitForSelectorAsync("text=Live text:");
         return page;
     }

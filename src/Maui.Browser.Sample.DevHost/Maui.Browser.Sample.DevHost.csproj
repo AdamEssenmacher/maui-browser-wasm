@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Watch Include="..\Maui.Browser.Sample\**\*.xaml"
+           ProjectFullPath="..\Maui.Browser.Sample\Maui.Browser.Sample.csproj" />
+    <Watch Include="..\Maui.Browser.Sample\wwwroot\**\*.*"
+           ProjectFullPath="..\Maui.Browser.Sample\Maui.Browser.Sample.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(DotNetWatchBuild)' == 'true'">
+    <ProjectReference Include="..\Maui.Browser.Sample\Maui.Browser.Sample.csproj"
+                      ReferenceOutputAssembly="false"
+                      SkipGetTargetFrameworkProperties="true"
+                      AdditionalProperties="TargetFramework=net10.0-browser" />
+  </ItemGroup>
+
+  <Target Name="BuildBrowserSampleAppForWatch"
+          BeforeTargets="Build"
+          Condition="'$(DOTNET_WATCH)' == '1'">
+    <MSBuild Projects="..\Maui.Browser.Sample\Maui.Browser.Sample.csproj"
+             Targets="Build"
+             Properties="Configuration=$(Configuration)" />
+  </Target>
+
+</Project>
