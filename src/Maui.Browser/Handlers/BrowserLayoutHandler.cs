@@ -1,6 +1,8 @@
 using System.Globalization;
 using Maui.Browser.Dom;
+using Maui.Browser.Utils;
 using Microsoft.Maui;
+using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 using Microsoft.Maui.Platform;
@@ -10,8 +12,16 @@ namespace Maui.Browser.Handlers;
 
 public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayoutHandler
 {
+    internal enum BrowserLayoutProjectionMode
+    {
+        Absolute,
+        FlexColumn,
+        FlexRow
+    }
+
     public static IPropertyMapper<MauiLayout, BrowserLayoutHandler> Mapper = new PropertyMapper<MauiLayout, BrowserLayoutHandler>(BrowserViewMapper.CommonViewMapper)
     {
+        [nameof(IView.Visibility)] = MapVisibility,
         [nameof(MauiLayout.ClipsToBounds)] = MapClipsToBounds,
         [nameof(MauiLayout.Padding)] = MapPadding
     };
@@ -32,6 +42,7 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
     }
 
     private readonly Dictionary<IView, IElementHandler> _childHandlers = new();
+    private BrowserLayoutProjectionMode _projectionMode;
 
     MauiLayout ILayoutHandler.VirtualView => VirtualView;
 
@@ -48,11 +59,14 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
     {
         base.PlatformArrange(frame);
         VirtualView.CrossPlatformArrange(new Rect(0, 0, frame.Width, frame.Height));
+        ApplyProjectionStyles(ResolveProjectionMode(VirtualView));
     }
 
     protected override void ConnectHandler(DomElement platformView)
     {
+        _projectionMode = ResolveProjectionMode(VirtualView);
         platformView.Style("overflow", "visible");
+        ApplyContainerProjectionStyles(platformView, VirtualView, _projectionMode);
         RebuildChildren();
         base.ConnectHandler(platformView);
     }
@@ -73,17 +87,20 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         _childHandlers[view] = childHandler;
         PlatformView.Append(childPlatformView);
         UpdateZIndex(view);
+        ApplyChildProjectionStyles(childPlatformView, _projectionMode);
     }
 
     public void Remove(IView view)
     {
         DisconnectChild(view, removeFromDom: true);
+        ApplyProjectionStyles(_projectionMode);
     }
 
     public void Clear()
     {
         DisconnectAllChildren();
         PlatformView.ClearChildren();
+        ApplyProjectionStyles(_projectionMode);
     }
 
     public void Insert(int index, IView view)
@@ -109,6 +126,17 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
     public static void MapClipsToBounds(BrowserLayoutHandler handler, MauiLayout layout)
     {
         handler.PlatformView.Style("overflow", layout.ClipsToBounds ? "hidden" : "visible");
+    }
+
+    public static void MapVisibility(BrowserLayoutHandler handler, MauiLayout layout)
+    {
+        BrowserViewMapper.MapVisibility(layout, handler.PlatformView);
+        if (layout.Visibility == Visibility.Collapsed)
+        {
+            return;
+        }
+
+        handler.ApplyProjectionStyles(ResolveProjectionMode(layout));
     }
 
     public static void MapPadding(BrowserLayoutHandler handler, MauiLayout layout)
@@ -196,7 +224,10 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
             _childHandlers[child] = childHandler;
             PlatformView.Append(childPlatformView);
             UpdateZIndex(child);
+            ApplyChildProjectionStyles(childPlatformView, _projectionMode);
         }
+
+        ApplyProjectionStyles(_projectionMode);
     }
 
     private bool TryGetChild(IView view, out IElementHandler childHandler, out DomElement childPlatformView)
@@ -251,5 +282,91 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
 
         childHandler.DisconnectHandler();
         _childHandlers.Remove(child);
+    }
+
+    private void ApplyProjectionStyles(BrowserLayoutProjectionMode projectionMode)
+    {
+        _projectionMode = projectionMode;
+        ApplyContainerProjectionStyles(PlatformView, VirtualView, projectionMode);
+
+        foreach (var handler in _childHandlers.Values)
+        {
+            if (handler.PlatformView is not DomElement childPlatformView)
+            {
+                continue;
+            }
+
+            ApplyChildProjectionStyles(childPlatformView, projectionMode);
+        }
+    }
+
+    internal static BrowserLayoutProjectionMode ResolveProjectionMode(MauiLayout layout)
+    {
+        return layout switch
+        {
+            VerticalStackLayout => BrowserLayoutProjectionMode.FlexColumn,
+            HorizontalStackLayout => BrowserLayoutProjectionMode.FlexRow,
+            _ => BrowserLayoutProjectionMode.Absolute
+        };
+    }
+
+    internal static void ApplyContainerProjectionStyles(
+        DomElement platformView,
+        MauiLayout layout,
+        BrowserLayoutProjectionMode projectionMode)
+    {
+        if (layout.Visibility == Visibility.Collapsed)
+        {
+            platformView.Style("display", "none");
+            return;
+        }
+
+        if (projectionMode == BrowserLayoutProjectionMode.Absolute)
+        {
+            platformView.Style("display", null);
+            platformView.Style("flexDirection", null);
+            platformView.Style("alignItems", null);
+            platformView.Style("justifyContent", null);
+            platformView.Style("gap", null);
+            return;
+        }
+
+        var spacing = GetLayoutSpacing(layout);
+        platformView.Style("display", "flex");
+        platformView.Style("flexDirection", projectionMode == BrowserLayoutProjectionMode.FlexRow ? "row" : "column");
+        platformView.Style("alignItems", "stretch");
+        platformView.Style("justifyContent", "flex-start");
+        platformView.Style("gap", CssUtil.Px(spacing));
+    }
+
+    internal static void ApplyChildProjectionStyles(DomElement childPlatformView, BrowserLayoutProjectionMode projectionMode)
+    {
+        if (projectionMode == BrowserLayoutProjectionMode.Absolute)
+        {
+            return;
+        }
+
+        childPlatformView.Style("position", "relative");
+        childPlatformView.Style("left", null);
+        childPlatformView.Style("top", null);
+        childPlatformView.Style("right", null);
+        childPlatformView.Style("bottom", null);
+    }
+
+    private static double GetLayoutSpacing(MauiLayout layout)
+    {
+        var spacing = layout switch
+        {
+            VerticalStackLayout verticalStackLayout => verticalStackLayout.Spacing,
+            HorizontalStackLayout horizontalStackLayout => horizontalStackLayout.Spacing,
+            _ => 0
+        };
+
+        if (double.IsNaN(spacing) || double.IsInfinity(spacing))
+        {
+            return 0;
+        }
+
+        return Math.Max(0, spacing);
     }
 }

@@ -51,24 +51,65 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
     }
 
     [Fact]
+    public async Task StackLayoutSemanticProjectionWorks()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenDemoAsync(context);
+
+        var rootDisplay = await ReadComputedStylePropertyAsync(page, "[data-automation-id='root-stack-container']", "display");
+        var rootDirection = await ReadComputedStylePropertyAsync(page, "[data-automation-id='root-stack-container']", "flexDirection");
+        Assert.Equal("flex", rootDisplay);
+        Assert.Equal("column", rootDirection);
+
+        var rowDisplay = await ReadComputedStylePropertyAsync(page, "[data-automation-id='core-focus-row']", "display");
+        var rowDirection = await ReadComputedStylePropertyAsync(page, "[data-automation-id='core-focus-row']", "flexDirection");
+        Assert.Equal("flex", rowDisplay);
+        Assert.Equal("row", rowDirection);
+
+        var verticalTops = await ReadBoundingTopsAsync(page, [
+            "[data-automation-id='live-text-label']",
+            "[data-automation-id='live-input-entry']",
+            "[data-automation-id='click-button']"
+        ]);
+        Assert.True(verticalTops[0] < verticalTops[1] && verticalTops[1] < verticalTops[2], "Expected root stack items to remain in top-to-bottom order.");
+
+        var rowLefts = await ReadBoundingLeftsAsync(page, [
+            "[data-automation-id='core-focus-button']",
+            "[data-automation-id='core-unfocus-button']"
+        ]);
+        Assert.True(rowLefts[0] < rowLefts[1], "Expected horizontal stack items to remain in left-to-right order.");
+
+        var fallbackDisplay = await ReadComputedStylePropertyAsync(page, "[data-automation-id='layout-fallback-grid']", "display");
+        Assert.NotEqual("flex", fallbackDisplay);
+
+        await page.GetByRole(AriaRole.Button, new() { Name = "Click to increment count" }).ClickAsync();
+        await page.WaitForSelectorAsync("text=Button clicks: 1");
+    }
+
+    [Fact]
     public async Task FormInputBreadthFlowWorks()
     {
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenDemoAsync(context);
 
-        var switchControl = page.GetByRole(AriaRole.Switch).First;
-        Assert.InRange(await ReadElementWidthAsync(page, "[role='switch']"), 44, 60);
+        const string switchSelector = "[data-automation-id='form-switch']";
+        var switchControl = page.Locator(switchSelector).First;
+        await ScrollIntoViewAsync(page, switchSelector);
+        Assert.InRange(await ReadElementWidthAsync(page, switchSelector), 44, 60);
+        Assert.InRange(await ReadElementHeightAsync(page, switchSelector), 24, 40);
 
         await switchControl.ClickAsync();
         await page.WaitForSelectorAsync("text=Switch is off");
-        Assert.False(await ReadAriaCheckedAsync(page, "[role='switch']"));
+        Assert.False(await ReadAriaCheckedAsync(page, switchSelector));
 
         await switchControl.ClickAsync();
         await page.WaitForSelectorAsync("text=Switch is on");
-        Assert.True(await ReadAriaCheckedAsync(page, "[role='switch']"));
+        Assert.True(await ReadAriaCheckedAsync(page, switchSelector));
         await AssertSwitchTrackStylePresentAsync(page);
 
-        var checkBoxControl = page.GetByRole(AriaRole.Checkbox).First;
+        const string checkBoxSelector = "[data-automation-id='form-checkbox']";
+        var checkBoxControl = page.Locator(checkBoxSelector).First;
+        await ScrollIntoViewAsync(page, checkBoxSelector);
         await checkBoxControl.ClickAsync();
         await page.WaitForSelectorAsync("text=Checkbox is checked");
         await checkBoxControl.ClickAsync();
@@ -101,7 +142,7 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
         await page.WaitForSelectorAsync("text=Slider value: 82");
         await page.WaitForSelectorAsync("text=Picker selection: 2 (Gamma)");
 
-        Assert.False(await ReadAriaCheckedAsync(page, "[role='switch']"));
+        Assert.False(await ReadAriaCheckedAsync(page, switchSelector));
         Assert.True(await checkBoxControl.IsCheckedAsync());
         Assert.InRange(await ReadInputNumericValueAsync(page, "input[type='range']", 0), 81.9, 82.1);
 
@@ -258,6 +299,49 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
             "() => Array.from(document.querySelectorAll('*')).find(el => el.textContent?.startsWith('Viewport/layout size:'))?.textContent ?? ''");
     }
 
+    private static async Task<string> ReadComputedStylePropertyAsync(IPage page, string selector, string propertyName)
+    {
+        return await page.EvaluateAsync<string>(
+            @"({ selector, propertyName }) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return '';
+                }
+
+                const styles = getComputedStyle(element);
+                return styles[propertyName] ?? '';
+            }",
+            new { selector, propertyName });
+    }
+
+    private static async Task<double[]> ReadBoundingTopsAsync(IPage page, string[] selectors)
+    {
+        return await page.EvaluateAsync<double[]>(
+            @"(selectors) => selectors.map((selector) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return Number.NaN;
+                }
+
+                return element.getBoundingClientRect().top;
+            })",
+            selectors);
+    }
+
+    private static async Task<double[]> ReadBoundingLeftsAsync(IPage page, string[] selectors)
+    {
+        return await page.EvaluateAsync<double[]>(
+            @"(selectors) => selectors.map((selector) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return Number.NaN;
+                }
+
+                return element.getBoundingClientRect().left;
+            })",
+            selectors);
+    }
+
     private static async Task<DomDiagnosticSnapshot> ReadDiagnosticsAsync(IPage page)
     {
         var values = await page.EvaluateAsync<int[]>(@"async () => {
@@ -333,6 +417,20 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
             selector);
     }
 
+    private static async Task<double> ReadElementHeightAsync(IPage page, string selector)
+    {
+        return await page.EvaluateAsync<double>(
+            @"(selector) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return Number.NaN;
+                }
+
+                return element.getBoundingClientRect().height;
+            }",
+            selector);
+    }
+
     private static async Task<bool> ReadAriaCheckedAsync(IPage page, string selector)
     {
         return await page.EvaluateAsync<bool>(
@@ -343,11 +441,25 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
             selector);
     }
 
+    private static async Task ScrollIntoViewAsync(IPage page, string selector)
+    {
+        await page.EvaluateAsync(
+            @"(selector) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return;
+                }
+
+                element.scrollIntoView({ block: 'center', inline: 'center' });
+            }",
+            selector);
+    }
+
     private static async Task AssertSwitchTrackStylePresentAsync(IPage page)
     {
         var trackColor = await page.EvaluateAsync<string>(
             @"() => {
-                const switchElement = document.querySelector('[role=""switch""]');
+                const switchElement = document.querySelector('[data-automation-id=""form-switch""]');
                 const track = switchElement?.querySelector('span');
                 if (!track) {
                     return '';

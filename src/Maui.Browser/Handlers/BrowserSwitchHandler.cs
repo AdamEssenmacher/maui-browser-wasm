@@ -49,6 +49,8 @@ public sealed class BrowserSwitchHandler : BrowserViewHandler<ISwitch>
         platformView.Style("outlineOffset", "2px");
         platformView.Style("boxSizing", "border-box");
         platformView.Style("overflow", "visible");
+        platformView.Style("minWidth", CssUtil.Px(IntrinsicWidth));
+        platformView.Style("minHeight", CssUtil.Px(IntrinsicHeight));
 
         _trackElement = DomElement.Create("span");
         _thumbElement = DomElement.Create("span");
@@ -107,8 +109,12 @@ public sealed class BrowserSwitchHandler : BrowserViewHandler<ISwitch>
         var arrangedWidth = Math.Max(0, frame.Width);
         var arrangedHeight = Math.Max(0, frame.Height);
 
-        var width = Math.Min(IntrinsicWidth, arrangedWidth);
-        var height = Math.Min(IntrinsicHeight, arrangedHeight);
+        var width = arrangedWidth < 1
+            ? IntrinsicWidth
+            : Math.Min(IntrinsicWidth, arrangedWidth);
+        var height = arrangedHeight < 1
+            ? IntrinsicHeight
+            : Math.Min(IntrinsicHeight, arrangedHeight);
 
         var x = frame.X + ResolveAlignedOffset(arrangedWidth, width, VirtualView.HorizontalLayoutAlignment);
         var y = frame.Y + ResolveAlignedOffset(arrangedHeight, height, VirtualView.VerticalLayoutAlignment);

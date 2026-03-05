@@ -7,6 +7,7 @@
     Title="MAUI Browser DOM XAML Demo">
 
     <VerticalStackLayout
+        AutomationId="root-stack-container"
         x:Name="RootLayout"
         x:DataType="demo:DemoState"
         Padding="16"
@@ -200,7 +201,9 @@
                 Placeholder="Core focus target entry"
                 Text="Focus target" />
 
-            <HorizontalStackLayout Spacing="8">
+            <HorizontalStackLayout
+                AutomationId="core-focus-row"
+                Spacing="8">
                 <Button
                     AutomationId="core-focus-button"
                     Clicked="OnFocusCoreEntryClicked"
@@ -269,6 +272,25 @@
                 Text="{Binding CoreSemanticsSummary}"
                 TextColor="DarkSlateGray" />
         </VerticalStackLayout>
+
+        <Grid
+            AutomationId="layout-fallback-grid"
+            ColumnDefinitions="*,*"
+            ColumnSpacing="8">
+            <Label
+                Grid.Column="0"
+                AutomationId="layout-fallback-grid-left"
+                FontSize="12"
+                Text="Grid fallback left"
+                TextColor="DarkSlateGray" />
+            <Label
+                Grid.Column="1"
+                AutomationId="layout-fallback-grid-right"
+                FontSize="12"
+                HorizontalTextAlignment="End"
+                Text="Grid fallback right"
+                TextColor="DarkSlateGray" />
+        </Grid>
 
         <Button
             AutomationId="stress-button"

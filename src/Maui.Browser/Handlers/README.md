@@ -10,12 +10,12 @@ Current first-slice handlers:
 - `BrowserCheckBoxHandler` (`ICheckBox` -> `<input type="checkbox">`)
 - `BrowserSliderHandler` (`ISlider` -> `<input type="range">`)
 - `BrowserPickerHandler` (`IPicker` -> `<select>`)
-- `BrowserLayoutHandler` (`ILayout` -> `<div>` + child command mapping)
+- `BrowserLayoutHandler` (`ILayout` -> `<div>` + child command mapping, stack semantic flex projection with absolute fallback)
 - `BrowserContentViewHandler` (`IContentView` -> `<div>` + presented content)
 
 Shared pieces:
 - `BrowserViewHandler<TVirtualView>` for platform arrange defaults.
-- `BrowserViewMapper` for visibility/opacity/padding/text style mapping.
+- `BrowserViewMapper` for shared view mapping (visibility/opacity/semantics/transform/focus/etc.).
 
 Guardrails:
 - Platform view type remains `DomElement`.
