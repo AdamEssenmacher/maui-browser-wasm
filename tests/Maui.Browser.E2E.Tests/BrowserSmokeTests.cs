@@ -113,10 +113,13 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
         await switchControl.ClickAsync();
         await page.WaitForSelectorAsync("text=Switch is off");
         Assert.False(await ReadAriaCheckedAsync(page, switchSelector));
+        var switchThumbLeftOff = await ReadSwitchThumbLeftAsync(page, switchSelector);
 
         await switchControl.ClickAsync();
         await page.WaitForSelectorAsync("text=Switch is on");
         Assert.True(await ReadAriaCheckedAsync(page, switchSelector));
+        var switchThumbLeftOn = await ReadSwitchThumbLeftAsync(page, switchSelector);
+        Assert.True(switchThumbLeftOn > switchThumbLeftOff + 8, "Expected switch thumb to visibly move when toggled on.");
         await AssertSwitchTrackStylePresentAsync(page);
 
         const string checkBoxSelector = "[data-automation-id='form-checkbox']";
@@ -449,6 +452,32 @@ public sealed class BrowserSmokeTests : IClassFixture<BrowserHostFixture>
             @"(selector) => {
                 const element = document.querySelector(selector);
                 return element?.getAttribute('aria-checked') === 'true';
+            }",
+            selector);
+    }
+
+    private static async Task<double> ReadSwitchThumbLeftAsync(IPage page, string selector)
+    {
+        return await page.EvaluateAsync<double>(
+            @"(selector) => {
+                const switchElement = document.querySelector(selector);
+                if (!switchElement) {
+                    return Number.NaN;
+                }
+
+                const spans = switchElement.querySelectorAll('span');
+                if (spans.length < 2) {
+                    return Number.NaN;
+                }
+
+                const thumb = spans[1];
+                const inlineLeft = Number.parseFloat(thumb.style.left ?? '');
+                if (Number.isFinite(inlineLeft)) {
+                    return inlineLeft;
+                }
+
+                const computedLeft = Number.parseFloat(getComputedStyle(thumb).left ?? '');
+                return Number.isFinite(computedLeft) ? computedLeft : Number.NaN;
             }",
             selector);
     }

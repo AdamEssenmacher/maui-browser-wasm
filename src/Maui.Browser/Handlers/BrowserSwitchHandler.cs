@@ -109,19 +109,23 @@ public sealed class BrowserSwitchHandler : BrowserViewHandler<ISwitch>
         var arrangedWidth = Math.Max(0, frame.Width);
         var arrangedHeight = Math.Max(0, frame.Height);
 
-        var width = arrangedWidth < 1
+        var desiredWidth = arrangedWidth < 1
             ? IntrinsicWidth
             : Math.Min(IntrinsicWidth, arrangedWidth);
-        var height = arrangedHeight < 1
+        var desiredHeight = arrangedHeight < 1
             ? IntrinsicHeight
             : Math.Min(IntrinsicHeight, arrangedHeight);
 
-        var x = frame.X + ResolveAlignedOffset(arrangedWidth, width, VirtualView.HorizontalLayoutAlignment);
-        var y = frame.Y + ResolveAlignedOffset(arrangedHeight, height, VirtualView.VerticalLayoutAlignment);
+        // Track/thumb math must use the same rendered dimensions as the host element.
+        var renderedWidth = Math.Max(desiredWidth, IntrinsicWidth);
+        var renderedHeight = Math.Max(desiredHeight, IntrinsicHeight);
 
-        _arrangedWidth = width;
-        _arrangedHeight = height;
-        BrowserViewMapper.ApplyFrame(PlatformView, new Rect(x, y, width, height));
+        var x = frame.X + ResolveAlignedOffset(arrangedWidth, renderedWidth, VirtualView.HorizontalLayoutAlignment);
+        var y = frame.Y + ResolveAlignedOffset(arrangedHeight, renderedHeight, VirtualView.VerticalLayoutAlignment);
+
+        _arrangedWidth = renderedWidth;
+        _arrangedHeight = renderedHeight;
+        BrowserViewMapper.ApplyFrame(PlatformView, new Rect(x, y, renderedWidth, renderedHeight));
         UpdateSwitchVisual(this, VirtualView);
     }
 
