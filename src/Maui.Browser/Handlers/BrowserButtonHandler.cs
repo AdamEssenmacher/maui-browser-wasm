@@ -9,16 +9,13 @@ namespace Maui.Browser.Handlers;
 
 public sealed class BrowserButtonHandler : BrowserViewHandler<ITextButton>
 {
-    public static IPropertyMapper<ITextButton, BrowserButtonHandler> Mapper = new PropertyMapper<ITextButton, BrowserButtonHandler>(ViewHandler.ViewMapper)
+    public static IPropertyMapper<ITextButton, BrowserButtonHandler> Mapper = new PropertyMapper<ITextButton, BrowserButtonHandler>(BrowserViewMapper.CommonViewMapper)
     {
         [nameof(IText.Text)] = MapText,
         [nameof(ITextStyle.TextColor)] = MapTextColor,
         [nameof(ITextStyle.Font)] = MapFont,
         [nameof(ITextStyle.CharacterSpacing)] = MapCharacterSpacing,
-        [nameof(IButton.Padding)] = MapPadding,
-        [nameof(IView.Visibility)] = MapVisibility,
-        [nameof(IView.Opacity)] = MapOpacity,
-        [nameof(IView.IsEnabled)] = MapIsEnabled
+        [nameof(IButton.Padding)] = MapPadding
     };
 
     private Action? _clickCallback;
@@ -105,18 +102,4 @@ public sealed class BrowserButtonHandler : BrowserViewHandler<ITextButton>
         BrowserViewMapper.MapPadding(button, handler.PlatformView);
     }
 
-    public static void MapVisibility(BrowserButtonHandler handler, ITextButton button)
-    {
-        BrowserViewMapper.MapVisibility(button, handler.PlatformView);
-    }
-
-    public static void MapOpacity(BrowserButtonHandler handler, ITextButton button)
-    {
-        BrowserViewMapper.MapOpacity(button, handler.PlatformView);
-    }
-
-    public static void MapIsEnabled(BrowserButtonHandler handler, ITextButton button)
-    {
-        BrowserViewMapper.MapEnabled(button, handler.PlatformView);
-    }
 }

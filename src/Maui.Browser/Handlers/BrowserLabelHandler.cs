@@ -9,15 +9,13 @@ namespace Maui.Browser.Handlers;
 
 public sealed class BrowserLabelHandler : BrowserViewHandler<ILabel>
 {
-    public static IPropertyMapper<ILabel, BrowserLabelHandler> Mapper = new PropertyMapper<ILabel, BrowserLabelHandler>(ViewHandler.ViewMapper)
+    public static IPropertyMapper<ILabel, BrowserLabelHandler> Mapper = new PropertyMapper<ILabel, BrowserLabelHandler>(BrowserViewMapper.CommonViewMapper)
     {
         [nameof(ILabel.Text)] = MapText,
         [nameof(ITextStyle.TextColor)] = MapTextColor,
         [nameof(ITextStyle.Font)] = MapFont,
         [nameof(ITextStyle.CharacterSpacing)] = MapCharacterSpacing,
-        [nameof(ITextAlignment.HorizontalTextAlignment)] = MapTextAlignment,
-        [nameof(IView.Visibility)] = MapVisibility,
-        [nameof(IView.Opacity)] = MapOpacity
+        [nameof(ITextAlignment.HorizontalTextAlignment)] = MapTextAlignment
     };
 
     public BrowserLabelHandler()
@@ -78,13 +76,4 @@ public sealed class BrowserLabelHandler : BrowserViewHandler<ILabel>
         BrowserViewMapper.MapTextAlignment(label, handler.PlatformView);
     }
 
-    public static void MapVisibility(BrowserLabelHandler handler, ILabel label)
-    {
-        BrowserViewMapper.MapVisibility(label, handler.PlatformView);
-    }
-
-    public static void MapOpacity(BrowserLabelHandler handler, ILabel label)
-    {
-        BrowserViewMapper.MapOpacity(label, handler.PlatformView);
-    }
 }

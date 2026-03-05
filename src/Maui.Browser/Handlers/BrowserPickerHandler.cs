@@ -7,7 +7,7 @@ namespace Maui.Browser.Handlers;
 
 public sealed class BrowserPickerHandler : BrowserViewHandler<IPicker>
 {
-    public static IPropertyMapper<IPicker, BrowserPickerHandler> Mapper = new PropertyMapper<IPicker, BrowserPickerHandler>(ViewHandler.ViewMapper)
+    public static IPropertyMapper<IPicker, BrowserPickerHandler> Mapper = new PropertyMapper<IPicker, BrowserPickerHandler>(BrowserViewMapper.CommonViewMapper)
     {
         [nameof(IPicker.Items)] = MapItems,
         [nameof(IPicker.SelectedIndex)] = MapSelectedIndex,
@@ -15,10 +15,7 @@ public sealed class BrowserPickerHandler : BrowserViewHandler<IPicker>
         [nameof(IPicker.TitleColor)] = MapTitleColor,
         [nameof(ITextStyle.TextColor)] = MapTextColor,
         [nameof(ITextStyle.Font)] = MapFont,
-        [nameof(ITextStyle.CharacterSpacing)] = MapCharacterSpacing,
-        [nameof(IView.Visibility)] = MapVisibility,
-        [nameof(IView.Opacity)] = MapOpacity,
-        [nameof(IView.IsEnabled)] = MapIsEnabled
+        [nameof(ITextStyle.CharacterSpacing)] = MapCharacterSpacing
     };
 
     private readonly List<DomElement> _optionElements = [];
@@ -116,21 +113,6 @@ public sealed class BrowserPickerHandler : BrowserViewHandler<IPicker>
         {
             BrowserViewMapper.MapCharacterSpacing(textStyle, handler.PlatformView);
         }
-    }
-
-    public static void MapVisibility(BrowserPickerHandler handler, IPicker picker)
-    {
-        BrowserViewMapper.MapVisibility(picker, handler.PlatformView);
-    }
-
-    public static void MapOpacity(BrowserPickerHandler handler, IPicker picker)
-    {
-        BrowserViewMapper.MapOpacity(picker, handler.PlatformView);
-    }
-
-    public static void MapIsEnabled(BrowserPickerHandler handler, IPicker picker)
-    {
-        BrowserViewMapper.MapEnabled(picker, handler.PlatformView);
     }
 
     private void RebuildOptions(IPicker picker)

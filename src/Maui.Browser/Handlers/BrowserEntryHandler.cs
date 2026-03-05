@@ -9,16 +9,13 @@ namespace Maui.Browser.Handlers;
 
 public sealed class BrowserEntryHandler : BrowserViewHandler<IEntry>
 {
-    public static IPropertyMapper<IEntry, BrowserEntryHandler> Mapper = new PropertyMapper<IEntry, BrowserEntryHandler>(ViewHandler.ViewMapper)
+    public static IPropertyMapper<IEntry, BrowserEntryHandler> Mapper = new PropertyMapper<IEntry, BrowserEntryHandler>(BrowserViewMapper.CommonViewMapper)
     {
         [nameof(IEntry.Text)] = MapText,
         [nameof(IEntry.Placeholder)] = MapPlaceholder,
         [nameof(ITextStyle.TextColor)] = MapTextColor,
         [nameof(ITextStyle.Font)] = MapFont,
         [nameof(ITextStyle.CharacterSpacing)] = MapCharacterSpacing,
-        [nameof(IView.Visibility)] = MapVisibility,
-        [nameof(IView.Opacity)] = MapOpacity,
-        [nameof(IView.IsEnabled)] = MapIsEnabled,
         [nameof(IEntry.IsReadOnly)] = MapIsReadOnly
     };
 
@@ -112,21 +109,6 @@ public sealed class BrowserEntryHandler : BrowserViewHandler<IEntry>
     public static void MapCharacterSpacing(BrowserEntryHandler handler, IEntry entry)
     {
         BrowserViewMapper.MapCharacterSpacing(entry, handler.PlatformView);
-    }
-
-    public static void MapVisibility(BrowserEntryHandler handler, IEntry entry)
-    {
-        BrowserViewMapper.MapVisibility(entry, handler.PlatformView);
-    }
-
-    public static void MapOpacity(BrowserEntryHandler handler, IEntry entry)
-    {
-        BrowserViewMapper.MapOpacity(entry, handler.PlatformView);
-    }
-
-    public static void MapIsEnabled(BrowserEntryHandler handler, IEntry entry)
-    {
-        BrowserViewMapper.MapEnabled(entry, handler.PlatformView);
     }
 
     public static void MapIsReadOnly(BrowserEntryHandler handler, IEntry entry)

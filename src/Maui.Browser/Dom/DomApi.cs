@@ -64,6 +64,12 @@ internal static partial class DomApi
     [JSImport("getClientSize", Module)]
     internal static partial double[] GetClientSize(nint element);
 
+    [JSImport("focusElement", Module)]
+    internal static partial bool FocusElement(nint element);
+
+    [JSImport("blurElement", Module)]
+    internal static partial void BlurElement(nint element);
+
     [JSImport("subscribeEvent", Module)]
     internal static partial int SubscribeEvent(nint element, string eventName, [JSMarshalAs<JSType.Function>] Action callback);
 

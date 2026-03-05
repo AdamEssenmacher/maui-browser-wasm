@@ -13,13 +13,11 @@ public sealed class BrowserSwitchHandler : BrowserViewHandler<ISwitch>
     private const double ThumbSize = 26;
     private const double ThumbInset = 3;
 
-    public static IPropertyMapper<ISwitch, BrowserSwitchHandler> Mapper = new PropertyMapper<ISwitch, BrowserSwitchHandler>(ViewHandler.ViewMapper)
+    public static IPropertyMapper<ISwitch, BrowserSwitchHandler> Mapper = new PropertyMapper<ISwitch, BrowserSwitchHandler>(BrowserViewMapper.CommonViewMapper)
     {
         [nameof(ISwitch.IsOn)] = MapIsOn,
         [nameof(ISwitch.TrackColor)] = MapTrackColor,
         [nameof(ISwitch.ThumbColor)] = MapThumbColor,
-        [nameof(IView.Visibility)] = MapVisibility,
-        [nameof(IView.Opacity)] = MapOpacity,
         [nameof(IView.IsEnabled)] = MapIsEnabled
     };
 
@@ -173,16 +171,6 @@ public sealed class BrowserSwitchHandler : BrowserViewHandler<ISwitch>
     public static void MapThumbColor(BrowserSwitchHandler handler, ISwitch view)
     {
         UpdateSwitchVisual(handler, view);
-    }
-
-    public static void MapVisibility(BrowserSwitchHandler handler, ISwitch view)
-    {
-        BrowserViewMapper.MapVisibility(view, handler.PlatformView);
-    }
-
-    public static void MapOpacity(BrowserSwitchHandler handler, ISwitch view)
-    {
-        BrowserViewMapper.MapOpacity(view, handler.PlatformView);
     }
 
     public static void MapIsEnabled(BrowserSwitchHandler handler, ISwitch view)

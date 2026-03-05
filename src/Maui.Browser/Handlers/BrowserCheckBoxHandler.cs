@@ -8,13 +8,10 @@ namespace Maui.Browser.Handlers;
 
 public sealed class BrowserCheckBoxHandler : BrowserViewHandler<ICheckBox>
 {
-    public static IPropertyMapper<ICheckBox, BrowserCheckBoxHandler> Mapper = new PropertyMapper<ICheckBox, BrowserCheckBoxHandler>(ViewHandler.ViewMapper)
+    public static IPropertyMapper<ICheckBox, BrowserCheckBoxHandler> Mapper = new PropertyMapper<ICheckBox, BrowserCheckBoxHandler>(BrowserViewMapper.CommonViewMapper)
     {
         [nameof(ICheckBox.IsChecked)] = MapIsChecked,
-        [nameof(ICheckBox.Foreground)] = MapForeground,
-        [nameof(IView.Visibility)] = MapVisibility,
-        [nameof(IView.Opacity)] = MapOpacity,
-        [nameof(IView.IsEnabled)] = MapIsEnabled
+        [nameof(ICheckBox.Foreground)] = MapForeground
     };
 
     private Action? _changeCallback;
@@ -83,21 +80,6 @@ public sealed class BrowserCheckBoxHandler : BrowserViewHandler<ICheckBox>
     public static void MapForeground(BrowserCheckBoxHandler handler, ICheckBox checkBox)
     {
         handler.PlatformView.Style("accentColor", ToCssPaintColor(checkBox.Foreground));
-    }
-
-    public static void MapVisibility(BrowserCheckBoxHandler handler, ICheckBox checkBox)
-    {
-        BrowserViewMapper.MapVisibility(checkBox, handler.PlatformView);
-    }
-
-    public static void MapOpacity(BrowserCheckBoxHandler handler, ICheckBox checkBox)
-    {
-        BrowserViewMapper.MapOpacity(checkBox, handler.PlatformView);
-    }
-
-    public static void MapIsEnabled(BrowserCheckBoxHandler handler, ICheckBox checkBox)
-    {
-        BrowserViewMapper.MapEnabled(checkBox, handler.PlatformView);
     }
 
     private static string? ToCssPaintColor(Paint? paint)

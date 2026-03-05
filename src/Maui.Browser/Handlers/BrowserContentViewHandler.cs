@@ -9,11 +9,9 @@ namespace Maui.Browser.Handlers;
 public sealed class BrowserContentViewHandler : BrowserViewHandler<IContentView>, IContentViewHandler
 {
     public static IPropertyMapper<IContentView, BrowserContentViewHandler> Mapper =
-        new PropertyMapper<IContentView, BrowserContentViewHandler>(ViewHandler.ViewMapper)
+        new PropertyMapper<IContentView, BrowserContentViewHandler>(BrowserViewMapper.CommonViewMapper)
         {
-            [nameof(IContentView.Content)] = MapContent,
-            [nameof(IView.Visibility)] = MapVisibility,
-            [nameof(IView.Opacity)] = MapOpacity
+            [nameof(IContentView.Content)] = MapContent
         };
 
     public BrowserContentViewHandler()
@@ -57,16 +55,6 @@ public sealed class BrowserContentViewHandler : BrowserViewHandler<IContentView>
     public static void MapContent(BrowserContentViewHandler handler, IContentView contentView)
     {
         handler.SetContent(contentView.PresentedContent);
-    }
-
-    public static void MapVisibility(BrowserContentViewHandler handler, IContentView contentView)
-    {
-        BrowserViewMapper.MapVisibility(contentView, handler.PlatformView);
-    }
-
-    public static void MapOpacity(BrowserContentViewHandler handler, IContentView contentView)
-    {
-        BrowserViewMapper.MapOpacity(contentView, handler.PlatformView);
     }
 
     private void SetContent(IView? content)
