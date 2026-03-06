@@ -272,6 +272,9 @@ internal static class BrowserViewMapper
         {
             platformView.Style("backgroundColor", null);
             platformView.Style("backgroundImage", null);
+            platformView.Style("backgroundSize", null);
+            platformView.Style("backgroundRepeat", null);
+            platformView.Style("backgroundPosition", null);
             return;
         }
 
@@ -279,6 +282,9 @@ internal static class BrowserViewMapper
         {
             platformView.Style("backgroundColor", CssUtil.ToCssColor(solidPaint.Color));
             platformView.Style("backgroundImage", null);
+            platformView.Style("backgroundSize", null);
+            platformView.Style("backgroundRepeat", null);
+            platformView.Style("backgroundPosition", null);
             return;
         }
 
@@ -288,11 +294,17 @@ internal static class BrowserViewMapper
             {
                 platformView.Style("backgroundColor", null);
                 platformView.Style("backgroundImage", gradientCss);
+                platformView.Style("backgroundSize", "100% 100%");
+                platformView.Style("backgroundRepeat", "no-repeat");
+                platformView.Style("backgroundPosition", "0 0");
             }
             else
             {
                 platformView.Style("backgroundImage", null);
                 platformView.Style("backgroundColor", null);
+                platformView.Style("backgroundSize", null);
+                platformView.Style("backgroundRepeat", null);
+                platformView.Style("backgroundPosition", null);
                 ReportUnsupported(nameof(IView.Background), view, view.Background);
             }
 
@@ -301,6 +313,9 @@ internal static class BrowserViewMapper
 
         platformView.Style("backgroundColor", null);
         platformView.Style("backgroundImage", null);
+        platformView.Style("backgroundSize", null);
+        platformView.Style("backgroundRepeat", null);
+        platformView.Style("backgroundPosition", null);
         ReportUnsupported(nameof(IView.Background), view, view.Background);
     }
 

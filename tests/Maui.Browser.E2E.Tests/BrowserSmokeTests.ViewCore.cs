@@ -46,6 +46,8 @@ public sealed partial class BrowserSmokeTests
         await page.WaitForSelectorAsync("text=Background mode: linear-gradient");
         var linearGradient = await ReadInlineStylePropertyAsync(page, probeSelector, "backgroundImage");
         Assert.Contains("data:image/svg+xml;base64,", linearGradient, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("no-repeat", await ReadInlineStylePropertyAsync(page, probeSelector, "backgroundRepeat"));
+        Assert.Contains("100%", await ReadInlineStylePropertyAsync(page, probeSelector, "backgroundSize"), StringComparison.Ordinal);
 
         await page.Locator("[data-automation-id='parity-core-background-solid-button']").ClickAsync();
         await page.WaitForSelectorAsync("text=Background mode: solid");
