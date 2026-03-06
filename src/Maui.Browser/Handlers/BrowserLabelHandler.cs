@@ -181,18 +181,17 @@ public sealed class BrowserLabelHandler : BrowserViewHandler<ILabel>
     {
         if (maxLines > 1)
         {
-            PlatformView.Style("display", "-webkit-box");
             PlatformView.Style("webkitBoxOrient", "vertical");
             _lineClampValue = maxLines.ToString(System.Globalization.CultureInfo.InvariantCulture);
             PlatformView.Style("webkitLineClamp", _lineClampValue);
             PlatformView.Style("overflow", "hidden");
             PlatformView.Style("textOverflow", "ellipsis");
             PlatformView.Style("whiteSpace", "normal");
+            MapVisibility(this, VirtualView);
             return;
         }
 
         _lineClampValue = null;
-        PlatformView.Style("display", "flex");
         PlatformView.Style("webkitBoxOrient", null);
         PlatformView.Style("webkitLineClamp", null);
 
@@ -225,5 +224,7 @@ public sealed class BrowserLabelHandler : BrowserViewHandler<ILabel>
             PlatformView.Style("overflow", "hidden");
             PlatformView.Style("textOverflow", mode is Microsoft.Maui.LineBreakMode.NoWrap ? "clip" : "ellipsis");
         }
+
+        MapVisibility(this, VirtualView);
     }
 }

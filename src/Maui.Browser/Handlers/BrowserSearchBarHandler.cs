@@ -185,6 +185,11 @@ public sealed class BrowserSearchBarHandler : BrowserViewHandler<ISearchBar>
             return;
         }
 
+        if (VirtualView.IsReadOnly)
+        {
+            return;
+        }
+
         if (string.IsNullOrEmpty(VirtualView.Text))
         {
             return;
@@ -202,7 +207,7 @@ public sealed class BrowserSearchBarHandler : BrowserViewHandler<ISearchBar>
             return;
         }
 
-        var hasText = !string.IsNullOrEmpty(currentText);
+        var hasText = !string.IsNullOrEmpty(currentText) && !VirtualView.IsReadOnly;
         _clearButtonElement.Style("visibility", hasText ? "visible" : "hidden");
         _clearButtonElement.Style("pointerEvents", hasText ? null : "none");
     }
@@ -294,6 +299,7 @@ public sealed class BrowserSearchBarHandler : BrowserViewHandler<ISearchBar>
         }
 
         BrowserTextInputMappings.MapReadOnly(searchBar, handler._inputElement);
+        handler.UpdateClearButtonState(searchBar.Text);
     }
 
     public static void MapKeyboard(BrowserSearchBarHandler handler, ISearchBar searchBar)
@@ -394,6 +400,7 @@ public sealed class BrowserSearchBarHandler : BrowserViewHandler<ISearchBar>
         handler._inputElement?.Attr("disabled", disabled ? "disabled" : null);
         handler._searchButtonElement?.Attr("disabled", disabled ? "disabled" : null);
         handler._clearButtonElement?.Attr("disabled", disabled ? "disabled" : null);
+        handler.UpdateClearButtonState(searchBar.Text);
     }
 
     public static void MapFocus(BrowserSearchBarHandler handler, ISearchBar searchBar, object? args)
