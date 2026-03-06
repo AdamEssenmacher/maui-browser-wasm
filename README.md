@@ -11,6 +11,7 @@ Current state:
 - Implemented handlers: `Window`, `NavigationPage`, `ContentPage`, `ScrollView`, `CollectionView`, `Label`, `Button`, `Entry`, `Switch`, `CheckBox`, `Slider`, `Picker`, `Layout`, `ContentView`.
 - Shared `IView`/`ITransform` mapping core is applied across handlers: automation id, flow direction, basic semantics (ARIA), interaction state (`IsEnabled` + `InputTransparent`), background (solid), z-index, focus/unfocus, and transform composition.
 - Sample app demonstrates a real `.xaml` `ContentPage` (with code-behind) and covers binding, input, click, resize, visibility, opacity, form-input breadth, IView core/transform behavior, navigation push/pop, scroll behavior, and stress cleanup.
+- Sample now starts at a parity catalog page (`parity-page-catalog`) with family links plus a consolidated probe page used by current smoke tests.
 
 ## Repo layout
 
@@ -22,6 +23,12 @@ Current state:
   Playwright smoke and stress validation.
 - `docs/DECISIONS.md`
   Architecture/implementation decision log.
+- `docs/PARITY_MATRIX.md`
+  Source-of-truth control/layout parity ledger.
+- `docs/PARITY_GAPS.md`
+  Explicit fallback/non-parity policy tracking.
+- `tools/parity/`
+  Inventory and parity-matrix validation helpers.
 
 ## Prerequisites
 
@@ -49,9 +56,11 @@ Important:
 
 1. Build release artifacts:
    - `dotnet build MauiDomWasm.sln --configuration Release`
-2. Install Playwright browser:
+2. Validate parity matrix completeness:
+   - `bash tools/parity/check_parity_matrix.sh`
+3. Install Playwright browser:
    - `pwsh tests/Maui.Browser.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium`
-3. Run smoke tests:
+4. Run smoke tests:
    - `dotnet test tests/Maui.Browser.E2E.Tests/Maui.Browser.E2E.Tests.csproj --configuration Release --no-build`
 
 Expected pass signals:
@@ -98,6 +107,7 @@ Expected pass signals:
 - Navigation section pushes to detail page and back without reloading the app.
 - Detail page `ScrollView` allows native browser scrolling and returns to root with updated navigation summary state.
 - Running leak stress increments stress run count and remains interactive.
+- Initial app route is the parity catalog; open `Open Consolidated Demo` to reach current full probe page.
 
 ## Prototype proof checklist
 
@@ -119,5 +129,6 @@ Expected pass signals:
 - `Clip` and `Shadow` are intentionally deferred in this slice: current behavior is no-op with DEBUG diagnostic warnings.
 - Grid track mapping is currently: absolute -> `px`, auto -> `auto`, star -> `fr` (non-positive star defaults to `1fr`); invalid grid metadata falls back to absolute projection.
 - `CollectionView` defers virtualization, selection behavior, grouping, header/footer, and dedicated scroll-to APIs to later slices.
+- Full parity rollout tracking now lives in `docs/PARITY_MATRIX.md` and `docs/PARITY_GAPS.md`.
 
 See `AGENTS.md` for repository guardrails.

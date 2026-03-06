@@ -172,6 +172,7 @@
 
         <CollectionView
             AutomationId="collection-view"
+            EmptyView="{Binding CollectionEmptyViewData}"
             HeightRequest="190"
             ItemsSource="{Binding CollectionItems}"
             SelectionMode="None">
@@ -200,14 +201,16 @@
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
-            <CollectionView.EmptyView>
-                <Label
-                    AutomationId="collection-empty-view"
-                    FontSize="12"
-                    Padding="8,6"
-                    Text="Collection is empty."
-                    TextColor="DarkSlateGray" />
-            </CollectionView.EmptyView>
+            <CollectionView.EmptyViewTemplate>
+                <DataTemplate x:DataType="demo:DemoCollectionEmptyViewData">
+                    <Label
+                        AutomationId="collection-empty-view"
+                        FontSize="12"
+                        Padding="8,6"
+                        Text="{Binding Message}"
+                        TextColor="DarkSlateGray" />
+                </DataTemplate>
+            </CollectionView.EmptyViewTemplate>
         </CollectionView>
 
         <Label

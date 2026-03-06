@@ -379,6 +379,7 @@ public sealed class BrowserCollectionViewHandler : BrowserViewHandler<Collection
             var content = emptyTemplate.CreateContent();
             if (TryExtractView(content, out var templatedView))
             {
+                templatedView.BindingContext = ResolveEmptyTemplateBindingContext();
                 return templatedView;
             }
 
@@ -397,6 +398,21 @@ public sealed class BrowserCollectionViewHandler : BrowserViewHandler<Collection
             Text = string.IsNullOrWhiteSpace(emptyText) ? "No items" : emptyText,
             TextColor = Colors.DarkSlateGray
         };
+    }
+
+    private object? ResolveEmptyTemplateBindingContext()
+    {
+        if (VirtualView.EmptyView is not null and not View)
+        {
+            return VirtualView.EmptyView;
+        }
+
+        if (VirtualView.EmptyView is null)
+        {
+            return VirtualView.BindingContext;
+        }
+
+        return null;
     }
 
     private void DisconnectAllItems()

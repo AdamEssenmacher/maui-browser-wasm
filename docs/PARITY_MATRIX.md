@@ -1,0 +1,51 @@
+# MAUI Browser Parity Matrix (Modern Controls)
+
+This ledger is the source of truth for handler parity scope and progress.
+
+Status values:
+- `missing`: no browser handler yet
+- `partial`: browser handler exists but parity is incomplete
+- `complete`: behavior-first parity completed for current scope
+- `gap-documented`: intentionally non-parity behavior is implemented and documented in `docs/PARITY_GAPS.md`
+
+| MAUI virtual view | Upstream MAUI handler | Browser handler | Status | iOS reference | Android reference | Sample page ID | E2E test ID |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `Window` | `WindowHandler` | `BrowserWindowHandler` | complete | `src/Core/src/Handlers/Window/WindowHandler.iOS.cs` | `src/Core/src/Handlers/Window/WindowHandler.Android.cs` | `parity-page-navigation-window` | `NavigationAndScrollFlowWorks` |
+| `NavigationPage` | `NavigationViewHandler` | `BrowserNavigationPageHandler` | partial | `src/Controls/src/Core/Handlers/NavigationPage/NavigationViewHandler.iOS.cs` | `src/Controls/src/Core/Handlers/NavigationPage/NavigationViewHandler.Android.cs` | `parity-page-navigation-window` | `NavigationAndScrollFlowWorks` |
+| `ContentPage` | `PageHandler` | `BrowserContentPageHandler` | complete | `src/Core/src/Handlers/Page/PageHandler.iOS.cs` | `src/Core/src/Handlers/Page/PageHandler.Android.cs` | `parity-page-containers-layout` | `EntryAndButtonFlowWork` |
+| `ContentView` | `ContentViewHandler` | `BrowserContentViewHandler` | complete | `src/Core/src/Handlers/ContentView/ContentViewHandler.iOS.cs` | `src/Core/src/Handlers/ContentView/ContentViewHandler.Android.cs` | `parity-page-containers-layout` | `EntryAndButtonFlowWork` |
+| `ScrollView` | `ScrollViewHandler` | `BrowserScrollViewHandler` | partial | `src/Core/src/Handlers/ScrollView/ScrollViewHandler.iOS.cs` | `src/Core/src/Handlers/ScrollView/ScrollViewHandler.Android.cs` | `parity-page-navigation-window` | `NavigationAndScrollFlowWorks` |
+| `VerticalStackLayout` | `LayoutHandler` | `BrowserLayoutHandler` | complete | `src/Core/src/Handlers/Layout/LayoutHandler.iOS.cs` | `src/Core/src/Handlers/Layout/LayoutHandler.Android.cs` | `parity-page-containers-layout` | `StackLayoutSemanticProjectionWorks` |
+| `HorizontalStackLayout` | `LayoutHandler` | `BrowserLayoutHandler` | complete | `src/Core/src/Handlers/Layout/LayoutHandler.iOS.cs` | `src/Core/src/Handlers/Layout/LayoutHandler.Android.cs` | `parity-page-containers-layout` | `StackLayoutSemanticProjectionWorks` |
+| `Grid` | `LayoutHandler` | `BrowserLayoutHandler` | complete | `src/Core/src/Handlers/Layout/LayoutHandler.iOS.cs` | `src/Core/src/Handlers/Layout/LayoutHandler.Android.cs` | `parity-page-containers-layout` | `GridSemanticProjectionWorks` |
+| `AbsoluteLayout` | `LayoutHandler` | `BrowserLayoutHandler` | complete | `src/Core/src/Handlers/Layout/LayoutHandler.iOS.cs` | `src/Core/src/Handlers/Layout/LayoutHandler.Android.cs` | `parity-page-containers-layout` | `GridSemanticProjectionWorks` |
+| `FlexLayout` | `LayoutHandler` | `-` | missing | `src/Core/src/Handlers/Layout/LayoutHandler.iOS.cs` | `src/Core/src/Handlers/Layout/LayoutHandler.Android.cs` | `parity-page-containers-layout` | `planned:layout-flex` |
+| `Label` | `LabelHandler` | `BrowserLabelHandler` | partial | `src/Core/src/Handlers/Label/LabelHandler.iOS.cs` | `src/Core/src/Handlers/Label/LabelHandler.Android.cs` | `parity-page-text-input` | `EntryAndButtonFlowWork` |
+| `Button` | `ButtonHandler` | `BrowserButtonHandler` | complete | `src/Core/src/Handlers/Button/ButtonHandler.iOS.cs` | `src/Core/src/Handlers/Button/ButtonHandler.Android.cs` | `parity-page-text-input` | `EntryAndButtonFlowWork` |
+| `Entry` | `EntryHandler` | `BrowserEntryHandler` | partial | `src/Core/src/Handlers/Entry/EntryHandler.iOS.cs` | `src/Core/src/Handlers/Entry/EntryHandler.Android.cs` | `parity-page-text-input` | `EntryAndButtonFlowWork` |
+| `Editor` | `EditorHandler` | `-` | missing | `src/Core/src/Handlers/Editor/EditorHandler.iOS.cs` | `src/Core/src/Handlers/Editor/EditorHandler.Android.cs` | `parity-page-text-input` | `planned:text-editor` |
+| `SearchBar` | `SearchBarHandler` | `-` | missing | `src/Core/src/Handlers/SearchBar/SearchBarHandler.iOS.cs` | `src/Core/src/Handlers/SearchBar/SearchBarHandler.Android.cs` | `parity-page-text-input` | `planned:text-searchbar` |
+| `CheckBox` | `CheckBoxHandler` | `BrowserCheckBoxHandler` | complete | `src/Core/src/Handlers/CheckBox/CheckBoxHandler.iOS.cs` | `src/Core/src/Handlers/CheckBox/CheckBoxHandler.Android.cs` | `parity-page-pickers-datetime` | `FormInputBreadthFlowWorks` |
+| `Switch` | `SwitchHandler` | `BrowserSwitchHandler` | partial | `src/Core/src/Handlers/Switch/SwitchHandler.iOS.cs` | `src/Core/src/Handlers/Switch/SwitchHandler.Android.cs` | `parity-page-pickers-datetime` | `FormInputBreadthFlowWorks` |
+| `Slider` | `SliderHandler` | `BrowserSliderHandler` | partial | `src/Core/src/Handlers/Slider/SliderHandler.iOS.cs` | `src/Core/src/Handlers/Slider/SliderHandler.Android.cs` | `parity-page-pickers-datetime` | `FormInputBreadthFlowWorks` |
+| `Stepper` | `StepperHandler` | `-` | missing | `src/Core/src/Handlers/Stepper/StepperHandler.iOS.cs` | `src/Core/src/Handlers/Stepper/StepperHandler.Android.cs` | `parity-page-pickers-datetime` | `planned:stepper` |
+| `Picker` | `PickerHandler` | `BrowserPickerHandler` | partial | `src/Core/src/Handlers/Picker/PickerHandler.iOS.cs` | `src/Core/src/Handlers/Picker/PickerHandler.Android.cs` | `parity-page-pickers-datetime` | `FormInputBreadthFlowWorks` |
+| `DatePicker` | `DatePickerHandler` | `-` | missing | `src/Core/src/Handlers/DatePicker/DatePickerHandler.iOS.cs` | `src/Core/src/Handlers/DatePicker/DatePickerHandler.Android.cs` | `parity-page-pickers-datetime` | `planned:datepicker` |
+| `TimePicker` | `TimePickerHandler` | `-` | missing | `src/Core/src/Handlers/TimePicker/TimePickerHandler.iOS.cs` | `src/Core/src/Handlers/TimePicker/TimePickerHandler.Android.cs` | `parity-page-pickers-datetime` | `planned:timepicker` |
+| `ProgressBar` | `ProgressBarHandler` | `-` | missing | `src/Core/src/Handlers/ProgressBar/ProgressBarHandler.iOS.cs` | `src/Core/src/Handlers/ProgressBar/ProgressBarHandler.Android.cs` | `parity-page-pickers-datetime` | `planned:progressbar` |
+| `ActivityIndicator` | `ActivityIndicatorHandler` | `-` | missing | `src/Core/src/Handlers/ActivityIndicator/ActivityIndicatorHandler.iOS.cs` | `src/Core/src/Handlers/ActivityIndicator/ActivityIndicatorHandler.Android.cs` | `parity-page-pickers-datetime` | `planned:activityindicator` |
+| `Image` | `ImageHandler` | `-` | missing | `src/Core/src/Handlers/Image/ImageHandler.iOS.cs` | `src/Core/src/Handlers/Image/ImageHandler.Android.cs` | `parity-page-media-visual` | `planned:image` |
+| `ImageButton` | `ImageButtonHandler` | `-` | missing | `src/Core/src/Handlers/ImageButton/ImageButtonHandler.iOS.cs` | `src/Core/src/Handlers/ImageButton/ImageButtonHandler.Android.cs` | `parity-page-media-visual` | `planned:imagebutton` |
+| `Border` | `BorderHandler` | `-` | missing | `src/Core/src/Handlers/Border/BorderHandler.iOS.cs` | `src/Core/src/Handlers/Border/BorderHandler.Android.cs` | `parity-page-media-visual` | `planned:border` |
+| `GraphicsView` | `GraphicsViewHandler` | `-` | missing | `src/Core/src/Handlers/GraphicsView/GraphicsViewHandler.iOS.cs` | `src/Core/src/Handlers/GraphicsView/GraphicsViewHandler.Android.cs` | `parity-page-media-visual` | `planned:graphicsview` |
+| `CollectionView` | `CollectionViewHandler` | `BrowserCollectionViewHandler` | partial | `src/Controls/src/Core/Handlers/Items/CollectionViewHandler.iOS.cs` | `src/Controls/src/Core/Handlers/Items/CollectionViewHandler.Android.cs` | `parity-page-collection-templated` | `CollectionViewViabilityWorks` |
+| `CarouselView` | `CarouselViewHandler` | `-` | missing | `src/Controls/src/Core/Handlers/Items/CarouselViewHandler.iOS.cs` | `src/Controls/src/Core/Handlers/Items/CarouselViewHandler.Android.cs` | `parity-page-collection-templated` | `planned:carouselview` |
+| `IndicatorView` | `IndicatorViewHandler` | `-` | missing | `src/Controls/src/Core/Handlers/Items/IndicatorViewHandler.iOS.cs` | `src/Controls/src/Core/Handlers/Items/IndicatorViewHandler.Android.cs` | `parity-page-collection-templated` | `planned:indicatorview` |
+| `RefreshView` | `RefreshViewHandler` | `-` | missing | `src/Core/src/Handlers/RefreshView/RefreshViewHandler.iOS.cs` | `src/Core/src/Handlers/RefreshView/RefreshViewHandler.Android.cs` | `parity-page-containers-layout` | `planned:refreshview` |
+| `SwipeView` | `SwipeViewHandler` | `-` | missing | `src/Core/src/Handlers/SwipeView/SwipeViewHandler.iOS.cs` | `src/Core/src/Handlers/SwipeView/SwipeViewHandler.Android.cs` | `parity-page-containers-layout` | `planned:swipeview` |
+| `WebView` | `WebViewHandler` | `-` | missing | `src/Core/src/Handlers/WebView/WebViewHandler.iOS.cs` | `src/Core/src/Handlers/WebView/WebViewHandler.Android.cs` | `parity-page-media-visual` | `planned:webview` |
+
+## Current browser coverage snapshot
+- Complete: `Window`, `ContentPage`, `ContentView`, stack/grid/absolute layout mapping, `Button`, `CheckBox`
+- Partial: `NavigationPage`, `ScrollView`, `Label`, `Entry`, `Switch`, `Slider`, `Picker`, `CollectionView`
+- Missing: all other modern controls listed above
