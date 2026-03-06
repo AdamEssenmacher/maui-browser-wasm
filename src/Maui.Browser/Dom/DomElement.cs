@@ -36,6 +36,14 @@ public sealed class DomElement
         return (s.Length > 0 ? s[0] : 0, s.Length > 1 ? s[1] : 0);
     }
 
+    public void SetScrollPosition(double left, double top) => DomApi.SetScrollPosition(Handle, left, top);
+
+    public (double Left, double Top) GetScrollPosition()
+    {
+        var values = DomApi.GetScrollPosition(Handle);
+        return (values.Length > 0 ? values[0] : 0, values.Length > 1 ? values[1] : 0);
+    }
+
     public bool Focus() => DomApi.FocusElement(Handle);
 
     public void Blur() => DomApi.BlurElement(Handle);

@@ -29,6 +29,12 @@ public partial class XamlDemoPage : ContentPage
         _state.ClickCount++;
     }
 
+    private async void OnOpenNavigationProbeClicked(object? sender, EventArgs e)
+    {
+        _state.RecordNavigationPush();
+        await Navigation.PushAsync(new NavigationScrollDetailPage(_state), false);
+    }
+
     private void OnToggleVisibilityClicked(object? sender, EventArgs e)
     {
         _state.ToggleProbeVisibility();
