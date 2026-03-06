@@ -10,6 +10,7 @@ Current state:
 - DOM platform view wrapper is `DomElement`; JSImport entrypoints are centralized in `DomApi`.
 - Implemented handlers: `Window`, `NavigationPage`, `ContentPage`, `ScrollView`, `CollectionView`, `Label`, `Button`, `Entry`, `Switch`, `CheckBox`, `Slider`, `Picker`, `Layout`, `ContentView`.
 - Shared `IView`/`ITransform` mapping core is applied across handlers: automation id, flow direction, basic semantics (ARIA), interaction state (`IsEnabled` + `InputTransparent`), background (solid), z-index, focus/unfocus, and transform composition.
+- Core view substrate now includes: `Clip` (`RectangleGeometry` + `RoundRectangleGeometry`), `Shadow` (solid paint), and `Background` linear-gradient projection.
 - Sample app demonstrates a real `.xaml` `ContentPage` (with code-behind) and covers binding, input, click, resize, visibility, opacity, form-input breadth, IView core/transform behavior, navigation push/pop, scroll behavior, and stress cleanup.
 - Sample now starts at a parity catalog page (`parity-page-catalog`) with family links plus a consolidated probe page used by current smoke tests.
 
@@ -78,6 +79,7 @@ Expected pass signals:
 - StackLayout semantic projection checks pass (`VerticalStackLayout`/`HorizontalStackLayout` compute to `display:flex` with expected direction).
 - Grid semantic projection checks pass (`Grid` computes to `display:grid` with expected track, gap, and placement styles).
 - IView core checks pass: automation ids, flow direction, semantics ARIA updates, focus/unfocus, input transparency policy, transform and background updates.
+- Containers/Layout family page verifies core substrate clip/shadow/linear-gradient style projection and unsupported fallback behavior.
 - Navigation/scroll checks pass: root page pushes/pops detail page through `NavigationPage`, title/back controls update, and detail `ScrollView` is scrollable with state retained when returning.
 - Navigation push/pop loop keeps DOM handle/subscription counts near baseline.
 - Stress mutation test keeps DOM handle/subscription counts near baseline.
@@ -101,6 +103,8 @@ Expected pass signals:
 - Toggling core input transparency disables probe interaction without disabling the control.
 - Focus/unfocus buttons move focus to/from the core entry.
 - Transform/background/semantics actions update the probe style and ARIA attributes.
+- In Containers/Layout family page, clip mode buttons toggle `clip-path` (rectangle/round-rectangle) and unsupported geometry fallback.
+- In Containers/Layout family page, shadow mode buttons toggle `box-shadow` (solid/unsupported fallback) and background mode toggles solid/linear/unsupported radial fallback.
 - Root vertical and key horizontal stack rows render with semantic flex styles.
 - Grid probe section renders as CSS grid with expected row/column placement and span behavior.
 - AbsoluteLayout probe remains on absolute-compatible projection (non-grid fallback path).
@@ -126,7 +130,9 @@ Expected pass signals:
 - `NavigationPage` is now projected with a minimal DOM navigation bar (`Back` + title) and a single active page host; Shell is intentionally out of scope.
 - `ScrollView` uses native browser overflow scrolling and supports programmatic `RequestScrollTo` mapping.
 - `CollectionView` currently targets vertical, non-virtualized viability with `DataTemplate` item rendering, `EmptyView`, and live `Add`/`Remove`/`Reset` updates from observable collections.
-- `Clip` and `Shadow` are intentionally deferred in this slice: current behavior is no-op with DEBUG diagnostic warnings.
+- Clip coverage currently supports `RectangleGeometry` and `RoundRectangleGeometry`; other clip geometries remain fallback with DEBUG diagnostics.
+- Shadow coverage currently supports solid paint only; non-solid shadow paints remain fallback with DEBUG diagnostics.
+- Background coverage currently supports solid and linear gradients; radial/image/pattern paints remain fallback with DEBUG diagnostics.
 - Grid track mapping is currently: absolute -> `px`, auto -> `auto`, star -> `fr` (non-positive star defaults to `1fr`); invalid grid metadata falls back to absolute projection.
 - `CollectionView` defers virtualization, selection behavior, grouping, header/footer, and dedicated scroll-to APIs to later slices.
 - Full parity rollout tracking now lives in `docs/PARITY_MATRIX.md` and `docs/PARITY_GAPS.md`.

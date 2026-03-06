@@ -32,11 +32,13 @@ public sealed class BrowserButtonHandler : BrowserViewHandler<ITextButton>
     {
         platformView.Attr("type", "button");
         platformView.Style("cursor", "pointer");
-        // Desired-size currently measures button text on a single line; enforce no-wrap so
-        // runtime rendering matches measured height and avoids clipped wrapped text.
+        // Keep button text on one line, but do not force clipping/ellipsis; MAUI arrange
+        // should decide button bounds and we want full glyph visibility.
         platformView.Style("whiteSpace", "nowrap");
-        platformView.Style("textOverflow", "ellipsis");
-        platformView.Style("overflow", "hidden");
+        platformView.Style("display", "flex");
+        platformView.Style("alignItems", "center");
+        platformView.Style("justifyContent", "center");
+        platformView.Style("lineHeight", "1.25");
 
         _clickCallback = OnClick;
         _clickSubscriptionId = platformView.On("click", _clickCallback);
@@ -71,7 +73,7 @@ public sealed class BrowserButtonHandler : BrowserViewHandler<ITextButton>
             heightConstraint,
             VirtualView.Padding,
             minWidth: 88,
-            minHeight: 36);
+            minHeight: 40);
     }
 
     private void OnClick()

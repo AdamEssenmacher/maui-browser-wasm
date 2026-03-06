@@ -73,3 +73,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added parity tooling (`tools/parity`) plus CI gating (`check_parity_matrix.sh`) so matrix coverage cannot silently drift behind the declared modern-control inventory.
 - Sample app startup now routes through a parity catalog index page with stable automation IDs and family-page entry points, while preserving the consolidated probe page for current smoke coverage.
 - E2E suite structure moved to family-oriented files using a shared test base, enabling parity-wave expansion without one monolithic test file.
+
+## 2026-03-06 (Vertical Slice 9)
+- Shared `IView` substrate parity now maps `Clip` (`RectangleGeometry`/`RoundRectangleGeometry`) and `Shadow` (solid paint) into CSS (`clip-path`, `box-shadow`) in the common browser mapper; unsupported geometry/paint types remain deterministic fallback paths with DEBUG diagnostics.
+- `Background` mapping now supports both solid and linear-gradient paints; radial/image/pattern paints remain explicitly deferred with style-clear fallback and diagnostics.
+- Clip projection uses CSS `inset(...)` expressions with `calc(100% - Npx)` for right/bottom offsets so clipping remains stable across arrange timing and resize without requiring additional JS interop.
+- Proof surface for this slice is family-page-only: `ParityContainersLayoutPage` is now a real XAML probe page with dedicated clip/shadow/background controls, keeping consolidated demo probes unchanged.

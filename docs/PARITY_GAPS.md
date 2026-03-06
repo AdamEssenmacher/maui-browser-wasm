@@ -13,19 +13,27 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Current behavior: `SelectionMode != None` is treated as unsupported in this slice and emits DEBUG diagnostics.
 - Deferred: behavior parity for selected item(s), events, visual states.
 
-3. Clip and shadow mapping
-- Current behavior: no-op + DEBUG unsupported warnings in shared view mapping.
-- Deferred: clip path and shadow rendering parity.
+3. Clip geometry coverage
+- Current behavior: `RectangleGeometry` and `RoundRectangleGeometry` project to CSS `clip-path`.
+- Deferred: `EllipseGeometry`, `PathGeometry`, `GeometryGroup`, and other geometry types remain unsupported fallback paths with DEBUG diagnostics.
 
-4. Font-load synchronized measurement
+4. Shadow paint coverage
+- Current behavior: shadow projection supports solid paint via CSS `box-shadow`.
+- Deferred: non-solid shadow paint (gradient/image/pattern) remains unsupported fallback with DEBUG diagnostics.
+
+5. Background paint coverage
+- Current behavior: solid and linear-gradient paints are mapped to DOM background styles.
+- Deferred: radial/image/pattern paints remain unsupported fallback with DEBUG diagnostics.
+
+6. Font-load synchronized measurement
 - Current behavior: text measurement is canvas-based with deterministic fallback.
 - Deferred: async font readiness synchronization and re-measure strategy.
 
-5. Browser-hard controls not yet implemented
+7. Browser-hard controls not yet implemented
 - Current behavior: no browser handlers yet for controls marked `missing` in `PARITY_MATRIX.md`.
 - Deferred: implementation waves by family per roadmap.
 
-6. Shell
+8. Shell
 - Current behavior: out of scope by decision.
 - Deferred: no Shell implementation planned in this parity program.
 

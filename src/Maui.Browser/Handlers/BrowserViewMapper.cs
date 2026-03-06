@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.Diagnostics;
+using System.Text;
 using Maui.Browser.Dom;
 using Maui.Browser.Utils;
+using Microsoft.Maui.Controls.Shapes;
 using Microsoft.Maui;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
@@ -269,16 +271,51 @@ internal static class BrowserViewMapper
         if (view.Background is null)
         {
             platformView.Style("backgroundColor", null);
+            platformView.Style("backgroundImage", null);
+            platformView.Style("backgroundSize", null);
+            platformView.Style("backgroundRepeat", null);
+            platformView.Style("backgroundPosition", null);
             return;
         }
 
         if (view.Background is SolidPaint solidPaint)
         {
             platformView.Style("backgroundColor", CssUtil.ToCssColor(solidPaint.Color));
+            platformView.Style("backgroundImage", null);
+            platformView.Style("backgroundSize", null);
+            platformView.Style("backgroundRepeat", null);
+            platformView.Style("backgroundPosition", null);
+            return;
+        }
+
+        if (view.Background is LinearGradientPaint linearGradientPaint)
+        {
+            if (TryBuildLinearGradient(linearGradientPaint, out var gradientCss))
+            {
+                platformView.Style("backgroundColor", null);
+                platformView.Style("backgroundImage", gradientCss);
+                platformView.Style("backgroundSize", "100% 100%");
+                platformView.Style("backgroundRepeat", "no-repeat");
+                platformView.Style("backgroundPosition", "0 0");
+            }
+            else
+            {
+                platformView.Style("backgroundImage", null);
+                platformView.Style("backgroundColor", null);
+                platformView.Style("backgroundSize", null);
+                platformView.Style("backgroundRepeat", null);
+                platformView.Style("backgroundPosition", null);
+                ReportUnsupported(nameof(IView.Background), view, view.Background);
+            }
+
             return;
         }
 
         platformView.Style("backgroundColor", null);
+        platformView.Style("backgroundImage", null);
+        platformView.Style("backgroundSize", null);
+        platformView.Style("backgroundRepeat", null);
+        platformView.Style("backgroundPosition", null);
         ReportUnsupported(nameof(IView.Background), view, view.Background);
     }
 
@@ -294,12 +331,80 @@ internal static class BrowserViewMapper
 
     public static void MapClip(IViewHandler handler, IView view)
     {
+        if (!TryGetPlatformView(handler, out var platformView))
+        {
+            return;
+        }
+
+        if (view.Clip is null)
+        {
+            platformView.Style("clipPath", null);
+            return;
+        }
+
+        if (view.Clip is RoundRectangleGeometry roundRectangleGeometry)
+        {
+            if (!TryNormalizeRect(roundRectangleGeometry.Rect, out var rect))
+            {
+                platformView.Style("clipPath", null);
+                ReportUnsupported(nameof(IView.Clip), view, view.Clip);
+                return;
+            }
+
+            platformView.Style("clipPath", BuildRoundRectangleClipPath(rect, roundRectangleGeometry.CornerRadius));
+            return;
+        }
+
+        if (view.Clip is RectangleGeometry rectangleGeometry)
+        {
+            if (!TryNormalizeRect(rectangleGeometry.Rect, out var rect))
+            {
+                platformView.Style("clipPath", null);
+                ReportUnsupported(nameof(IView.Clip), view, view.Clip);
+                return;
+            }
+
+            platformView.Style("clipPath", BuildRectangleClipPath(rect));
+            return;
+        }
+
+        platformView.Style("clipPath", null);
         ReportUnsupported(nameof(IView.Clip), view, view.Clip);
     }
 
     public static void MapShadow(IViewHandler handler, IView view)
     {
-        ReportUnsupported(nameof(IView.Shadow), view, view.Shadow);
+        if (!TryGetPlatformView(handler, out var platformView))
+        {
+            return;
+        }
+
+        if (view.Shadow is null)
+        {
+            platformView.Style("boxShadow", null);
+            return;
+        }
+
+        if (view.Shadow.Paint is not SolidPaint solidPaint || solidPaint.Color is null)
+        {
+            platformView.Style("boxShadow", null);
+            ReportUnsupported(nameof(IView.Shadow), view, view.Shadow?.Paint);
+            return;
+        }
+
+        var shadowOpacity = Math.Clamp(NormalizeFinite(view.Shadow.Opacity, 1), 0, 1);
+        var colorCss = CssUtil.ToCssColor(solidPaint.Color, shadowOpacity);
+        if (string.IsNullOrWhiteSpace(colorCss))
+        {
+            platformView.Style("boxShadow", null);
+            ReportUnsupported(nameof(IView.Shadow), view, view.Shadow?.Paint);
+            return;
+        }
+
+        var offsetX = NormalizeFinite(view.Shadow.Offset.X, 0);
+        var offsetY = NormalizeFinite(view.Shadow.Offset.Y, 0);
+        var blur = Math.Max(0, NormalizeFinite(view.Shadow.Radius, 0));
+        platformView.Style("boxShadow", $"{CssUtil.Px(offsetX)} {CssUtil.Px(offsetY)} {CssUtil.Px(blur)} {colorCss}");
     }
 
     public static void MapTransform(IViewHandler handler, IView view)
@@ -429,6 +534,123 @@ internal static class BrowserViewMapper
     private static double NormalizeFinite(double value, double fallback)
     {
         return double.IsFinite(value) ? value : fallback;
+    }
+
+    private readonly record struct GradientStopProjection(int Index, double Offset, string ColorCss);
+
+    private static bool TryBuildLinearGradient(LinearGradientPaint paint, out string cssValue)
+    {
+        cssValue = string.Empty;
+        if (paint.GradientStops is null || paint.GradientStops.Length == 0)
+        {
+            return false;
+        }
+
+        var stops = new List<GradientStopProjection>();
+        for (var i = 0; i < paint.GradientStops.Length; i++)
+        {
+            var gradientStop = paint.GradientStops[i];
+            var colorCss = CssUtil.ToCssColor(gradientStop.Color);
+            if (string.IsNullOrWhiteSpace(colorCss))
+            {
+                continue;
+            }
+
+            var offset = Math.Clamp(NormalizeFinite(gradientStop.Offset, 0), 0, 1);
+            stops.Add(new GradientStopProjection(i, offset, colorCss));
+        }
+
+        if (stops.Count == 0)
+        {
+            return false;
+        }
+
+        // Keep equal-offset stop order deterministic (stable by original index).
+        stops.Sort(static (left, right) =>
+        {
+            var offsetComparison = left.Offset.CompareTo(right.Offset);
+            return offsetComparison != 0 ? offsetComparison : left.Index.CompareTo(right.Index);
+        });
+
+        if (stops.Count == 1)
+        {
+            stops.Add(new GradientStopProjection(stops[0].Index + 1, 1, stops[0].ColorCss));
+        }
+
+        var startX = NormalizeFinite(paint.StartPoint.X, 0);
+        var startY = NormalizeFinite(paint.StartPoint.Y, 0);
+        var endX = NormalizeFinite(paint.EndPoint.X, 1);
+        var endY = NormalizeFinite(paint.EndPoint.Y, 1);
+
+        // Degenerate vector fallback: nudge vertically so projection stays valid.
+        if (Math.Abs(endX - startX) < 0.0001 && Math.Abs(endY - startY) < 0.0001)
+        {
+            endY = startY + 1;
+        }
+
+        var svg = new StringBuilder();
+        svg.Append("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'>");
+        svg.Append("<defs><linearGradient id='g' gradientUnits='objectBoundingBox' x1='");
+        svg.Append(CssUtil.Number(startX * 100)).Append("%' y1='");
+        svg.Append(CssUtil.Number(startY * 100)).Append("%' x2='");
+        svg.Append(CssUtil.Number(endX * 100)).Append("%' y2='");
+        svg.Append(CssUtil.Number(endY * 100)).Append("%'>");
+
+        foreach (var stop in stops)
+        {
+            svg.Append("<stop offset='");
+            svg.Append(CssUtil.Number(stop.Offset * 100)).Append("%' stop-color='");
+            svg.Append(stop.ColorCss).Append("' />");
+        }
+
+        svg.Append("</linearGradient></defs>");
+        svg.Append("<rect x='0' y='0' width='1' height='1' fill='url(#g)' /></svg>");
+        var encodedSvg = Convert.ToBase64String(Encoding.UTF8.GetBytes(svg.ToString()));
+        cssValue = $"url(\"data:image/svg+xml;base64,{encodedSvg}\")";
+        return true;
+    }
+
+    private static bool TryNormalizeRect(Rect source, out Rect normalized)
+    {
+        var x = NormalizeFinite(source.X, 0);
+        var y = NormalizeFinite(source.Y, 0);
+        var width = NormalizeFinite(source.Width, 0);
+        var height = NormalizeFinite(source.Height, 0);
+        if (width < 0 || height < 0)
+        {
+            normalized = Rect.Zero;
+            return false;
+        }
+
+        normalized = new Rect(x, y, width, height);
+        return true;
+    }
+
+    private static string BuildRectangleClipPath(Rect rect)
+    {
+        var (top, right, bottom, left) = BuildInsetOffsets(rect);
+        return $"inset({top} {right} {bottom} {left})";
+    }
+
+    private static string BuildRoundRectangleClipPath(Rect rect, CornerRadius cornerRadius)
+    {
+        var (top, right, bottom, left) = BuildInsetOffsets(rect);
+        var topLeft = CssUtil.Px(Math.Max(0, NormalizeFinite(cornerRadius.TopLeft, 0)));
+        var topRight = CssUtil.Px(Math.Max(0, NormalizeFinite(cornerRadius.TopRight, 0)));
+        var bottomRight = CssUtil.Px(Math.Max(0, NormalizeFinite(cornerRadius.BottomRight, 0)));
+        var bottomLeft = CssUtil.Px(Math.Max(0, NormalizeFinite(cornerRadius.BottomLeft, 0)));
+        return $"inset({top} {right} {bottom} {left} round {topLeft} {topRight} {bottomRight} {bottomLeft})";
+    }
+
+    private static (string Top, string Right, string Bottom, string Left) BuildInsetOffsets(Rect rect)
+    {
+        var top = CssUtil.Px(Math.Max(0, rect.Y));
+        var left = CssUtil.Px(Math.Max(0, rect.X));
+        var rightEdge = Math.Max(0, rect.X + rect.Width);
+        var bottomEdge = Math.Max(0, rect.Y + rect.Height);
+        var right = CssUtil.CalcRemainingPx(rightEdge);
+        var bottom = CssUtil.CalcRemainingPx(bottomEdge);
+        return (top, right, bottom, left);
     }
 
     private static void ReportUnsupported(string propertyName, IView view, object? value)
