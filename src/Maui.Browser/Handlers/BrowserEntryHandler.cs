@@ -181,6 +181,6 @@ public sealed class BrowserEntryHandler : BrowserViewHandler<IEntry>
 
     public static void MapVerticalTextAlignment(BrowserEntryHandler handler, IEntry entry)
     {
-        BrowserTextInputMappings.MapVerticalTextAlignment(entry, handler.PlatformView);
+        BrowserTextInputMappings.MapVerticalTextAlignment(entry, handler.PlatformView, multiline: false);
     }
 }

@@ -46,8 +46,10 @@ public sealed partial class BrowserSmokeTests
             "6.5",
             (await page.Locator("[data-automation-id='parity-datetime-stepper-value-label']").InnerTextAsync()).Trim());
         Assert.Equal(
-            "flex",
-            await ReadComputedStylePropertyAsync(page, "[data-automation-id='parity-datetime-stepper']", "display"));
+            "inline-flex",
+            await ReadInlineStylePropertyAsync(page, "[data-automation-id='parity-datetime-stepper']", "display"));
+        var stepperComputedDisplay = await ReadComputedStylePropertyAsync(page, "[data-automation-id='parity-datetime-stepper']", "display");
+        Assert.Contains("flex", stepperComputedDisplay);
         Assert.Equal(
             "8px",
             await ReadComputedStylePropertyAsync(page, "[data-automation-id='parity-datetime-stepper']", "gap"));

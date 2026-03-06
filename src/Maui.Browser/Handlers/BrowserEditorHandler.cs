@@ -165,6 +165,6 @@ public sealed class BrowserEditorHandler : BrowserViewHandler<IEditor>
 
     public static void MapVerticalTextAlignment(BrowserEditorHandler handler, IEditor editor)
     {
-        BrowserTextInputMappings.MapVerticalTextAlignment(editor, handler.PlatformView);
+        BrowserTextInputMappings.MapVerticalTextAlignment(editor, handler.PlatformView, multiline: true);
     }
 }

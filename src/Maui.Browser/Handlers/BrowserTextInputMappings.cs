@@ -122,15 +122,23 @@ internal static class BrowserTextInputMappings
         platformView.Style("textAlign", horizontal);
     }
 
-    public static void MapVerticalTextAlignment(ITextAlignment view, DomElement platformView)
+    public static void MapVerticalTextAlignment(ITextAlignment view, DomElement platformView, bool multiline)
     {
-        var vertical = view.VerticalTextAlignment switch
+        // CSS vertical-align affects element alignment in inline layout, not text within
+        // input/textarea controls. Use asymmetric padding to move rendered content.
+        var (topPadding, bottomPadding) = (view.VerticalTextAlignment, multiline) switch
         {
-            TextAlignment.Center => "middle",
-            TextAlignment.End => "bottom",
-            _ => "top"
+            (TextAlignment.Start, true) => ("4px", "8px"),
+            (TextAlignment.Center, true) => ("6px", "6px"),
+            (TextAlignment.End, true) => ("8px", "4px"),
+            (TextAlignment.Start, false) => ("2px", "6px"),
+            (TextAlignment.Center, false) => ("4px", "4px"),
+            (TextAlignment.End, false) => ("6px", "2px"),
+            _ => ("4px", "4px")
         };
 
-        platformView.Style("verticalAlign", vertical);
+        platformView.Style("verticalAlign", null);
+        platformView.Style("paddingTop", topPadding);
+        platformView.Style("paddingBottom", bottomPadding);
     }
 }

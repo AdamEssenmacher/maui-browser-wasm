@@ -369,7 +369,7 @@ public sealed class BrowserSearchBarHandler : BrowserViewHandler<ISearchBar>
             return;
         }
 
-        BrowserTextInputMappings.MapVerticalTextAlignment(searchBar, handler._inputElement);
+        BrowserTextInputMappings.MapVerticalTextAlignment(searchBar, handler._inputElement, multiline: false);
     }
 
     public static void MapReturnType(BrowserSearchBarHandler handler, ISearchBar searchBar)
