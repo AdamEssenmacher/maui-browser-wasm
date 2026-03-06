@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Diagnostics;
+using System.Text;
 using Maui.Browser.Dom;
 using Maui.Browser.Utils;
 using Microsoft.Maui.Controls.Shapes;
@@ -520,6 +521,8 @@ internal static class BrowserViewMapper
         return double.IsFinite(value) ? value : fallback;
     }
 
+    private readonly record struct GradientStopProjection(int Index, double Offset, string ColorCss);
+
     private static bool TryBuildLinearGradient(LinearGradientPaint paint, out string cssValue)
     {
         cssValue = string.Empty;
@@ -528,9 +531,10 @@ internal static class BrowserViewMapper
             return false;
         }
 
-        var stops = new List<(double Offset, string ColorCss)>();
-        foreach (var gradientStop in paint.GradientStops)
+        var stops = new List<GradientStopProjection>();
+        for (var i = 0; i < paint.GradientStops.Length; i++)
         {
+            var gradientStop = paint.GradientStops[i];
             var colorCss = CssUtil.ToCssColor(gradientStop.Color);
             if (string.IsNullOrWhiteSpace(colorCss))
             {
@@ -538,7 +542,7 @@ internal static class BrowserViewMapper
             }
 
             var offset = Math.Clamp(NormalizeFinite(gradientStop.Offset, 0), 0, 1);
-            stops.Add((offset, colorCss));
+            stops.Add(new GradientStopProjection(i, offset, colorCss));
         }
 
         if (stops.Count == 0)
@@ -546,48 +550,49 @@ internal static class BrowserViewMapper
             return false;
         }
 
-        stops.Sort(static (left, right) => left.Offset.CompareTo(right.Offset));
+        // Keep equal-offset stop order deterministic (stable by original index).
+        stops.Sort(static (left, right) =>
+        {
+            var offsetComparison = left.Offset.CompareTo(right.Offset);
+            return offsetComparison != 0 ? offsetComparison : left.Index.CompareTo(right.Index);
+        });
+
         if (stops.Count == 1)
         {
-            stops.Add((1, stops[0].ColorCss));
+            stops.Add(new GradientStopProjection(stops[0].Index + 1, 1, stops[0].ColorCss));
         }
 
-        var stopSegments = new List<string>(stops.Count);
+        var startX = NormalizeFinite(paint.StartPoint.X, 0);
+        var startY = NormalizeFinite(paint.StartPoint.Y, 0);
+        var endX = NormalizeFinite(paint.EndPoint.X, 1);
+        var endY = NormalizeFinite(paint.EndPoint.Y, 1);
+
+        // Degenerate vector fallback: nudge vertically so projection stays valid.
+        if (Math.Abs(endX - startX) < 0.0001 && Math.Abs(endY - startY) < 0.0001)
+        {
+            endY = startY + 1;
+        }
+
+        var svg = new StringBuilder();
+        svg.Append("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1' preserveAspectRatio='none'>");
+        svg.Append("<defs><linearGradient id='g' gradientUnits='objectBoundingBox' x1='");
+        svg.Append(CssUtil.Number(startX * 100)).Append("%' y1='");
+        svg.Append(CssUtil.Number(startY * 100)).Append("%' x2='");
+        svg.Append(CssUtil.Number(endX * 100)).Append("%' y2='");
+        svg.Append(CssUtil.Number(endY * 100)).Append("%'>");
+
         foreach (var stop in stops)
         {
-            stopSegments.Add($"{stop.ColorCss} {CssUtil.Number(stop.Offset * 100)}%");
+            svg.Append("<stop offset='");
+            svg.Append(CssUtil.Number(stop.Offset * 100)).Append("%' stop-color='");
+            svg.Append(stop.ColorCss).Append("' />");
         }
 
-        var angle = ResolveLinearGradientAngle(paint.StartPoint, paint.EndPoint);
-        cssValue = $"linear-gradient({CssUtil.Number(angle)}deg, {string.Join(", ", stopSegments)})";
+        svg.Append("</linearGradient></defs>");
+        svg.Append("<rect x='0' y='0' width='1' height='1' fill='url(#g)' /></svg>");
+        var encodedSvg = Convert.ToBase64String(Encoding.UTF8.GetBytes(svg.ToString()));
+        cssValue = $"url(\"data:image/svg+xml;base64,{encodedSvg}\")";
         return true;
-    }
-
-    private static double ResolveLinearGradientAngle(Point start, Point end)
-    {
-        var startX = NormalizeFinite(start.X, 0);
-        var startY = NormalizeFinite(start.Y, 0);
-        var endX = NormalizeFinite(end.X, 1);
-        var endY = NormalizeFinite(end.Y, 1);
-        var deltaX = endX - startX;
-        var deltaY = endY - startY;
-        if (Math.Abs(deltaX) < 0.0001 && Math.Abs(deltaY) < 0.0001)
-        {
-            return 180;
-        }
-
-        var angle = Math.Atan2(deltaY, deltaX) * (180 / Math.PI) + 90;
-        while (angle < 0)
-        {
-            angle += 360;
-        }
-
-        while (angle >= 360)
-        {
-            angle -= 360;
-        }
-
-        return angle;
     }
 
     private static bool TryNormalizeRect(Rect source, out Rect normalized)
