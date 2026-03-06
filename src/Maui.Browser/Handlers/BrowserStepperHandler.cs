@@ -11,6 +11,7 @@ public sealed class BrowserStepperHandler : BrowserViewHandler<IStepper>
     public static IPropertyMapper<IStepper, BrowserStepperHandler> Mapper = new PropertyMapper<IStepper, BrowserStepperHandler>(BrowserViewMapper.CommonViewMapper)
     {
         [nameof(IView.AutomationId)] = MapAutomationId,
+        [nameof(IView.Visibility)] = MapVisibility,
         [nameof(IRange.Minimum)] = MapMinimum,
         [nameof(IRange.Maximum)] = MapMaximum,
         [nameof(IRange.Value)] = MapValue,
@@ -157,6 +158,15 @@ public sealed class BrowserStepperHandler : BrowserViewHandler<IStepper>
     {
         BrowserViewMapper.MapAutomationId(handler, stepper);
         handler.UpdateChildAutomationIds(stepper);
+    }
+
+    public static void MapVisibility(BrowserStepperHandler handler, IStepper stepper)
+    {
+        BrowserViewMapper.MapVisibility(stepper, handler.PlatformView);
+        if (stepper.Visibility != Visibility.Collapsed)
+        {
+            handler.PlatformView.Style("display", "inline-flex");
+        }
     }
 
     public static void MapMinimum(BrowserStepperHandler handler, IStepper stepper)

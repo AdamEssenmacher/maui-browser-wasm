@@ -13,6 +13,7 @@ public sealed class BrowserSearchBarHandler : BrowserViewHandler<ISearchBar>
     public static IPropertyMapper<ISearchBar, BrowserSearchBarHandler> Mapper = new PropertyMapper<ISearchBar, BrowserSearchBarHandler>(BrowserViewMapper.CommonViewMapper)
     {
         [nameof(IView.AutomationId)] = MapAutomationId,
+        [nameof(IView.Visibility)] = MapVisibility,
         [nameof(ISearchBar.Text)] = MapText,
         [nameof(ISearchBar.Placeholder)] = MapPlaceholder,
         [nameof(ISearchBar.PlaceholderColor)] = MapPlaceholderColor,
@@ -228,6 +229,15 @@ public sealed class BrowserSearchBarHandler : BrowserViewHandler<ISearchBar>
     {
         BrowserViewMapper.MapAutomationId(handler, searchBar);
         handler.UpdateChildAutomationIds(searchBar);
+    }
+
+    public static void MapVisibility(BrowserSearchBarHandler handler, ISearchBar searchBar)
+    {
+        BrowserViewMapper.MapVisibility(searchBar, handler.PlatformView);
+        if (searchBar.Visibility != Visibility.Collapsed)
+        {
+            handler.PlatformView.Style("display", "flex");
+        }
     }
 
     public static void MapText(BrowserSearchBarHandler handler, ISearchBar searchBar)

@@ -49,6 +49,7 @@
                 TextColor="DarkSlateGray" />
 
             <Stepper
+                x:Name="StepperProbe"
                 AutomationId="parity-datetime-stepper"
                 Increment="0.5"
                 Maximum="10"

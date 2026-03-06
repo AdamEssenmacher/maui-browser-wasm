@@ -42,6 +42,7 @@ public partial class ParityTextInputPage : ContentPage
     {
         _state.ApplyProgrammaticUpdate();
         ApplyLabelMode();
+        ReapplySearchBarVisibility();
     }
 
     private void ApplyLabelMode()
@@ -68,5 +69,18 @@ public partial class ParityTextInputPage : ContentPage
 #pragma warning disable IL2026
         this.LoadFromXaml(typeof(ParityTextInputPage));
 #pragma warning restore IL2026
+    }
+
+    private void ReapplySearchBarVisibility()
+    {
+        var searchBar = SearchProbeElement;
+        if (searchBar is null || !searchBar.IsVisible)
+        {
+            return;
+        }
+
+        var originalVisibility = searchBar.IsVisible;
+        searchBar.IsVisible = false;
+        searchBar.IsVisible = originalVisibility;
     }
 }

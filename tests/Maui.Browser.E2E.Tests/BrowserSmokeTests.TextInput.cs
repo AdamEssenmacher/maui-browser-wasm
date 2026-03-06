@@ -58,6 +58,9 @@ public sealed partial class BrowserSmokeTests
         Assert.Equal(
             "programmatic-search",
             await ReadInputValueAsync(page, "[data-automation-id='parity-text-searchbar-input']"));
+        Assert.Equal(
+            "flex",
+            await ReadComputedStylePropertyAsync(page, "[data-automation-id='parity-text-searchbar']", "display"));
     }
 
     [Fact]

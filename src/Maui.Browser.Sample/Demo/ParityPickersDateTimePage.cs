@@ -6,6 +6,7 @@ namespace Maui.Browser.Sample.Demo;
 public partial class ParityPickersDateTimePage : ContentPage
 {
     private readonly ParityPickersDateTimeState _state = new();
+    private Stepper? StepperProbeElement => FindByName("StepperProbe") as Stepper;
 
     public ParityPickersDateTimePage()
     {
@@ -31,6 +32,7 @@ public partial class ParityPickersDateTimePage : ContentPage
     private void OnApplyProgrammaticUpdateClicked(object? sender, EventArgs e)
     {
         _state.ApplyProgrammaticUpdate();
+        ReapplyStepperVisibility();
     }
 
     private void LoadXamlFromResource()
@@ -38,5 +40,18 @@ public partial class ParityPickersDateTimePage : ContentPage
 #pragma warning disable IL2026
         this.LoadFromXaml(typeof(ParityPickersDateTimePage));
 #pragma warning restore IL2026
+    }
+
+    private void ReapplyStepperVisibility()
+    {
+        var stepper = StepperProbeElement;
+        if (stepper is null || !stepper.IsVisible)
+        {
+            return;
+        }
+
+        var originalVisibility = stepper.IsVisible;
+        stepper.IsVisible = false;
+        stepper.IsVisible = originalVisibility;
     }
 }
