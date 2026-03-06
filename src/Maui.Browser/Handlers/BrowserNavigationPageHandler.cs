@@ -18,6 +18,7 @@ public sealed class BrowserNavigationPageHandler : BrowserViewHandler<Navigation
         {
             [nameof(NavigationPage.CurrentPage)] = MapCurrentPage,
             [nameof(NavigationPage.RootPage)] = MapRootPage,
+            [nameof(Page.Title)] = MapTitle,
             [nameof(NavigationPage.BarBackgroundColor)] = MapBarBackgroundColor,
             [nameof(NavigationPage.BarTextColor)] = MapBarTextColor
         };
@@ -179,6 +180,11 @@ public sealed class BrowserNavigationPageHandler : BrowserViewHandler<Navigation
     }
 
     public static void MapBarBackgroundColor(BrowserNavigationPageHandler handler, NavigationPage navigationPage)
+    {
+        handler.UpdateNavigationBarVisual();
+    }
+
+    public static void MapTitle(BrowserNavigationPageHandler handler, NavigationPage navigationPage)
     {
         handler.UpdateNavigationBarVisual();
     }
