@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Maui.Browser.Sample.Demo.ParityContainersLayoutPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:DataType="demo:ParityContainersLayoutState"
+    xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
+    AutomationId="parity-page-containers-layout"
+    Title="Containers/Layout Parity">
+
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="16"
+            Spacing="10">
+            <Label
+                AutomationId="parity-containers-core-heading"
+                FontSize="20"
+                Text="Core View Substrate Parity"
+                TextColor="Black" />
+
+            <Label
+                AutomationId="parity-containers-core-summary"
+                FontSize="12"
+                Text="Clip (rectangle/round-rectangle), shadow (solid), and linear-gradient background probes."
+                TextColor="DarkSlateGray" />
+
+            <Grid
+                x:Name="CoreSubstrateProbe"
+                AutomationId="parity-core-substrate-probe"
+                BackgroundColor="LightSkyBlue"
+                HeightRequest="130"
+                HorizontalOptions="Start"
+                WidthRequest="240">
+                <Label
+                    AutomationId="parity-core-substrate-probe-text"
+                    HorizontalOptions="Center"
+                    Text="Core substrate probe"
+                    TextColor="Black"
+                    VerticalOptions="Center" />
+            </Grid>
+
+            <Label
+                AutomationId="parity-core-clip-heading"
+                FontSize="14"
+                Text="Clip modes"
+                TextColor="Black" />
+
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    AutomationId="parity-core-clip-none-button"
+                    Clicked="OnClipNoneClicked"
+                    Padding="10,6"
+                    Text="None"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-core-clip-rectangle-button"
+                    Clicked="OnClipRectangleClicked"
+                    Padding="10,6"
+                    Text="Rectangle"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-core-clip-round-button"
+                    Clicked="OnClipRoundRectangleClicked"
+                    Padding="10,6"
+                    Text="RoundRect"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-core-clip-unsupported-button"
+                    Clicked="OnClipUnsupportedClicked"
+                    Padding="10,6"
+                    Text="Unsupported"
+                    TextColor="Black" />
+            </HorizontalStackLayout>
+
+            <Label
+                AutomationId="parity-core-clip-summary"
+                FontSize="12"
+                Text="{Binding ClipSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Label
+                AutomationId="parity-core-shadow-heading"
+                FontSize="14"
+                Text="Shadow modes"
+                TextColor="Black" />
+
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    AutomationId="parity-core-shadow-off-button"
+                    Clicked="OnShadowOffClicked"
+                    Padding="10,6"
+                    Text="Off"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-core-shadow-on-button"
+                    Clicked="OnShadowOnClicked"
+                    Padding="10,6"
+                    Text="Solid"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-core-shadow-unsupported-button"
+                    Clicked="OnShadowUnsupportedClicked"
+                    Padding="10,6"
+                    Text="Unsupported"
+                    TextColor="Black" />
+            </HorizontalStackLayout>
+
+            <Label
+                AutomationId="parity-core-shadow-summary"
+                FontSize="12"
+                Text="{Binding ShadowSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Label
+                AutomationId="parity-core-background-heading"
+                FontSize="14"
+                Text="Background modes"
+                TextColor="Black" />
+
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    AutomationId="parity-core-background-solid-button"
+                    Clicked="OnBackgroundSolidClicked"
+                    Padding="10,6"
+                    Text="Solid"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-core-background-linear-button"
+                    Clicked="OnBackgroundLinearClicked"
+                    Padding="10,6"
+                    Text="Linear"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-core-background-unsupported-button"
+                    Clicked="OnBackgroundUnsupportedClicked"
+                    Padding="10,6"
+                    Text="Unsupported"
+                    TextColor="Black" />
+            </HorizontalStackLayout>
+
+            <Label
+                AutomationId="parity-core-background-summary"
+                FontSize="12"
+                Text="{Binding BackgroundSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Button
+                AutomationId="parity-page-containers-layout-open-consolidated"
+                Clicked="OnOpenConsolidatedClicked"
+                Padding="12,8"
+                Text="Open consolidated demo probes"
+                TextColor="Black" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

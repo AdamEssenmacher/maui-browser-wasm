@@ -8,7 +8,11 @@ public static class CssUtil
 {
     public static string Px(double value) => $"{value.ToString("0.###", CultureInfo.InvariantCulture)}px";
 
+    public static string Number(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
+
     public static string BoolToDisplay(bool isVisible) => isVisible ? "" : "none";
+
+    public static string CalcRemainingPx(double usedSize) => $"calc(100% - {Px(Math.Max(0, usedSize))})";
 
     public static string Rgba(byte r, byte g, byte b, double a)
         => $"rgba({r},{g},{b},{a.ToString("0.###", CultureInfo.InvariantCulture)})";
@@ -24,6 +28,19 @@ public static class CssUtil
         var g = ToByte(color.Green);
         var b = ToByte(color.Blue);
         return Rgba(r, g, b, Clamp01(color.Alpha));
+    }
+
+    public static string? ToCssColor(Color color, double alphaMultiplier)
+    {
+        if (color == null)
+        {
+            return null;
+        }
+
+        var r = ToByte(color.Red);
+        var g = ToByte(color.Green);
+        var b = ToByte(color.Blue);
+        return Rgba(r, g, b, Clamp01(color.Alpha * alphaMultiplier));
     }
 
     public static string ToCssFont(Microsoft.Maui.Font font, double fallbackSize = 14)

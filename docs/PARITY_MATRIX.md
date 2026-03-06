@@ -49,3 +49,4 @@ Status values:
 - Complete: `Window`, `ContentPage`, `ContentView`, stack/grid/absolute layout mapping, `Button`, `CheckBox`
 - Partial: `NavigationPage`, `ScrollView`, `Label`, `Entry`, `Switch`, `Slider`, `Picker`, `CollectionView`
 - Missing: all other modern controls listed above
+- Shared core substrate: `IView.Clip` (`RectangleGeometry`/`RoundRectangleGeometry`), `IView.Shadow` (solid paint), and `IView.Background` (`SolidPaint` + `LinearGradientPaint`) are implemented in the common browser mapper.

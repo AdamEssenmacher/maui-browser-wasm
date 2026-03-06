@@ -6,6 +6,57 @@ namespace Maui.Browser.E2E.Tests;
 public sealed partial class BrowserSmokeTests
 {
     [Fact]
+    public async Task CoreViewSubstrateProjectionWorks()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenFamilyPageAsync(context, "parity-open-containers-layout", "parity-page-containers-layout");
+
+        const string probeSelector = "[data-automation-id='parity-core-substrate-probe']";
+
+        await page.Locator("[data-automation-id='parity-core-clip-rectangle-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Clip mode: rectangle");
+        var rectangleClip = await ReadInlineStylePropertyAsync(page, probeSelector, "clipPath");
+        Assert.Contains("inset(", rectangleClip, StringComparison.Ordinal);
+        Assert.Contains("100%", rectangleClip, StringComparison.Ordinal);
+        Assert.Contains("-", rectangleClip, StringComparison.Ordinal);
+
+        await page.Locator("[data-automation-id='parity-core-clip-round-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Clip mode: round-rectangle");
+        var roundClip = await ReadInlineStylePropertyAsync(page, probeSelector, "clipPath");
+        Assert.Contains("round", roundClip, StringComparison.Ordinal);
+
+        await page.Locator("[data-automation-id='parity-core-clip-unsupported-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Clip mode: unsupported ellipse (fallback expected)");
+        Assert.Equal(string.Empty, await ReadInlineStylePropertyAsync(page, probeSelector, "clipPath"));
+
+        await page.Locator("[data-automation-id='parity-core-shadow-on-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Shadow mode: solid");
+        var boxShadow = await ReadInlineStylePropertyAsync(page, probeSelector, "boxShadow");
+        Assert.Contains("rgba(", boxShadow, StringComparison.Ordinal);
+
+        await page.Locator("[data-automation-id='parity-core-shadow-off-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Shadow mode: off");
+        Assert.Equal(string.Empty, await ReadInlineStylePropertyAsync(page, probeSelector, "boxShadow"));
+
+        await page.Locator("[data-automation-id='parity-core-shadow-unsupported-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Shadow mode: unsupported gradient (fallback expected)");
+        Assert.Equal(string.Empty, await ReadInlineStylePropertyAsync(page, probeSelector, "boxShadow"));
+
+        await page.Locator("[data-automation-id='parity-core-background-linear-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Background mode: linear-gradient");
+        var linearGradient = await ReadInlineStylePropertyAsync(page, probeSelector, "backgroundImage");
+        Assert.Contains("linear-gradient", linearGradient, StringComparison.OrdinalIgnoreCase);
+
+        await page.Locator("[data-automation-id='parity-core-background-solid-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Background mode: solid");
+        Assert.Equal(string.Empty, await ReadInlineStylePropertyAsync(page, probeSelector, "backgroundImage"));
+
+        await page.Locator("[data-automation-id='parity-core-background-unsupported-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Background mode: unsupported radial (fallback expected)");
+        Assert.Equal(string.Empty, await ReadInlineStylePropertyAsync(page, probeSelector, "backgroundImage"));
+    }
+
+    [Fact]
     public async Task IViewCoreAndTransformFlowWorks()
     {
         await using var context = await _fixture.NewContextAsync();
