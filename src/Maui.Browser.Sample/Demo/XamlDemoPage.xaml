@@ -165,6 +165,87 @@
             TextColor="Black" />
 
         <Label
+            AutomationId="collection-heading"
+            FontSize="16"
+            Text="CollectionView viability"
+            TextColor="Black" />
+
+        <CollectionView
+            AutomationId="collection-view"
+            HeightRequest="190"
+            ItemsSource="{Binding CollectionItems}"
+            SelectionMode="None">
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout ItemSpacing="4" Orientation="Vertical" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="demo:DemoCollectionItem">
+                    <Grid
+                        AutomationId="collection-item-row"
+                        BackgroundColor="#E2E8F0"
+                        ColumnDefinitions="Auto,*"
+                        ColumnSpacing="8"
+                        Padding="8,6">
+                        <Label
+                            AutomationId="collection-item-id"
+                            FontSize="12"
+                            Text="{Binding IdText}"
+                            TextColor="DarkSlateGray" />
+                        <Label
+                            Grid.Column="1"
+                            AutomationId="collection-item-title"
+                            FontSize="13"
+                            Text="{Binding Title}"
+                            TextColor="Black" />
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+            <CollectionView.EmptyView>
+                <Label
+                    AutomationId="collection-empty-view"
+                    FontSize="12"
+                    Padding="8,6"
+                    Text="Collection is empty."
+                    TextColor="DarkSlateGray" />
+            </CollectionView.EmptyView>
+        </CollectionView>
+
+        <Label
+            AutomationId="collection-summary-label"
+            FontSize="12"
+            Text="{Binding CollectionSummary}"
+            TextColor="DarkSlateGray" />
+
+        <HorizontalStackLayout
+            AutomationId="collection-actions-row"
+            Spacing="8">
+            <Button
+                AutomationId="collection-add-button"
+                Clicked="OnCollectionAddClicked"
+                Padding="12,8"
+                Text="Add item"
+                TextColor="Black" />
+            <Button
+                AutomationId="collection-remove-button"
+                Clicked="OnCollectionRemoveClicked"
+                Padding="12,8"
+                Text="Remove item"
+                TextColor="Black" />
+            <Button
+                AutomationId="collection-clear-button"
+                Clicked="OnCollectionClearClicked"
+                Padding="12,8"
+                Text="Clear items"
+                TextColor="Black" />
+            <Button
+                AutomationId="collection-reset-button"
+                Clicked="OnCollectionResetClicked"
+                Padding="12,8"
+                Text="Reset items"
+                TextColor="Black" />
+        </HorizontalStackLayout>
+
+        <Label
             AutomationId="core-heading"
             FontSize="16"
             Text="IView core and transform"

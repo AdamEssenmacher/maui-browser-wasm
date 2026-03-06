@@ -18,6 +18,8 @@ public sealed class DomElement
 
     public void Append(DomElement child) => DomApi.AppendChild(Handle, child.Handle);
 
+    public void Insert(int index, DomElement child) => DomApi.InsertChildAt(Handle, child.Handle, index);
+
     public void Remove(DomElement child) => DomApi.RemoveChild(Handle, child.Handle);
 
     public void ClearChildren() => DomApi.ClearChildren(Handle);

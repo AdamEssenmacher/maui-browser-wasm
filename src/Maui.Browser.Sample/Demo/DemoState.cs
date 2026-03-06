@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Runtime.CompilerServices;
 using Microsoft.Maui;
 using Microsoft.Maui.Graphics;
@@ -22,6 +24,9 @@ internal sealed class DemoState : INotifyPropertyChanged
     private bool _formCheckBoxChecked;
     private double _formSliderValue = 35;
     private int _formPickerSelectedIndex = 1;
+    private readonly ObservableCollection<DemoCollectionItem> _collectionItems;
+    private int _nextCollectionItemId = 1;
+    private string _collectionMutation = "initial";
 
     private bool _coreInputTransparent;
     private int _coreProbeClickCount;
@@ -42,6 +47,19 @@ internal sealed class DemoState : INotifyPropertyChanged
     private string _coreSemanticHint = "Core semantics hint v1";
 
     public event PropertyChangedEventHandler? PropertyChanged;
+
+    public DemoState()
+    {
+        _collectionItems =
+        [
+            new DemoCollectionItem(1, "Alpha row"),
+            new DemoCollectionItem(2, "Beta row"),
+            new DemoCollectionItem(3, "Gamma row"),
+            new DemoCollectionItem(4, "Delta row")
+        ];
+        _nextCollectionItemId = _collectionItems.Count + 1;
+        _collectionItems.CollectionChanged += OnCollectionItemsChanged;
+    }
 
     public string InputText
     {
@@ -383,6 +401,8 @@ internal sealed class DemoState : INotifyPropertyChanged
 
     public IReadOnlyList<string> FormPickerItems { get; } = ["Alpha", "Beta", "Gamma", "Delta"];
 
+    public ObservableCollection<DemoCollectionItem> CollectionItems => _collectionItems;
+
     public string LiveText => $"Live text: {InputText}";
 
     public string ClickSummary => $"Button clicks: {ClickCount}";
@@ -431,6 +451,9 @@ internal sealed class DemoState : INotifyPropertyChanged
         }
     }
 
+    public string CollectionSummary =>
+        $"Collection items: {CollectionItems.Count}, last mutation: {_collectionMutation}";
+
     public string CoreInputTransparentSummary => $"Core input transparent: {(CoreInputTransparent ? "on" : "off")}";
 
     public string CoreProbeClickSummary => $"Core probe clicks: {CoreProbeClickCount}";
@@ -465,6 +488,47 @@ internal sealed class DemoState : INotifyPropertyChanged
         FormCheckBoxChecked = true;
         FormSliderValue = 82;
         FormPickerSelectedIndex = 2;
+    }
+
+    public void AddCollectionItem()
+    {
+        var id = _nextCollectionItemId++;
+        CollectionItems.Add(new DemoCollectionItem(id, $"Item {id}"));
+        _collectionMutation = "add";
+        OnPropertyChanged(nameof(CollectionSummary));
+    }
+
+    public void RemoveCollectionItem()
+    {
+        if (CollectionItems.Count == 0)
+        {
+            _collectionMutation = "remove (noop)";
+            OnPropertyChanged(nameof(CollectionSummary));
+            return;
+        }
+
+        CollectionItems.RemoveAt(CollectionItems.Count - 1);
+        _collectionMutation = "remove";
+        OnPropertyChanged(nameof(CollectionSummary));
+    }
+
+    public void ClearCollectionItems()
+    {
+        CollectionItems.Clear();
+        _collectionMutation = "clear";
+        OnPropertyChanged(nameof(CollectionSummary));
+    }
+
+    public void ResetCollectionItems()
+    {
+        CollectionItems.Clear();
+        CollectionItems.Add(new DemoCollectionItem(1, "Alpha row"));
+        CollectionItems.Add(new DemoCollectionItem(2, "Beta row"));
+        CollectionItems.Add(new DemoCollectionItem(3, "Gamma row"));
+        CollectionItems.Add(new DemoCollectionItem(4, "Delta row"));
+        _nextCollectionItemId = 5;
+        _collectionMutation = "reset";
+        OnPropertyChanged(nameof(CollectionSummary));
     }
 
     public void ToggleCoreInputTransparent()
@@ -543,6 +607,11 @@ internal sealed class DemoState : INotifyPropertyChanged
         NavigationDetailCounter++;
     }
 
+    private void OnCollectionItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(CollectionSummary));
+    }
+
     private bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)
     {
         if (EqualityComparer<T>.Default.Equals(storage, value))
@@ -559,4 +628,19 @@ internal sealed class DemoState : INotifyPropertyChanged
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
+}
+
+internal sealed class DemoCollectionItem
+{
+    public DemoCollectionItem(int id, string title)
+    {
+        Id = id;
+        Title = title;
+    }
+
+    public int Id { get; }
+
+    public string Title { get; }
+
+    public string IdText => $"#{Id}";
 }

@@ -50,6 +50,26 @@ public partial class XamlDemoPage : ContentPage
         _state.ApplyProgrammaticFormUpdate();
     }
 
+    private void OnCollectionAddClicked(object? sender, EventArgs e)
+    {
+        _state.AddCollectionItem();
+    }
+
+    private void OnCollectionRemoveClicked(object? sender, EventArgs e)
+    {
+        _state.RemoveCollectionItem();
+    }
+
+    private void OnCollectionClearClicked(object? sender, EventArgs e)
+    {
+        _state.ClearCollectionItems();
+    }
+
+    private void OnCollectionResetClicked(object? sender, EventArgs e)
+    {
+        _state.ResetCollectionItems();
+    }
+
     private void OnToggleCoreFlowDirectionClicked(object? sender, EventArgs e)
     {
         _state.ToggleCoreFlowDirection();

@@ -43,6 +43,9 @@ internal static partial class DomApi
     [JSImport("appendChild", Module)]
     internal static partial void AppendChild(nint parent, nint child);
 
+    [JSImport("insertChildAt", Module)]
+    internal static partial void InsertChildAt(nint parent, nint child, int index);
+
     [JSImport("removeChild", Module)]
     internal static partial void RemoveChild(nint parent, nint child);
 
