@@ -524,11 +524,14 @@ internal static class BrowserViewMapper
     private static bool IsNaturallyFocusable(IView view)
     {
         return view is IEntry
+            or IEditor
             or ITextButton
             or ICheckBox
             or ISlider
             or IPicker
-            or ISwitch;
+            or ISwitch
+            or IDatePicker
+            or ITimePicker;
     }
 
     private static double NormalizeFinite(double value, double fallback)

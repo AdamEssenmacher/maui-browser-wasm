@@ -6,6 +6,61 @@ namespace Maui.Browser.E2E.Tests;
 public sealed partial class BrowserSmokeTests
 {
     [Fact]
+    public async Task TextInputFamilyParityWorks()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenFamilyPageAsync(context, "parity-open-text-input", "parity-page-text-input");
+
+        await page.Locator("[data-automation-id='parity-text-entry']").FillAsync("family-entry");
+        await page.WaitForSelectorAsync("text=Entry text: family-entry | completed: 0");
+
+        await page.Locator("[data-automation-id='parity-text-entry']").PressAsync("Enter");
+        await page.WaitForSelectorAsync("text=Entry text: family-entry | completed: 1");
+
+        Assert.Equal(
+            "password",
+            await ReadAttributeAsync(page, "[data-automation-id='parity-text-password-entry']", "type"));
+
+        var placeholderColor = await page.EvaluateAsync<string>(
+            @"() => {
+                const entry = document.querySelector('[data-automation-id=""parity-text-entry""]');
+                if (!entry) {
+                    return '';
+                }
+
+                return entry.style.getPropertyValue('--maui-placeholder-color') ?? '';
+            }");
+        Assert.False(string.IsNullOrWhiteSpace(placeholderColor));
+
+        await page.Locator("[data-automation-id='parity-text-label-mode-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Label mode: tail truncation (max-lines=1)");
+        var labelOverflow = await ReadInlineStylePropertyAsync(page, "[data-automation-id='parity-text-label-probe']", "textOverflow");
+        Assert.Equal("ellipsis", labelOverflow);
+
+        var editorSummaryBefore = await page.Locator("[data-automation-id='parity-text-editor-summary']").InnerTextAsync();
+        await SetInputValueAndDispatchAsync(page, "[data-automation-id='parity-text-editor']", "family editor update");
+        await page.WaitForFunctionAsync(
+            @"(before) => {
+                const summary = document.querySelector('[data-automation-id=""parity-text-editor-summary""]');
+                return !!summary && (summary.textContent ?? '').trim() !== before;
+            }",
+            editorSummaryBefore.Trim());
+
+        await page.Locator("[data-automation-id='parity-text-searchbar-input']").FillAsync("browser parity");
+        await page.Locator("[data-automation-id='parity-text-searchbar-search-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Search text: browser parity | presses: 1 | last: browser parity");
+
+        await page.Locator("[data-automation-id='parity-text-searchbar-clear-button']").ClickAsync();
+        Assert.Equal(string.Empty, await ReadInputValueAsync(page, "[data-automation-id='parity-text-searchbar-input']"));
+
+        await page.Locator("[data-automation-id='parity-text-programmatic-update-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Entry text: programmatic-entry | completed: 1");
+        Assert.Equal(
+            "programmatic-search",
+            await ReadInputValueAsync(page, "[data-automation-id='parity-text-searchbar-input']"));
+    }
+
+    [Fact]
     public async Task EntryAndButtonFlowWork()
     {
         await using var context = await _fixture.NewContextAsync();

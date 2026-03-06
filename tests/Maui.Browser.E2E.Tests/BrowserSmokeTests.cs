@@ -169,6 +169,46 @@ public sealed partial class BrowserSmokeTests : IClassFixture<BrowserHostFixture
             new { selector, index });
     }
 
+    private static async Task<string> ReadInputValueAsync(IPage page, string selector)
+    {
+        return await page.EvaluateAsync<string>(
+            @"(selector) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return '';
+                }
+
+                return element.value ?? '';
+            }",
+            selector);
+    }
+
+    private static async Task<string?> ReadAttributeAsync(IPage page, string selector, string attributeName)
+    {
+        return await page.EvaluateAsync<string?>(
+            @"({ selector, attributeName }) => {
+                const element = document.querySelector(selector);
+                return element?.getAttribute(attributeName);
+            }",
+            new { selector, attributeName });
+    }
+
+    private static async Task SetInputValueAndDispatchAsync(IPage page, string selector, string value)
+    {
+        await page.EvaluateAsync(
+            @"({ selector, value }) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return;
+                }
+
+                element.value = value;
+                element.dispatchEvent(new Event('input', { bubbles: true }));
+                element.dispatchEvent(new Event('change', { bubbles: true }));
+            }",
+            new { selector, value });
+    }
+
     private static async Task SetSelectIndexAsync(IPage page, int index, int selectedIndex)
     {
         await page.EvaluateAsync(

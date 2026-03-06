@@ -13,14 +13,25 @@ public sealed class BrowserEntryHandler : BrowserViewHandler<IEntry>
     {
         [nameof(IEntry.Text)] = MapText,
         [nameof(IEntry.Placeholder)] = MapPlaceholder,
+        [nameof(IEntry.PlaceholderColor)] = MapPlaceholderColor,
         [nameof(ITextStyle.TextColor)] = MapTextColor,
         [nameof(ITextStyle.Font)] = MapFont,
         [nameof(ITextStyle.CharacterSpacing)] = MapCharacterSpacing,
-        [nameof(IEntry.IsReadOnly)] = MapIsReadOnly
+        [nameof(IEntry.IsReadOnly)] = MapIsReadOnly,
+        [nameof(IEntry.Keyboard)] = MapKeyboard,
+        [nameof(IEntry.IsPassword)] = MapIsPassword,
+        [nameof(IEntry.ReturnType)] = MapReturnType,
+        [nameof(IEntry.MaxLength)] = MapMaxLength,
+        [nameof(IEntry.IsTextPredictionEnabled)] = MapIsTextPredictionEnabled,
+        [nameof(IEntry.IsSpellCheckEnabled)] = MapIsSpellCheckEnabled,
+        [nameof(ITextAlignment.HorizontalTextAlignment)] = MapHorizontalTextAlignment,
+        [nameof(ITextAlignment.VerticalTextAlignment)] = MapVerticalTextAlignment
     };
 
     private Action? _inputCallback;
+    private Action? _enterCallback;
     private int _inputSubscriptionId;
+    private int _enterSubscriptionId;
 
     public BrowserEntryHandler()
         : base(Mapper)
@@ -35,7 +46,9 @@ public sealed class BrowserEntryHandler : BrowserViewHandler<IEntry>
         platformView.Style("boxSizing", "border-box");
 
         _inputCallback = OnInput;
+        _enterCallback = OnEnter;
         _inputSubscriptionId = platformView.On("input", _inputCallback);
+        _enterSubscriptionId = platformView.OnEnter(_enterCallback);
 
         base.ConnectHandler(platformView);
     }
@@ -48,7 +61,14 @@ public sealed class BrowserEntryHandler : BrowserViewHandler<IEntry>
             _inputSubscriptionId = 0;
         }
 
+        if (_enterSubscriptionId != 0)
+        {
+            DomElement.Off(_enterSubscriptionId);
+            _enterSubscriptionId = 0;
+        }
+
         _inputCallback = null;
+        _enterCallback = null;
         base.DisconnectHandler(platformView);
     }
 
@@ -76,8 +96,17 @@ public sealed class BrowserEntryHandler : BrowserViewHandler<IEntry>
 
     private void OnInput()
     {
-        var inputValue = PlatformView.GetInputValue();
-        VirtualView.UpdateText(inputValue);
+        VirtualView.UpdateText(PlatformView.GetInputValue());
+    }
+
+    private void OnEnter()
+    {
+        if (!VirtualView.IsEnabled)
+        {
+            return;
+        }
+
+        VirtualView.Completed();
     }
 
     public static void MapText(BrowserEntryHandler handler, IEntry entry)
@@ -87,13 +116,12 @@ public sealed class BrowserEntryHandler : BrowserViewHandler<IEntry>
 
     public static void MapPlaceholder(BrowserEntryHandler handler, IEntry entry)
     {
-        if (string.IsNullOrWhiteSpace(entry.Placeholder))
-        {
-            handler.PlatformView.Attr("placeholder", null);
-            return;
-        }
+        BrowserTextInputMappings.MapPlaceholder(entry, handler.PlatformView);
+    }
 
-        handler.PlatformView.Attr("placeholder", entry.Placeholder);
+    public static void MapPlaceholderColor(BrowserEntryHandler handler, IEntry entry)
+    {
+        BrowserTextInputMappings.MapPlaceholderColor(entry, handler.PlatformView);
     }
 
     public static void MapTextColor(BrowserEntryHandler handler, IEntry entry)
@@ -113,6 +141,46 @@ public sealed class BrowserEntryHandler : BrowserViewHandler<IEntry>
 
     public static void MapIsReadOnly(BrowserEntryHandler handler, IEntry entry)
     {
-        handler.PlatformView.Attr("readonly", entry.IsReadOnly ? "readonly" : null);
+        BrowserTextInputMappings.MapReadOnly(entry, handler.PlatformView);
+    }
+
+    public static void MapKeyboard(BrowserEntryHandler handler, IEntry entry)
+    {
+        BrowserTextInputMappings.MapKeyboard(entry, handler.PlatformView, multiline: false, forcePassword: entry.IsPassword);
+    }
+
+    public static void MapIsPassword(BrowserEntryHandler handler, IEntry entry)
+    {
+        BrowserTextInputMappings.MapKeyboard(entry, handler.PlatformView, multiline: false, forcePassword: entry.IsPassword);
+    }
+
+    public static void MapReturnType(BrowserEntryHandler handler, IEntry entry)
+    {
+        BrowserTextInputMappings.MapReturnType(entry.ReturnType, handler.PlatformView);
+    }
+
+    public static void MapMaxLength(BrowserEntryHandler handler, IEntry entry)
+    {
+        BrowserTextInputMappings.MapMaxLength(entry, handler.PlatformView);
+    }
+
+    public static void MapIsTextPredictionEnabled(BrowserEntryHandler handler, IEntry entry)
+    {
+        BrowserTextInputMappings.MapPrediction(entry, handler.PlatformView);
+    }
+
+    public static void MapIsSpellCheckEnabled(BrowserEntryHandler handler, IEntry entry)
+    {
+        BrowserTextInputMappings.MapSpellCheck(entry, handler.PlatformView);
+    }
+
+    public static void MapHorizontalTextAlignment(BrowserEntryHandler handler, IEntry entry)
+    {
+        BrowserTextInputMappings.MapHorizontalTextAlignment(entry, handler.PlatformView);
+    }
+
+    public static void MapVerticalTextAlignment(BrowserEntryHandler handler, IEntry entry)
+    {
+        BrowserTextInputMappings.MapVerticalTextAlignment(entry, handler.PlatformView);
     }
 }

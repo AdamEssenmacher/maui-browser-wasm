@@ -52,6 +52,8 @@ public sealed class DomElement
 
     public int On(string eventName, Action callback) => DomApi.SubscribeEvent(Handle, eventName, callback);
 
+    public int OnEnter(Action callback) => DomApi.SubscribeEnterKey(Handle, callback);
+
     public static void Off(int subscriptionId) => DomApi.UnsubscribeEvent(subscriptionId);
 
     public void SetInputValue(string? value) => DomApi.SetInputValue(Handle, value);
@@ -61,6 +63,8 @@ public sealed class DomElement
     public void SetInputChecked(bool value) => DomApi.SetInputChecked(Handle, value);
 
     public bool GetInputChecked() => DomApi.GetInputChecked(Handle);
+
+    public void SetPlaceholderColor(string? value) => DomApi.SetPlaceholderColor(Handle, value);
 
     public void SetSelectSelectedIndex(int value) => DomApi.SetSelectSelectedIndex(Handle, value);
 
@@ -75,6 +79,8 @@ public sealed class DomElement
         var metrics = DomApi.MeasureText(text, font);
         return (metrics.Length > 0 ? metrics[0] : 0, metrics.Length > 1 ? metrics[1] : 0);
     }
+
+    public bool OpenPicker() => DomApi.OpenPicker(Handle);
 
 #if DEBUG
     public static DomDiagnostics GetDiagnostics()

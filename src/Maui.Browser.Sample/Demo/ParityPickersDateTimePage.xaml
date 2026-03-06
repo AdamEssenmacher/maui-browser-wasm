@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Maui.Browser.Sample.Demo.ParityPickersDateTimePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:DataType="demo:ParityPickersDateTimeState"
+    xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
+    AutomationId="parity-page-pickers-datetime"
+    Title="Pickers/Date-Time Parity">
+
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="16"
+            Spacing="10">
+            <Label
+                AutomationId="parity-datetime-heading"
+                FontSize="20"
+                Text="Pickers/date-time parity"
+                TextColor="Black" />
+
+            <Label
+                AutomationId="parity-datetime-summary"
+                FontSize="12"
+                Text="DatePicker/TimePicker plus Stepper, ProgressBar, and ActivityIndicator probes."
+                TextColor="DarkSlateGray" />
+
+            <DatePicker
+                AutomationId="parity-datetime-date-picker"
+                Date="{Binding SelectedDate}"
+                Format="yyyy-MM-dd"
+                MaximumDate="2030-12-31"
+                MinimumDate="2020-01-01" />
+
+            <Label
+                AutomationId="parity-datetime-date-summary"
+                FontSize="12"
+                Text="{Binding DateSummary}"
+                TextColor="DarkSlateGray" />
+
+            <TimePicker
+                AutomationId="parity-datetime-time-picker"
+                Format="HH:mm"
+                Time="{Binding SelectedTime}" />
+
+            <Label
+                AutomationId="parity-datetime-time-summary"
+                FontSize="12"
+                Text="{Binding TimeSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Stepper
+                AutomationId="parity-datetime-stepper"
+                Increment="0.5"
+                Maximum="10"
+                Minimum="0"
+                Value="{Binding StepperValue}" />
+
+            <Label
+                AutomationId="parity-datetime-stepper-summary"
+                FontSize="12"
+                Text="{Binding StepperSummary}"
+                TextColor="DarkSlateGray" />
+
+            <ProgressBar
+                AutomationId="parity-datetime-progress-bar"
+                Progress="{Binding ProgressValue}"
+                ProgressColor="#2563EB" />
+
+            <Label
+                AutomationId="parity-datetime-progress-summary"
+                FontSize="12"
+                Text="{Binding ProgressSummary}"
+                TextColor="DarkSlateGray" />
+
+            <ActivityIndicator
+                AutomationId="parity-datetime-activity-indicator"
+                Color="#0891B2"
+                IsRunning="{Binding ActivityRunning}" />
+
+            <Label
+                AutomationId="parity-datetime-activity-summary"
+                FontSize="12"
+                Text="{Binding ActivitySummary}"
+                TextColor="DarkSlateGray" />
+
+            <Label
+                AutomationId="parity-datetime-mutation-summary"
+                FontSize="12"
+                Text="{Binding MutationSummary}"
+                TextColor="DarkSlateGray" />
+
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    AutomationId="parity-datetime-toggle-activity-button"
+                    Clicked="OnToggleActivityClicked"
+                    Padding="10,6"
+                    Text="Toggle activity"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-datetime-progress-button"
+                    Clicked="OnIncrementProgressClicked"
+                    Padding="10,6"
+                    Text="Increment progress"
+                    TextColor="Black" />
+            </HorizontalStackLayout>
+
+            <Button
+                AutomationId="parity-datetime-programmatic-update-button"
+                Clicked="OnApplyProgrammaticUpdateClicked"
+                Padding="10,6"
+                Text="Apply programmatic date/time update"
+                TextColor="Black" />
+
+            <Button
+                AutomationId="parity-page-pickers-datetime-open-consolidated"
+                Clicked="OnOpenConsolidatedClicked"
+                Padding="12,8"
+                Text="Open consolidated demo probes"
+                TextColor="Black" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

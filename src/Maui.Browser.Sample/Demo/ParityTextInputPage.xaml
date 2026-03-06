@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Maui.Browser.Sample.Demo.ParityTextInputPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:DataType="demo:ParityTextInputState"
+    xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
+    AutomationId="parity-page-text-input"
+    Title="Text/Input Parity">
+
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="16"
+            Spacing="10">
+            <Label
+                AutomationId="parity-text-heading"
+                FontSize="20"
+                Text="Text/Input parity"
+                TextColor="Black" />
+
+            <Label
+                AutomationId="parity-text-summary"
+                FontSize="12"
+                Text="Label/Entry hardening plus Editor and SearchBar browser handlers."
+                TextColor="DarkSlateGray" />
+
+            <Label
+                x:Name="LabelProbe"
+                AutomationId="parity-text-label-probe"
+                BackgroundColor="#ECFEFF"
+                Padding="8,6"
+                Text="{Binding LabelProbeText}"
+                TextColor="#0F172A" />
+
+            <Button
+                AutomationId="parity-text-label-mode-button"
+                Clicked="OnToggleLabelModeClicked"
+                Padding="10,6"
+                Text="Toggle label line-break mode"
+                TextColor="Black" />
+
+            <Label
+                AutomationId="parity-text-label-summary"
+                FontSize="12"
+                Text="{Binding LabelModeSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Entry
+                AutomationId="parity-text-entry"
+                Completed="OnEntryCompleted"
+                HorizontalTextAlignment="Center"
+                Keyboard="Email"
+                MaxLength="64"
+                Placeholder="Type entry text"
+                PlaceholderColor="#EA580C"
+                ReturnType="Done"
+                Text="{Binding EntryText}" />
+
+            <Label
+                AutomationId="parity-text-entry-summary"
+                FontSize="12"
+                Text="{Binding EntrySummary}"
+                TextColor="DarkSlateGray" />
+
+            <Entry
+                AutomationId="parity-text-password-entry"
+                IsPassword="True"
+                Placeholder="Password"
+                Text="{Binding PasswordText}" />
+
+            <Label
+                AutomationId="parity-text-password-summary"
+                FontSize="12"
+                Text="{Binding PasswordSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Editor
+                AutomationId="parity-text-editor"
+                AutoSize="Disabled"
+                HeightRequest="96"
+                Placeholder="Type multiline editor text"
+                Text="{Binding EditorText}"
+                VerticalTextAlignment="Start" />
+
+            <Label
+                AutomationId="parity-text-editor-summary"
+                FontSize="12"
+                Text="{Binding EditorSummary}"
+                TextColor="DarkSlateGray" />
+
+            <SearchBar
+                x:Name="SearchProbe"
+                AutomationId="parity-text-searchbar"
+                Placeholder="Search query"
+                SearchButtonPressed="OnSearchPressed"
+                SearchIconColor="#0369A1"
+                CancelButtonColor="#7C3AED"
+                Text="{Binding SearchText}" />
+
+            <Label
+                AutomationId="parity-text-search-summary"
+                FontSize="12"
+                Text="{Binding SearchSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Button
+                AutomationId="parity-text-programmatic-update-button"
+                Clicked="OnApplyProgrammaticUpdateClicked"
+                Padding="10,6"
+                Text="Apply programmatic text/input update"
+                TextColor="Black" />
+
+            <Button
+                AutomationId="parity-page-text-input-open-consolidated"
+                Clicked="OnOpenConsolidatedClicked"
+                Padding="12,8"
+                Text="Open consolidated demo probes"
+                TextColor="Black" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

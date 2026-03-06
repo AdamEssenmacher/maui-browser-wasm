@@ -85,6 +85,9 @@ internal static partial class DomApi
     [JSImport("unsubscribeEvent", Module)]
     internal static partial void UnsubscribeEvent(int subscriptionId);
 
+    [JSImport("subscribeEnterKey", Module)]
+    internal static partial int SubscribeEnterKey(nint element, [JSMarshalAs<JSType.Function>] Action callback);
+
     [JSImport("setInputValue", Module)]
     internal static partial void SetInputValue(nint element, string? value);
 
@@ -96,6 +99,9 @@ internal static partial class DomApi
 
     [JSImport("getInputChecked", Module)]
     internal static partial bool GetInputChecked(nint element);
+
+    [JSImport("setPlaceholderColor", Module)]
+    internal static partial void SetPlaceholderColor(nint element, string? value);
 
     [JSImport("setSelectSelectedIndex", Module)]
     internal static partial void SetSelectSelectedIndex(nint element, int value);
@@ -111,6 +117,9 @@ internal static partial class DomApi
 
     [JSImport("measureText", Module)]
     internal static partial double[] MeasureText(string? text, string? font);
+
+    [JSImport("openPicker", Module)]
+    internal static partial bool OpenPicker(nint element);
 
 #if DEBUG
     [JSImport("getDiagnostics", Module)]

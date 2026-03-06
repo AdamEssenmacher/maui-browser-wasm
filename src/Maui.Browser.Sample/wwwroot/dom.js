@@ -132,6 +132,19 @@ export function blurElement(elementHandle) {
 
 const eventSubscriptions = new Map();
 let nextEventSubscriptionId = 1;
+let placeholderStyleInjected = false;
+
+function ensurePlaceholderStyle() {
+  if (placeholderStyleInjected) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.id = "maui-placeholder-style";
+  style.textContent = ".maui-placeholder-color::placeholder { color: var(--maui-placeholder-color); opacity: 1; }";
+  document.head.appendChild(style);
+  placeholderStyleInjected = true;
+}
 
 function removeElementSubscriptions(element) {
   for (const [subscriptionId, subscription] of eventSubscriptions) {
@@ -166,6 +179,20 @@ export function subscribeEvent(elementHandle, eventName, callback) {
   const listener = () => callback();
   eventSubscriptions.set(subscriptionId, { element, eventName, listener });
   element.addEventListener(eventName, listener);
+  return subscriptionId;
+}
+
+export function subscribeEnterKey(elementHandle, callback) {
+  const element = fromHandle(elementHandle);
+  const subscriptionId = nextEventSubscriptionId++;
+  const listener = (event) => {
+    if (event.key === "Enter") {
+      callback();
+    }
+  };
+
+  eventSubscriptions.set(subscriptionId, { element, eventName: "keydown", listener });
+  element.addEventListener("keydown", listener);
   return subscriptionId;
 }
 
@@ -206,6 +233,19 @@ export function setInputChecked(elementHandle, value) {
 export function getInputChecked(elementHandle) {
   const element = fromHandle(elementHandle);
   return Boolean(element.checked);
+}
+
+export function setPlaceholderColor(elementHandle, value) {
+  const element = fromHandle(elementHandle);
+  if (!value) {
+    element.classList.remove("maui-placeholder-color");
+    element.style.removeProperty("--maui-placeholder-color");
+    return;
+  }
+
+  ensurePlaceholderStyle();
+  element.classList.add("maui-placeholder-color");
+  element.style.setProperty("--maui-placeholder-color", value);
 }
 
 export function setSelectSelectedIndex(elementHandle, value) {
@@ -293,4 +333,23 @@ export function measureText(text, font) {
   const height = Math.max(measuredHeight, lineHeight);
 
   return [width, height];
+}
+
+export function openPicker(elementHandle) {
+  const element = fromHandle(elementHandle);
+  if (typeof element.showPicker === "function") {
+    try {
+      element.showPicker();
+      return true;
+    } catch {
+      // Some browser contexts can reject showPicker; fallback to focus.
+    }
+  }
+
+  if (typeof element.focus === "function") {
+    element.focus();
+    return document.activeElement === element;
+  }
+
+  return false;
 }
