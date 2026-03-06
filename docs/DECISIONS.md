@@ -79,3 +79,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - `Background` mapping now supports both solid and linear-gradient paints; radial/image/pattern paints remain explicitly deferred with style-clear fallback and diagnostics.
 - Clip projection uses CSS `inset(...)` expressions with `calc(100% - Npx)` for right/bottom offsets so clipping remains stable across arrange timing and resize without requiring additional JS interop.
 - Proof surface for this slice is family-page-only: `ParityContainersLayoutPage` is now a real XAML probe page with dedicated clip/shadow/background controls, keeping consolidated demo probes unchanged.
+
+## 2026-03-06 (Vertical Slice 10)
+- Text/Input parity wave was implemented as handler-first additions and hardening: `Entry` now maps password/keyboard/placeholder-color/return-type semantics, `Label` maps line-break and max-line projection, and new browser handlers were added for `Editor` and `SearchBar`.
+- Date/time and numeric/status controls were added in the same wave (`DatePicker`, `TimePicker`, `Stepper`, `ProgressBar`, `ActivityIndicator`) using deterministic browser-native projections and two-way state updates.
+- Family pages `ParityTextInputPage` and `ParityPickersDateTimePage` were upgraded from placeholders to real XAML probes with stable automation IDs and programmatic-update actions.
+- Known non-parity areas for this wave remain explicit and documented: full custom date/time format token parity, cursor/selection fidelity, and platform-specific spinner/stepper visuals are still best-effort.

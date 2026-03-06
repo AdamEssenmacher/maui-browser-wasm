@@ -8,7 +8,7 @@ Current state:
 - App startup supports real MAUI `Application -> Window` bootstrap (`BrowserAppHost.RunAsync(MauiApp, ...)`).
 - Root-view bootstrap (`BrowserAppHost.RunAsync(MauiApp, IView, ...)`) remains as a compatibility path.
 - DOM platform view wrapper is `DomElement`; JSImport entrypoints are centralized in `DomApi`.
-- Implemented handlers: `Window`, `NavigationPage`, `ContentPage`, `ScrollView`, `CollectionView`, `Label`, `Button`, `Entry`, `Switch`, `CheckBox`, `Slider`, `Picker`, `Layout`, `ContentView`.
+- Implemented handlers: `Window`, `NavigationPage`, `ContentPage`, `ScrollView`, `CollectionView`, `Label`, `Button`, `Entry`, `Editor`, `SearchBar`, `Switch`, `CheckBox`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `Stepper`, `ProgressBar`, `ActivityIndicator`, `Layout`, `ContentView`.
 - Shared `IView`/`ITransform` mapping core is applied across handlers: automation id, flow direction, basic semantics (ARIA), interaction state (`IsEnabled` + `InputTransparent`), background (solid), z-index, focus/unfocus, and transform composition.
 - Core view substrate now includes: `Clip` (`RectangleGeometry` + `RoundRectangleGeometry`), `Shadow` (solid paint), and `Background` linear-gradient projection.
 - Sample app demonstrates a real `.xaml` `ContentPage` (with code-behind) and covers binding, input, click, resize, visibility, opacity, form-input breadth, IView core/transform behavior, navigation push/pop, scroll behavior, and stress cleanup.
@@ -68,6 +68,8 @@ Expected pass signals:
 - All E2E tests pass.
 - Entry -> label binding works.
 - Button click updates count.
+- Text/Input family page checks pass for `Label`, `Entry`, `Editor`, and `SearchBar`.
+- Pickers/Date-Time family page checks pass for `DatePicker`, `TimePicker`, `Stepper`, `ProgressBar`, and `ActivityIndicator`.
 - Switch and CheckBox toggles update bound summaries.
 - Slider movement updates bound numeric summary live.
 - Picker selection changes update bound index/text summary.
@@ -105,6 +107,8 @@ Expected pass signals:
 - Transform/background/semantics actions update the probe style and ARIA attributes.
 - In Containers/Layout family page, clip mode buttons toggle `clip-path` (rectangle/round-rectangle) and unsupported geometry fallback.
 - In Containers/Layout family page, shadow mode buttons toggle `box-shadow` (solid/unsupported fallback) and background mode toggles solid/linear/unsupported radial fallback.
+- In Text/Input family page, entry/editor/search probes update summaries and programmatic state changes reflect back into controls.
+- In Pickers/Date-Time family page, date/time and stepper/progress/activity probes update summaries and reflect programmatic updates.
 - Root vertical and key horizontal stack rows render with semantic flex styles.
 - Grid probe section renders as CSS grid with expected row/column placement and span behavior.
 - AbsoluteLayout probe remains on absolute-compatible projection (non-grid fallback path).
