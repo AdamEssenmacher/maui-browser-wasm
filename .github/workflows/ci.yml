@@ -27,6 +27,9 @@ jobs:
       - name: Restore
         run: dotnet restore MauiDomWasm.sln
 
+      - name: Parity matrix completeness
+        run: bash tools/parity/check_parity_matrix.sh
+
       - name: Build
         run: dotnet build MauiDomWasm.sln --configuration Release --no-restore
 
