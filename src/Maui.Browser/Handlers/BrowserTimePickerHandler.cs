@@ -117,12 +117,13 @@ public sealed class BrowserTimePickerHandler : BrowserViewHandler<ITimePicker>
 
     public static void MapIsOpen(BrowserTimePickerHandler handler, ITimePicker timePicker)
     {
-        if (!timePicker.IsOpen)
+        if (timePicker.IsOpen)
         {
+            handler.PlatformView.OpenPicker();
             return;
         }
 
-        handler.PlatformView.OpenPicker();
+        handler.PlatformView.Blur();
     }
 
     private static TimeSpan? ParseTime(string? rawValue)

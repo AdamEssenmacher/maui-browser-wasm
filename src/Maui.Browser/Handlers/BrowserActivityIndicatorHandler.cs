@@ -11,6 +11,7 @@ public sealed class BrowserActivityIndicatorHandler : BrowserViewHandler<IActivi
     public static IPropertyMapper<IActivityIndicator, BrowserActivityIndicatorHandler> Mapper = new PropertyMapper<IActivityIndicator, BrowserActivityIndicatorHandler>(BrowserViewMapper.CommonViewMapper)
     {
         [nameof(IActivityIndicator.Color)] = MapColor,
+        [nameof(IView.Visibility)] = MapVisibility,
         [nameof(IActivityIndicator.IsRunning)] = MapIsRunning
     };
 
@@ -55,6 +56,16 @@ public sealed class BrowserActivityIndicatorHandler : BrowserViewHandler<IActivi
     }
 
     public static void MapIsRunning(BrowserActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
+    {
+        ApplyRunningVisibility(handler, activityIndicator);
+    }
+
+    public static void MapVisibility(BrowserActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
+    {
+        ApplyRunningVisibility(handler, activityIndicator);
+    }
+
+    private static void ApplyRunningVisibility(BrowserActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
     {
         if (activityIndicator.IsRunning)
         {

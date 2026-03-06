@@ -123,12 +123,13 @@ public sealed class BrowserDatePickerHandler : BrowserViewHandler<IDatePicker>
 
     public static void MapIsOpen(BrowserDatePickerHandler handler, IDatePicker datePicker)
     {
-        if (!datePicker.IsOpen)
+        if (datePicker.IsOpen)
         {
+            handler.PlatformView.OpenPicker();
             return;
         }
 
-        handler.PlatformView.OpenPicker();
+        handler.PlatformView.Blur();
     }
 
     private static DateTime? ParseDate(string? rawValue)
