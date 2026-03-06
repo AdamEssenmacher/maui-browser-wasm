@@ -330,12 +330,21 @@ public sealed class BrowserNavigationPageHandler : BrowserViewHandler<Navigation
 
     private void OnCurrentPagePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (!string.IsNullOrEmpty(e.PropertyName) && e.PropertyName != nameof(Page.Title))
+        var propertyName = e.PropertyName;
+        if (!string.IsNullOrEmpty(propertyName)
+            && propertyName != nameof(Page.Title)
+            && propertyName != NavigationPage.HasNavigationBarProperty.PropertyName
+            && propertyName != NavigationPage.HasBackButtonProperty.PropertyName)
         {
             return;
         }
 
+        var previousBarVisibility = _navigationBarVisible;
         UpdateNavigationBarVisual();
+        if (_hasArrangedFrame && previousBarVisibility != _navigationBarVisible)
+        {
+            ArrangeCurrentPage();
+        }
     }
 
     private void ArrangeCurrentPage()
