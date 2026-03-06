@@ -13,6 +13,10 @@ internal sealed class DemoState : INotifyPropertyChanged
     private bool _probeIsVisible = true;
     private double _probeOpacity = 1.0;
     private int _stressRunCount;
+    private int _navigationPushCount;
+    private int _navigationPopCount;
+    private int _navigationDetailCounter;
+    private string _navigationDetailText = "detail-start";
 
     private bool _formSwitchOn = true;
     private bool _formCheckBoxChecked;
@@ -101,6 +105,54 @@ internal sealed class DemoState : INotifyPropertyChanged
             if (SetProperty(ref _stressRunCount, value))
             {
                 OnPropertyChanged(nameof(StressSummary));
+            }
+        }
+    }
+
+    public int NavigationPushCount
+    {
+        get => _navigationPushCount;
+        private set
+        {
+            if (SetProperty(ref _navigationPushCount, value))
+            {
+                OnPropertyChanged(nameof(NavigationSummary));
+            }
+        }
+    }
+
+    public int NavigationPopCount
+    {
+        get => _navigationPopCount;
+        private set
+        {
+            if (SetProperty(ref _navigationPopCount, value))
+            {
+                OnPropertyChanged(nameof(NavigationSummary));
+            }
+        }
+    }
+
+    public int NavigationDetailCounter
+    {
+        get => _navigationDetailCounter;
+        private set
+        {
+            if (SetProperty(ref _navigationDetailCounter, value))
+            {
+                OnPropertyChanged(nameof(NavigationSummary));
+            }
+        }
+    }
+
+    public string NavigationDetailText
+    {
+        get => _navigationDetailText;
+        set
+        {
+            if (SetProperty(ref _navigationDetailText, value))
+            {
+                OnPropertyChanged(nameof(NavigationSummary));
             }
         }
     }
@@ -345,6 +397,18 @@ internal sealed class DemoState : INotifyPropertyChanged
         ? "Stress runs: not started"
         : $"Stress runs: {StressRunCount}";
 
+    public string NavigationSummary
+    {
+        get
+        {
+            var detailText = string.IsNullOrWhiteSpace(NavigationDetailText)
+                ? "<empty>"
+                : NavigationDetailText;
+
+            return $"Navigation pushes: {NavigationPushCount}, pops: {NavigationPopCount}, detail count: {NavigationDetailCounter}, detail text: {detailText}";
+        }
+    }
+
     public string FormSwitchSummary => FormSwitchOn
         ? "Switch is on"
         : "Switch is off";
@@ -462,6 +526,21 @@ internal sealed class DemoState : INotifyPropertyChanged
     public void RecordStressRun()
     {
         StressRunCount++;
+    }
+
+    public void RecordNavigationPush()
+    {
+        NavigationPushCount++;
+    }
+
+    public void RecordNavigationPop()
+    {
+        NavigationPopCount++;
+    }
+
+    public void IncrementNavigationDetailCounter()
+    {
+        NavigationDetailCounter++;
     }
 
     private bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)

@@ -86,6 +86,21 @@ export function getClientSize(elementHandle) {
   return [r.width, r.height];
 }
 
+export function setScrollPosition(elementHandle, left, top) {
+  const element = fromHandle(elementHandle);
+  const normalizedLeft = Number.isFinite(left) ? Math.max(0, left) : 0;
+  const normalizedTop = Number.isFinite(top) ? Math.max(0, top) : 0;
+  element.scrollLeft = normalizedLeft;
+  element.scrollTop = normalizedTop;
+}
+
+export function getScrollPosition(elementHandle) {
+  const element = fromHandle(elementHandle);
+  const left = Number.isFinite(element.scrollLeft) ? element.scrollLeft : 0;
+  const top = Number.isFinite(element.scrollTop) ? element.scrollTop : 0;
+  return [left, top];
+}
+
 export function focusElement(elementHandle) {
   const element = fromHandle(elementHandle);
   if (typeof element.focus === "function") {

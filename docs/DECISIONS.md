@@ -54,3 +54,10 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Grid child mapping now applies row/column placement (`grid-row-start`/`grid-column-start` + span end values), in-cell alignment (`justify-self`/`align-self`), and margin projection in semantic mode.
 - Existing stack flex semantics remain unchanged; regression gates now cover both stack and grid semantic style + placement behavior.
 - Deferred items after this slice remain clip/shadow implementation and font-load-synchronized measurement behavior.
+
+## 2026-03-05 (Vertical Slice 7)
+- Scope is `NavigationPage` + `ScrollView` only, with explicit no-Shell policy; this keeps navigation proof targeted to page-stack viability without investing in route/flyout abstractions yet.
+- `NavigationPage` now projects to a minimal DOM navigation surface (`Back` + title + active-page host) and handles stack transitions via `IStackNavigation.RequestNavigation`, while lifecycle notifications (`SendAppearing`/`SendDisappearing`) are forwarded on active-page swaps.
+- `ScrollView` uses native browser overflow behavior, maps orientation/scrollbar visibility through CSS overflow axes, and supports programmatic `RequestScrollTo` through centralized `DomApi` scroll interop.
+- Automated proof adds navigation/scroll flow and push-pop leak-loop gates; stack and event subscription counts are asserted near baseline after repeated navigation churn.
+- Multi-window navigation stacks and Shell-specific behaviors remain explicitly deferred.

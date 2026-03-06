@@ -49,6 +49,8 @@ public sealed class BrowserSwitchHandler : BrowserViewHandler<ISwitch>
         platformView.Style("outlineOffset", "2px");
         platformView.Style("boxSizing", "border-box");
         platformView.Style("overflow", "visible");
+        platformView.Style("width", CssUtil.Px(IntrinsicWidth));
+        platformView.Style("height", CssUtil.Px(IntrinsicHeight));
         platformView.Style("minWidth", CssUtil.Px(IntrinsicWidth));
         platformView.Style("minHeight", CssUtil.Px(IntrinsicHeight));
 

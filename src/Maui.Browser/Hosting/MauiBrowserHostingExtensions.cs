@@ -17,10 +17,12 @@ public static class MauiBrowserHostingExtensions
         builder.ConfigureMauiHandlers(handlers =>
         {
             handlers.AddHandler(typeof(Window), typeof(BrowserWindowHandler));
+            handlers.AddHandler(typeof(NavigationPage), typeof(BrowserNavigationPageHandler));
             handlers.AddHandler(typeof(ContentPage), typeof(BrowserContentPageHandler));
             handlers.AddHandler(typeof(Label), typeof(BrowserLabelHandler));
             handlers.AddHandler(typeof(Button), typeof(BrowserButtonHandler));
             handlers.AddHandler(typeof(Entry), typeof(BrowserEntryHandler));
+            handlers.AddHandler(typeof(ScrollView), typeof(BrowserScrollViewHandler));
             handlers.AddHandler(typeof(Switch), typeof(BrowserSwitchHandler));
             handlers.AddHandler(typeof(CheckBox), typeof(BrowserCheckBoxHandler));
             handlers.AddHandler(typeof(Slider), typeof(BrowserSliderHandler));

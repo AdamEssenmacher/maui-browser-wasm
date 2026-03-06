@@ -2,7 +2,9 @@
 
 Current first-slice handlers:
 - `BrowserWindowHandler` (`Window` -> `<div>` root host)
+- `BrowserNavigationPageHandler` (`NavigationPage` -> navigation bar + active page host)
 - `BrowserContentPageHandler` (`ContentPage` -> `<div>` + page content host)
+- `BrowserScrollViewHandler` (`IScrollView` -> `<div>` overflow host + presented content)
 - `BrowserLabelHandler` (`ILabel` -> `<span>`)
 - `BrowserButtonHandler` (`ITextButton` -> `<button>`)
 - `BrowserEntryHandler` (`IEntry` -> `<input type="text">`)

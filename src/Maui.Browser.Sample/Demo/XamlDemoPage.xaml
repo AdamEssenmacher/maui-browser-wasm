@@ -38,6 +38,19 @@
             Text="{Binding ClickSummary}"
             TextColor="DarkSlateGray" />
 
+        <Button
+            AutomationId="nav-open-button"
+            Clicked="OnOpenNavigationProbeClicked"
+            Padding="12,8"
+            Text="Open navigation + scroll page"
+            TextColor="Black" />
+
+        <Label
+            AutomationId="nav-summary-label"
+            FontSize="12"
+            Text="{Binding NavigationSummary}"
+            TextColor="DarkSlateGray" />
+
         <Label
             AutomationId="stack-center-alignment-probe"
             FontSize="12"
