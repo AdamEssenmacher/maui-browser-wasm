@@ -21,7 +21,24 @@ while IFS=$'\t' read -r control _; do
     continue
   fi
 
-  if ! rg -q "^\| \`$control\` \|" "$matrix_file"; then
+  row_prefix="| \`$control\` |"
+
+  if command -v rg >/dev/null 2>&1; then
+    row_found=0
+    if rg -q "^\| \`$control\` \|" "$matrix_file"; then
+      row_found=1
+    fi
+  elif command -v grep >/dev/null 2>&1; then
+    row_found=0
+    if grep -Fq "$row_prefix" "$matrix_file"; then
+      row_found=1
+    fi
+  else
+    echo "Neither 'rg' nor 'grep' is available; cannot validate parity matrix rows." >&2
+    exit 1
+  fi
+
+  if [[ "$row_found" -ne 1 ]]; then
     echo "PARITY_MATRIX missing row for control: $control" >&2
     missing=1
   fi

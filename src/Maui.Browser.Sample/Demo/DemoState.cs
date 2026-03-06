@@ -25,6 +25,7 @@ internal sealed class DemoState : INotifyPropertyChanged
     private double _formSliderValue = 35;
     private int _formPickerSelectedIndex = 1;
     private readonly ObservableCollection<DemoCollectionItem> _collectionItems;
+    private readonly DemoCollectionEmptyViewData _collectionEmptyViewData = new("Collection is empty via template binding.");
     private int _nextCollectionItemId = 1;
     private string _collectionMutation = "initial";
 
@@ -454,6 +455,8 @@ internal sealed class DemoState : INotifyPropertyChanged
     public string CollectionSummary =>
         $"Collection items: {CollectionItems.Count}, last mutation: {_collectionMutation}";
 
+    public DemoCollectionEmptyViewData CollectionEmptyViewData => _collectionEmptyViewData;
+
     public string CoreInputTransparentSummary => $"Core input transparent: {(CoreInputTransparent ? "on" : "off")}";
 
     public string CoreProbeClickSummary => $"Core probe clicks: {CoreProbeClickCount}";
@@ -643,4 +646,14 @@ internal sealed class DemoCollectionItem
     public string Title { get; }
 
     public string IdText => $"#{Id}";
+}
+
+internal sealed class DemoCollectionEmptyViewData
+{
+    public DemoCollectionEmptyViewData(string message)
+    {
+        Message = message;
+    }
+
+    public string Message { get; }
 }

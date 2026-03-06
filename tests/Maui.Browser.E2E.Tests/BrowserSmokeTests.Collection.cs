@@ -5,6 +5,8 @@ namespace Maui.Browser.E2E.Tests;
 
 public sealed partial class BrowserSmokeTests
 {
+    private const string CollectionEmptyTemplateText = "Collection is empty via template binding.";
+
     [Fact]
     public async Task CollectionViewViabilityWorks()
     {
@@ -47,6 +49,8 @@ public sealed partial class BrowserSmokeTests
         await page.Locator("[data-automation-id='collection-clear-button']").ClickAsync();
         await page.WaitForSelectorAsync("text=Collection items: 0, last mutation: clear");
         await page.WaitForSelectorAsync("[data-automation-id='collection-empty-view']");
+        var emptyViewText = (await page.Locator("[data-automation-id='collection-empty-view']").TextContentAsync())?.Trim();
+        Assert.Equal(CollectionEmptyTemplateText, emptyViewText);
         Assert.Equal("none", await ReadComputedStylePropertyAsync(page, scrollHostSelector, "display"));
         Assert.NotEqual("none", await ReadComputedStylePropertyAsync(page, emptyHostSelector, "display"));
 
