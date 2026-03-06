@@ -8,7 +8,7 @@ Current state:
 - App startup supports real MAUI `Application -> Window` bootstrap (`BrowserAppHost.RunAsync(MauiApp, ...)`).
 - Root-view bootstrap (`BrowserAppHost.RunAsync(MauiApp, IView, ...)`) remains as a compatibility path.
 - DOM platform view wrapper is `DomElement`; JSImport entrypoints are centralized in `DomApi`.
-- Implemented handlers: `Window`, `NavigationPage`, `ContentPage`, `ScrollView`, `Label`, `Button`, `Entry`, `Switch`, `CheckBox`, `Slider`, `Picker`, `Layout`, `ContentView`.
+- Implemented handlers: `Window`, `NavigationPage`, `ContentPage`, `ScrollView`, `CollectionView`, `Label`, `Button`, `Entry`, `Switch`, `CheckBox`, `Slider`, `Picker`, `Layout`, `ContentView`.
 - Shared `IView`/`ITransform` mapping core is applied across handlers: automation id, flow direction, basic semantics (ARIA), interaction state (`IsEnabled` + `InputTransparent`), background (solid), z-index, focus/unfocus, and transform composition.
 - Sample app demonstrates a real `.xaml` `ContentPage` (with code-behind) and covers binding, input, click, resize, visibility, opacity, form-input breadth, IView core/transform behavior, navigation push/pop, scroll behavior, and stress cleanup.
 
@@ -62,6 +62,8 @@ Expected pass signals:
 - Slider movement updates bound numeric summary live.
 - Picker selection changes update bound index/text summary.
 - Programmatic form-state updates reflect back into control visuals.
+- CollectionView `DataTemplate` items render in order and live collection updates (`Add`/`Remove`/`Reset`) update DOM rows.
+- Clearing collection data shows EmptyView; reset restores item rows.
 - Resize updates viewport text.
 - Visibility/opacity transitions apply correctly.
 - StackLayout semantic projection checks pass (`VerticalStackLayout`/`HorizontalStackLayout` compute to `display:flex` with expected direction).
@@ -83,6 +85,9 @@ Expected pass signals:
 - Moving `Slider` updates slider summary value.
 - Changing `Picker` selection updates index/text summary.
 - Clicking `Apply programmatic form update` updates all form controls from state.
+- CollectionView renders templated rows from bound data.
+- Collection action buttons add/remove/clear/reset items and update summary text.
+- Clearing collection data shows the empty view; reset brings rows back.
 - Toggling core flow direction updates container direction (`ltr`/`rtl`).
 - Toggling core input transparency disables probe interaction without disabling the control.
 - Focus/unfocus buttons move focus to/from the core entry.
@@ -110,7 +115,9 @@ Expected pass signals:
 - `CheckBox`/`Slider` color parity remains best-effort browser styling (`accent-color` plus slider background gradient); exact native visual parity is intentionally deferred.
 - `NavigationPage` is now projected with a minimal DOM navigation bar (`Back` + title) and a single active page host; Shell is intentionally out of scope.
 - `ScrollView` uses native browser overflow scrolling and supports programmatic `RequestScrollTo` mapping.
+- `CollectionView` currently targets vertical, non-virtualized viability with `DataTemplate` item rendering, `EmptyView`, and live `Add`/`Remove`/`Reset` updates from observable collections.
 - `Clip` and `Shadow` are intentionally deferred in this slice: current behavior is no-op with DEBUG diagnostic warnings.
 - Grid track mapping is currently: absolute -> `px`, auto -> `auto`, star -> `fr` (non-positive star defaults to `1fr`); invalid grid metadata falls back to absolute projection.
+- `CollectionView` defers virtualization, selection behavior, grouping, header/footer, and dedicated scroll-to APIs to later slices.
 
 See `AGENTS.md` for repository guardrails.

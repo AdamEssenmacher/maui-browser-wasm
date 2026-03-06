@@ -46,6 +46,19 @@ export function appendChild(parentHandle, childHandle) {
   parent.appendChild(child);
 }
 
+export function insertChildAt(parentHandle, childHandle, index) {
+  const parent = fromHandle(parentHandle);
+  const child = fromHandle(childHandle);
+  const normalizedIndex = Number.isInteger(index) ? Math.max(0, index) : parent.children.length;
+  const referenceNode = parent.children.item(normalizedIndex);
+  if (referenceNode) {
+    parent.insertBefore(child, referenceNode);
+    return;
+  }
+
+  parent.appendChild(child);
+}
+
 export function removeChild(parentHandle, childHandle) {
   const parent = fromHandle(parentHandle);
   const child = fromHandle(childHandle);

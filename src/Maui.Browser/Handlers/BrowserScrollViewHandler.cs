@@ -1,4 +1,5 @@
 using Maui.Browser.Dom;
+using Maui.Browser.Utils;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
@@ -106,6 +107,10 @@ public sealed class BrowserScrollViewHandler : BrowserViewHandler<IScrollView>, 
                 : height;
 
             content.Arrange(new Rect(0, 0, arrangedWidth, arrangedHeight));
+            if (_currentContentHandler?.PlatformView is DomElement contentPlatformView)
+            {
+                NormalizeContentPosition(contentPlatformView, arrangedWidth, arrangedHeight);
+            }
         }
     }
 
@@ -249,5 +254,16 @@ public sealed class BrowserScrollViewHandler : BrowserViewHandler<IScrollView>, 
             ScrollBarVisibility.Always => "scroll",
             _ => "auto"
         };
+    }
+
+    private static void NormalizeContentPosition(DomElement contentPlatformView, double arrangedWidth, double arrangedHeight)
+    {
+        contentPlatformView.Style("position", "relative");
+        contentPlatformView.Style("left", null);
+        contentPlatformView.Style("top", null);
+        contentPlatformView.Style("right", null);
+        contentPlatformView.Style("bottom", null);
+        contentPlatformView.Style("width", CssUtil.Px(Math.Max(0, arrangedWidth)));
+        contentPlatformView.Style("height", CssUtil.Px(Math.Max(0, arrangedHeight)));
     }
 }

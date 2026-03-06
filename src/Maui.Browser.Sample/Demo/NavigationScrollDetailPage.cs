@@ -65,6 +65,7 @@ internal sealed class NavigationScrollDetailPage : ContentPage
 
         var stack = new VerticalStackLayout
         {
+            HeightRequest = 1800,
             Spacing = 10,
             Padding = new Thickness(16)
         };
