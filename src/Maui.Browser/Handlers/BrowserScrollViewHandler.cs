@@ -154,9 +154,10 @@ public sealed class BrowserScrollViewHandler : BrowserViewHandler<IScrollView>, 
         var verticalOffset = NormalizeOffset(request.VerticalOffset);
 
         handler.PlatformView.SetScrollPosition(horizontalOffset, verticalOffset);
+        var (actualHorizontalOffset, actualVerticalOffset) = handler.PlatformView.GetScrollPosition();
         if (scrollView is ScrollView controlsScrollView)
         {
-            controlsScrollView.SetScrolledPosition(horizontalOffset, verticalOffset);
+            controlsScrollView.SetScrolledPosition(actualHorizontalOffset, actualVerticalOffset);
         }
 
         scrollView.ScrollFinished();
