@@ -13,55 +13,59 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Current behavior: `SelectionMode.None|Single|Multiple` is supported with pointer-selection updates and MAUI `SelectedItem`/`SelectedItems` synchronization.
 - Deferred: full keyboard-modifier selection semantics, richer selected visual state parity, and grouped-selection behavior.
 
-3. Clip geometry coverage
+3. RefreshView pull-gesture and native affordance parity
+- Current behavior: `RefreshView` is handler-mapped with command/state-first interaction (`Content`, `IsRefreshing`, `IsRefreshEnabled`, `RefreshColor`, `Command`, `CommandParameter`) using an explicit trigger UI.
+- Deferred: pull-drag gesture detection, overscroll-driven activation, and platform-native refresh affordance visuals.
+
+4. Clip geometry coverage
 - Current behavior: `RectangleGeometry` and `RoundRectangleGeometry` project to CSS `clip-path`.
 - Deferred: `EllipseGeometry`, `PathGeometry`, `GeometryGroup`, and other geometry types remain unsupported fallback paths with DEBUG diagnostics.
 
-4. Shadow paint coverage
+5. Shadow paint coverage
 - Current behavior: shadow projection supports solid paint via CSS `box-shadow`.
 - Deferred: non-solid shadow paint (gradient/image/pattern) remains unsupported fallback with DEBUG diagnostics.
 
-5. Background paint coverage
+6. Background paint coverage
 - Current behavior: solid and linear-gradient paints are mapped to DOM background styles.
 - Deferred: radial/image/pattern paints remain unsupported fallback with DEBUG diagnostics.
 
-6. Label line-break truncation parity depth
+7. Label line-break truncation parity depth
 - Current behavior: `NoWrap`, `WordWrap`, `CharacterWrap`, and truncation modes map to CSS white-space/overflow behaviors, with `MaxLines` projected through line-clamp styles.
 - Deferred: head/middle truncation visual parity and platform-specific truncation glyph placement remain best-effort.
 
-7. Text-input parity depth (`Entry` / `Editor` / `SearchBar`)
+8. Text-input parity depth (`Entry` / `Editor` / `SearchBar`)
 - Current behavior: text/placeholder/placeholder-color, read-only, keyboard hinting, max-length, spell-check, prediction, and return/search events are handler-mapped.
 - Deferred: cursor-position/selection-length mapping, IME composition edge cases, and native search-icon/cancel-button parity remain partial.
 
-8. Date/time format parity depth
+9. Date/time format parity depth
 - Current behavior: `DatePicker` and `TimePicker` map to browser-native date/time inputs using deterministic ISO wire formats.
 - Deferred: full custom MAUI format token parity across all browser locales is not complete in this slice.
 
-9. Numeric/status control parity depth
+10. Numeric/status control parity depth
 - Current behavior: `Stepper`, `ProgressBar`, and `ActivityIndicator` handlers are implemented with deterministic browser projections and two-way state updates.
 - Deferred: native long-press stepper repeat behavior and activity-indicator visual parity are best-effort in this slice.
 
-10. Media source parity depth (`Image` / `ImageButton`)
+11. Media source parity depth (`Image` / `ImageButton`)
 - Current behavior: `UriImageSource`, `FileImageSource`, and `FontImageSource` project to DOM `<img src=...>` with deterministic source-kind + load-state attributes.
 - Deferred: stream/image-source service pipeline parity (including cancellation semantics and decode caching) remains unsupported fallback in this slice.
 
-11. Border parity depth
+12. Border parity depth
 - Current behavior: single-child hosting, solid stroke color/thickness, round-rectangle/rectangle shape mapping, and dashed best-effort stroke style are projected to CSS.
 - Deferred: full stroke-shape and stroke-paint parity (ellipse/path/geometry groups, non-solid stroke paint, line-cap/join/miter exact behavior) remains partial.
 
-12. FlexLayout parity depth
+13. FlexLayout parity depth
 - Current behavior: semantic CSS flex projection is implemented for container properties (`Direction`, `Wrap`, `JustifyContent`, `AlignItems`, `AlignContent`) and item attached properties (`Order`, `Grow`, `Shrink`, `Basis`, `AlignSelf`).
 - Deferred: full `FlexLayout.Position` parity and advanced edge semantics across mixed absolute/relative flex children remain partial.
 
-13. Font-load synchronized measurement
+14. Font-load synchronized measurement
 - Current behavior: text measurement is canvas-based with deterministic fallback.
 - Deferred: async font readiness synchronization and re-measure strategy.
 
-14. Browser-hard controls not yet implemented
+15. Browser-hard controls not yet implemented
 - Current behavior: no browser handlers yet for controls marked `missing` in `PARITY_MATRIX.md`.
 - Deferred: implementation waves by family per roadmap.
 
-15. Shell
+16. Shell
 - Current behavior: out of scope by decision.
 - Deferred: no Shell implementation planned in this parity program.
 

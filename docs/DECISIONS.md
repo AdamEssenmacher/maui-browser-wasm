@@ -103,3 +103,8 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Scroll behavior uses a deterministic DOM child-into-view interop helper (`Start`/`Center`/`End`/`MakeVisible`) exposed via `DomApi`, keeping JSImport centralized.
 - Selection markers are projected as deterministic DOM attributes/styles (`data-maui-cv-selected`, `aria-selected`) to keep E2E assertions stable and to avoid hidden state in tests.
 - RefreshView integration remains explicitly deferred so CollectionView parity can harden independently before pull-to-refresh coupling.
+
+## 2026-03-07 (Vertical Slice 14)
+- Added `BrowserRefreshViewHandler` with command/state-first interaction to match MAUI upstream trigger semantics: user action sets `IsRefreshing=true`, while `RefreshView` raises `Refreshing` and executes `Command`.
+- This slice intentionally uses an explicit trigger/indicator row in the browser projection and defers pull-drag gesture parity; deferred behavior is tracked in `PARITY_GAPS.md`.
+- `RefreshView` proof is integrated directly with the Collection/Templated family page to validate list behavior under active refresh state transitions instead of testing refresh in isolation.

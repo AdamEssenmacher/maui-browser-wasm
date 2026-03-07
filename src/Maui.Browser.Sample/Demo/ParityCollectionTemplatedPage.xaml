@@ -47,54 +47,63 @@
             <Label
                 AutomationId="parity-collection-summary-text"
                 FontSize="12"
-                Text="Selection + Move/Replace + Header/Footer + ScrollTo, non-virtualized realization."
+                Text="RefreshView command/state + selection + Move/Replace + Header/Footer + ScrollTo, non-virtualized realization."
                 TextColor="DarkSlateGray" />
 
-            <CollectionView
-                x:Name="CollectionProbe"
-                AutomationId="parity-collection-view"
-                EmptyView="{Binding EmptyTemplateData}"
-                HeightRequest="280"
-                ItemsSource="{Binding CollectionItems}"
-                SelectedItem="{Binding SelectedItem}"
-                SelectedItems="{Binding SelectedItems}"
-                SelectionMode="{Binding CollectionSelectionMode}">
-                <CollectionView.ItemsLayout>
-                    <LinearItemsLayout ItemSpacing="4" Orientation="Vertical" />
-                </CollectionView.ItemsLayout>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="demo:ParityCollectionItem">
-                        <Grid
-                            AutomationId="parity-collection-item-row"
-                            BackgroundColor="#E2E8F0"
-                            ColumnDefinitions="Auto,*"
-                            ColumnSpacing="8"
-                            Padding="8,6">
+            <RefreshView
+                AutomationId="parity-refresh-view"
+                Command="{Binding RefreshCommand}"
+                CommandParameter="{Binding RefreshCommandParameter}"
+                IsRefreshing="{Binding IsRefreshing, Mode=TwoWay}"
+                IsRefreshEnabled="{Binding IsRefreshEnabled}"
+                VerticalOptions="Start"
+                RefreshColor="{Binding RefreshColor}">
+                <CollectionView
+                    x:Name="CollectionProbe"
+                    AutomationId="parity-collection-view"
+                    EmptyView="{Binding EmptyTemplateData}"
+                    HeightRequest="280"
+                    ItemsSource="{Binding CollectionItems}"
+                    SelectedItem="{Binding SelectedItem}"
+                    SelectedItems="{Binding SelectedItems}"
+                    SelectionMode="{Binding CollectionSelectionMode}">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout ItemSpacing="4" Orientation="Vertical" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="demo:ParityCollectionItem">
+                            <Grid
+                                AutomationId="parity-collection-item-row"
+                                BackgroundColor="#E2E8F0"
+                                ColumnDefinitions="Auto,*"
+                                ColumnSpacing="8"
+                                Padding="8,6">
+                                <Label
+                                    AutomationId="parity-collection-item-id"
+                                    FontSize="12"
+                                    Text="{Binding IdText}"
+                                    TextColor="DarkSlateGray" />
+                                <Label
+                                    Grid.Column="1"
+                                    AutomationId="parity-collection-item-title"
+                                    FontSize="13"
+                                    Text="{Binding Title}"
+                                    TextColor="Black" />
+                            </Grid>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.EmptyViewTemplate>
+                        <DataTemplate x:DataType="demo:ParityCollectionEmptyData">
                             <Label
-                                AutomationId="parity-collection-item-id"
+                                AutomationId="parity-collection-empty-view"
                                 FontSize="12"
-                                Text="{Binding IdText}"
+                                Padding="8,6"
+                                Text="{Binding Text}"
                                 TextColor="DarkSlateGray" />
-                            <Label
-                                Grid.Column="1"
-                                AutomationId="parity-collection-item-title"
-                                FontSize="13"
-                                Text="{Binding Title}"
-                                TextColor="Black" />
-                        </Grid>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-                <CollectionView.EmptyViewTemplate>
-                    <DataTemplate x:DataType="demo:ParityCollectionEmptyData">
-                        <Label
-                            AutomationId="parity-collection-empty-view"
-                            FontSize="12"
-                            Padding="8,6"
-                            Text="{Binding Text}"
-                            TextColor="DarkSlateGray" />
-                    </DataTemplate>
-                </CollectionView.EmptyViewTemplate>
-            </CollectionView>
+                        </DataTemplate>
+                    </CollectionView.EmptyViewTemplate>
+                </CollectionView>
+            </RefreshView>
 
             <Label
                 AutomationId="parity-collection-state-summary"
@@ -119,6 +128,27 @@
                 FontSize="12"
                 Text="{Binding ScrollSummary}"
                 TextColor="DarkSlateGray" />
+
+            <Label
+                AutomationId="parity-refresh-summary"
+                FontSize="12"
+                Text="{Binding RefreshSummary}"
+                TextColor="DarkSlateGray" />
+
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    AutomationId="parity-refresh-complete-button"
+                    Clicked="OnCompleteRefreshClicked"
+                    Padding="10,6"
+                    Text="Complete refresh"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-refresh-toggle-enabled-button"
+                    Clicked="OnToggleRefreshEnabledClicked"
+                    Padding="10,6"
+                    Text="Toggle refresh enabled"
+                    TextColor="Black" />
+            </HorizontalStackLayout>
 
             <HorizontalStackLayout Spacing="8">
                 <Button
