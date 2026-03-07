@@ -198,6 +198,12 @@ function removeElementSubscriptions(element) {
       continue;
     }
 
+    if (typeof subscription.dispose === "function") {
+      subscription.dispose();
+      eventSubscriptions.delete(subscriptionId);
+      continue;
+    }
+
     subscription.element.removeEventListener(subscription.eventName, subscription.listener);
     eventSubscriptions.delete(subscriptionId);
   }
@@ -225,6 +231,178 @@ export function subscribeEvent(elementHandle, eventName, callback) {
   const listener = () => callback();
   eventSubscriptions.set(subscriptionId, { element, eventName, listener });
   element.addEventListener(eventName, listener);
+  return subscriptionId;
+}
+
+function findScrollableAncestor(root, startNode) {
+  const owner = root;
+  let node = startNode instanceof Element ? startNode : null;
+  while (node && node !== owner && owner.contains(node)) {
+    if (node instanceof HTMLElement) {
+      const style = getComputedStyle(node);
+      const overflowY = style?.overflowY ?? "";
+      const canScrollY = overflowY === "auto" || overflowY === "scroll" || node.hasAttribute("data-maui-cv-scroll-host");
+      if (canScrollY && node.scrollHeight > node.clientHeight + 1) {
+        return node;
+      }
+    }
+
+    node = node.parentElement;
+  }
+
+  if (owner instanceof HTMLElement && owner.scrollHeight > owner.clientHeight + 1) {
+    const ownerStyle = getComputedStyle(owner);
+    const overflowY = ownerStyle?.overflowY ?? "";
+    if (overflowY === "auto" || overflowY === "scroll") {
+      return owner;
+    }
+  }
+
+  return null;
+}
+
+function resetPullState(root) {
+  root.setAttribute("data-maui-rv-pull-active", "false");
+  root.setAttribute("data-maui-rv-pull-armed", "false");
+  root.setAttribute("data-maui-rv-pull-distance", "0");
+}
+
+export function subscribePullToRefresh(elementHandle, threshold, callback) {
+  const root = fromHandle(elementHandle);
+  const normalizedThreshold = Number.isFinite(threshold) && threshold > 8 ? threshold : 72;
+  const maxDistance = normalizedThreshold * 1.8;
+  const state = {
+    tracking: false,
+    pointerId: -1,
+    startY: 0,
+    armed: false,
+    scroller: null
+  };
+
+  resetPullState(root);
+  const subscriptionId = nextEventSubscriptionId++;
+
+  const completeTracking = (triggerRefresh) => {
+    if (!state.tracking) {
+      return;
+    }
+
+    const shouldTrigger = Boolean(triggerRefresh && state.armed);
+    state.tracking = false;
+    state.pointerId = -1;
+    state.startY = 0;
+    state.armed = false;
+    state.scroller = null;
+    resetPullState(root);
+
+    if (shouldTrigger) {
+      callback();
+    }
+  };
+
+  const pointerDownListener = (event) => {
+    if (!(event instanceof PointerEvent)) {
+      return;
+    }
+
+    if (state.tracking) {
+      return;
+    }
+
+    if (event.pointerType !== "touch" && event.button !== 0) {
+      return;
+    }
+
+    const scroller = findScrollableAncestor(root, event.target);
+    if (!scroller || scroller.scrollTop > 0.5) {
+      return;
+    }
+
+    state.tracking = true;
+    state.pointerId = event.pointerId;
+    state.startY = event.clientY;
+    state.armed = false;
+    state.scroller = scroller;
+    resetPullState(root);
+  };
+
+  const pointerMoveListener = (event) => {
+    if (!state.tracking || !(event instanceof PointerEvent)) {
+      return;
+    }
+
+    if (event.pointerId !== state.pointerId) {
+      return;
+    }
+
+    if (!state.scroller || state.scroller.scrollTop > 0.5) {
+      completeTracking(false);
+      return;
+    }
+
+    const deltaY = event.clientY - state.startY;
+    if (deltaY <= 0) {
+      root.setAttribute("data-maui-rv-pull-distance", "0");
+      root.setAttribute("data-maui-rv-pull-armed", "false");
+      root.setAttribute("data-maui-rv-pull-active", "false");
+      state.armed = false;
+      return;
+    }
+
+    const clampedDistance = Math.min(maxDistance, deltaY);
+    state.armed = clampedDistance >= normalizedThreshold;
+    root.setAttribute("data-maui-rv-pull-active", "true");
+    root.setAttribute("data-maui-rv-pull-armed", state.armed ? "true" : "false");
+    root.setAttribute("data-maui-rv-pull-distance", String(Math.round(clampedDistance)));
+    event.preventDefault();
+  };
+
+  const pointerUpListener = (event) => {
+    if (!(event instanceof PointerEvent) || event.pointerId !== state.pointerId) {
+      return;
+    }
+
+    completeTracking(true);
+  };
+
+  const pointerCancelListener = (event) => {
+    if (event instanceof PointerEvent && state.pointerId >= 0 && event.pointerId !== state.pointerId) {
+      return;
+    }
+
+    completeTracking(false);
+  };
+
+  const scrollListener = () => {
+    if (!state.tracking || !state.scroller) {
+      return;
+    }
+
+    if (state.scroller.scrollTop > 0.5) {
+      completeTracking(false);
+    }
+  };
+
+  root.addEventListener("pointerdown", pointerDownListener, { passive: true });
+  root.addEventListener("pointermove", pointerMoveListener, { passive: false });
+  root.addEventListener("scroll", scrollListener, true);
+  window.addEventListener("pointerup", pointerUpListener, true);
+  window.addEventListener("pointercancel", pointerCancelListener, true);
+  window.addEventListener("blur", pointerCancelListener);
+
+  eventSubscriptions.set(subscriptionId, {
+    element: root,
+    dispose: () => {
+      root.removeEventListener("pointerdown", pointerDownListener, { passive: true });
+      root.removeEventListener("pointermove", pointerMoveListener, { passive: false });
+      root.removeEventListener("scroll", scrollListener, true);
+      window.removeEventListener("pointerup", pointerUpListener, true);
+      window.removeEventListener("pointercancel", pointerCancelListener, true);
+      window.removeEventListener("blur", pointerCancelListener);
+      completeTracking(false);
+    }
+  });
+
   return subscriptionId;
 }
 
@@ -262,6 +440,12 @@ export function subscribeEnterKey(elementHandle, callback) {
 export function unsubscribeEvent(subscriptionId) {
   const subscription = eventSubscriptions.get(subscriptionId);
   if (!subscription) {
+    return;
+  }
+
+  if (typeof subscription.dispose === "function") {
+    subscription.dispose();
+    eventSubscriptions.delete(subscriptionId);
     return;
   }
 

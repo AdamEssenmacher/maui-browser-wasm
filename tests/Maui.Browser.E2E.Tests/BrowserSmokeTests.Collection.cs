@@ -206,6 +206,7 @@ public sealed partial class BrowserSmokeTests
 
         const string refreshSelector = "[data-automation-id='parity-refresh-view']";
         const string refreshTriggerSelector = "[data-automation-id='parity-refresh-view'] [data-maui-rv-trigger='true']";
+        const string refreshScrollHostSelector = "[data-automation-id='parity-refresh-view'] [data-maui-cv-scroll-host='true']";
         const string refreshSpinnerSelector = "[data-automation-id='parity-refresh-view'] [data-maui-rv-spinner='true']";
         const string refreshSummarySelector = "[data-automation-id='parity-refresh-summary']";
         const string refreshCompleteButtonSelector = "[data-automation-id='parity-refresh-complete-button']";
@@ -222,6 +223,32 @@ public sealed partial class BrowserSmokeTests
                     element.dispatchEvent(new Event('click', { bubbles: true }));
                 }",
                 selector);
+        }
+        async Task PullDownRefreshAsync(double distance)
+        {
+            await page.EvaluateAsync(
+                @"(selector) => {
+                    const element = document.querySelector(selector);
+                    if (!element) {
+                        return;
+                    }
+
+                    element.scrollTop = 0;
+                }",
+                refreshScrollHostSelector);
+
+            var scrollHost = page.Locator(refreshScrollHostSelector);
+            var bounds = await scrollHost.BoundingBoxAsync();
+            Assert.NotNull(bounds);
+
+            var startX = (float)(bounds!.X + (bounds.Width / 2));
+            var startY = (float)(bounds.Y + Math.Min(36, Math.Max(18, bounds.Height * 0.2)));
+            await page.Mouse.MoveAsync(startX, startY);
+            await page.Mouse.DownAsync();
+            await page.Mouse.MoveAsync(
+                startX,
+                (float)(startY + Math.Max(20, distance)),
+                new MouseMoveOptions { Steps = 14 });
         }
         async Task AssertRefreshInFlowAsync(string reason)
         {
@@ -258,14 +285,21 @@ public sealed partial class BrowserSmokeTests
         Assert.Equal("paused", await ReadComputedStylePropertyAsync(page, refreshSpinnerSelector, "animationPlayState"));
         await AssertRefreshInFlowAsync("initial");
 
-        await DispatchClickAsync(refreshTriggerSelector);
+        await PullDownRefreshAsync(132);
+        Assert.Equal("true", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-pull-active"));
+        Assert.Equal("true", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-pull-armed"));
+        await page.Mouse.UpAsync();
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 1");
         Assert.Equal("true", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-refreshing"));
+        Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-pull-active"));
+        Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-pull-armed"));
         Assert.Equal("true", await ReadAttributeAsync(page, refreshSpinnerSelector, "data-maui-rv-spinner-active"));
         Assert.Equal("visible", await ReadComputedStylePropertyAsync(page, refreshSpinnerSelector, "visibility"));
         Assert.Equal("running", await ReadComputedStylePropertyAsync(page, refreshSpinnerSelector, "animationPlayState"));
 
         await DispatchClickAsync(refreshTriggerSelector);
+        await PullDownRefreshAsync(132);
+        await page.Mouse.UpAsync();
 
         var summaryAfterBlockedTrigger = (await page.Locator(refreshSummarySelector).TextContentAsync())?.Trim() ?? string.Empty;
         Assert.Contains("refreshing: true", summaryAfterBlockedTrigger);
@@ -286,6 +320,8 @@ public sealed partial class BrowserSmokeTests
         await AssertRefreshInFlowAsync("after-disable");
 
         await DispatchClickAsync(refreshTriggerSelector);
+        await PullDownRefreshAsync(132);
+        await page.Mouse.UpAsync();
         var summaryWhileDisabled = (await page.Locator(refreshSummarySelector).TextContentAsync())?.Trim() ?? string.Empty;
         Assert.Contains("refreshing: false", summaryWhileDisabled);
         Assert.Contains("command count: 1", summaryWhileDisabled);

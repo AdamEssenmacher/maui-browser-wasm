@@ -16,6 +16,7 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
     private const string DefaultIndicatorColorCss = "rgba(51,65,85,1)";
     private const string DefaultTriggerColorCss = "rgba(15,23,42,1)";
     private const string SpinnerAnimationName = "maui-rv-spin";
+    private const double PullTriggerDistance = 72;
 
     public static IPropertyMapper<RefreshView, BrowserRefreshViewHandler> Mapper =
         new PropertyMapper<RefreshView, BrowserRefreshViewHandler>(BrowserViewMapper.CommonViewMapper)
@@ -39,7 +40,9 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
     private IView? _currentContent;
     private IElementHandler? _currentContentHandler;
     private Action? _triggerClickCallback;
+    private Action? _pullToRefreshCallback;
     private int _triggerClickSubscriptionId;
+    private int _pullToRefreshSubscriptionId;
     private Rect _lastArrangedFrame;
 
     public BrowserRefreshViewHandler()
@@ -56,6 +59,9 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
     protected override void ConnectHandler(DomElement platformView)
     {
         platformView.Attr("data-maui-rv-root", "true");
+        platformView.Attr("data-maui-rv-pull-active", "false");
+        platformView.Attr("data-maui-rv-pull-armed", "false");
+        platformView.Attr("data-maui-rv-pull-distance", "0");
         platformView.Style("boxSizing", "border-box");
         platformView.Style("overflow", "hidden");
 
@@ -120,7 +126,11 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
 
         _spinnerStyleElement = DomElement.Create("style");
         _spinnerStyleElement.Attr("data-maui-rv-style", "spinner");
-        _spinnerStyleElement.Text($"@keyframes {SpinnerAnimationName}{{from{{transform:rotate(0deg);}}to{{transform:rotate(360deg);}}}}");
+        _spinnerStyleElement.Text(
+            $"@keyframes {SpinnerAnimationName}{{from{{transform:rotate(0deg);}}to{{transform:rotate(360deg);}}}}" +
+            "[data-maui-rv-root='true'][data-maui-rv-pull-active='true'] [data-maui-rv-indicator-host='true']{background-color:rgba(14,165,233,0.08);}" +
+            "[data-maui-rv-root='true'][data-maui-rv-pull-active='true'][data-maui-rv-refreshing='false'] [data-maui-rv-spinner='true']{opacity:0.75;}" +
+            "[data-maui-rv-root='true'][data-maui-rv-pull-armed='true'][data-maui-rv-refreshing='false'] [data-maui-rv-spinner='true']{opacity:1;}");
 
         _stateHost.Append(_spinnerElement);
         _stateHost.Append(_stateElement);
@@ -132,6 +142,8 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
 
         _triggerClickCallback = OnTriggerClicked;
         _triggerClickSubscriptionId = _triggerButton.On("click", _triggerClickCallback);
+        _pullToRefreshCallback = OnPullToRefreshTriggered;
+        _pullToRefreshSubscriptionId = platformView.OnPullToRefresh(PullTriggerDistance, _pullToRefreshCallback);
 
         SetContent(ResolvePresentedContent(VirtualView));
         ApplyRefreshColor(VirtualView);
@@ -148,7 +160,14 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
             _triggerClickSubscriptionId = 0;
         }
 
+        if (_pullToRefreshSubscriptionId != 0)
+        {
+            DomElement.Off(_pullToRefreshSubscriptionId);
+            _pullToRefreshSubscriptionId = 0;
+        }
+
         _triggerClickCallback = null;
+        _pullToRefreshCallback = null;
         DisconnectCurrentContent();
         _indicatorHost = null;
         _stateHost = null;
@@ -236,6 +255,11 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
         // Mirror upstream handler behavior: user interaction sets IsRefreshing=true.
         // RefreshView itself raises Refreshing and executes Command.
         VirtualView.IsRefreshing = true;
+    }
+
+    private void OnPullToRefreshTriggered()
+    {
+        OnTriggerClicked();
     }
 
     private void SetContent(IView? content)
