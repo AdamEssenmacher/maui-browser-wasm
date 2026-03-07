@@ -239,9 +239,13 @@ function findScrollableAncestor(root, startNode) {
   let node = startNode instanceof Element ? startNode : null;
   while (node && node !== owner && owner.contains(node)) {
     if (node instanceof HTMLElement) {
+      if (node.hasAttribute("data-maui-cv-scroll-host")) {
+        return node;
+      }
+
       const style = getComputedStyle(node);
       const overflowY = style?.overflowY ?? "";
-      const canScrollY = overflowY === "auto" || overflowY === "scroll" || node.hasAttribute("data-maui-cv-scroll-host");
+      const canScrollY = overflowY === "auto" || overflowY === "scroll";
       if (canScrollY && node.scrollHeight > node.clientHeight + 1) {
         return node;
       }

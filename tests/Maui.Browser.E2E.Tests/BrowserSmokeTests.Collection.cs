@@ -335,6 +335,33 @@ public sealed partial class BrowserSmokeTests
         await DispatchClickAsync(refreshCompleteButtonSelector);
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 2");
 
+        for (var i = 0; i < 11; i++)
+        {
+            await DispatchClickAsync("[data-automation-id='parity-collection-remove-button']");
+        }
+
+        await page.WaitForSelectorAsync("text=Collection items: 1, last mutation: remove");
+        var isShortListState = await page.EvaluateAsync<bool>(
+            @"(selector) => {
+                const host = document.querySelector(selector);
+                if (!host) {
+                    return false;
+                }
+
+                return host.scrollHeight <= host.clientHeight + 1;
+            }",
+            refreshScrollHostSelector);
+        Assert.True(isShortListState, "Expected a short/non-overflowing list state before pull refresh.");
+
+        await PullDownRefreshAsync(132);
+        await page.Mouse.UpAsync();
+        await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 3");
+        await DispatchClickAsync(refreshCompleteButtonSelector);
+        await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 3");
+
+        await DispatchClickAsync("[data-automation-id='parity-collection-reset-button']");
+        await page.WaitForSelectorAsync("text=Collection items: 12, last mutation: reset");
+
         await DispatchClickAsync("[data-automation-id='parity-collection-toggle-selection-mode-button']");
         await page.WaitForSelectorAsync("text=Selection mode: Single");
         await page.EvaluateAsync(
