@@ -245,8 +245,7 @@ function findScrollableAncestor(root, startNode) {
 
       const style = getComputedStyle(node);
       const overflowY = style?.overflowY ?? "";
-      const canScrollY = overflowY === "auto" || overflowY === "scroll";
-      if (canScrollY && node.scrollHeight > node.clientHeight + 1) {
+      if (overflowY === "auto" || overflowY === "scroll") {
         return node;
       }
     }
@@ -254,7 +253,7 @@ function findScrollableAncestor(root, startNode) {
     node = node.parentElement;
   }
 
-  if (owner instanceof HTMLElement && owner.scrollHeight > owner.clientHeight + 1) {
+  if (owner instanceof HTMLElement) {
     const ownerStyle = getComputedStyle(owner);
     const overflowY = ownerStyle?.overflowY ?? "";
     if (overflowY === "auto" || overflowY === "scroll") {

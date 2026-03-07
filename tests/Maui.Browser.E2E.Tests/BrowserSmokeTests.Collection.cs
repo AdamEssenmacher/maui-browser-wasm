@@ -226,23 +226,43 @@ public sealed partial class BrowserSmokeTests
         }
         async Task PullDownRefreshAsync(double distance)
         {
-            await page.EvaluateAsync(
+            var bounds = await page.EvaluateAsync<double[]>(
                 @"(selector) => {
-                    const element = document.querySelector(selector);
-                    if (!element) {
-                        return;
+                    const refresh = document.querySelector(selector);
+                    if (!refresh) {
+                        return [Number.NaN, Number.NaN, Number.NaN, Number.NaN];
                     }
 
-                    element.scrollTop = 0;
+                    let host = refresh.querySelector('[data-maui-cv-scroll-host]');
+                    if (!host) {
+                        const contentHost = refresh.querySelector('[data-maui-cv-content-host=""true""]');
+                        if (contentHost && contentHost.parentElement) {
+                            host = contentHost.parentElement;
+                        }
+                    }
+
+                    if (!(host instanceof HTMLElement)) {
+                        return [Number.NaN, Number.NaN, Number.NaN, Number.NaN];
+                    }
+
+                    host.scrollTop = 0;
+                    const rect = host.getBoundingClientRect();
+                    return [rect.x, rect.y, rect.width, rect.height];
                 }",
-                refreshScrollHostSelector);
+                refreshSelector);
 
-            var scrollHost = page.Locator(refreshScrollHostSelector);
-            var bounds = await scrollHost.BoundingBoxAsync();
-            Assert.NotNull(bounds);
+            Assert.Equal(4, bounds.Length);
+            Assert.True(
+                !double.IsNaN(bounds[0]) &&
+                !double.IsNaN(bounds[1]) &&
+                !double.IsNaN(bounds[2]) &&
+                !double.IsNaN(bounds[3]) &&
+                bounds[2] > 0 &&
+                bounds[3] > 0,
+                "Expected to resolve refresh scroll host bounds.");
 
-            var startX = (float)(bounds!.X + (bounds.Width / 2));
-            var startY = (float)(bounds.Y + Math.Min(36, Math.Max(18, bounds.Height * 0.2)));
+            var startX = (float)(bounds[0] + (bounds[2] / 2));
+            var startY = (float)(bounds[1] + Math.Min(36, Math.Max(18, bounds[3] * 0.2)));
             await page.Mouse.MoveAsync(startX, startY);
             await page.Mouse.DownAsync();
             await page.Mouse.MoveAsync(
@@ -353,11 +373,34 @@ public sealed partial class BrowserSmokeTests
             refreshScrollHostSelector);
         Assert.True(isShortListState, "Expected a short/non-overflowing list state before pull refresh.");
 
+        await page.EvaluateAsync(
+            @"(selector) => {
+                const host = document.querySelector(selector);
+                if (!host) {
+                    return;
+                }
+
+                host.removeAttribute('data-maui-cv-scroll-host');
+            }",
+            refreshScrollHostSelector);
+        Assert.Null(await ReadAttributeAsync(page, refreshScrollHostSelector, "data-maui-cv-scroll-host"));
+
         await PullDownRefreshAsync(132);
         await page.Mouse.UpAsync();
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 3");
         await DispatchClickAsync(refreshCompleteButtonSelector);
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 3");
+
+        await page.EvaluateAsync(
+            @"(selector) => {
+                const host = document.querySelector(selector);
+                if (!host) {
+                    return;
+                }
+
+                host.setAttribute('data-maui-cv-scroll-host', 'true');
+            }",
+            refreshScrollHostSelector);
 
         await DispatchClickAsync("[data-automation-id='parity-collection-reset-button']");
         await page.WaitForSelectorAsync("text=Collection items: 12, last mutation: reset");
