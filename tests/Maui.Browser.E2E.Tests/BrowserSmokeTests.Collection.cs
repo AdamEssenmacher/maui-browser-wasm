@@ -224,7 +224,7 @@ public sealed partial class BrowserSmokeTests
                 }",
                 selector);
         }
-        async Task<(float EndX, float EndY)> PullDownRefreshAsync(double distance, bool resetScrollTop = true)
+        async Task PullDownRefreshAsync(double distance, bool resetScrollTop = true)
         {
             var bounds = await page.EvaluateAsync<double[]>(
                 @"(args) => {
@@ -266,14 +266,12 @@ public sealed partial class BrowserSmokeTests
 
             var startX = (float)(bounds[0] + (bounds[2] / 2));
             var startY = (float)(bounds[1] + Math.Min(36, Math.Max(18, bounds[3] * 0.2)));
-            var endY = (float)(startY + Math.Max(20, distance));
             await page.Mouse.MoveAsync(startX, startY);
             await page.Mouse.DownAsync();
             await page.Mouse.MoveAsync(
                 startX,
-                endY,
+                (float)(startY + Math.Max(20, distance)),
                 new MouseMoveOptions { Steps = 14 });
-            return (startX, endY);
         }
         async Task AssertRefreshInFlowAsync(string reason)
         {
@@ -386,23 +384,54 @@ public sealed partial class BrowserSmokeTests
             refreshScrollHostSelector);
         Assert.True(midScrollTop > 0.5, "Expected scroll host to be offset before same-gesture pull-to-top refresh.");
 
-        var sameGesturePullEnd = await PullDownRefreshAsync(196, resetScrollTop: false);
         await page.EvaluateAsync(
-            @"(selector) => {
-                const host = document.querySelector(selector);
-                if (!(host instanceof HTMLElement)) {
+            @"({ refreshSelector, scrollSelector }) => {
+                const refresh = document.querySelector(refreshSelector);
+                const host = document.querySelector(scrollSelector);
+                if (!(refresh instanceof HTMLElement) || !(host instanceof HTMLElement)) {
                     return;
                 }
 
+                const rect = host.getBoundingClientRect();
+                const x = rect.left + Math.min(40, Math.max(16, rect.width * 0.25));
+                const startY = rect.top + Math.min(36, Math.max(18, rect.height * 0.2));
+                const pointerId = 701;
+
+                const dispatch = (target, type, y, buttons) => {
+                    target.dispatchEvent(new PointerEvent(type, {
+                        bubbles: true,
+                        cancelable: true,
+                        composed: true,
+                        pointerId,
+                        pointerType: 'touch',
+                        isPrimary: true,
+                        button: 0,
+                        buttons,
+                        clientX: x,
+                        clientY: y
+                    }));
+                };
+
+                host.dispatchEvent(new PointerEvent('pointerdown', {
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true,
+                    pointerId,
+                    pointerType: 'touch',
+                    isPrimary: true,
+                    button: 0,
+                    buttons: 1,
+                    clientX: x,
+                    clientY: startY
+                }));
+
+                dispatch(window, 'pointermove', startY + 40, 1);
                 host.scrollTop = 0;
                 host.dispatchEvent(new Event('scroll'));
+                dispatch(window, 'pointermove', startY + 220, 1);
+                dispatch(window, 'pointerup', startY + 220, 0);
             }",
-            refreshScrollHostSelector);
-        await page.Mouse.MoveAsync(
-            sameGesturePullEnd.EndX,
-            sameGesturePullEnd.EndY + 28,
-            new MouseMoveOptions { Steps = 8 });
-        await page.Mouse.UpAsync();
+            new { refreshSelector, scrollSelector = refreshScrollHostSelector });
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 3");
         await DispatchClickAsync(refreshCompleteButtonSelector);
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 3");
