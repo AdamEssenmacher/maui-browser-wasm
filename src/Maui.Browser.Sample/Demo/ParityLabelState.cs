@@ -151,7 +151,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
     public string PreviewText
     {
         get => _previewText;
-        set => SetPreviewProperty(ref _previewText, value, nameof(PreviewSummary));
+        set => SetPreviewProperty(nameof(PreviewText), ref _previewText, value, nameof(PreviewSummary));
     }
 
     public int TextColorIndex
@@ -160,7 +160,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var clamped = ClampIndex(value, TextColorValues.Length);
-            SetPreviewProperty(ref _textColorIndex, clamped, nameof(PreviewTextColor), nameof(PreviewSummary));
+            SetPreviewProperty(nameof(TextColorIndex), ref _textColorIndex, clamped, nameof(PreviewTextColor), nameof(PreviewSummary));
         }
     }
 
@@ -169,7 +169,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
     public string FontFamily
     {
         get => _fontFamily;
-        set => SetPreviewProperty(ref _fontFamily, value, nameof(PreviewSummary));
+        set => SetPreviewProperty(nameof(FontFamily), ref _fontFamily, value, nameof(PreviewSummary));
     }
 
     public double FontSize
@@ -178,7 +178,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var normalized = Math.Clamp(value, 10, 46);
-            SetPreviewProperty(ref _fontSize, normalized, nameof(PreviewSummary));
+            SetPreviewProperty(nameof(FontSize), ref _fontSize, normalized, nameof(PreviewSummary));
         }
     }
 
@@ -188,7 +188,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var clamped = ClampIndex(value, FontAttributeValues.Length);
-            SetPreviewProperty(ref _fontAttributesIndex, clamped, nameof(PreviewFontAttributes), nameof(PreviewSummary));
+            SetPreviewProperty(nameof(FontAttributesIndex), ref _fontAttributesIndex, clamped, nameof(PreviewFontAttributes), nameof(PreviewSummary));
         }
     }
 
@@ -197,7 +197,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
     public bool FontAutoScalingEnabled
     {
         get => _fontAutoScalingEnabled;
-        set => SetPreviewProperty(ref _fontAutoScalingEnabled, value, nameof(PreviewSummary));
+        set => SetPreviewProperty(nameof(FontAutoScalingEnabled), ref _fontAutoScalingEnabled, value, nameof(PreviewSummary));
     }
 
     public double CharacterSpacing
@@ -206,7 +206,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var normalized = Math.Clamp(value, 0, 10);
-            SetPreviewProperty(ref _characterSpacing, normalized, nameof(PreviewSummary));
+            SetPreviewProperty(nameof(CharacterSpacing), ref _characterSpacing, normalized, nameof(PreviewSummary));
         }
     }
 
@@ -216,7 +216,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var clamped = ClampIndex(value, TextDecorationValues.Length);
-            SetPreviewProperty(ref _textDecorationsIndex, clamped, nameof(PreviewTextDecorations), nameof(PreviewSummary));
+            SetPreviewProperty(nameof(TextDecorationsIndex), ref _textDecorationsIndex, clamped, nameof(PreviewTextDecorations), nameof(PreviewSummary));
         }
     }
 
@@ -228,7 +228,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var clamped = ClampIndex(value, HorizontalAlignmentValues.Length);
-            SetPreviewProperty(ref _horizontalAlignmentIndex, clamped, nameof(PreviewHorizontalTextAlignment), nameof(PreviewSummary));
+            SetPreviewProperty(nameof(HorizontalAlignmentIndex), ref _horizontalAlignmentIndex, clamped, nameof(PreviewHorizontalTextAlignment), nameof(PreviewSummary));
         }
     }
 
@@ -240,7 +240,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var clamped = ClampIndex(value, VerticalAlignmentValues.Length);
-            SetPreviewProperty(ref _verticalAlignmentIndex, clamped, nameof(PreviewVerticalTextAlignment), nameof(PreviewSummary));
+            SetPreviewProperty(nameof(VerticalAlignmentIndex), ref _verticalAlignmentIndex, clamped, nameof(PreviewVerticalTextAlignment), nameof(PreviewSummary));
         }
     }
 
@@ -252,7 +252,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var normalized = Math.Clamp(value, 0, 28);
-            SetPreviewProperty(ref _paddingValue, normalized, nameof(PreviewPadding), nameof(PreviewSummary));
+            SetPreviewProperty(nameof(PaddingValue), ref _paddingValue, normalized, nameof(PreviewPadding), nameof(PreviewSummary));
         }
     }
 
@@ -264,7 +264,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var normalized = Math.Clamp(value, 0.8, 2.5);
-            SetPreviewProperty(ref _lineHeight, normalized, nameof(PreviewSummary));
+            SetPreviewProperty(nameof(LineHeight), ref _lineHeight, normalized, nameof(PreviewSummary));
         }
     }
 
@@ -274,7 +274,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var clamped = ClampIndex(value, LineBreakModeValues.Length);
-            SetPreviewProperty(ref _lineBreakModeIndex, clamped, nameof(PreviewLineBreakMode), nameof(PreviewSummary));
+            SetPreviewProperty(nameof(LineBreakModeIndex), ref _lineBreakModeIndex, clamped, nameof(PreviewLineBreakMode), nameof(PreviewSummary));
         }
     }
 
@@ -287,7 +287,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         {
             var rounded = Math.Round(value, 0, MidpointRounding.AwayFromZero);
             var normalized = Math.Clamp(rounded, -1, 5);
-            SetPreviewProperty(ref _maxLinesEditor, normalized, nameof(PreviewMaxLines), nameof(PreviewSummary));
+            SetPreviewProperty(nameof(MaxLinesEditor), ref _maxLinesEditor, normalized, nameof(PreviewMaxLines), nameof(PreviewSummary));
         }
     }
 
@@ -299,7 +299,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var clamped = ClampIndex(value, FlowDirectionValues.Length);
-            SetPreviewProperty(ref _flowDirectionIndex, clamped, nameof(PreviewFlowDirection), nameof(PreviewSummary));
+            SetPreviewProperty(nameof(FlowDirectionIndex), ref _flowDirectionIndex, clamped, nameof(PreviewFlowDirection), nameof(PreviewSummary));
         }
     }
 
@@ -311,7 +311,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var clamped = ClampIndex(value, VisibilityValues.Length);
-            SetPreviewProperty(ref _visibilityIndex, clamped, nameof(PreviewVisibility), nameof(PreviewSummary));
+            SetPreviewProperty(nameof(VisibilityIndex), ref _visibilityIndex, clamped, nameof(PreviewVisibility), nameof(PreviewSummary));
         }
     }
 
@@ -323,26 +323,26 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var normalized = Math.Clamp(value, 0, 1);
-            SetPreviewProperty(ref _opacity, normalized, nameof(PreviewSummary));
+            SetPreviewProperty(nameof(Opacity), ref _opacity, normalized, nameof(PreviewSummary));
         }
     }
 
     public string SemanticDescription
     {
         get => _semanticDescription;
-        set => SetPreviewProperty(ref _semanticDescription, value, nameof(PreviewSummary));
+        set => SetPreviewProperty(nameof(SemanticDescription), ref _semanticDescription, value, nameof(PreviewSummary));
     }
 
     public string SemanticHint
     {
         get => _semanticHint;
-        set => SetPreviewProperty(ref _semanticHint, value, nameof(PreviewSummary));
+        set => SetPreviewProperty(nameof(SemanticHint), ref _semanticHint, value, nameof(PreviewSummary));
     }
 
     public bool HeadingEnabled
     {
         get => _headingEnabled;
-        set => SetPreviewProperty(ref _headingEnabled, value, nameof(PreviewHeadingLevel), nameof(PreviewSummary));
+        set => SetPreviewProperty(nameof(HeadingEnabled), ref _headingEnabled, value, nameof(PreviewHeadingLevel), nameof(PreviewSummary));
     }
 
     public double HeadingLevelEditor
@@ -352,7 +352,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         {
             var rounded = Math.Round(value, 0, MidpointRounding.AwayFromZero);
             var normalized = Math.Clamp(rounded, 1, 6);
-            SetPreviewProperty(ref _headingLevelEditor, normalized, nameof(PreviewHeadingLevel), nameof(PreviewSummary));
+            SetPreviewProperty(nameof(HeadingLevelEditor), ref _headingLevelEditor, normalized, nameof(PreviewHeadingLevel), nameof(PreviewSummary));
         }
     }
 
@@ -375,7 +375,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var normalized = Math.Clamp(value, 160, 420);
-            SetPreviewProperty(ref _previewHostWidth, normalized, nameof(PreviewSummary));
+            SetPreviewProperty(nameof(PreviewHostWidth), ref _previewHostWidth, normalized, nameof(PreviewSummary));
         }
     }
 
@@ -385,7 +385,7 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         set
         {
             var normalized = Math.Clamp(value, 80, 240);
-            SetPreviewProperty(ref _previewHostHeight, normalized, nameof(PreviewSummary));
+            SetPreviewProperty(nameof(PreviewHostHeight), ref _previewHostHeight, normalized, nameof(PreviewSummary));
         }
     }
 
@@ -537,16 +537,16 @@ internal sealed class ParityLabelState : INotifyPropertyChanged
         return index;
     }
 
-    private bool SetPreviewProperty<T>(ref T storage, T value, params string[] dependentProperties)
+    private bool SetPreviewProperty<T>(string propertyName, ref T storage, T value, params string[] dependentProperties)
     {
-        if (!SetProperty(ref storage, value, propertyName: null))
+        if (!SetProperty(ref storage, value, propertyName))
         {
             return false;
         }
 
-        foreach (var propertyName in dependentProperties)
+        foreach (var dependentProperty in dependentProperties)
         {
-            OnPropertyChanged(propertyName);
+            OnPropertyChanged(dependentProperty);
         }
 
         return true;

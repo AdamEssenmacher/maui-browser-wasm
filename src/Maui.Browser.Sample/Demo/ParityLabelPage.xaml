@@ -280,28 +280,36 @@
                         Padding="10,6"
                         Text="Toggle formatted text probe"
                         TextColor="Black" />
-                    <Label
-                        AutomationId="parity-label-gap-formatted-expected"
-                        FontSize="12"
-                        Text="Expected current browser behavior: Formatted spans are not projected by BrowserLabelHandler; this path is gap-documented."
-                        TextColor="DarkSlateGray" />
-                    <Label
-                        x:Name="FormattedTextProbeLabel"
-                        AutomationId="parity-label-gap-formatted-probe"
-                        BackgroundColor="#FEF3C7"
-                        Padding="6"
-                        Text="FormattedText probe baseline"
-                        TextColor="Black" />
-                    <Label
-                        AutomationId="parity-label-gap-formatted-actual"
-                        FontSize="12"
-                        Text="{Binding FormattedTextProbeSummary}"
-                        TextColor="DarkSlateGray" />
-                    <Label
-                        AutomationId="parity-label-gap-formatted-status"
-                        FontSize="12"
-                        Text="{Binding FormattedTextProbeStatus}"
-                        TextColor="DarkSlateGray" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <VerticalStackLayout Grid.Column="0" Spacing="4">
+                            <Label FontSize="12" Text="Expected" TextColor="Black" />
+                            <Label
+                                AutomationId="parity-label-gap-formatted-expected"
+                                FontSize="12"
+                                Text="Expected current browser behavior: Formatted spans are not projected by BrowserLabelHandler; this path is gap-documented."
+                                TextColor="DarkSlateGray" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4">
+                            <Label FontSize="12" Text="Actual" TextColor="Black" />
+                            <Label
+                                x:Name="FormattedTextProbeLabel"
+                                AutomationId="parity-label-gap-formatted-probe"
+                                BackgroundColor="#FEF3C7"
+                                Padding="6"
+                                Text="FormattedText probe baseline"
+                                TextColor="Black" />
+                            <Label
+                                AutomationId="parity-label-gap-formatted-actual"
+                                FontSize="12"
+                                Text="{Binding FormattedTextProbeSummary}"
+                                TextColor="DarkSlateGray" />
+                            <Label
+                                AutomationId="parity-label-gap-formatted-status"
+                                FontSize="12"
+                                Text="{Binding FormattedTextProbeStatus}"
+                                TextColor="DarkSlateGray" />
+                        </VerticalStackLayout>
+                    </Grid>
 
                     <Label FontSize="14" Text="TextType (Html)" TextColor="Black" />
                     <Button
@@ -310,28 +318,36 @@
                         Padding="10,6"
                         Text="Toggle TextType Html probe"
                         TextColor="Black" />
-                    <Label
-                        AutomationId="parity-label-gap-html-expected"
-                        FontSize="12"
-                        Text="Expected current browser behavior: TextType.Html is not mapped; raw markup text is shown."
-                        TextColor="DarkSlateGray" />
-                    <Label
-                        x:Name="HtmlTextProbeLabel"
-                        AutomationId="parity-label-gap-html-probe"
-                        BackgroundColor="#EDE9FE"
-                        Padding="6"
-                        Text="TextType probe baseline"
-                        TextColor="Black" />
-                    <Label
-                        AutomationId="parity-label-gap-html-actual"
-                        FontSize="12"
-                        Text="{Binding HtmlProbeSummary}"
-                        TextColor="DarkSlateGray" />
-                    <Label
-                        AutomationId="parity-label-gap-html-status"
-                        FontSize="12"
-                        Text="{Binding HtmlProbeStatus}"
-                        TextColor="DarkSlateGray" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <VerticalStackLayout Grid.Column="0" Spacing="4">
+                            <Label FontSize="12" Text="Expected" TextColor="Black" />
+                            <Label
+                                AutomationId="parity-label-gap-html-expected"
+                                FontSize="12"
+                                Text="Expected current browser behavior: TextType.Html is not mapped; raw markup text is shown."
+                                TextColor="DarkSlateGray" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4">
+                            <Label FontSize="12" Text="Actual" TextColor="Black" />
+                            <Label
+                                x:Name="HtmlTextProbeLabel"
+                                AutomationId="parity-label-gap-html-probe"
+                                BackgroundColor="#EDE9FE"
+                                Padding="6"
+                                Text="TextType probe baseline"
+                                TextColor="Black" />
+                            <Label
+                                AutomationId="parity-label-gap-html-actual"
+                                FontSize="12"
+                                Text="{Binding HtmlProbeSummary}"
+                                TextColor="DarkSlateGray" />
+                            <Label
+                                AutomationId="parity-label-gap-html-status"
+                                FontSize="12"
+                                Text="{Binding HtmlProbeStatus}"
+                                TextColor="DarkSlateGray" />
+                        </VerticalStackLayout>
+                    </Grid>
 
                     <Label FontSize="14" Text="TextTransform" TextColor="Black" />
                     <Button
@@ -340,28 +356,36 @@
                         Padding="10,6"
                         Text="Cycle TextTransform probe"
                         TextColor="Black" />
-                    <Label
-                        AutomationId="parity-label-gap-transform-expected"
-                        FontSize="12"
-                        Text="Expected current browser behavior: TextTransform does not alter browser output in this backend path."
-                        TextColor="DarkSlateGray" />
-                    <Label
-                        x:Name="TextTransformProbeLabel"
-                        AutomationId="parity-label-gap-transform-probe"
-                        BackgroundColor="#DBEAFE"
-                        Padding="6"
-                        Text="TextTransform probe baseline"
-                        TextColor="Black" />
-                    <Label
-                        AutomationId="parity-label-gap-transform-actual"
-                        FontSize="12"
-                        Text="{Binding TextTransformProbeSummary}"
-                        TextColor="DarkSlateGray" />
-                    <Label
-                        AutomationId="parity-label-gap-transform-status"
-                        FontSize="12"
-                        Text="{Binding TextTransformProbeStatus}"
-                        TextColor="DarkSlateGray" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <VerticalStackLayout Grid.Column="0" Spacing="4">
+                            <Label FontSize="12" Text="Expected" TextColor="Black" />
+                            <Label
+                                AutomationId="parity-label-gap-transform-expected"
+                                FontSize="12"
+                                Text="Expected current browser behavior: TextTransform does not alter browser output in this backend path."
+                                TextColor="DarkSlateGray" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4">
+                            <Label FontSize="12" Text="Actual" TextColor="Black" />
+                            <Label
+                                x:Name="TextTransformProbeLabel"
+                                AutomationId="parity-label-gap-transform-probe"
+                                BackgroundColor="#DBEAFE"
+                                Padding="6"
+                                Text="TextTransform probe baseline"
+                                TextColor="Black" />
+                            <Label
+                                AutomationId="parity-label-gap-transform-actual"
+                                FontSize="12"
+                                Text="{Binding TextTransformProbeSummary}"
+                                TextColor="DarkSlateGray" />
+                            <Label
+                                AutomationId="parity-label-gap-transform-status"
+                                FontSize="12"
+                                Text="{Binding TextTransformProbeStatus}"
+                                TextColor="DarkSlateGray" />
+                        </VerticalStackLayout>
+                    </Grid>
                 </VerticalStackLayout>
             </Border>
 

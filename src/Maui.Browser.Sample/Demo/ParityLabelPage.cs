@@ -78,6 +78,15 @@ public partial class ParityLabelPage : ContentPage
 
     private void OnStatePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName is not null
+            && e.PropertyName != nameof(ParityLabelState.VisibilityIndex)
+            && e.PropertyName != nameof(ParityLabelState.PreviewVisibility)
+            && e.PropertyName != nameof(ParityLabelState.MaxLinesEditor)
+            && e.PropertyName != nameof(ParityLabelState.PreviewMaxLines))
+        {
+            return;
+        }
+
         ApplyPreviewVisibilityOverride();
     }
 
