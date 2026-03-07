@@ -114,6 +114,52 @@ export function getScrollPosition(elementHandle) {
   return [left, top];
 }
 
+export function scrollChildIntoView(containerHandle, childHandle, scrollToPosition) {
+  const container = fromHandle(containerHandle);
+  const child = fromHandle(childHandle);
+
+  const containerRect = container.getBoundingClientRect();
+  const childRect = child.getBoundingClientRect();
+  const currentTop = Number.isFinite(container.scrollTop) ? container.scrollTop : 0;
+  const relativeTop = childRect.top - containerRect.top + currentTop;
+  const relativeBottom = childRect.bottom - containerRect.top + currentTop;
+  const childHeight = Number.isFinite(childRect.height) ? childRect.height : 0;
+  const viewportHeight = Number.isFinite(container.clientHeight) ? container.clientHeight : 0;
+
+  let targetTop = currentTop;
+  switch (scrollToPosition) {
+    // ScrollToPosition.Start
+    case 1:
+      targetTop = relativeTop;
+      break;
+    // ScrollToPosition.Center
+    case 2:
+      targetTop = relativeTop - ((viewportHeight - childHeight) / 2);
+      break;
+    // ScrollToPosition.End
+    case 3:
+      targetTop = relativeBottom - viewportHeight;
+      break;
+    // ScrollToPosition.MakeVisible
+    case 0:
+    default:
+      if (relativeTop < currentTop) {
+        targetTop = relativeTop;
+      } else if (relativeBottom > currentTop + viewportHeight) {
+        targetTop = relativeBottom - viewportHeight;
+      }
+      break;
+  }
+
+  const maxTop = Math.max(0, (Number.isFinite(container.scrollHeight) ? container.scrollHeight : 0) - viewportHeight);
+  const normalizedTop = Number.isFinite(targetTop)
+    ? Math.min(Math.max(0, targetTop), maxTop)
+    : 0;
+
+  container.scrollTop = normalizedTop;
+  return Number.isFinite(container.scrollTop) ? container.scrollTop : normalizedTop;
+}
+
 export function focusElement(elementHandle) {
   const element = fromHandle(elementHandle);
   if (typeof element.focus === "function") {

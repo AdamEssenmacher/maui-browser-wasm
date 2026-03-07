@@ -75,7 +75,7 @@ Expected pass signals:
 - Slider movement updates bound numeric summary live.
 - Picker selection changes update bound index/text summary.
 - Programmatic form-state updates reflect back into control visuals.
-- CollectionView `DataTemplate` items render in order and live collection updates (`Add`/`Remove`/`Reset`) update DOM rows.
+- CollectionView family checks pass for selection (`None`/`Single`/`Multiple`), live item mutations (`Add`/`Remove`/`Move`/`Replace`/`Reset`), header/footer rendering, and `ScrollTo` behavior.
 - Clearing collection data shows EmptyView; reset restores item rows.
 - Resize updates viewport text.
 - Visibility/opacity transitions apply correctly.
@@ -100,8 +100,11 @@ Expected pass signals:
 - Moving `Slider` updates slider summary value.
 - Changing `Picker` selection updates index/text summary.
 - Clicking `Apply programmatic form update` updates all form controls from state.
-- CollectionView renders templated rows from bound data.
-- Collection action buttons add/remove/clear/reset items and update summary text.
+- CollectionView renders templated rows from bound data and updates selection summaries from row clicks/programmatic selection.
+- Collection action buttons add/remove/move/replace/clear/reset items and update summary text.
+- Collection selection mode toggle cycles through `None`, `Single`, and `Multiple` with deterministic selected-row markers.
+- Collection header/footer mode toggle swaps between template-backed and object-view paths.
+- Collection scroll buttons trigger deterministic `ScrollTo` (`Start`/`Center`/`End`/`MakeVisible`) behavior.
 - Clearing collection data shows the empty view; reset brings rows back.
 - Toggling core flow direction updates container direction (`ltr`/`rtl`).
 - Toggling core input transparency disables probe interaction without disabling the control.
@@ -137,7 +140,7 @@ Expected pass signals:
 - `CheckBox`/`Slider` color parity remains best-effort browser styling (`accent-color` plus slider background gradient); exact native visual parity is intentionally deferred.
 - `NavigationPage` is now projected with a minimal DOM navigation bar (`Back` + title) and a single active page host; Shell is intentionally out of scope.
 - `ScrollView` uses native browser overflow scrolling and supports programmatic `RequestScrollTo` mapping.
-- `CollectionView` currently targets vertical, non-virtualized viability with `DataTemplate` item rendering, `EmptyView`, and live `Add`/`Remove`/`Reset` updates from observable collections.
+- `CollectionView` currently supports vertical, non-virtualized parity depth with `DataTemplate` item rendering, `EmptyView`, selection (`None`/`Single`/`Multiple`), live `Add`/`Remove`/`Move`/`Replace`/`Reset` updates, header/footer, and `ScrollTo`.
 - `Image` currently supports `UriImageSource`, `FileImageSource`, and `FontImageSource`; unsupported source types (for example stream-based sources) use deterministic fallback with diagnostics.
 - `Border` currently supports solid stroke paint with rectangle/round-rectangle mapping and dashed best-effort style projection; advanced shapes/paints are deferred.
 - Clip coverage currently supports `RectangleGeometry` and `RoundRectangleGeometry`; other clip geometries remain fallback with DEBUG diagnostics.
@@ -145,7 +148,7 @@ Expected pass signals:
 - Background coverage currently supports solid and linear gradients; radial/image/pattern paints remain fallback with DEBUG diagnostics.
 - Grid track mapping is currently: absolute -> `px`, auto -> `auto`, star -> `fr` (non-positive star defaults to `1fr`); invalid grid metadata falls back to absolute projection.
 - FlexLayout semantic mapping currently covers container direction/wrap/justify/align and item order/grow/shrink/basis/align-self; `FlexLayout.Position` and advanced mixed absolute/relative semantics remain deferred.
-- `CollectionView` defers virtualization, selection behavior, grouping, header/footer, and dedicated scroll-to APIs to later slices.
+- `CollectionView` still defers virtualization, grouping, sticky-header behavior, and advanced large-data scroll anchoring semantics.
 - Full parity rollout tracking now lives in `docs/PARITY_MATRIX.md` and `docs/PARITY_GAPS.md`.
 
 See `AGENTS.md` for repository guardrails.

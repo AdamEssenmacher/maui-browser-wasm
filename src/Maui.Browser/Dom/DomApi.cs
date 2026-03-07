@@ -73,6 +73,9 @@ internal static partial class DomApi
     [JSImport("getScrollPosition", Module)]
     internal static partial double[] GetScrollPosition(nint element);
 
+    [JSImport("scrollChildIntoView", Module)]
+    internal static partial double ScrollChildIntoView(nint container, nint child, int scrollToPosition);
+
     [JSImport("focusElement", Module)]
     internal static partial bool FocusElement(nint element);
 

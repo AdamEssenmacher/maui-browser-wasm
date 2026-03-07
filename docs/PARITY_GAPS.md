@@ -6,12 +6,12 @@ Every gap listed here must have deterministic behavior and regression tests.
 ## Current gaps
 
 1. CollectionView virtualization and full templated-items parity
-- Current behavior: non-virtualized realization with `Add`/`Remove`/`Reset`; `Move`/`Replace` rebuild fallback.
-- Deferred: virtualization, grouping, header/footer, advanced scroll APIs, full selection model.
+- Current behavior: non-virtualized realization with `Add`/`Remove`/`Move`/`Replace`/`Reset`, plus header/footer and `ScrollTo` support.
+- Deferred: virtualization, grouping, sticky headers, and advanced scroll/anchoring behavior under large-data churn.
 
 2. Selection behavior on CollectionView
-- Current behavior: `SelectionMode != None` is treated as unsupported in this slice and emits DEBUG diagnostics.
-- Deferred: behavior parity for selected item(s), events, visual states.
+- Current behavior: `SelectionMode.None|Single|Multiple` is supported with pointer-selection updates and MAUI `SelectedItem`/`SelectedItems` synchronization.
+- Deferred: full keyboard-modifier selection semantics, richer selected visual state parity, and grouped-selection behavior.
 
 3. Clip geometry coverage
 - Current behavior: `RectangleGeometry` and `RoundRectangleGeometry` project to CSS `clip-path`.

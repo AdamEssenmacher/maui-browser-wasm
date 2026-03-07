@@ -97,3 +97,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Flex container mappings now project `Direction`, `Wrap`, `JustifyContent`, `AlignItems`, and `AlignContent`; item mappings project attached `Order`, `Grow`, `Shrink`, `Basis`, and `AlignSelf`.
 - For MAUI 10, `FlexBasis` in this environment exposes `Auto` + absolute `Length`; percentage basis semantics are deferred and explicitly tracked as a parity gap.
 - Containers/Layout family page now includes a real flex probe surface with deterministic toggle actions and Playwright assertions for container styles, item style projection, ordering geometry, and mutation stability.
+
+## 2026-03-07 (Vertical Slice 13)
+- CollectionView moved from viability-only to parity-depth scope while remaining non-virtualized: selection (`None`/`Single`/`Multiple`), incremental `Move`/`Replace`, header/footer realization, and `ScrollTo` are now handler-mapped.
+- Scroll behavior uses a deterministic DOM child-into-view interop helper (`Start`/`Center`/`End`/`MakeVisible`) exposed via `DomApi`, keeping JSImport centralized.
+- Selection markers are projected as deterministic DOM attributes/styles (`data-maui-cv-selected`, `aria-selected`) to keep E2E assertions stable and to avoid hidden state in tests.
+- RefreshView integration remains explicitly deferred so CollectionView parity can harden independently before pull-to-refresh coupling.
