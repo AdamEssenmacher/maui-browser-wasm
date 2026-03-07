@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Reflection;
 using Maui.Browser.Dom;
 using Maui.Browser.Utils;
 using Microsoft.Maui;
@@ -13,6 +14,10 @@ namespace Maui.Browser.Handlers;
 
 public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayoutHandler
 {
+    private static readonly MethodInfo? FlexBasisIsRelativeGetter = typeof(FlexBasis)
+        .GetProperty("IsRelative", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?
+        .GetMethod;
+
     internal enum BrowserLayoutProjectionMode
     {
         Absolute,
@@ -684,6 +689,11 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
             return "auto";
         }
 
+        if (TryResolveRelativeFlexBasisPercent(basis, out var percent))
+        {
+            return $"{percent.ToString("0.###", CultureInfo.InvariantCulture)}%";
+        }
+
         var length = (double)basis.Length;
         if (!double.IsFinite(length))
         {
@@ -691,6 +701,25 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         }
 
         return CssUtil.Px(Math.Max(0, length));
+    }
+
+    private static bool TryResolveRelativeFlexBasisPercent(FlexBasis basis, out double percent)
+    {
+        percent = 0;
+
+        if (FlexBasisIsRelativeGetter?.Invoke(basis, null) is not bool isRelative || !isRelative)
+        {
+            return false;
+        }
+
+        var relativeLength = (double)basis.Length;
+        if (!double.IsFinite(relativeLength))
+        {
+            return false;
+        }
+
+        percent = Math.Max(0, relativeLength * 100d);
+        return true;
     }
 
     private static string ToCssThickness(Thickness thickness)

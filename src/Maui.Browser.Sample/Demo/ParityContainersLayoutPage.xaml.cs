@@ -324,7 +324,7 @@ public partial class ParityContainersLayoutPage : ContentPage
                 FlexLayout.SetOrder(itemThree, 2);
                 FlexLayout.SetGrow(itemTwo, 1f);
                 FlexLayout.SetShrink(itemTwo, 1f);
-                FlexLayout.SetBasis(itemTwo, 140f);
+                FlexLayout.SetBasis(itemTwo, new FlexBasis(0.5f, true));
                 FlexLayout.SetAlignSelf(itemTwo, FlexAlignSelf.End);
                 break;
             default:

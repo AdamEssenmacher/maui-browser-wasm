@@ -156,7 +156,7 @@ public sealed partial class BrowserSmokeTests
         Assert.Equal("0", await ReadInlineStylePropertyAsync(page, itemTwoSelector, "order"));
         Assert.Equal("1", await ReadInlineStylePropertyAsync(page, itemTwoSelector, "flexGrow"));
         Assert.Equal("1", await ReadInlineStylePropertyAsync(page, itemTwoSelector, "flexShrink"));
-        Assert.Equal("140px", await ReadInlineStylePropertyAsync(page, itemTwoSelector, "flexBasis"));
+        Assert.Equal("50%", await ReadInlineStylePropertyAsync(page, itemTwoSelector, "flexBasis"));
         Assert.Equal("flex-end", await ReadInlineStylePropertyAsync(page, itemTwoSelector, "alignSelf"));
 
         var leftsAfterItemPreset = await ReadBoundingLeftsAsync(page, [itemOneSelector, itemTwoSelector, itemThreeSelector]);
