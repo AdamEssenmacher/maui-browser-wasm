@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Maui.Browser.Sample.Demo.ParityLabelPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:DataType="demo:ParityLabelState"
+    xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
+    AutomationId="showcase-page-label-depth"
+    Title="Label Parity Depth">
+
+    <ContentPage.Background>
+        <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientStart}" Offset="0" />
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientEnd}" Offset="1" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <demo:ShowcaseStyles />
+                <demo:ParityLabStyles />
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="Button" BasedOn="{StaticResource ShowcaseSecondaryButtonStyle}" />
+            <Style TargetType="Label" BasedOn="{StaticResource ShowcaseBaseLabelStyle}" />
+            <Style TargetType="Entry" BasedOn="{StaticResource ShowcaseEntryStyle}" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24,20,24,28" Spacing="14">
+            <Label
+                AutomationId="parity-label-heading"
+                FontSize="20"
+                Text="Label interactive parity depth"
+                TextColor="Black" />
+
+            <Label
+                AutomationId="parity-label-summary"
+                FontSize="12"
+                Text="Edit Label properties live, inspect DOM mapping behavior, and validate known gap/fallback probes."
+                TextColor="DarkSlateGray" />
+
+            <Border AutomationId="parity-label-editor-card" Style="{StaticResource ShowcaseCardStyle}">
+                <VerticalStackLayout Spacing="10">
+                    <Label
+                        FontSize="16"
+                        Style="{StaticResource ShowcaseSectionHeadingStyle}"
+                        Text="Property Editor" />
+
+                    <Label FontSize="12" Text="Text" TextColor="DarkSlateGray" />
+                    <Entry
+                        AutomationId="parity-label-editor-text-entry"
+                        Text="{Binding PreviewText, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="TextColor" TextColor="DarkSlateGray" />
+                    <Picker
+                        AutomationId="parity-label-editor-color-picker"
+                        ItemsSource="{Binding TextColorOptions}"
+                        SelectedIndex="{Binding TextColorIndex, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="FontFamily" TextColor="DarkSlateGray" />
+                    <Entry
+                        AutomationId="parity-label-editor-font-family-entry"
+                        Placeholder="system-ui, sans-serif"
+                        Text="{Binding FontFamily, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="FontSize" TextColor="DarkSlateGray" />
+                    <Slider
+                        AutomationId="parity-label-editor-font-size-slider"
+                        Maximum="46"
+                        Minimum="10"
+                        Value="{Binding FontSize, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="FontAttributes" TextColor="DarkSlateGray" />
+                    <Picker
+                        AutomationId="parity-label-editor-font-attributes-picker"
+                        ItemsSource="{Binding FontAttributeOptions}"
+                        SelectedIndex="{Binding FontAttributesIndex, Mode=TwoWay}" />
+
+                    <HorizontalStackLayout Spacing="10">
+                        <Label FontSize="12" Text="FontAutoScalingEnabled" TextColor="DarkSlateGray" VerticalOptions="Center" />
+                        <Switch
+                            AutomationId="parity-label-editor-font-auto-scale-switch"
+                            IsToggled="{Binding FontAutoScalingEnabled, Mode=TwoWay}" />
+                    </HorizontalStackLayout>
+
+                    <Label FontSize="12" Text="CharacterSpacing" TextColor="DarkSlateGray" />
+                    <Slider
+                        AutomationId="parity-label-editor-character-spacing-slider"
+                        Maximum="10"
+                        Minimum="0"
+                        Value="{Binding CharacterSpacing, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="TextDecorations" TextColor="DarkSlateGray" />
+                    <Picker
+                        AutomationId="parity-label-editor-text-decorations-picker"
+                        ItemsSource="{Binding TextDecorationOptions}"
+                        SelectedIndex="{Binding TextDecorationsIndex, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="HorizontalTextAlignment" TextColor="DarkSlateGray" />
+                    <Picker
+                        AutomationId="parity-label-editor-horizontal-align-picker"
+                        ItemsSource="{Binding HorizontalAlignmentOptions}"
+                        SelectedIndex="{Binding HorizontalAlignmentIndex, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="VerticalTextAlignment" TextColor="DarkSlateGray" />
+                    <Picker
+                        AutomationId="parity-label-editor-vertical-align-picker"
+                        ItemsSource="{Binding VerticalAlignmentOptions}"
+                        SelectedIndex="{Binding VerticalAlignmentIndex, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="Padding" TextColor="DarkSlateGray" />
+                    <Slider
+                        AutomationId="parity-label-editor-padding-slider"
+                        Maximum="28"
+                        Minimum="0"
+                        Value="{Binding PaddingValue, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="LineHeight" TextColor="DarkSlateGray" />
+                    <Slider
+                        AutomationId="parity-label-editor-line-height-slider"
+                        Maximum="2.5"
+                        Minimum="0.8"
+                        Value="{Binding LineHeight, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="LineBreakMode" TextColor="DarkSlateGray" />
+                    <Picker
+                        AutomationId="parity-label-editor-line-break-picker"
+                        ItemsSource="{Binding LineBreakModeOptions}"
+                        SelectedIndex="{Binding LineBreakModeIndex, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="MaxLines" TextColor="DarkSlateGray" />
+                    <Stepper
+                        AutomationId="parity-label-editor-max-lines-stepper"
+                        Increment="1"
+                        Maximum="5"
+                        Minimum="-1"
+                        Value="{Binding MaxLinesEditor, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="FlowDirection" TextColor="DarkSlateGray" />
+                    <Picker
+                        AutomationId="parity-label-editor-flow-direction-picker"
+                        ItemsSource="{Binding FlowDirectionOptions}"
+                        SelectedIndex="{Binding FlowDirectionIndex, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="Visibility" TextColor="DarkSlateGray" />
+                    <Picker
+                        AutomationId="parity-label-editor-visibility-picker"
+                        ItemsSource="{Binding VisibilityOptions}"
+                        SelectedIndex="{Binding VisibilityIndex, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="Opacity" TextColor="DarkSlateGray" />
+                    <Slider
+                        AutomationId="parity-label-editor-opacity-slider"
+                        Maximum="1"
+                        Minimum="0"
+                        Value="{Binding Opacity, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="Semantics.Description" TextColor="DarkSlateGray" />
+                    <Entry
+                        AutomationId="parity-label-editor-semantics-description-entry"
+                        Text="{Binding SemanticDescription, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="Semantics.Hint" TextColor="DarkSlateGray" />
+                    <Entry
+                        AutomationId="parity-label-editor-semantics-hint-entry"
+                        Text="{Binding SemanticHint, Mode=TwoWay}" />
+
+                    <HorizontalStackLayout Spacing="10">
+                        <Label FontSize="12" Text="Heading enabled" TextColor="DarkSlateGray" VerticalOptions="Center" />
+                        <Switch
+                            AutomationId="parity-label-editor-heading-enabled-switch"
+                            IsToggled="{Binding HeadingEnabled, Mode=TwoWay}" />
+                    </HorizontalStackLayout>
+
+                    <Label FontSize="12" Text="Heading level" TextColor="DarkSlateGray" />
+                    <Stepper
+                        AutomationId="parity-label-editor-heading-level-stepper"
+                        Increment="1"
+                        Maximum="6"
+                        Minimum="1"
+                        Value="{Binding HeadingLevelEditor, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="Preview host width" TextColor="DarkSlateGray" />
+                    <Slider
+                        AutomationId="parity-label-editor-probe-width-slider"
+                        Maximum="420"
+                        Minimum="160"
+                        Value="{Binding PreviewHostWidth, Mode=TwoWay}" />
+
+                    <Label FontSize="12" Text="Preview host height" TextColor="DarkSlateGray" />
+                    <Slider
+                        AutomationId="parity-label-editor-probe-height-slider"
+                        Maximum="240"
+                        Minimum="80"
+                        Value="{Binding PreviewHostHeight, Mode=TwoWay}" />
+
+                    <HorizontalStackLayout Spacing="8">
+                        <Button
+                            AutomationId="parity-label-editor-reset-button"
+                            Clicked="OnResetDefaultsClicked"
+                            Padding="10,6"
+                            Text="Reset defaults"
+                            TextColor="Black" />
+                        <Button
+                            AutomationId="parity-label-editor-preset-button"
+                            Clicked="OnApplyTruncationPresetClicked"
+                            Padding="10,6"
+                            Text="Apply truncation preset"
+                            TextColor="Black" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border AutomationId="parity-label-preview-card" Style="{StaticResource ShowcaseCardStyle}">
+                <VerticalStackLayout Spacing="10">
+                    <Label
+                        FontSize="16"
+                        Style="{StaticResource ShowcaseSectionHeadingStyle}"
+                        Text="Live Preview" />
+                    <Label
+                        AutomationId="parity-label-preview-summary"
+                        FontSize="12"
+                        Text="{Binding PreviewSummary}"
+                        TextColor="DarkSlateGray" />
+
+                    <Border
+                        AutomationId="parity-label-live-preview-host"
+                        BackgroundColor="#E2E8F0"
+                        HeightRequest="{Binding PreviewHostHeight}"
+                        HorizontalOptions="Start"
+                        Padding="6"
+                        Stroke="#94A3B8"
+                        StrokeThickness="1"
+                        WidthRequest="{Binding PreviewHostWidth}">
+                        <Label
+                            x:Name="LivePreviewLabel"
+                            AutomationId="parity-label-live-preview"
+                            CharacterSpacing="{Binding CharacterSpacing}"
+                            FlowDirection="{Binding PreviewFlowDirection}"
+                            FontAttributes="{Binding PreviewFontAttributes}"
+                            FontAutoScalingEnabled="{Binding FontAutoScalingEnabled}"
+                            FontFamily="{Binding FontFamily}"
+                            FontSize="{Binding FontSize}"
+                            HorizontalOptions="Fill"
+                            HorizontalTextAlignment="{Binding PreviewHorizontalTextAlignment}"
+                            LineBreakMode="{Binding PreviewLineBreakMode}"
+                            LineHeight="{Binding LineHeight}"
+                            MaxLines="{Binding PreviewMaxLines}"
+                            Opacity="{Binding Opacity}"
+                            Padding="{Binding PreviewPadding}"
+                            SemanticProperties.Description="{Binding SemanticDescription}"
+                            SemanticProperties.HeadingLevel="{Binding PreviewHeadingLevel}"
+                            SemanticProperties.Hint="{Binding SemanticHint}"
+                            Text="{Binding PreviewText}"
+                            TextColor="{Binding PreviewTextColor}"
+                            TextDecorations="{Binding PreviewTextDecorations}"
+                            VerticalOptions="Fill"
+                            VerticalTextAlignment="{Binding PreviewVerticalTextAlignment}" />
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border AutomationId="parity-label-gap-card" Style="{StaticResource ShowcaseCardStyle}">
+                <VerticalStackLayout Spacing="10">
+                    <Label
+                        FontSize="16"
+                        Style="{StaticResource ShowcaseSectionHeadingStyle}"
+                        Text="Gap/Fallback Probes" />
+                    <Label
+                        FontSize="12"
+                        Text="These probes intentionally surface known Label parity gaps with deterministic current-browser behavior."
+                        TextColor="DarkSlateGray" />
+
+                    <Label FontSize="14" Text="FormattedText" TextColor="Black" />
+                    <Button
+                        AutomationId="parity-label-gap-formatted-toggle-button"
+                        Clicked="OnToggleFormattedTextProbeClicked"
+                        Padding="10,6"
+                        Text="Toggle formatted text probe"
+                        TextColor="Black" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <VerticalStackLayout Grid.Column="0" Spacing="4">
+                            <Label FontSize="12" Text="Expected" TextColor="Black" />
+                            <Label
+                                AutomationId="parity-label-gap-formatted-expected"
+                                FontSize="12"
+                                Text="Expected current browser behavior: Formatted spans are not projected by BrowserLabelHandler; this path is gap-documented."
+                                TextColor="DarkSlateGray" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4">
+                            <Label FontSize="12" Text="Actual" TextColor="Black" />
+                            <Label
+                                x:Name="FormattedTextProbeLabel"
+                                AutomationId="parity-label-gap-formatted-probe"
+                                BackgroundColor="#FEF3C7"
+                                Padding="6"
+                                Text="FormattedText probe baseline"
+                                TextColor="Black" />
+                            <Label
+                                AutomationId="parity-label-gap-formatted-actual"
+                                FontSize="12"
+                                Text="{Binding FormattedTextProbeSummary}"
+                                TextColor="DarkSlateGray" />
+                            <Label
+                                AutomationId="parity-label-gap-formatted-status"
+                                FontSize="12"
+                                Text="{Binding FormattedTextProbeStatus}"
+                                TextColor="DarkSlateGray" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Label FontSize="14" Text="TextType (Html)" TextColor="Black" />
+                    <Button
+                        AutomationId="parity-label-gap-html-toggle-button"
+                        Clicked="OnToggleHtmlProbeClicked"
+                        Padding="10,6"
+                        Text="Toggle TextType Html probe"
+                        TextColor="Black" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <VerticalStackLayout Grid.Column="0" Spacing="4">
+                            <Label FontSize="12" Text="Expected" TextColor="Black" />
+                            <Label
+                                AutomationId="parity-label-gap-html-expected"
+                                FontSize="12"
+                                Text="Expected current browser behavior: TextType.Html is not mapped; raw markup text is shown."
+                                TextColor="DarkSlateGray" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4">
+                            <Label FontSize="12" Text="Actual" TextColor="Black" />
+                            <Label
+                                x:Name="HtmlTextProbeLabel"
+                                AutomationId="parity-label-gap-html-probe"
+                                BackgroundColor="#EDE9FE"
+                                Padding="6"
+                                Text="TextType probe baseline"
+                                TextColor="Black" />
+                            <Label
+                                AutomationId="parity-label-gap-html-actual"
+                                FontSize="12"
+                                Text="{Binding HtmlProbeSummary}"
+                                TextColor="DarkSlateGray" />
+                            <Label
+                                AutomationId="parity-label-gap-html-status"
+                                FontSize="12"
+                                Text="{Binding HtmlProbeStatus}"
+                                TextColor="DarkSlateGray" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Label FontSize="14" Text="TextTransform" TextColor="Black" />
+                    <Button
+                        AutomationId="parity-label-gap-transform-cycle-button"
+                        Clicked="OnCycleTextTransformProbeClicked"
+                        Padding="10,6"
+                        Text="Cycle TextTransform probe"
+                        TextColor="Black" />
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <VerticalStackLayout Grid.Column="0" Spacing="4">
+                            <Label FontSize="12" Text="Expected" TextColor="Black" />
+                            <Label
+                                AutomationId="parity-label-gap-transform-expected"
+                                FontSize="12"
+                                Text="Expected current browser behavior: TextTransform does not alter browser output in this backend path."
+                                TextColor="DarkSlateGray" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4">
+                            <Label FontSize="12" Text="Actual" TextColor="Black" />
+                            <Label
+                                x:Name="TextTransformProbeLabel"
+                                AutomationId="parity-label-gap-transform-probe"
+                                BackgroundColor="#DBEAFE"
+                                Padding="6"
+                                Text="TextTransform probe baseline"
+                                TextColor="Black" />
+                            <Label
+                                AutomationId="parity-label-gap-transform-actual"
+                                FontSize="12"
+                                Text="{Binding TextTransformProbeSummary}"
+                                TextColor="DarkSlateGray" />
+                            <Label
+                                AutomationId="parity-label-gap-transform-status"
+                                FontSize="12"
+                                Text="{Binding TextTransformProbeStatus}"
+                                TextColor="DarkSlateGray" />
+                        </VerticalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+            </Border>
+
+            <Button
+                AutomationId="showcase-page-label-depth-open-control-lab"
+                Clicked="OnOpenConsolidatedClicked"
+                Padding="12,8"
+                Text="Open consolidated demo probes"
+                TextColor="Black" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

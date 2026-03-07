@@ -65,6 +65,10 @@ internal sealed class ParityCatalogPage : ContentPage
 
         content.Children.Add(CreateSectionHeading("Showcase Deep Dives"));
         content.Children.Add(CreateNavigationButton(
+            "Label Depth",
+            "showcase-open-label-depth",
+            static () => new ParityLabelPage()));
+        content.Children.Add(CreateNavigationButton(
             "Control Lab",
             "showcase-open-control-lab",
             static () => new XamlDemoPage()));

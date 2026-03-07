@@ -95,7 +95,7 @@ internal static class ShowcaseControlCatalog
         new("Grid", "Layouts", ShowcaseControlStatus.Complete, "Semantic CSS grid row/column/span projection.", probeFactory: CreateGridProbe),
         new("AbsoluteLayout", "Layouts", ShowcaseControlStatus.Complete, "Absolute frame projection path remains supported.", probeFactory: CreateAbsoluteLayoutProbe),
         new("FlexLayout", "Layouts", ShowcaseControlStatus.Partial, "Flex container + attached item property mapping is implemented.", probeFactory: CreateFlexLayoutProbe),
-        new("Label", "Text/Input", ShowcaseControlStatus.Partial, "Text, color, alignment, wrapping/truncation mapping.", probeFactory: CreateLabelProbe),
+        new("Label", "Text/Input", ShowcaseControlStatus.Partial, "Interactive label depth lab with live property editing and explicit gap probes.", probeFactory: CreateLabelProbe, scenarioPageFactory: static () => new ParityLabelPage(), scenarioButtonText: "Open label depth"),
         new("Button", "Text/Input", ShowcaseControlStatus.Complete, "Text, click, style-state, border/corner mapping.", probeFactory: CreateButtonProbe),
         new("Entry", "Text/Input", ShowcaseControlStatus.Partial, "Two-way text, placeholder, keyboard, and completion mapping.", probeFactory: CreateEntryProbe),
         new("Editor", "Text/Input", ShowcaseControlStatus.Partial, "Multiline text edit + change flow mapping.", probeFactory: CreateEditorProbe),

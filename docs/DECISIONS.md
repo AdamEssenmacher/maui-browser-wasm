@@ -126,3 +126,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added a 1:1 control-type catalog (`ShowcaseControlCatalog`) rendered directly on `ShowcaseHomePage`, so every MAUI control/layout type is visible on the top-level showcase entry point.
 - Missing handlers (`GraphicsView`, `CarouselView`, `IndicatorView`, `SwipeView`, `WebView`) are explicitly listed as “not implemented yet” instead of being omitted from the showcase.
 - Existing deep-dive scenario pages are retained as supplemental flows, but all are now showcase-styled and accessible from the same showcase catalog.
+
+## 2026-03-07 (Vertical Slice 16)
+- Replaced the previous standalone Label demo entry with a dedicated interactive Label depth page (`showcase-page-label-depth`) as the canonical parity proof surface for Label.
+- The new page is state-driven and property-editable in real time, covering mapped Label and inherited IView properties in a single live preview host to make mapping regressions immediately visible.
+- Controls-layer Label gaps (`FormattedText`, `TextType`, `TextTransform`) are now surfaced as explicit, deterministic interactive probes on the same page instead of being implicit omissions.
+- Home control catalog routing now opens Label depth directly from the Label row, while Text/Input depth remains focused on `Entry`/`Editor`/`SearchBar`.

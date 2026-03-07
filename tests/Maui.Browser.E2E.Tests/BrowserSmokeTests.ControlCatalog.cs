@@ -25,11 +25,11 @@ public sealed partial class BrowserSmokeTests
         Assert.Contains("not implemented yet", missingRow, StringComparison.OrdinalIgnoreCase);
 
         await page.Locator("[data-automation-id='showcase-open-control-label']").ClickAsync();
-        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-control-label']");
-        await page.WaitForSelectorAsync("[data-automation-id='showcase-control-probe-label']");
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-label-depth']");
+        await page.WaitForSelectorAsync("[data-automation-id='parity-label-live-preview']");
+        await page.CloseAsync();
 
-        await page.Locator("[data-automation-id='showcase-control-back']").ClickAsync();
-        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-home']");
+        page = await OpenHomeAsync(context);
 
         await page.Locator("[data-automation-id='showcase-open-control-graphicsview']").ClickAsync();
         await page.WaitForSelectorAsync("[data-automation-id='showcase-page-control-graphicsview']");

@@ -114,7 +114,16 @@ public partial class ShowcaseHomePage : ContentPage
                 };
 
                 var capturedSpec = spec;
-                openButton.Clicked += async (_, _) => await Navigation.PushAsync(new ShowcaseControlDemoPage(capturedSpec), false);
+                openButton.Clicked += async (_, _) =>
+                {
+                    if (capturedSpec.Slug == "label")
+                    {
+                        await Navigation.PushAsync(new ParityLabelPage(), false);
+                        return;
+                    }
+
+                    await Navigation.PushAsync(new ShowcaseControlDemoPage(capturedSpec), false);
+                };
 
                 rowGrid.Children.Add(summaryLabel);
                 Grid.SetColumn(summaryLabel, 0);
