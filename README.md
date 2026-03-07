@@ -8,7 +8,7 @@ Current state:
 - App startup supports real MAUI `Application -> Window` bootstrap (`BrowserAppHost.RunAsync(MauiApp, ...)`).
 - Root-view bootstrap (`BrowserAppHost.RunAsync(MauiApp, IView, ...)`) remains as a compatibility path.
 - DOM platform view wrapper is `DomElement`; JSImport entrypoints are centralized in `DomApi`.
-- Implemented handlers: `Window`, `NavigationPage`, `ContentPage`, `ScrollView`, `CollectionView`, `Label`, `Button`, `Entry`, `Editor`, `SearchBar`, `Image`, `ImageButton`, `Border`, `Switch`, `CheckBox`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `Stepper`, `ProgressBar`, `ActivityIndicator`, `Layout`, `ContentView`.
+- Implemented handlers: `Window`, `NavigationPage`, `ContentPage`, `ScrollView`, `CollectionView`, `RefreshView`, `Label`, `Button`, `Entry`, `Editor`, `SearchBar`, `Image`, `ImageButton`, `Border`, `Switch`, `CheckBox`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `Stepper`, `ProgressBar`, `ActivityIndicator`, `Layout`, `ContentView`.
 - Shared `IView`/`ITransform` mapping core is applied across handlers: automation id, flow direction, basic semantics (ARIA), interaction state (`IsEnabled` + `InputTransparent`), background (solid), z-index, focus/unfocus, and transform composition.
 - Core view substrate now includes: `Clip` (`RectangleGeometry` + `RoundRectangleGeometry`), `Shadow` (solid paint), and `Background` linear-gradient projection.
 - Sample app demonstrates a real `.xaml` `ContentPage` (with code-behind) and covers binding, input, click, resize, visibility, opacity, form-input breadth, IView core/transform behavior, navigation push/pop, scroll behavior, and stress cleanup.
@@ -76,6 +76,7 @@ Expected pass signals:
 - Picker selection changes update bound index/text summary.
 - Programmatic form-state updates reflect back into control visuals.
 - CollectionView family checks pass for selection (`None`/`Single`/`Multiple`), live item mutations (`Add`/`Remove`/`Move`/`Replace`/`Reset`), header/footer rendering, and `ScrollTo` behavior.
+- Collection/Templated family checks pass for `RefreshView` command/state integration (`IsRefreshing`, `IsRefreshEnabled`, command trigger gating, completion path) while keeping CollectionView interactions working inside refresh content.
 - Clearing collection data shows EmptyView; reset restores item rows.
 - Resize updates viewport text.
 - Visibility/opacity transitions apply correctly.
@@ -103,6 +104,7 @@ Expected pass signals:
 - CollectionView renders templated rows from bound data and updates selection summaries from row clicks/programmatic selection.
 - Collection action buttons add/remove/move/replace/clear/reset items and update summary text.
 - Collection selection mode toggle cycles through `None`, `Single`, and `Multiple` with deterministic selected-row markers.
+- Refresh trigger row on Collection/Templated family page sets `IsRefreshing=true`, increments refresh command count once per refresh cycle, ignores re-entry while refreshing, and respects refresh-enabled toggles.
 - Collection header/footer mode toggle swaps between template-backed and object-view paths.
 - Collection scroll buttons trigger deterministic `ScrollTo` (`Start`/`Center`/`End`/`MakeVisible`) behavior.
 - Clearing collection data shows the empty view; reset brings rows back.
@@ -141,6 +143,7 @@ Expected pass signals:
 - `NavigationPage` is now projected with a minimal DOM navigation bar (`Back` + title) and a single active page host; Shell is intentionally out of scope.
 - `ScrollView` uses native browser overflow scrolling and supports programmatic `RequestScrollTo` mapping.
 - `CollectionView` currently supports vertical, non-virtualized parity depth with `DataTemplate` item rendering, `EmptyView`, selection (`None`/`Single`/`Multiple`), live `Add`/`Remove`/`Move`/`Replace`/`Reset` updates, header/footer, and `ScrollTo`.
+- `RefreshView` currently supports command/state-first parity with explicit trigger UI and full state/command mapping (`Content`, `IsRefreshing`, `IsRefreshEnabled`, `RefreshColor`, `Command`, `CommandParameter`); pull-drag gesture parity is deferred.
 - `Image` currently supports `UriImageSource`, `FileImageSource`, and `FontImageSource`; unsupported source types (for example stream-based sources) use deterministic fallback with diagnostics.
 - `Border` currently supports solid stroke paint with rectangle/round-rectangle mapping and dashed best-effort style projection; advanced shapes/paints are deferred.
 - Clip coverage currently supports `RectangleGeometry` and `RoundRectangleGeometry`; other clip geometries remain fallback with DEBUG diagnostics.

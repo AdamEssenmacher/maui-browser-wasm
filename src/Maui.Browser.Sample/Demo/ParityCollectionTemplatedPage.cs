@@ -96,6 +96,16 @@ public partial class ParityCollectionTemplatedPage : ContentPage
         ScrollToIndex(index, ScrollToPosition.MakeVisible, $"make-visible index {index}");
     }
 
+    private void OnCompleteRefreshClicked(object? sender, EventArgs e)
+    {
+        _state.CompleteRefresh();
+    }
+
+    private void OnToggleRefreshEnabledClicked(object? sender, EventArgs e)
+    {
+        _state.ToggleRefreshEnabled();
+    }
+
     private void ScrollToIndex(int index, ScrollToPosition position, string action)
     {
         var collectionProbe = CollectionProbeElement;

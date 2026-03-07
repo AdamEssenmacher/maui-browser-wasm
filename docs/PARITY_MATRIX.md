@@ -41,12 +41,12 @@ Status values:
 | `CollectionView` | `CollectionViewHandler` | `BrowserCollectionViewHandler` | partial | `src/Controls/src/Core/Handlers/Items/CollectionViewHandler.iOS.cs` | `src/Controls/src/Core/Handlers/Items/CollectionViewHandler.Android.cs` | `parity-page-collection-templated` | `CollectionViewParityDepthWorks` |
 | `CarouselView` | `CarouselViewHandler` | `-` | missing | `src/Controls/src/Core/Handlers/Items/CarouselViewHandler.iOS.cs` | `src/Controls/src/Core/Handlers/Items/CarouselViewHandler.Android.cs` | `parity-page-collection-templated` | `planned:carouselview` |
 | `IndicatorView` | `IndicatorViewHandler` | `-` | missing | `src/Controls/src/Core/Handlers/Items/IndicatorViewHandler.iOS.cs` | `src/Controls/src/Core/Handlers/Items/IndicatorViewHandler.Android.cs` | `parity-page-collection-templated` | `planned:indicatorview` |
-| `RefreshView` | `RefreshViewHandler` | `-` | missing | `src/Core/src/Handlers/RefreshView/RefreshViewHandler.iOS.cs` | `src/Core/src/Handlers/RefreshView/RefreshViewHandler.Android.cs` | `parity-page-containers-layout` | `planned:refreshview` |
+| `RefreshView` | `RefreshViewHandler` | `BrowserRefreshViewHandler` | partial | `src/Core/src/Handlers/RefreshView/RefreshViewHandler.iOS.cs` | `src/Core/src/Handlers/RefreshView/RefreshViewHandler.Android.cs` | `parity-page-collection-templated` | `RefreshViewCollectionIntegrationWorks` |
 | `SwipeView` | `SwipeViewHandler` | `-` | missing | `src/Core/src/Handlers/SwipeView/SwipeViewHandler.iOS.cs` | `src/Core/src/Handlers/SwipeView/SwipeViewHandler.Android.cs` | `parity-page-containers-layout` | `planned:swipeview` |
 | `WebView` | `WebViewHandler` | `-` | missing | `src/Core/src/Handlers/WebView/WebViewHandler.iOS.cs` | `src/Core/src/Handlers/WebView/WebViewHandler.Android.cs` | `parity-page-media-visual` | `planned:webview` |
 
 ## Current browser coverage snapshot
 - Complete: `Window`, `ContentPage`, `ContentView`, stack/grid/absolute layout mapping, `Button`, `CheckBox`
-- Partial: `NavigationPage`, `ScrollView`, `FlexLayout`, `Label`, `Entry`, `Editor`, `SearchBar`, `Switch`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `Stepper`, `ProgressBar`, `ActivityIndicator`, `Image`, `ImageButton`, `Border`, `CollectionView`
-- Missing: `GraphicsView`, `CarouselView`, `IndicatorView`, `RefreshView`, `SwipeView`, `WebView`
+- Partial: `NavigationPage`, `ScrollView`, `FlexLayout`, `Label`, `Entry`, `Editor`, `SearchBar`, `Switch`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `Stepper`, `ProgressBar`, `ActivityIndicator`, `Image`, `ImageButton`, `Border`, `CollectionView`, `RefreshView`
+- Missing: `GraphicsView`, `CarouselView`, `IndicatorView`, `SwipeView`, `WebView`
 - Shared core substrate: `IView.Clip` (`RectangleGeometry`/`RoundRectangleGeometry`), `IView.Shadow` (solid paint), and `IView.Background` (`SolidPaint` + `LinearGradientPaint`) are implemented in the common browser mapper.

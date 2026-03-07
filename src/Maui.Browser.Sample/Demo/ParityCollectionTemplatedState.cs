@@ -2,7 +2,9 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows.Input;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Graphics;
 
 namespace Maui.Browser.Sample.Demo;
 
@@ -16,12 +18,17 @@ internal sealed class ParityCollectionTemplatedState : INotifyPropertyChanged
     private object? _selectedItem;
     private IList<object> _selectedItems = new List<object>();
     private bool _useTemplateHeaderFooter = true;
+    private bool _isRefreshing;
+    private bool _isRefreshEnabled = true;
+    private int _refreshCommandCount;
+    private string _lastRefreshSource = "none";
 
     public ParityCollectionTemplatedState()
     {
         HeaderTemplateData = new ParityCollectionHeaderData("Header template: Collection parity probe");
         FooterTemplateData = new ParityCollectionFooterData("Footer template: Selection + Move/Replace + ScrollTo");
         EmptyTemplateData = new ParityCollectionEmptyData("Collection empty state via template binding.");
+        RefreshCommand = new Command<object?>(OnRefreshCommandExecuted);
 
         _collectionItems.CollectionChanged += OnCollectionItemsChanged;
         ResetCollectionItems();
@@ -121,6 +128,48 @@ internal sealed class ParityCollectionTemplatedState : INotifyPropertyChanged
     public string HeaderObjectText => $"Header object view ({CollectionItems.Count} items)";
 
     public string FooterObjectText => $"Footer object view ({CollectionItems.Count} items)";
+
+    public bool IsRefreshing
+    {
+        get => _isRefreshing;
+        set
+        {
+            if (!SetProperty(ref _isRefreshing, value))
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(RefreshSummary));
+        }
+    }
+
+    public bool IsRefreshEnabled
+    {
+        get => _isRefreshEnabled;
+        set
+        {
+            if (!SetProperty(ref _isRefreshEnabled, value))
+            {
+                return;
+            }
+
+            if (!value && IsRefreshing)
+            {
+                IsRefreshing = false;
+            }
+
+            OnPropertyChanged(nameof(RefreshSummary));
+        }
+    }
+
+    public ICommand RefreshCommand { get; }
+
+    public object RefreshCommandParameter => "collection-family-trigger";
+
+    public Color RefreshColor => Color.FromArgb("#0EA5E9");
+
+    public string RefreshSummary =>
+        $"Refresh enabled: {(IsRefreshEnabled ? "on" : "off")}, refreshing: {(IsRefreshing ? "true" : "false")}, command count: {_refreshCommandCount}, last source: {_lastRefreshSource}";
 
     public void CycleSelectionMode()
     {
@@ -259,6 +308,27 @@ internal sealed class ParityCollectionTemplatedState : INotifyPropertyChanged
         OnPropertyChanged(nameof(ScrollSummary));
     }
 
+    public void CompleteRefresh()
+    {
+        if (!IsRefreshing)
+        {
+            _lastRefreshSource = "complete (noop)";
+            OnPropertyChanged(nameof(RefreshSummary));
+            return;
+        }
+
+        IsRefreshing = false;
+        _lastRefreshSource = "complete button";
+        OnPropertyChanged(nameof(RefreshSummary));
+    }
+
+    public void ToggleRefreshEnabled()
+    {
+        IsRefreshEnabled = !IsRefreshEnabled;
+        _lastRefreshSource = IsRefreshEnabled ? "enabled toggle" : "disabled toggle";
+        OnPropertyChanged(nameof(RefreshSummary));
+    }
+
     public int ResolveCenterScrollIndex() => Math.Min(8, Math.Max(0, CollectionItems.Count - 1));
 
     public int ResolveEndScrollIndex() => Math.Max(0, CollectionItems.Count - 1);
@@ -303,6 +373,13 @@ internal sealed class ParityCollectionTemplatedState : INotifyPropertyChanged
         OnPropertyChanged(nameof(SelectionSummary));
         OnPropertyChanged(nameof(HeaderObjectText));
         OnPropertyChanged(nameof(FooterObjectText));
+    }
+
+    private void OnRefreshCommandExecuted(object? parameter)
+    {
+        _refreshCommandCount++;
+        _lastRefreshSource = parameter?.ToString() ?? "command";
+        OnPropertyChanged(nameof(RefreshSummary));
     }
 
     private bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string? propertyName = null)

@@ -197,4 +197,97 @@ public sealed partial class BrowserSmokeTests
             afterDiagnostics.ResizeSubscriptionCount <= beforeDiagnostics.ResizeSubscriptionCount + 1,
             $"Expected collection parity resize subscriptions near baseline. Before={beforeDiagnostics.ResizeSubscriptionCount}, After={afterDiagnostics.ResizeSubscriptionCount}");
     }
+
+    [Fact]
+    public async Task RefreshViewCollectionIntegrationWorks()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenFamilyPageAsync(context, "parity-open-collection-templated", "parity-page-collection-templated");
+
+        const string refreshSelector = "[data-automation-id='parity-refresh-view']";
+        const string refreshTriggerSelector = "[data-automation-id='parity-refresh-view'] [data-maui-rv-trigger='true']";
+        const string refreshSummarySelector = "[data-automation-id='parity-refresh-summary']";
+        const string refreshCompleteButtonSelector = "[data-automation-id='parity-refresh-complete-button']";
+        const string refreshToggleEnabledButtonSelector = "[data-automation-id='parity-refresh-toggle-enabled-button']";
+        async Task DispatchClickAsync(string selector)
+        {
+            await page.EvaluateAsync(
+                @"(selector) => {
+                    const element = document.querySelector(selector);
+                    if (!element) {
+                        return;
+                    }
+
+                    element.dispatchEvent(new Event('click', { bubbles: true }));
+                }",
+                selector);
+        }
+
+        await page.WaitForSelectorAsync(refreshSelector, new PageWaitForSelectorOptions
+        {
+            State = WaitForSelectorState.Attached
+        });
+        await ScrollIntoViewAsync(page, refreshSelector);
+
+        await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 0");
+        Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-refreshing"));
+        Assert.Equal("true", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-enabled"));
+
+        await DispatchClickAsync(refreshTriggerSelector);
+        await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 1");
+        Assert.Equal("true", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-refreshing"));
+
+        await DispatchClickAsync(refreshTriggerSelector);
+
+        var summaryAfterBlockedTrigger = (await page.Locator(refreshSummarySelector).TextContentAsync())?.Trim() ?? string.Empty;
+        Assert.Contains("refreshing: true", summaryAfterBlockedTrigger);
+        Assert.Contains("command count: 1", summaryAfterBlockedTrigger);
+
+        await DispatchClickAsync(refreshCompleteButtonSelector);
+        await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 1");
+        Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-refreshing"));
+
+        await DispatchClickAsync(refreshToggleEnabledButtonSelector);
+        await page.WaitForSelectorAsync("text=Refresh enabled: off, refreshing: false, command count: 1");
+        Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-enabled"));
+
+        await DispatchClickAsync(refreshTriggerSelector);
+        var summaryWhileDisabled = (await page.Locator(refreshSummarySelector).TextContentAsync())?.Trim() ?? string.Empty;
+        Assert.Contains("refreshing: false", summaryWhileDisabled);
+        Assert.Contains("command count: 1", summaryWhileDisabled);
+
+        await DispatchClickAsync(refreshToggleEnabledButtonSelector);
+        await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 1");
+
+        await DispatchClickAsync(refreshTriggerSelector);
+        await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 2");
+        await DispatchClickAsync(refreshCompleteButtonSelector);
+        await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 2");
+
+        await DispatchClickAsync("[data-automation-id='parity-collection-toggle-selection-mode-button']");
+        await page.WaitForSelectorAsync("text=Selection mode: Single");
+        await page.EvaluateAsync(
+            @"({ selector, index }) => {
+                const rows = document.querySelectorAll(selector);
+                const row = rows[index];
+                if (!row) {
+                    return;
+                }
+
+                row.dispatchEvent(new Event('click', { bubbles: true }));
+            }",
+            new { selector = "[data-automation-id='parity-collection-item-row']", index = 1 });
+        await page.WaitForSelectorAsync("text=selected item: Beta row");
+
+        await DispatchClickAsync("[data-automation-id='parity-collection-add-button']");
+        await page.WaitForSelectorAsync("text=Collection items: 13, last mutation: add");
+
+        await DispatchClickAsync("[data-automation-id='parity-collection-clear-button']");
+        await page.WaitForSelectorAsync("text=Collection items: 0, last mutation: clear");
+        await page.WaitForSelectorAsync("[data-automation-id='parity-collection-empty-view']");
+
+        await DispatchClickAsync("[data-automation-id='parity-collection-reset-button']");
+        await page.WaitForSelectorAsync("text=Collection items: 12, last mutation: reset");
+        Assert.Equal(12, await ReadElementCountAsync(page, "[data-automation-id='parity-collection-item-row']"));
+    }
 }
