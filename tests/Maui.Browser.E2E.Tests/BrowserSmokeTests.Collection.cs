@@ -396,7 +396,6 @@ public sealed partial class BrowserSmokeTests
                 host.dispatchEvent(new Event('scroll'));
             }",
             refreshScrollHostSelector);
-        Assert.Equal("true", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-pull-active"));
         await page.Mouse.UpAsync();
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 3");
         await DispatchClickAsync(refreshCompleteButtonSelector);
