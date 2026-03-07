@@ -155,13 +155,11 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
     public static void MapIsRefreshing(BrowserRefreshViewHandler handler, RefreshView refreshView)
     {
         handler.ApplyRefreshState(refreshView);
-        handler.ArrangeUsingLastFrame();
     }
 
     public static void MapIsRefreshEnabled(BrowserRefreshViewHandler handler, RefreshView refreshView)
     {
         handler.ApplyRefreshState(refreshView);
-        handler.ArrangeUsingLastFrame();
     }
 
     public static void MapRefreshColor(BrowserRefreshViewHandler handler, RefreshView refreshView)
@@ -267,18 +265,6 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
         if (VirtualView.Content is IView content)
         {
             content.Arrange(new Rect(0, 0, width, contentHeight));
-            if (_currentContentHandler?.PlatformView is DomElement contentPlatformView)
-            {
-                // Keep refresh content in normal flow. Forcing absolute positioning here
-                // pulls controls like CollectionView out of stack/flex layout flow.
-                contentPlatformView.Style("position", "relative");
-                contentPlatformView.Style("left", null);
-                contentPlatformView.Style("top", null);
-                contentPlatformView.Style("right", null);
-                contentPlatformView.Style("bottom", null);
-                contentPlatformView.Style("width", CssUtil.Px(width));
-                contentPlatformView.Style("height", CssUtil.Px(contentHeight));
-            }
         }
     }
 
@@ -286,7 +272,6 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
     {
         var refreshing = refreshView.IsRefreshing;
         var refreshEnabled = refreshView.IsRefreshEnabled;
-        var triggerVisible = refreshEnabled || refreshing;
         var triggerInteractive = refreshEnabled && !refreshing;
 
         PlatformView.Attr("data-maui-rv-refreshing", refreshing ? "true" : "false");
@@ -295,7 +280,7 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
 
         if (_indicatorHost is not null)
         {
-            _indicatorHost.Style("display", triggerVisible ? "flex" : "none");
+            _indicatorHost.Style("display", "flex");
         }
 
         if (_stateElement is not null)
@@ -335,9 +320,7 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
 
     private static double ResolveIndicatorHeight(IRefreshView refreshView)
     {
-        return refreshView.IsRefreshing || refreshView.IsRefreshEnabled
-            ? IndicatorRowHeight
-            : 0;
+        return IndicatorRowHeight;
     }
 
     private static double ResolveDesiredDimension(double constraint, double contentDimension)

@@ -222,6 +222,26 @@ public sealed partial class BrowserSmokeTests
                 }",
                 selector);
         }
+        async Task AssertRefreshInFlowAsync(string reason)
+        {
+            var metrics = await page.EvaluateAsync<double[]>(
+                @"() => {
+                    const refresh = document.querySelector('[data-automation-id=""parity-refresh-view""]');
+                    const below = document.querySelector('[data-automation-id=""parity-collection-state-summary""]');
+                    if (!refresh || !below) {
+                        return [Number.NaN, Number.NaN];
+                    }
+
+                    const refreshRect = refresh.getBoundingClientRect();
+                    const belowRect = below.getBoundingClientRect();
+                    return [refreshRect.bottom, belowRect.top];
+                }");
+
+            Assert.Equal(2, metrics.Length);
+            Assert.True(
+                !double.IsNaN(metrics[0]) && !double.IsNaN(metrics[1]) && metrics[1] + 1 >= metrics[0],
+                $"RefreshView should remain in normal flow ({reason}). refreshBottom={metrics[0]}, nextTop={metrics[1]}");
+        }
 
         await page.WaitForSelectorAsync(refreshSelector, new PageWaitForSelectorOptions
         {
@@ -232,6 +252,7 @@ public sealed partial class BrowserSmokeTests
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 0");
         Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-refreshing"));
         Assert.Equal("true", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-enabled"));
+        await AssertRefreshInFlowAsync("initial");
 
         await DispatchClickAsync(refreshTriggerSelector);
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 1");
@@ -246,10 +267,12 @@ public sealed partial class BrowserSmokeTests
         await DispatchClickAsync(refreshCompleteButtonSelector);
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 1");
         Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-refreshing"));
+        await AssertRefreshInFlowAsync("after-complete");
 
         await DispatchClickAsync(refreshToggleEnabledButtonSelector);
         await page.WaitForSelectorAsync("text=Refresh enabled: off, refreshing: false, command count: 1");
         Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-enabled"));
+        await AssertRefreshInFlowAsync("after-disable");
 
         await DispatchClickAsync(refreshTriggerSelector);
         var summaryWhileDisabled = (await page.Locator(refreshSummarySelector).TextContentAsync())?.Trim() ?? string.Empty;
@@ -258,6 +281,7 @@ public sealed partial class BrowserSmokeTests
 
         await DispatchClickAsync(refreshToggleEnabledButtonSelector);
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 1");
+        await AssertRefreshInFlowAsync("after-enable");
 
         await DispatchClickAsync(refreshTriggerSelector);
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 2");
