@@ -21,6 +21,7 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
         new PropertyMapper<RefreshView, BrowserRefreshViewHandler>(BrowserViewMapper.CommonViewMapper)
         {
             [nameof(IRefreshView.Content)] = MapContent,
+            [nameof(IView.IsEnabled)] = MapIsEnabled,
             [nameof(IRefreshView.IsRefreshing)] = MapIsRefreshing,
             [nameof(IRefreshView.IsRefreshEnabled)] = MapIsRefreshEnabled,
             [nameof(IRefreshView.RefreshColor)] = MapRefreshColor,
@@ -132,7 +133,7 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
         _triggerClickCallback = OnTriggerClicked;
         _triggerClickSubscriptionId = _triggerButton.On("click", _triggerClickCallback);
 
-        SetContent(VirtualView.Content);
+        SetContent(ResolvePresentedContent(VirtualView));
         ApplyRefreshColor(VirtualView);
         ApplyRefreshState(VirtualView);
 
@@ -163,7 +164,7 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
 
     public override Size GetDesiredSize(double widthConstraint, double heightConstraint)
     {
-        var content = VirtualView.Content;
+        var content = ResolvePresentedContent(VirtualView);
         if (content is null)
         {
             return new Size(
@@ -190,8 +191,14 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
 
     public static void MapContent(BrowserRefreshViewHandler handler, RefreshView refreshView)
     {
-        handler.SetContent(refreshView.Content);
+        handler.SetContent(ResolvePresentedContent(refreshView));
         handler.ArrangeUsingLastFrame();
+    }
+
+    public static void MapIsEnabled(BrowserRefreshViewHandler handler, RefreshView refreshView)
+    {
+        BrowserViewMapper.MapEnabled(refreshView, handler.PlatformView);
+        handler.ApplyRefreshState(refreshView);
     }
 
     public static void MapIsRefreshing(BrowserRefreshViewHandler handler, RefreshView refreshView)
@@ -221,7 +228,7 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
 
     private void OnTriggerClicked()
     {
-        if (!VirtualView.IsRefreshEnabled || VirtualView.IsRefreshing)
+        if (!VirtualView.IsEnabled || !VirtualView.IsRefreshEnabled || VirtualView.IsRefreshing)
         {
             return;
         }
@@ -304,7 +311,7 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
             BrowserViewMapper.ApplyFrame(_contentHost, new Rect(0, indicatorHeight, width, contentHeight));
         }
 
-        if (VirtualView.Content is IView content)
+        if (ResolvePresentedContent(VirtualView) is IView content)
         {
             content.Arrange(new Rect(0, 0, width, contentHeight));
         }
@@ -314,7 +321,7 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
     {
         var refreshing = refreshView.IsRefreshing;
         var refreshEnabled = refreshView.IsRefreshEnabled;
-        var triggerInteractive = refreshEnabled && !refreshing;
+        var triggerInteractive = refreshView.IsEnabled && refreshEnabled && !refreshing;
 
         PlatformView.Attr("data-maui-rv-refreshing", refreshing ? "true" : "false");
         PlatformView.Attr("data-maui-rv-enabled", refreshEnabled ? "true" : "false");
@@ -372,6 +379,11 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
     private static double ResolveIndicatorHeight(IRefreshView refreshView)
     {
         return IndicatorRowHeight;
+    }
+
+    private static IView? ResolvePresentedContent(IRefreshView refreshView)
+    {
+        return refreshView is IContentView contentView ? contentView.PresentedContent : refreshView.Content;
     }
 
     private static double ResolveDesiredDimension(double constraint, double contentDimension)
