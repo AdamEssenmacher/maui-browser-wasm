@@ -224,7 +224,7 @@ public sealed partial class BrowserSmokeTests
                 }",
                 selector);
         }
-        async Task PullDownRefreshAsync(double distance, bool resetScrollTop = true)
+        async Task<(float EndX, float EndY)> PullDownRefreshAsync(double distance, bool resetScrollTop = true)
         {
             var bounds = await page.EvaluateAsync<double[]>(
                 @"(args) => {
@@ -266,12 +266,14 @@ public sealed partial class BrowserSmokeTests
 
             var startX = (float)(bounds[0] + (bounds[2] / 2));
             var startY = (float)(bounds[1] + Math.Min(36, Math.Max(18, bounds[3] * 0.2)));
+            var endY = (float)(startY + Math.Max(20, distance));
             await page.Mouse.MoveAsync(startX, startY);
             await page.Mouse.DownAsync();
             await page.Mouse.MoveAsync(
                 startX,
-                (float)(startY + Math.Max(20, distance)),
+                endY,
                 new MouseMoveOptions { Steps = 14 });
+            return (startX, endY);
         }
         async Task AssertRefreshInFlowAsync(string reason)
         {
@@ -384,7 +386,7 @@ public sealed partial class BrowserSmokeTests
             refreshScrollHostSelector);
         Assert.True(midScrollTop > 0.5, "Expected scroll host to be offset before same-gesture pull-to-top refresh.");
 
-        await PullDownRefreshAsync(196, resetScrollTop: false);
+        var sameGesturePullEnd = await PullDownRefreshAsync(196, resetScrollTop: false);
         await page.EvaluateAsync(
             @"(selector) => {
                 const host = document.querySelector(selector);
@@ -392,10 +394,14 @@ public sealed partial class BrowserSmokeTests
                     return;
                 }
 
-                host.scrollTop = Math.max(0, host.scrollTop - 20);
+                host.scrollTop = 0;
                 host.dispatchEvent(new Event('scroll'));
             }",
             refreshScrollHostSelector);
+        await page.Mouse.MoveAsync(
+            sameGesturePullEnd.EndX,
+            sameGesturePullEnd.EndY + 28,
+            new MouseMoveOptions { Steps = 8 });
         await page.Mouse.UpAsync();
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 3");
         await DispatchClickAsync(refreshCompleteButtonSelector);

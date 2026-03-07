@@ -363,8 +363,7 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
 
     const rawDeltaY = event.clientY - state.startY;
     const reachedTopByScroll = state.scroller.scrollTop <= 0.5;
-    const reachedTopByDrag = state.initialScrollTop > 0 && rawDeltaY >= state.initialScrollTop;
-    if (!reachedTopByScroll && !reachedTopByDrag) {
+    if (!reachedTopByScroll) {
       // Keep tracking the same gesture so downward drag can arm once
       // the scroller reaches top without requiring a new pointerdown.
       state.armed = false;
@@ -426,7 +425,7 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
   };
 
   root.addEventListener("pointerdown", pointerDownListener, { passive: true });
-  root.addEventListener("pointermove", pointerMoveListener, { passive: false });
+  window.addEventListener("pointermove", pointerMoveListener, { passive: false, capture: true });
   root.addEventListener("scroll", scrollListener, true);
   window.addEventListener("pointerup", pointerUpListener, true);
   window.addEventListener("pointercancel", pointerCancelListener, true);
@@ -436,7 +435,7 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
     element: root,
     dispose: () => {
       root.removeEventListener("pointerdown", pointerDownListener, { passive: true });
-      root.removeEventListener("pointermove", pointerMoveListener, { passive: false });
+      window.removeEventListener("pointermove", pointerMoveListener, true);
       root.removeEventListener("scroll", scrollListener, true);
       window.removeEventListener("pointerup", pointerUpListener, true);
       window.removeEventListener("pointercancel", pointerCancelListener, true);
