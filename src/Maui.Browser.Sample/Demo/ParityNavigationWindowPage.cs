@@ -5,7 +5,7 @@ internal sealed class ParityNavigationWindowPage : ParityFamilyPage
     public ParityNavigationWindowPage()
         : base(
             "Navigation/Window Parity",
-            "parity-page-navigation-window",
+            "showcase-page-navigation-window-depth",
             "Application -> Window bootstrap",
             "NavigationPage push/pop + title/back UI parity",
             "ScrollView behavior in navigation detail page")

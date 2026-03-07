@@ -5,13 +5,43 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:DataType="demo:ParityPickersDateTimeState"
     xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
-    AutomationId="parity-page-pickers-datetime"
+    AutomationId="showcase-page-pickers-datetime-depth"
     Title="Pickers/Date-Time Parity">
+
+    <ContentPage.Background>
+        <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientStart}" Offset="0" />
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientEnd}" Offset="1" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <demo:ShowcaseStyles />
+                <demo:ParityLabStyles />
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="Button" BasedOn="{StaticResource ShowcaseSecondaryButtonStyle}" />
+            <Style TargetType="DatePicker">
+                <Setter Property="BackgroundColor" Value="{DynamicResource ShowcaseColorInput}" />
+                <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorTextPrimary}" />
+                <Setter Property="FontFamily" Value="{DynamicResource ShowcaseFontBody}" />
+                <Setter Property="Margin" Value="0,6,0,8" />
+            </Style>
+            <Style TargetType="TimePicker">
+                <Setter Property="BackgroundColor" Value="{DynamicResource ShowcaseColorInput}" />
+                <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorTextPrimary}" />
+                <Setter Property="FontFamily" Value="{DynamicResource ShowcaseFontBody}" />
+                <Setter Property="Margin" Value="0,6,0,8" />
+            </Style>
+            <Style TargetType="Label" BasedOn="{StaticResource ShowcaseBaseLabelStyle}" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
 
     <ScrollView>
         <VerticalStackLayout
-            Padding="16"
-            Spacing="10">
+            Padding="24,20,24,28"
+            Spacing="14">
             <Label
                 AutomationId="parity-datetime-heading"
                 FontSize="20"
@@ -113,7 +143,7 @@
                 TextColor="Black" />
 
             <Button
-                AutomationId="parity-page-pickers-datetime-open-consolidated"
+                AutomationId="showcase-page-pickers-datetime-depth-open-control-lab"
                 Clicked="OnOpenConsolidatedClicked"
                 Padding="12,8"
                 Text="Open consolidated demo probes"

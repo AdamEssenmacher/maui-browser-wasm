@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Maui.Browser.Sample.Demo.ShowcaseHomePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:DataType="demo:ShowcaseHomeState"
+    xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
+    AutomationId="showcase-page-home"
+    Title="Showcase">
+
+    <ContentPage.Background>
+        <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientStart}" Offset="0" />
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientEnd}" Offset="1" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <demo:ShowcaseStyles />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="30,26,30,36" Spacing="20">
+            <Border
+                AutomationId="showcase-hero-card"
+                Style="{StaticResource ShowcaseHeroCardStyle}">
+                <VerticalStackLayout Spacing="12">
+                    <HorizontalStackLayout Spacing="14">
+                        <Image
+                            HeightRequest="64"
+                            Source="assets/showcase/hero-orbit.svg"
+                            WidthRequest="64" />
+                        <VerticalStackLayout Spacing="4">
+                            <Label
+                                Style="{StaticResource ShowcaseDisplayLabelStyle}"
+                                Text="Maui Browser" />
+                            <Label
+                                FontSize="18"
+                                Style="{StaticResource ShowcaseBaseLabelStyle}"
+                                Text="DOM-native MAUI UI" />
+                        </VerticalStackLayout>
+                    </HorizontalStackLayout>
+
+                    <Label
+                        Style="{StaticResource ShowcaseBaseLabelStyle}"
+                        Text="A polished product demo track proving MAUI style-system behavior on real browser handlers." />
+
+                    <HorizontalStackLayout Spacing="12">
+                        <Button
+                            AutomationId="showcase-theme-toggle-button"
+                            Clicked="OnToggleThemeClicked"
+                            Style="{StaticResource ShowcasePrimaryButtonStyle}"
+                            Text="Toggle theme" />
+                        <Button
+                            AutomationId="showcase-open-catalog-button"
+                            Clicked="OnOpenCatalogClicked"
+                            Style="{StaticResource ShowcaseGhostButtonStyle}"
+                            Text="Open showcase catalog" />
+                    </HorizontalStackLayout>
+
+                    <Label
+                        AutomationId="showcase-theme-summary"
+                        Style="{StaticResource ShowcaseMutedLabelStyle}"
+                        Text="{Binding ThemeSummary}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                <Border Grid.Column="0" Style="{StaticResource ShowcaseCardStyle}">
+                    <VerticalStackLayout Spacing="6">
+                        <Image
+                            HeightRequest="46"
+                            Source="assets/showcase/hero-grid.svg"
+                            WidthRequest="46" />
+                        <Label StyleClass="showcase-metric" Text="32" />
+                        <Label Style="{StaticResource ShowcaseMutedLabelStyle}" Text="handler maps" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource ShowcaseCardStyle}">
+                    <VerticalStackLayout Spacing="6">
+                        <Image
+                            HeightRequest="46"
+                            Source="assets/showcase/hero-pulse.svg"
+                            WidthRequest="46" />
+                        <Label StyleClass="showcase-metric" Text="14" />
+                        <Label Style="{StaticResource ShowcaseMutedLabelStyle}" Text="E2E suites" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource ShowcaseCardStyle}">
+                    <VerticalStackLayout Spacing="6">
+                        <Label StyleClass="showcase-metric" Text="DOM" />
+                        <Label Style="{StaticResource ShowcaseMutedLabelStyle}" Text="platform UI" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <Border Style="{StaticResource ShowcaseCardStyle}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Style="{StaticResource ShowcaseSectionHeadingStyle}" Text="Style lab" />
+                    <Label
+                        AutomationId="showcase-style-implicit-label"
+                        Text="Implicit style: no explicit style set on this label." />
+
+                    <Label
+                        AutomationId="showcase-style-explicit-label"
+                        Style="{StaticResource ShowcaseCalloutLabelStyle}"
+                        Text="Explicit style: card callout." />
+
+                    <Label
+                        AutomationId="showcase-style-class-label"
+                        StyleClass="showcase-badge"
+                        Text="StyleClass sample" />
+
+                    <HorizontalStackLayout Spacing="12">
+                        <Button
+                            AutomationId="showcase-style-state-button"
+                            Clicked="OnPrimaryActionClicked"
+                            IsEnabled="{Binding PrimaryActionEnabled}"
+                            Style="{StaticResource ShowcasePrimaryButtonStyle}"
+                            Text="Primary action" />
+                        <Button
+                            AutomationId="showcase-style-disabled-button"
+                            IsEnabled="False"
+                            Style="{StaticResource ShowcaseSecondaryButtonStyle}"
+                            Text="Disabled sample" />
+                        <Button
+                            AutomationId="showcase-style-toggle-enabled-button"
+                            Clicked="OnTogglePrimaryEnabledClicked"
+                            Style="{StaticResource ShowcaseGhostButtonStyle}"
+                            Text="Toggle enabled" />
+                    </HorizontalStackLayout>
+
+                    <Entry
+                        AutomationId="showcase-style-focus-entry"
+                        Placeholder="Focus style probe"
+                        Style="{StaticResource ShowcaseEntryStyle}"
+                        Text="{Binding FocusProbeText}" />
+
+                    <Label
+                        AutomationId="showcase-style-state-summary"
+                        Style="{StaticResource ShowcaseMutedLabelStyle}"
+                        Text="{Binding PrimaryActionSummary}" />
+
+                    <Border
+                        AutomationId="showcase-style-dynamic-block"
+                        HeightRequest="14"
+                        BackgroundColor="{DynamicResource ShowcaseColorAccent}"
+                        StrokeThickness="0" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource ShowcaseCardStyle}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Style="{StaticResource ShowcaseSectionHeadingStyle}" Text="Open showcase pages" />
+                    <HorizontalStackLayout Spacing="12">
+                        <Button
+                            AutomationId="showcase-home-open-text-input"
+                            Clicked="OnOpenTextInputClicked"
+                            Style="{StaticResource ShowcaseSecondaryButtonStyle}"
+                            Text="Text/Input" />
+                        <Button
+                            AutomationId="showcase-home-open-form-media"
+                            Clicked="OnOpenFormMediaClicked"
+                            Style="{StaticResource ShowcaseSecondaryButtonStyle}"
+                            Text="Form/Media" />
+                        <Button
+                            AutomationId="showcase-home-open-layout-collection"
+                            Clicked="OnOpenLayoutCollectionClicked"
+                            Style="{StaticResource ShowcaseSecondaryButtonStyle}"
+                            Text="Layout/Collection" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border
+                AutomationId="showcase-control-list-section"
+                Style="{StaticResource ShowcaseCardStyle}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Style="{StaticResource ShowcaseSectionHeadingStyle}" Text="MAUI control catalog" />
+                    <Label
+                        AutomationId="showcase-control-list-summary"
+                        Style="{StaticResource ShowcaseMutedLabelStyle}"
+                        Text="Every MAUI control/layout type in scope is listed below. Missing handlers are marked not implemented yet." />
+                    <VerticalStackLayout
+                        x:Name="ControlCatalogRowsHost"
+                        AutomationId="showcase-control-list"
+                        Spacing="6" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

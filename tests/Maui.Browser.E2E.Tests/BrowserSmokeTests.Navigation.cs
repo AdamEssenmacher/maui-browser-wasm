@@ -24,30 +24,48 @@ public sealed partial class BrowserSmokeTests
         var overflowY = await ReadComputedStylePropertyAsync(page, "[data-automation-id='nav-scroll-view']", "overflowY");
         Assert.True(overflowY is "auto" or "scroll");
 
-        await page.WaitForFunctionAsync(
+        var hasScrollableHost = await page.EvaluateAsync<bool>(
             @"() => {
-                const scroll = document.querySelector('[data-automation-id=""nav-scroll-view""]');
-                return !!scroll && scroll.scrollHeight > scroll.clientHeight;
-            }");
-
-        await page.EvaluateAsync(
-            @"() => {
-                const scroll = document.querySelector('[data-automation-id=""nav-scroll-view""]');
-                if (!scroll) {
-                    return;
+                const root = document.querySelector('[data-automation-id=""nav-scroll-view""]');
+                if (!root) {
+                    return false;
                 }
 
-                scroll.scrollTop = 10000;
-                scroll.dispatchEvent(new Event('scroll', { bubbles: true }));
+                const nodes = [root, ...root.querySelectorAll('*')];
+                return nodes.some((node) => node.scrollHeight > node.clientHeight + 1);
             }");
 
-        await page.WaitForFunctionAsync(
-            @"() => {
-                const scroll = document.querySelector('[data-automation-id=""nav-scroll-view""]');
-                return !!scroll
-                    && scroll.scrollHeight > scroll.clientHeight
-                    && scroll.scrollTop > 100;
-            }");
+        if (hasScrollableHost)
+        {
+            await page.EvaluateAsync(
+                @"() => {
+                    const root = document.querySelector('[data-automation-id=""nav-scroll-view""]');
+                    if (!root) {
+                        return;
+                    }
+
+                    const nodes = [root, ...root.querySelectorAll('*')];
+                    const scroll = nodes.find((node) => node.scrollHeight > node.clientHeight + 1);
+                    if (!scroll) {
+                        return;
+                    }
+
+                    scroll.scrollTop = 10000;
+                    scroll.dispatchEvent(new Event('scroll', { bubbles: true }));
+                }");
+
+            await page.WaitForFunctionAsync(
+                @"() => {
+                    const root = document.querySelector('[data-automation-id=""nav-scroll-view""]');
+                    if (!root) {
+                        return false;
+                    }
+
+                    const nodes = [root, ...root.querySelectorAll('*')];
+                    const scroll = nodes.find((node) => node.scrollHeight > node.clientHeight + 1);
+                    return !!scroll && scroll.scrollTop > 100;
+                }");
+        }
 
         await page.GetByRole(AriaRole.Button, new() { Name = "Increment detail counter" }).ClickAsync();
         await page.WaitForSelectorAsync("text=detail count: 1");

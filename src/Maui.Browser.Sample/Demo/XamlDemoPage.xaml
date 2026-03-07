@@ -4,14 +4,36 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
+    AutomationId="showcase-page-control-lab"
     Title="MAUI Browser DOM XAML Demo">
+
+    <ContentPage.Background>
+        <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientStart}" Offset="0" />
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientEnd}" Offset="1" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <demo:ShowcaseStyles />
+                <demo:ParityLabStyles />
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="Button" BasedOn="{StaticResource ShowcaseSecondaryButtonStyle}" />
+            <Style TargetType="Entry" BasedOn="{StaticResource ShowcaseEntryStyle}" />
+            <Style TargetType="Editor" BasedOn="{StaticResource ShowcaseEditorStyle}" />
+            <Style TargetType="SearchBar" BasedOn="{StaticResource ShowcaseSearchBarStyle}" />
+            <Style TargetType="Label" BasedOn="{StaticResource ShowcaseBaseLabelStyle}" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
 
     <VerticalStackLayout
         AutomationId="root-stack-container"
         x:Name="RootLayout"
         x:DataType="demo:DemoState"
-        Padding="16"
-        Spacing="10">
+        Padding="24,20,24,28"
+        Spacing="14">
 
         <Label
             AutomationId="live-text-label"

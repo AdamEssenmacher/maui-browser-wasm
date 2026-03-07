@@ -1,4 +1,5 @@
 using Maui.Browser.Dom;
+using Maui.Browser.Utils;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
@@ -27,7 +28,7 @@ public sealed class BrowserContentPageHandler : BrowserViewHandler<ContentPage>
 
     protected override void ConnectHandler(DomElement platformView)
     {
-        platformView.Style("overflow", "visible");
+        platformView.Style("boxSizing", "border-box");
         SetContent(VirtualView.Content);
         base.ConnectHandler(platformView);
     }
@@ -54,8 +55,23 @@ public sealed class BrowserContentPageHandler : BrowserViewHandler<ContentPage>
 
         if (VirtualView.Content is IView content)
         {
-            content.Measure(frame.Width, frame.Height);
-            content.Arrange(new Rect(0, 0, frame.Width, frame.Height));
+            if (content is ScrollView)
+            {
+                PlatformView.Style("overflow", "hidden");
+                content.Measure(frame.Width, frame.Height);
+                content.Arrange(new Rect(0, 0, frame.Width, frame.Height));
+                return;
+            }
+
+            PlatformView.Style("overflow", "auto");
+            var desiredSize = content.Measure(frame.Width, double.PositiveInfinity);
+            var arrangedHeight = Math.Max(frame.Height, desiredSize.Height);
+            content.Arrange(new Rect(0, 0, frame.Width, arrangedHeight));
+
+            if (_currentContentHandler?.PlatformView is DomElement contentPlatformView)
+            {
+                NormalizeContentPosition(contentPlatformView, frame.Width, arrangedHeight);
+            }
         }
     }
 
@@ -87,6 +103,7 @@ public sealed class BrowserContentPageHandler : BrowserViewHandler<ContentPage>
         PlatformView.Append(childElement);
         _currentContent = content;
         _currentContentHandler = contentHandler;
+        PlatformView.Style("overflow", content is ScrollView ? "hidden" : "auto");
     }
 
     private void DisconnectCurrentContent()
@@ -100,5 +117,16 @@ public sealed class BrowserContentPageHandler : BrowserViewHandler<ContentPage>
         _currentContentHandler.DisconnectHandler();
         _currentContentHandler = null;
         _currentContent = null;
+    }
+
+    private static void NormalizeContentPosition(DomElement contentPlatformView, double arrangedWidth, double arrangedHeight)
+    {
+        contentPlatformView.Style("position", "relative");
+        contentPlatformView.Style("left", null);
+        contentPlatformView.Style("top", null);
+        contentPlatformView.Style("right", null);
+        contentPlatformView.Style("bottom", null);
+        contentPlatformView.Style("width", CssUtil.Px(Math.Max(0, arrangedWidth)));
+        contentPlatformView.Style("height", CssUtil.Px(Math.Max(0, arrangedHeight)));
     }
 }

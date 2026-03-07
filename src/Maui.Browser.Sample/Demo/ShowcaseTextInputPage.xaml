@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Maui.Browser.Sample.Demo.ShowcaseTextInputPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:DataType="demo:ShowcaseTextInputState"
+    xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
+    AutomationId="showcase-page-text-input"
+    Title="Showcase Text/Input">
+
+    <ContentPage.Background>
+        <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientStart}" Offset="0" />
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientEnd}" Offset="1" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <demo:ShowcaseStyles />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="30,26,30,36" Spacing="18">
+            <HorizontalStackLayout Spacing="12">
+                <Button
+                    AutomationId="showcase-text-back-home"
+                    Clicked="OnBackClicked"
+                    Style="{StaticResource ShowcaseGhostButtonStyle}"
+                    Text="Back" />
+                <Button
+                    AutomationId="showcase-text-toggle-theme"
+                    Clicked="OnToggleThemeClicked"
+                    Style="{StaticResource ShowcaseSecondaryButtonStyle}"
+                    Text="Toggle theme" />
+            </HorizontalStackLayout>
+
+            <Label
+                AutomationId="showcase-text-heading"
+                Style="{StaticResource ShowcasePageHeadingStyle}"
+                Text="Text and input showcase" />
+
+            <Border Style="{StaticResource ShowcaseCardStyle}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Text="Styled headline" Style="{StaticResource ShowcaseSectionHeadingStyle}" />
+                    <Label
+                        AutomationId="showcase-text-live-headline"
+                        Style="{StaticResource ShowcaseCalloutLabelStyle}"
+                        Text="{Binding LiveHeadline}" />
+                    <Label
+                        AutomationId="showcase-text-headline-summary"
+                        Style="{StaticResource ShowcaseMutedLabelStyle}"
+                        Text="{Binding HeadlineSummary}" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource ShowcaseCardStyle}">
+                <VerticalStackLayout Spacing="12">
+                    <Entry
+                        AutomationId="showcase-text-entry"
+                        Completed="OnEntryCompleted"
+                        Placeholder="Write launch copy"
+                        Style="{StaticResource ShowcaseEntryStyle}"
+                        Text="{Binding EntryText}" />
+                    <Label
+                        AutomationId="showcase-text-entry-summary"
+                        Style="{StaticResource ShowcaseMutedLabelStyle}"
+                        Text="{Binding EntrySummary}" />
+
+                    <Editor
+                        AutomationId="showcase-text-editor"
+                        Style="{StaticResource ShowcaseEditorStyle}"
+                        Text="{Binding EditorText}" />
+                    <Label
+                        AutomationId="showcase-text-editor-summary"
+                        Style="{StaticResource ShowcaseMutedLabelStyle}"
+                        Text="{Binding EditorSummary}" />
+
+                    <SearchBar
+                        x:Name="SearchProbe"
+                        AutomationId="showcase-text-searchbar"
+                        Placeholder="Search component details"
+                        SearchButtonPressed="OnSearchPressed"
+                        Style="{StaticResource ShowcaseSearchBarStyle}"
+                        Text="{Binding SearchText}" />
+                    <Label
+                        AutomationId="showcase-text-search-summary"
+                        Style="{StaticResource ShowcaseMutedLabelStyle}"
+                        Text="{Binding SearchSummary}" />
+
+                    <Button
+                        AutomationId="showcase-text-programmatic-update"
+                        Clicked="OnApplyProgrammaticClicked"
+                        Style="{StaticResource ShowcasePrimaryButtonStyle}"
+                        Text="Apply programmatic update" />
+                </VerticalStackLayout>
+            </Border>
+
+            <HorizontalStackLayout Spacing="12">
+                <Button
+                    AutomationId="showcase-text-open-form-media"
+                    Clicked="OnOpenFormMediaClicked"
+                    Style="{StaticResource ShowcaseSecondaryButtonStyle}"
+                    Text="Open form/media" />
+                <Button
+                    AutomationId="showcase-text-open-layout-collection"
+                    Clicked="OnOpenLayoutCollectionClicked"
+                    Style="{StaticResource ShowcaseSecondaryButtonStyle}"
+                    Text="Open layout/collection" />
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -69,6 +69,10 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Current behavior: out of scope by decision.
 - Deferred: no Shell implementation planned in this parity program.
 
+17. MAUI style-system parity depth
+- Current behavior: showcase track proves implicit/explicit styles, `BasedOn`, `StyleClass`, runtime `DynamicResource` theme switching, and common control state styling (`Pressed`/`Disabled`/`Focused`) across mapped browser handlers.
+- Deferred: advanced trigger precedence edge cases, full VisualState parity across all control families, and complex style/resource merge-order compatibility are still partial.
+
 ## Gap lifecycle policy
 
 1. Any new gap requires:

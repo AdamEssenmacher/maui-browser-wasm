@@ -28,8 +28,13 @@ public static class Program
 
 internal sealed class SampleApp : Microsoft.Maui.Controls.Application
 {
+    public SampleApp()
+    {
+        ShowcaseThemeManager.Initialize(this);
+    }
+
     protected override Microsoft.Maui.Controls.Window CreateWindow(Microsoft.Maui.IActivationState? activationState)
     {
-        return new Microsoft.Maui.Controls.Window(new Microsoft.Maui.Controls.NavigationPage(new ParityCatalogPage()));
+        return new Microsoft.Maui.Controls.Window(new Microsoft.Maui.Controls.NavigationPage(new ShowcaseHomePage()));
     }
 }

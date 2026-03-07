@@ -114,3 +114,15 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Pull detection is centralized in `DomApi` and cleaned up through existing event-subscription lifecycle, keeping JS entrypoints single-surface while avoiding handler-side direct JS calls.
 - `BrowserRefreshViewHandler` now keeps explicit pull state attributes (`data-maui-rv-pull-active`, `data-maui-rv-pull-armed`, `data-maui-rv-pull-distance`) for deterministic diagnostics/E2E assertions and maps pull triggers through the same `IsEnabled`/`IsRefreshEnabled`/`IsRefreshing` gate as button-triggered refresh.
 - Native overscroll elasticity physics and platform-specific pull affordance visuals remain deferred; this slice targets behavior parity first.
+
+## 2026-03-07 (Vertical Slice 15: Styling + Presentation Showcase)
+- Added a dedicated showcase track alongside parity lab pages so polished product presentation and parity-regression proof can evolve independently.
+- Themeing uses MAUI `DynamicResource` tokens updated in `Application.Resources`, enabling live theme swaps without full reload while preserving page state.
+- Shared showcase styles explicitly prove MAUI style-system behavior (`implicit`, `explicit`, `BasedOn`, `StyleClass`, and control state styles) on top of existing browser handlers.
+- `BrowserButtonHandler` now maps button border/corner styling and pointer press/release state transitions so style-state behavior is deterministic for both parity pages and showcase UI.
+
+## 2026-03-07 (Showcase Catalog Reorganization)
+- Startup now lands on `ShowcaseHomePage`, and showcase catalog navigation is treated as the canonical entry path for E2E (`showcase-page-home` -> `showcase-page-catalog`).
+- Added a 1:1 control-type catalog (`ShowcaseControlCatalog`) rendered directly on `ShowcaseHomePage`, so every MAUI control/layout type is visible on the top-level showcase entry point.
+- Missing handlers (`GraphicsView`, `CarouselView`, `IndicatorView`, `SwipeView`, `WebView`) are explicitly listed as “not implemented yet” instead of being omitted from the showcase.
+- Existing deep-dive scenario pages are retained as supplemental flows, but all are now showcase-styled and accessible from the same showcase catalog.

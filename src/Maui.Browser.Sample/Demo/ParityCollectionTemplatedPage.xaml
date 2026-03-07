@@ -5,39 +5,55 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:DataType="demo:ParityCollectionTemplatedState"
     xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
-    AutomationId="parity-page-collection-templated"
+    AutomationId="showcase-page-collection-templated-depth"
     Title="Collection/Templated Parity">
 
-    <ContentPage.Resources>
-        <DataTemplate
-            x:Key="CollectionHeaderTemplate"
-            x:DataType="demo:ParityCollectionHeaderData">
-            <Label
-                AutomationId="parity-collection-header-template-label"
-                BackgroundColor="#DBEAFE"
-                FontSize="12"
-                Padding="8,6"
-                Text="{Binding Text}"
-                TextColor="#1E3A8A" />
-        </DataTemplate>
+    <ContentPage.Background>
+        <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientStart}" Offset="0" />
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientEnd}" Offset="1" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
 
-        <DataTemplate
-            x:Key="CollectionFooterTemplate"
-            x:DataType="demo:ParityCollectionFooterData">
-            <Label
-                AutomationId="parity-collection-footer-template-label"
-                BackgroundColor="#DCFCE7"
-                FontSize="12"
-                Padding="8,6"
-                Text="{Binding Text}"
-                TextColor="#14532D" />
-        </DataTemplate>
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <demo:ShowcaseStyles />
+                <demo:ParityLabStyles />
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="Button" BasedOn="{StaticResource ShowcaseSecondaryButtonStyle}" />
+            <Style TargetType="Label" BasedOn="{StaticResource ShowcaseBaseLabelStyle}" />
+
+            <DataTemplate
+                x:Key="CollectionHeaderTemplate"
+                x:DataType="demo:ParityCollectionHeaderData">
+                <Label
+                    AutomationId="parity-collection-header-template-label"
+                    BackgroundColor="#DBEAFE"
+                    FontSize="12"
+                    Padding="8,6"
+                    Text="{Binding Text}"
+                    TextColor="#1E3A8A" />
+            </DataTemplate>
+
+            <DataTemplate
+                x:Key="CollectionFooterTemplate"
+                x:DataType="demo:ParityCollectionFooterData">
+                <Label
+                    AutomationId="parity-collection-footer-template-label"
+                    BackgroundColor="#DCFCE7"
+                    FontSize="12"
+                    Padding="8,6"
+                    Text="{Binding Text}"
+                    TextColor="#14532D" />
+            </DataTemplate>
+        </ResourceDictionary>
     </ContentPage.Resources>
 
     <ScrollView>
         <VerticalStackLayout
-            Padding="16"
-            Spacing="10">
+            Padding="24,20,24,28"
+            Spacing="14">
             <Label
                 AutomationId="parity-collection-heading"
                 FontSize="20"
@@ -241,7 +257,7 @@
             </HorizontalStackLayout>
 
             <Button
-                AutomationId="parity-page-collection-templated-open-consolidated"
+                AutomationId="showcase-page-collection-templated-depth-open-control-lab"
                 Clicked="OnOpenConsolidatedClicked"
                 Padding="12,8"
                 Text="Open consolidated demo probes"

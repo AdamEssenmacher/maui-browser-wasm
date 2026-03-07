@@ -5,13 +5,34 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:DataType="demo:ParityTextInputState"
     xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
-    AutomationId="parity-page-text-input"
+    AutomationId="showcase-page-text-input-depth"
     Title="Text/Input Parity">
+
+    <ContentPage.Background>
+        <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientStart}" Offset="0" />
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientEnd}" Offset="1" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <demo:ShowcaseStyles />
+                <demo:ParityLabStyles />
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="Button" BasedOn="{StaticResource ShowcaseSecondaryButtonStyle}" />
+            <Style TargetType="Entry" BasedOn="{StaticResource ShowcaseEntryStyle}" />
+            <Style TargetType="Editor" BasedOn="{StaticResource ShowcaseEditorStyle}" />
+            <Style TargetType="SearchBar" BasedOn="{StaticResource ShowcaseSearchBarStyle}" />
+            <Style TargetType="Label" BasedOn="{StaticResource ShowcaseBaseLabelStyle}" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
 
     <ScrollView>
         <VerticalStackLayout
-            Padding="16"
-            Spacing="10">
+            Padding="24,20,24,28"
+            Spacing="14">
             <Label
                 AutomationId="parity-text-heading"
                 FontSize="20"
@@ -124,7 +145,7 @@
                 TextColor="Black" />
 
             <Button
-                AutomationId="parity-page-text-input-open-consolidated"
+                AutomationId="showcase-page-text-input-depth-open-control-lab"
                 Clicked="OnOpenConsolidatedClicked"
                 Padding="12,8"
                 Text="Open consolidated demo probes"

@@ -12,7 +12,10 @@ Current state:
 - Shared `IView`/`ITransform` mapping core is applied across handlers: automation id, flow direction, basic semantics (ARIA), interaction state (`IsEnabled` + `InputTransparent`), background (solid), z-index, focus/unfocus, and transform composition.
 - Core view substrate now includes: `Clip` (`RectangleGeometry` + `RoundRectangleGeometry`), `Shadow` (solid paint), and `Background` linear-gradient projection.
 - Sample app demonstrates a real `.xaml` `ContentPage` (with code-behind) and covers binding, input, click, resize, visibility, opacity, form-input breadth, IView core/transform behavior, navigation push/pop, scroll behavior, and stress cleanup.
-- Sample now starts at a parity catalog page (`parity-page-catalog`) with family links plus a consolidated probe page used by current smoke tests.
+- Sample now starts at the showcase home page (`showcase-page-home`).
+- Showcase catalog (`showcase-page-catalog`) provides deep-dive links for regression/proof pages.
+- Showcase home now includes a 1:1 control-type index (`showcase-control-list-row-*`) listing every MAUI control/layout type in scope; missing handlers are explicitly marked not implemented yet.
+- MAUI styling proof is now demonstrated in the showcase track: implicit/explicit styles, `BasedOn`, `StyleClass`, runtime `DynamicResource` theme updates, and state-specific button/input visuals.
 
 ## Repo layout
 
@@ -88,6 +91,7 @@ Expected pass signals:
 - Navigation/scroll checks pass: root page pushes/pops detail page through `NavigationPage`, title/back controls update, and detail `ScrollView` is scrollable with state retained when returning.
 - Navigation push/pop loop keeps DOM handle/subscription counts near baseline.
 - Stress mutation test keeps DOM handle/subscription counts near baseline.
+- Showcase track checks pass: catalog navigation to all showcase pages, theme toggle updates live styles without full reload, and style-lab probes validate implicit/explicit/class-based styling plus button state styling.
 
 ## Manual runtime checklist
 
@@ -124,7 +128,7 @@ Expected pass signals:
 - Navigation section pushes to detail page and back without reloading the app.
 - Detail page `ScrollView` allows native browser scrolling and returns to root with updated navigation summary state.
 - Running leak stress increments stress run count and remains interactive.
-- Initial app route is the parity catalog; open `Open Consolidated Demo` to reach current full probe page.
+- Initial app route is `Showcase Home`; use `Open showcase catalog` for deep-dive pages, including `Control Lab`.
 
 ## Prototype proof checklist
 
