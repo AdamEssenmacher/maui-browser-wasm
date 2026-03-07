@@ -270,6 +270,12 @@ function resetPullState(root) {
   root.setAttribute("data-maui-rv-pull-distance", "0");
 }
 
+function isPullGestureAllowed(root) {
+  const isRefreshEnabled = root.getAttribute("data-maui-rv-enabled") === "true";
+  const isRefreshing = root.getAttribute("data-maui-rv-refreshing") === "true";
+  return isRefreshEnabled && !isRefreshing;
+}
+
 export function subscribePullToRefresh(elementHandle, threshold, callback) {
   const root = fromHandle(elementHandle);
   const normalizedThreshold = Number.isFinite(threshold) && threshold > 8 ? threshold : 72;
@@ -316,6 +322,10 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
       return;
     }
 
+    if (!isPullGestureAllowed(root)) {
+      return;
+    }
+
     const scroller = findScrollableAncestor(root, event.target);
     if (!scroller || scroller.scrollTop > 0.5) {
       return;
@@ -331,6 +341,11 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
 
   const pointerMoveListener = (event) => {
     if (!state.tracking || !(event instanceof PointerEvent)) {
+      return;
+    }
+
+    if (!isPullGestureAllowed(root)) {
+      completeTracking(false);
       return;
     }
 

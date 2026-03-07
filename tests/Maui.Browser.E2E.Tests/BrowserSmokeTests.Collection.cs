@@ -341,6 +341,9 @@ public sealed partial class BrowserSmokeTests
 
         await DispatchClickAsync(refreshTriggerSelector);
         await PullDownRefreshAsync(132);
+        Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-pull-active"));
+        Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-pull-armed"));
+        Assert.Equal("0", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-pull-distance"));
         await page.Mouse.UpAsync();
         var summaryWhileDisabled = (await page.Locator(refreshSummarySelector).TextContentAsync())?.Trim() ?? string.Empty;
         Assert.Contains("refreshing: false", summaryWhileDisabled);
