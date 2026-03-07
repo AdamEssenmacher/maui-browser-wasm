@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Maui.Browser.Sample.Demo.ParityCollectionTemplatedPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:DataType="demo:ParityCollectionTemplatedState"
+    xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
+    AutomationId="parity-page-collection-templated"
+    Title="Collection/Templated Parity">
+
+    <ContentPage.Resources>
+        <DataTemplate
+            x:Key="CollectionHeaderTemplate"
+            x:DataType="demo:ParityCollectionHeaderData">
+            <Label
+                AutomationId="parity-collection-header-template-label"
+                BackgroundColor="#DBEAFE"
+                FontSize="12"
+                Padding="8,6"
+                Text="{Binding Text}"
+                TextColor="#1E3A8A" />
+        </DataTemplate>
+
+        <DataTemplate
+            x:Key="CollectionFooterTemplate"
+            x:DataType="demo:ParityCollectionFooterData">
+            <Label
+                AutomationId="parity-collection-footer-template-label"
+                BackgroundColor="#DCFCE7"
+                FontSize="12"
+                Padding="8,6"
+                Text="{Binding Text}"
+                TextColor="#14532D" />
+        </DataTemplate>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="16"
+            Spacing="10">
+            <Label
+                AutomationId="parity-collection-heading"
+                FontSize="20"
+                Text="Collection/Templated parity"
+                TextColor="Black" />
+
+            <Label
+                AutomationId="parity-collection-summary-text"
+                FontSize="12"
+                Text="Selection + Move/Replace + Header/Footer + ScrollTo, non-virtualized realization."
+                TextColor="DarkSlateGray" />
+
+            <CollectionView
+                x:Name="CollectionProbe"
+                AutomationId="parity-collection-view"
+                EmptyView="{Binding EmptyTemplateData}"
+                HeightRequest="280"
+                ItemsSource="{Binding CollectionItems}"
+                SelectedItem="{Binding SelectedItem}"
+                SelectedItems="{Binding SelectedItems}"
+                SelectionMode="{Binding CollectionSelectionMode}">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout ItemSpacing="4" Orientation="Vertical" />
+                </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="demo:ParityCollectionItem">
+                        <Grid
+                            AutomationId="parity-collection-item-row"
+                            BackgroundColor="#E2E8F0"
+                            ColumnDefinitions="Auto,*"
+                            ColumnSpacing="8"
+                            Padding="8,6">
+                            <Label
+                                AutomationId="parity-collection-item-id"
+                                FontSize="12"
+                                Text="{Binding IdText}"
+                                TextColor="DarkSlateGray" />
+                            <Label
+                                Grid.Column="1"
+                                AutomationId="parity-collection-item-title"
+                                FontSize="13"
+                                Text="{Binding Title}"
+                                TextColor="Black" />
+                        </Grid>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyViewTemplate>
+                    <DataTemplate x:DataType="demo:ParityCollectionEmptyData">
+                        <Label
+                            AutomationId="parity-collection-empty-view"
+                            FontSize="12"
+                            Padding="8,6"
+                            Text="{Binding Text}"
+                            TextColor="DarkSlateGray" />
+                    </DataTemplate>
+                </CollectionView.EmptyViewTemplate>
+            </CollectionView>
+
+            <Label
+                AutomationId="parity-collection-state-summary"
+                FontSize="12"
+                Text="{Binding CollectionSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Label
+                AutomationId="parity-collection-selection-summary"
+                FontSize="12"
+                Text="{Binding SelectionSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Label
+                AutomationId="parity-collection-header-footer-summary"
+                FontSize="12"
+                Text="{Binding HeaderFooterSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Label
+                AutomationId="parity-collection-scroll-summary"
+                FontSize="12"
+                Text="{Binding ScrollSummary}"
+                TextColor="DarkSlateGray" />
+
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    AutomationId="parity-collection-toggle-selection-mode-button"
+                    Clicked="OnToggleSelectionModeClicked"
+                    Padding="10,6"
+                    Text="Toggle selection mode"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-collection-apply-programmatic-selection-button"
+                    Clicked="OnApplyProgrammaticSelectionClicked"
+                    Padding="10,6"
+                    Text="Apply programmatic selection"
+                    TextColor="Black" />
+            </HorizontalStackLayout>
+
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    AutomationId="parity-collection-add-button"
+                    Clicked="OnAddItemClicked"
+                    Padding="10,6"
+                    Text="Add"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-collection-remove-button"
+                    Clicked="OnRemoveItemClicked"
+                    Padding="10,6"
+                    Text="Remove"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-collection-move-button"
+                    Clicked="OnMoveItemClicked"
+                    Padding="10,6"
+                    Text="Move"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-collection-replace-button"
+                    Clicked="OnReplaceItemClicked"
+                    Padding="10,6"
+                    Text="Replace"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-collection-clear-button"
+                    Clicked="OnClearItemsClicked"
+                    Padding="10,6"
+                    Text="Clear"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-collection-reset-button"
+                    Clicked="OnResetItemsClicked"
+                    Padding="10,6"
+                    Text="Reset"
+                    TextColor="Black" />
+            </HorizontalStackLayout>
+
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    AutomationId="parity-collection-toggle-header-footer-mode-button"
+                    Clicked="OnToggleHeaderFooterModeClicked"
+                    Padding="10,6"
+                    Text="Toggle header/footer mode"
+                    TextColor="Black" />
+            </HorizontalStackLayout>
+
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    AutomationId="parity-collection-scroll-start-button"
+                    Clicked="OnScrollToStartClicked"
+                    Padding="10,6"
+                    Text="Scroll start"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-collection-scroll-center-button"
+                    Clicked="OnScrollToCenterClicked"
+                    Padding="10,6"
+                    Text="Scroll center"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-collection-scroll-end-button"
+                    Clicked="OnScrollToEndClicked"
+                    Padding="10,6"
+                    Text="Scroll end"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-collection-scroll-visible-button"
+                    Clicked="OnScrollToMakeVisibleClicked"
+                    Padding="10,6"
+                    Text="Scroll visible"
+                    TextColor="Black" />
+            </HorizontalStackLayout>
+
+            <Button
+                AutomationId="parity-page-collection-templated-open-consolidated"
+                Clicked="OnOpenConsolidatedClicked"
+                Padding="12,8"
+                Text="Open consolidated demo probes"
+                TextColor="Black" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

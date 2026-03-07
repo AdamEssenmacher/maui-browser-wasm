@@ -253,6 +253,20 @@ public sealed partial class BrowserSmokeTests : IClassFixture<BrowserHostFixture
             selector);
     }
 
+    private static async Task<double> ReadElementScrollTopAsync(IPage page, string selector)
+    {
+        return await page.EvaluateAsync<double>(
+            @"(selector) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return Number.NaN;
+                }
+
+                return Number.isFinite(element.scrollTop) ? element.scrollTop : Number.NaN;
+            }",
+            selector);
+    }
+
     private static async Task<int> ReadElementCountAsync(IPage page, string selector)
     {
         return await page.EvaluateAsync<int>(

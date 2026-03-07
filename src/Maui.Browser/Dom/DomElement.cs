@@ -46,6 +46,9 @@ public sealed class DomElement
         return (values.Length > 0 ? values[0] : 0, values.Length > 1 ? values[1] : 0);
     }
 
+    public double ScrollChildIntoView(DomElement child, int scrollToPosition) =>
+        DomApi.ScrollChildIntoView(Handle, child.Handle, scrollToPosition);
+
     public bool Focus() => DomApi.FocusElement(Handle);
 
     public void Blur() => DomApi.BlurElement(Handle);
