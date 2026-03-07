@@ -41,6 +41,7 @@ public static class MauiBrowserHostingExtensions
             handlers.AddHandler(typeof(ContentView), typeof(BrowserContentViewHandler));
             handlers.AddHandler(typeof(VerticalStackLayout), typeof(BrowserLayoutHandler));
             handlers.AddHandler(typeof(HorizontalStackLayout), typeof(BrowserLayoutHandler));
+            handlers.AddHandler(typeof(FlexLayout), typeof(BrowserLayoutHandler));
             handlers.AddHandler(typeof(Grid), typeof(BrowserLayoutHandler));
             handlers.AddHandler(typeof(AbsoluteLayout), typeof(BrowserLayoutHandler));
         });

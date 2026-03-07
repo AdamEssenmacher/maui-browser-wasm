@@ -91,3 +91,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Image source policy for this slice is explicit and deterministic: `UriImageSource`, `FileImageSource`, and `FontImageSource` are supported; unsupported source types (such as stream-based sources) map to fallback state + diagnostics without throwing.
 - `ImageButton` uses a semantic `<button>` host with an `<img>` child so image-source/aspect mapping can be shared with `Image` while preserving click/pressed/released event parity.
 - `Border` maps single-child hosting, solid stroke thickness/color, round-rectangle/rectangle shape radius, and dashed best-effort style; non-solid stroke paints and unsupported stroke shapes are deferred as documented gaps.
+
+## 2026-03-07 (Vertical Slice 12)
+- Added semantic `FlexLayout` projection to `BrowserLayoutHandler` as a dedicated mode, while preserving existing stack/grid semantics and absolute fallback behavior for unresolved metadata.
+- Flex container mappings now project `Direction`, `Wrap`, `JustifyContent`, `AlignItems`, and `AlignContent`; item mappings project attached `Order`, `Grow`, `Shrink`, `Basis`, and `AlignSelf`.
+- For MAUI 10, `FlexBasis` in this environment exposes `Auto` + absolute `Length`; percentage basis semantics are deferred and explicitly tracked as a parity gap.
+- Containers/Layout family page now includes a real flex probe surface with deterministic toggle actions and Playwright assertions for container styles, item style projection, ordering geometry, and mutation stability.

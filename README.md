@@ -83,6 +83,7 @@ Expected pass signals:
 - Grid semantic projection checks pass (`Grid` computes to `display:grid` with expected track, gap, and placement styles).
 - IView core checks pass: automation ids, flow direction, semantics ARIA updates, focus/unfocus, input transparency policy, transform and background updates.
 - Containers/Layout family page verifies core substrate clip/shadow/linear-gradient style projection and unsupported fallback behavior.
+- Containers/Layout family page verifies FlexLayout semantic projection (`display:flex` + direction/wrap/justify/align + item attached style mappings).
 - Navigation/scroll checks pass: root page pushes/pops detail page through `NavigationPage`, title/back controls update, and detail `ScrollView` is scrollable with state retained when returning.
 - Navigation push/pop loop keeps DOM handle/subscription counts near baseline.
 - Stress mutation test keeps DOM handle/subscription counts near baseline.
@@ -108,6 +109,7 @@ Expected pass signals:
 - Transform/background/semantics actions update the probe style and ARIA attributes.
 - In Containers/Layout family page, clip mode buttons toggle `clip-path` (rectangle/round-rectangle) and unsupported geometry fallback.
 - In Containers/Layout family page, shadow mode buttons toggle `box-shadow` (solid/unsupported fallback) and background mode toggles solid/linear/unsupported radial fallback.
+- In Containers/Layout family page, flex toggles update direction/wrap/justify/align modes and item preset maps order/grow/shrink/basis/align-self styles.
 - In Text/Input family page, entry/editor/search probes update summaries and programmatic state changes reflect back into controls.
 - In Pickers/Date-Time family page, date/time and stepper/progress/activity probes update summaries and reflect programmatic updates.
 - In Media/Visual family page, image source cycling (`uri`/`file`/`font`), aspect toggles, image-button counters, and border mode toggles all update deterministically.
@@ -142,6 +144,7 @@ Expected pass signals:
 - Shadow coverage currently supports solid paint only; non-solid shadow paints remain fallback with DEBUG diagnostics.
 - Background coverage currently supports solid and linear gradients; radial/image/pattern paints remain fallback with DEBUG diagnostics.
 - Grid track mapping is currently: absolute -> `px`, auto -> `auto`, star -> `fr` (non-positive star defaults to `1fr`); invalid grid metadata falls back to absolute projection.
+- FlexLayout semantic mapping currently covers container direction/wrap/justify/align and item order/grow/shrink/basis/align-self; `FlexLayout.Position` and advanced mixed absolute/relative semantics remain deferred.
 - `CollectionView` defers virtualization, selection behavior, grouping, header/footer, and dedicated scroll-to APIs to later slices.
 - Full parity rollout tracking now lives in `docs/PARITY_MATRIX.md` and `docs/PARITY_GAPS.md`.
 

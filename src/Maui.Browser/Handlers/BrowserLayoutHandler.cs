@@ -5,6 +5,7 @@ using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Layouts;
 using Microsoft.Maui.Platform;
 using MauiLayout = Microsoft.Maui.ILayout;
 
@@ -17,14 +18,20 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         Absolute,
         FlexColumn,
         FlexRow,
-        CssGrid
+        CssGrid,
+        CssFlex
     }
 
     public static IPropertyMapper<MauiLayout, BrowserLayoutHandler> Mapper = new PropertyMapper<MauiLayout, BrowserLayoutHandler>(BrowserViewMapper.CommonViewMapper)
     {
         [nameof(IView.Visibility)] = MapVisibility,
         [nameof(MauiLayout.ClipsToBounds)] = MapClipsToBounds,
-        [nameof(MauiLayout.Padding)] = MapPadding
+        [nameof(MauiLayout.Padding)] = MapPadding,
+        [nameof(FlexLayout.Direction)] = MapProjectionProperty,
+        [nameof(FlexLayout.Wrap)] = MapProjectionProperty,
+        [nameof(FlexLayout.JustifyContent)] = MapProjectionProperty,
+        [nameof(FlexLayout.AlignItems)] = MapProjectionProperty,
+        [nameof(FlexLayout.AlignContent)] = MapProjectionProperty
     };
 
     public static CommandMapper<MauiLayout, BrowserLayoutHandler> CommandMapper = new(BrowserViewMapper.CommonViewCommandMapper)
@@ -143,6 +150,11 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
     public static void MapPadding(BrowserLayoutHandler handler, MauiLayout layout)
     {
         handler.ApplyPaddingStyle(layout, ResolveProjectionMode(layout));
+    }
+
+    public static void MapProjectionProperty(BrowserLayoutHandler handler, MauiLayout layout)
+    {
+        handler.ApplyProjectionStyles(ResolveProjectionMode(layout));
     }
 
     public static void MapAdd(BrowserLayoutHandler handler, MauiLayout layout, object? arg)
@@ -308,6 +320,7 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         {
             VerticalStackLayout => BrowserLayoutProjectionMode.FlexColumn,
             HorizontalStackLayout => BrowserLayoutProjectionMode.FlexRow,
+            FlexLayout flexLayout when IsFlexMetadataUsable(flexLayout) => BrowserLayoutProjectionMode.CssFlex,
             Grid grid when IsGridMetadataUsable(grid) => BrowserLayoutProjectionMode.CssGrid,
             _ => BrowserLayoutProjectionMode.Absolute
         };
@@ -328,7 +341,9 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         {
             platformView.Style("display", null);
             platformView.Style("flexDirection", null);
+            platformView.Style("flexWrap", null);
             platformView.Style("alignItems", null);
+            platformView.Style("alignContent", null);
             platformView.Style("justifyContent", null);
             platformView.Style("gap", null);
             platformView.Style("gridTemplateColumns", null);
@@ -359,15 +374,51 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
             platformView.Style("rowGap", CssUtil.Px(grid.RowSpacing));
             platformView.Style("gap", $"{CssUtil.Px(grid.RowSpacing)} {CssUtil.Px(grid.ColumnSpacing)}");
             platformView.Style("flexDirection", null);
+            platformView.Style("flexWrap", null);
             platformView.Style("alignItems", null);
+            platformView.Style("alignContent", null);
             platformView.Style("justifyContent", null);
+            return;
+        }
+
+        if (projectionMode == BrowserLayoutProjectionMode.CssFlex)
+        {
+            if (layout is not FlexLayout flexLayout || !IsFlexMetadataUsable(flexLayout))
+            {
+                platformView.Style("display", null);
+                platformView.Style("flexDirection", null);
+                platformView.Style("flexWrap", null);
+                platformView.Style("justifyContent", null);
+                platformView.Style("alignItems", null);
+                platformView.Style("alignContent", null);
+                platformView.Style("gap", null);
+                platformView.Style("gridTemplateColumns", null);
+                platformView.Style("gridTemplateRows", null);
+                platformView.Style("columnGap", null);
+                platformView.Style("rowGap", null);
+                return;
+            }
+
+            platformView.Style("display", "flex");
+            platformView.Style("flexDirection", ResolveFlexDirection(flexLayout.Direction));
+            platformView.Style("flexWrap", ResolveFlexWrap(flexLayout.Wrap));
+            platformView.Style("justifyContent", ResolveFlexJustifyContent(flexLayout.JustifyContent));
+            platformView.Style("alignItems", ResolveFlexAlignItems(flexLayout.AlignItems));
+            platformView.Style("alignContent", ResolveFlexAlignContent(flexLayout.AlignContent));
+            platformView.Style("gap", null);
+            platformView.Style("gridTemplateColumns", null);
+            platformView.Style("gridTemplateRows", null);
+            platformView.Style("columnGap", null);
+            platformView.Style("rowGap", null);
             return;
         }
 
         var spacing = GetLayoutSpacing(layout);
         platformView.Style("display", "flex");
         platformView.Style("flexDirection", projectionMode == BrowserLayoutProjectionMode.FlexRow ? "row" : "column");
+        platformView.Style("flexWrap", "nowrap");
         platformView.Style("alignItems", "stretch");
+        platformView.Style("alignContent", "stretch");
         platformView.Style("justifyContent", "flex-start");
         platformView.Style("gap", CssUtil.Px(spacing));
         platformView.Style("gridTemplateColumns", null);
@@ -387,6 +438,10 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
             childPlatformView.Style("gridRowEnd", null);
             childPlatformView.Style("gridColumnStart", null);
             childPlatformView.Style("gridColumnEnd", null);
+            childPlatformView.Style("order", null);
+            childPlatformView.Style("flexGrow", null);
+            childPlatformView.Style("flexShrink", null);
+            childPlatformView.Style("flexBasis", null);
             return;
         }
 
@@ -405,6 +460,27 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
             childPlatformView.Style("gridColumnEnd", $"span {columnSpan.ToString(CultureInfo.InvariantCulture)}");
             childPlatformView.Style("justifySelf", ResolveGridSelfAlignment(childView.HorizontalLayoutAlignment));
             childPlatformView.Style("alignSelf", ResolveGridSelfAlignment(childView.VerticalLayoutAlignment));
+            childPlatformView.Style("order", null);
+            childPlatformView.Style("flexGrow", null);
+            childPlatformView.Style("flexShrink", null);
+            childPlatformView.Style("flexBasis", null);
+            return;
+        }
+
+        if (projectionMode == BrowserLayoutProjectionMode.CssFlex)
+        {
+            childPlatformView.Style("position", "relative");
+            childPlatformView.Style("left", null);
+            childPlatformView.Style("top", null);
+            childPlatformView.Style("right", null);
+            childPlatformView.Style("bottom", null);
+            childPlatformView.Style("gridRowStart", null);
+            childPlatformView.Style("gridRowEnd", null);
+            childPlatformView.Style("gridColumnStart", null);
+            childPlatformView.Style("gridColumnEnd", null);
+            childPlatformView.Style("justifySelf", null);
+            childPlatformView.Style("margin", ToCssThickness(childView.Margin));
+            ApplyFlexItemProjectionStyles(childPlatformView, childView);
             return;
         }
 
@@ -420,6 +496,10 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
         childPlatformView.Style("justifySelf", null);
         childPlatformView.Style("alignSelf", ResolveChildAlignSelf(childView, projectionMode));
         childPlatformView.Style("margin", ToCssThickness(childView.Margin));
+        childPlatformView.Style("order", null);
+        childPlatformView.Style("flexGrow", null);
+        childPlatformView.Style("flexShrink", null);
+        childPlatformView.Style("flexBasis", null);
     }
 
     private static double GetLayoutSpacing(MauiLayout layout)
@@ -480,6 +560,137 @@ public sealed class BrowserLayoutHandler : BrowserViewHandler<MauiLayout>, ILayo
             Microsoft.Maui.Primitives.LayoutAlignment.Start => "flex-start",
             _ => "stretch"
         };
+    }
+
+    private static bool IsFlexMetadataUsable(FlexLayout flexLayout)
+    {
+        return Enum.IsDefined(typeof(FlexDirection), flexLayout.Direction)
+            && Enum.IsDefined(typeof(FlexWrap), flexLayout.Wrap)
+            && Enum.IsDefined(typeof(FlexJustify), flexLayout.JustifyContent)
+            && Enum.IsDefined(typeof(FlexAlignItems), flexLayout.AlignItems)
+            && Enum.IsDefined(typeof(FlexAlignContent), flexLayout.AlignContent);
+    }
+
+    private static string ResolveFlexDirection(FlexDirection direction)
+    {
+        return direction switch
+        {
+            FlexDirection.Column => "column",
+            FlexDirection.RowReverse => "row-reverse",
+            FlexDirection.ColumnReverse => "column-reverse",
+            _ => "row"
+        };
+    }
+
+    private static string ResolveFlexWrap(FlexWrap wrap)
+    {
+        return wrap switch
+        {
+            FlexWrap.Wrap => "wrap",
+            FlexWrap.Reverse => "wrap-reverse",
+            _ => "nowrap"
+        };
+    }
+
+    private static string ResolveFlexJustifyContent(FlexJustify justifyContent)
+    {
+        return justifyContent switch
+        {
+            FlexJustify.Center => "center",
+            FlexJustify.End => "flex-end",
+            FlexJustify.SpaceBetween => "space-between",
+            FlexJustify.SpaceAround => "space-around",
+            FlexJustify.SpaceEvenly => "space-evenly",
+            _ => "flex-start"
+        };
+    }
+
+    private static string ResolveFlexAlignItems(FlexAlignItems alignItems)
+    {
+        return alignItems switch
+        {
+            FlexAlignItems.Start => "flex-start",
+            FlexAlignItems.Center => "center",
+            FlexAlignItems.End => "flex-end",
+            _ => "stretch"
+        };
+    }
+
+    private static string ResolveFlexAlignContent(FlexAlignContent alignContent)
+    {
+        return alignContent switch
+        {
+            FlexAlignContent.Start => "flex-start",
+            FlexAlignContent.Center => "center",
+            FlexAlignContent.End => "flex-end",
+            FlexAlignContent.SpaceBetween => "space-between",
+            FlexAlignContent.SpaceAround => "space-around",
+            FlexAlignContent.SpaceEvenly => "space-evenly",
+            _ => "stretch"
+        };
+    }
+
+    private static void ApplyFlexItemProjectionStyles(DomElement childPlatformView, IView childView)
+    {
+        if (childView is not BindableObject bindableObject)
+        {
+            childPlatformView.Style("alignSelf", null);
+            childPlatformView.Style("order", "0");
+            childPlatformView.Style("flexGrow", "0");
+            childPlatformView.Style("flexShrink", "1");
+            childPlatformView.Style("flexBasis", "auto");
+            return;
+        }
+
+        var order = FlexLayout.GetOrder(bindableObject);
+        var grow = NormalizeNonNegative(FlexLayout.GetGrow(bindableObject));
+        var shrink = NormalizeNonNegative(FlexLayout.GetShrink(bindableObject), fallback: 1);
+        var alignSelf = ResolveFlexAlignSelf(FlexLayout.GetAlignSelf(bindableObject));
+        var basis = ResolveFlexBasis(FlexLayout.GetBasis(bindableObject));
+
+        childPlatformView.Style("alignSelf", alignSelf);
+        childPlatformView.Style("order", order.ToString(CultureInfo.InvariantCulture));
+        childPlatformView.Style("flexGrow", CssUtil.Number(grow));
+        childPlatformView.Style("flexShrink", CssUtil.Number(shrink));
+        childPlatformView.Style("flexBasis", basis);
+    }
+
+    private static double NormalizeNonNegative(float value, double fallback = 0)
+    {
+        if (float.IsNaN(value) || float.IsInfinity(value))
+        {
+            return fallback;
+        }
+
+        return Math.Max(0, value);
+    }
+
+    private static string? ResolveFlexAlignSelf(FlexAlignSelf alignSelf)
+    {
+        return alignSelf switch
+        {
+            FlexAlignSelf.Start => "flex-start",
+            FlexAlignSelf.Center => "center",
+            FlexAlignSelf.End => "flex-end",
+            FlexAlignSelf.Stretch => "stretch",
+            _ => null
+        };
+    }
+
+    private static string ResolveFlexBasis(FlexBasis basis)
+    {
+        if (basis == FlexBasis.Auto)
+        {
+            return "auto";
+        }
+
+        var length = (double)basis.Length;
+        if (!double.IsFinite(length))
+        {
+            return "auto";
+        }
+
+        return CssUtil.Px(Math.Max(0, length));
     }
 
     private static string ToCssThickness(Thickness thickness)
