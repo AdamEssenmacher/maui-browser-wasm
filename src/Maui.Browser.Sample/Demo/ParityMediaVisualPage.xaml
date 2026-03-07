@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Maui.Browser.Sample.Demo.ParityMediaVisualPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:DataType="demo:ParityMediaVisualState"
+    xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
+    AutomationId="parity-page-media-visual"
+    Title="Media/Visual Parity">
+
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="16"
+            Spacing="10">
+            <Label
+                AutomationId="parity-media-heading"
+                FontSize="20"
+                Text="Media/visual parity"
+                TextColor="Black" />
+
+            <Label
+                AutomationId="parity-media-summary"
+                FontSize="12"
+                Text="Image, ImageButton, and Border behavior probes."
+                TextColor="DarkSlateGray" />
+
+            <Image
+                x:Name="ImageProbe"
+                AutomationId="parity-media-image"
+                BackgroundColor="#E2E8F0"
+                HeightRequest="160"
+                WidthRequest="220" />
+
+            <Label
+                AutomationId="parity-media-source-summary"
+                FontSize="12"
+                Text="{Binding SourceSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Label
+                AutomationId="parity-media-aspect-summary"
+                FontSize="12"
+                Text="{Binding AspectSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Label
+                AutomationId="parity-media-load-summary"
+                FontSize="12"
+                Text="{Binding LoadSummary}"
+                TextColor="DarkSlateGray" />
+
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    AutomationId="parity-media-cycle-source-button"
+                    Clicked="OnCycleSourceClicked"
+                    Padding="10,6"
+                    Text="Cycle image source"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-media-toggle-aspect-button"
+                    Clicked="OnToggleAspectClicked"
+                    Padding="10,6"
+                    Text="Toggle image aspect"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-media-unsupported-source-button"
+                    Clicked="OnUseUnsupportedSourceClicked"
+                    Padding="10,6"
+                    Text="Use unsupported source"
+                    TextColor="Black" />
+            </HorizontalStackLayout>
+
+            <ImageButton
+                x:Name="ImageButtonProbe"
+                AutomationId="parity-media-image-button"
+                Clicked="OnImageButtonClicked"
+                HeightRequest="72"
+                Padding="6"
+                Pressed="OnImageButtonPressed"
+                Released="OnImageButtonReleased"
+                WidthRequest="72" />
+
+            <Label
+                AutomationId="parity-media-imagebutton-clicks-summary"
+                FontSize="12"
+                Text="{Binding ImageButtonClicksSummary}"
+                TextColor="DarkSlateGray" />
+            <Label
+                AutomationId="parity-media-imagebutton-pressed-summary"
+                FontSize="12"
+                Text="{Binding ImageButtonPressedSummary}"
+                TextColor="DarkSlateGray" />
+            <Label
+                AutomationId="parity-media-imagebutton-released-summary"
+                FontSize="12"
+                Text="{Binding ImageButtonReleasedSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Border
+                x:Name="BorderProbe"
+                AutomationId="parity-media-border"
+                HeightRequest="84"
+                Padding="12">
+                <Label
+                    AutomationId="parity-media-border-content"
+                    FontSize="14"
+                    HorizontalTextAlignment="Center"
+                    Text="Border content probe"
+                    VerticalTextAlignment="Center" />
+            </Border>
+
+            <Label
+                AutomationId="parity-media-border-summary"
+                FontSize="12"
+                Text="{Binding BorderSummary}"
+                TextColor="DarkSlateGray" />
+
+            <Button
+                AutomationId="parity-media-toggle-border-button"
+                Clicked="OnToggleBorderClicked"
+                Padding="10,6"
+                Text="Toggle border style"
+                TextColor="Black" />
+
+            <Button
+                AutomationId="parity-page-media-visual-open-consolidated"
+                Clicked="OnOpenConsolidatedClicked"
+                Padding="12,8"
+                Text="Open consolidated demo probes"
+                TextColor="Black" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

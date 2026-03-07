@@ -41,15 +41,23 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Current behavior: `Stepper`, `ProgressBar`, and `ActivityIndicator` handlers are implemented with deterministic browser projections and two-way state updates.
 - Deferred: native long-press stepper repeat behavior and activity-indicator visual parity are best-effort in this slice.
 
-10. Font-load synchronized measurement
+10. Media source parity depth (`Image` / `ImageButton`)
+- Current behavior: `UriImageSource`, `FileImageSource`, and `FontImageSource` project to DOM `<img src=...>` with deterministic source-kind + load-state attributes.
+- Deferred: stream/image-source service pipeline parity (including cancellation semantics and decode caching) remains unsupported fallback in this slice.
+
+11. Border parity depth
+- Current behavior: single-child hosting, solid stroke color/thickness, round-rectangle/rectangle shape mapping, and dashed best-effort stroke style are projected to CSS.
+- Deferred: full stroke-shape and stroke-paint parity (ellipse/path/geometry groups, non-solid stroke paint, line-cap/join/miter exact behavior) remains partial.
+
+12. Font-load synchronized measurement
 - Current behavior: text measurement is canvas-based with deterministic fallback.
 - Deferred: async font readiness synchronization and re-measure strategy.
 
-11. Browser-hard controls not yet implemented
+13. Browser-hard controls not yet implemented
 - Current behavior: no browser handlers yet for controls marked `missing` in `PARITY_MATRIX.md`.
 - Deferred: implementation waves by family per roadmap.
 
-12. Shell
+14. Shell
 - Current behavior: out of scope by decision.
 - Deferred: no Shell implementation planned in this parity program.
 

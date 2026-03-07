@@ -24,6 +24,9 @@ public static class MauiBrowserHostingExtensions
             handlers.AddHandler(typeof(Entry), typeof(BrowserEntryHandler));
             handlers.AddHandler(typeof(Editor), typeof(BrowserEditorHandler));
             handlers.AddHandler(typeof(SearchBar), typeof(BrowserSearchBarHandler));
+            handlers.AddHandler(typeof(Image), typeof(BrowserImageHandler));
+            handlers.AddHandler(typeof(ImageButton), typeof(BrowserImageButtonHandler));
+            handlers.AddHandler(typeof(Border), typeof(BrowserBorderHandler));
             handlers.AddHandler(typeof(ScrollView), typeof(BrowserScrollViewHandler));
             handlers.AddHandler(typeof(Switch), typeof(BrowserSwitchHandler));
             handlers.AddHandler(typeof(CheckBox), typeof(BrowserCheckBoxHandler));
