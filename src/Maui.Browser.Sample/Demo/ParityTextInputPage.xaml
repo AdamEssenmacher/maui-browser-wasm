@@ -63,6 +63,19 @@
                 TextColor="DarkSlateGray" />
 
             <Entry
+                AutomationId="parity-text-numeric-entry"
+                Keyboard="Numeric"
+                MaxLength="4"
+                Placeholder="Numeric max-length"
+                Text="{Binding NumericEntryText}" />
+
+            <Label
+                AutomationId="parity-text-numeric-summary"
+                FontSize="12"
+                Text="{Binding NumericEntrySummary}"
+                TextColor="DarkSlateGray" />
+
+            <Entry
                 AutomationId="parity-text-password-entry"
                 IsPassword="True"
                 Placeholder="Password"

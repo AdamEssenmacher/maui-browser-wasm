@@ -26,14 +26,17 @@ public sealed class BrowserImageButtonHandler : BrowserViewHandler<ImageButton>
     private Action? _pressCallback;
     private Action? _releaseCallback;
     private Action? _cancelCallback;
+    private Action? _windowReleaseCallback;
     private Action? _loadCallback;
     private Action? _errorCallback;
     private int _clickSubscriptionId;
     private int _pressSubscriptionId;
     private int _releaseSubscriptionId;
     private int _cancelSubscriptionId;
+    private int _windowReleaseSubscriptionId;
     private int _loadSubscriptionId;
     private int _errorSubscriptionId;
+    private bool _isPressed;
 
     public BrowserImageButtonHandler()
         : base(Mapper)
@@ -64,6 +67,7 @@ public sealed class BrowserImageButtonHandler : BrowserViewHandler<ImageButton>
         _pressCallback = OnPressed;
         _releaseCallback = OnReleased;
         _cancelCallback = OnReleased;
+        _windowReleaseCallback = OnReleased;
         _loadCallback = OnImageLoaded;
         _errorCallback = OnImageFailed;
 
@@ -103,6 +107,8 @@ public sealed class BrowserImageButtonHandler : BrowserViewHandler<ImageButton>
             _cancelSubscriptionId = 0;
         }
 
+        ReleaseWindowPointerSubscription();
+
         if (_loadSubscriptionId != 0)
         {
             DomElement.Off(_loadSubscriptionId);
@@ -119,8 +125,10 @@ public sealed class BrowserImageButtonHandler : BrowserViewHandler<ImageButton>
         _pressCallback = null;
         _releaseCallback = null;
         _cancelCallback = null;
+        _windowReleaseCallback = null;
         _loadCallback = null;
         _errorCallback = null;
+        _isPressed = false;
         _imageElement = null;
         base.DisconnectHandler(platformView);
     }
@@ -157,16 +165,26 @@ public sealed class BrowserImageButtonHandler : BrowserViewHandler<ImageButton>
 
     private void OnPressed()
     {
-        if (!VirtualView.IsEnabled)
+        if (!VirtualView.IsEnabled || _isPressed)
         {
             return;
         }
 
+        _isPressed = true;
+        EnsureWindowPointerSubscription();
         ((IButton)VirtualView).Pressed();
     }
 
     private void OnReleased()
     {
+        if (!_isPressed)
+        {
+            return;
+        }
+
+        _isPressed = false;
+        ReleaseWindowPointerSubscription();
+
         if (!VirtualView.IsEnabled)
         {
             return;
@@ -279,5 +297,26 @@ public sealed class BrowserImageButtonHandler : BrowserViewHandler<ImageButton>
         var width = imageButton.BorderWidth;
         var hasBorder = double.IsFinite(width) && width > 0;
         PlatformView.Style("borderStyle", hasBorder ? "solid" : "none");
+    }
+
+    private void EnsureWindowPointerSubscription()
+    {
+        if (_windowReleaseSubscriptionId != 0 || _windowReleaseCallback is null)
+        {
+            return;
+        }
+
+        _windowReleaseSubscriptionId = DomElement.SubscribeWindowPointerRelease(_windowReleaseCallback);
+    }
+
+    private void ReleaseWindowPointerSubscription()
+    {
+        if (_windowReleaseSubscriptionId == 0)
+        {
+            return;
+        }
+
+        DomElement.UnsubscribeWindowPointerRelease(_windowReleaseSubscriptionId);
+        _windowReleaseSubscriptionId = 0;
     }
 }

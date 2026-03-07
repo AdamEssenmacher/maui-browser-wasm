@@ -74,6 +74,10 @@ public sealed class DomElement
 
     public static void UnsubscribeWindowResize(int subscriptionId) => DomApi.UnsubscribeWindowResize(subscriptionId);
 
+    public static int SubscribeWindowPointerRelease(Action callback) => DomApi.SubscribeWindowPointerRelease(callback);
+
+    public static void UnsubscribeWindowPointerRelease(int subscriptionId) => DomApi.UnsubscribeWindowPointerRelease(subscriptionId);
+
     public static (double Width, double Height) MeasureText(string? text, string? font)
     {
         var metrics = DomApi.MeasureText(text, font);

@@ -11,6 +11,7 @@ internal sealed class ParityTextInputState : INotifyPropertyChanged
 
     private string _entryText = "text-start";
     private int _entryCompletedCount;
+    private string _numericEntryText = "12";
 
     private string _passwordText = "hunter2";
     private string _editorText = "Editor line 1\nEditor line 2";
@@ -74,6 +75,22 @@ internal sealed class ParityTextInputState : INotifyPropertyChanged
     }
 
     public string EntrySummary => $"Entry text: {EntryText} | completed: {EntryCompletedCount}";
+
+    public string NumericEntryText
+    {
+        get => _numericEntryText;
+        set
+        {
+            if (!SetProperty(ref _numericEntryText, value))
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(NumericEntrySummary));
+        }
+    }
+
+    public string NumericEntrySummary => $"Numeric entry text: {NumericEntryText}";
 
     public string PasswordText
     {
@@ -172,6 +189,7 @@ internal sealed class ParityTextInputState : INotifyPropertyChanged
         LabelProbeText =
             "Programmatic label update verifies MAUI-to-DOM propagation for text and line-break styles.";
         EntryText = "programmatic-entry";
+        NumericEntryText = "9876";
         PasswordText = "programmatic-password";
         EditorText = "Programmatic editor text\nSecond line";
         SearchText = "programmatic-search";

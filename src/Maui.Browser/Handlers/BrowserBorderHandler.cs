@@ -69,7 +69,9 @@ public sealed class BrowserBorderHandler : BrowserViewHandler<Border>
 
     public static void MapPadding(BrowserBorderHandler handler, Border border)
     {
-        BrowserViewMapper.MapPadding(border, handler.PlatformView);
+        // Border content is arranged by MAUI layout (including padding offsets),
+        // so adding CSS padding here would double-inset child content.
+        handler.PlatformView.Style("padding", null);
     }
 
     public static void MapStroke(BrowserBorderHandler handler, Border border)

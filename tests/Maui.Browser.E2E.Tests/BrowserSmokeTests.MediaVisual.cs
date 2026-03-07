@@ -56,7 +56,23 @@ public sealed partial class BrowserSmokeTests
         var releasedBefore = await ReadSummaryNumberAsync(page, "[data-automation-id='parity-media-imagebutton-released-summary']");
 
         await page.Locator(imageButtonSelector).DispatchEventAsync("pointerdown");
-        await page.Locator(imageButtonSelector).DispatchEventAsync("pointerup");
+        await page.EvaluateAsync(
+            @"() => {
+                document.body.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
+            }");
+        await page.WaitForFunctionAsync(
+            @"(before) => {
+                const text = (document.querySelector('[data-automation-id=""parity-media-imagebutton-released-summary""]')?.textContent ?? '').trim();
+                const match = text.match(/-?\d+/);
+                if (!match) {
+                    return false;
+                }
+
+                return Number.parseInt(match[0], 10) > before;
+            }",
+            releasedBefore);
+        var releasedAfterDragOut = await ReadSummaryNumberAsync(page, "[data-automation-id='parity-media-imagebutton-released-summary']");
+
         await page.Locator(imageButtonSelector).ClickAsync();
 
         var clicksAfter = await ReadSummaryNumberAsync(page, "[data-automation-id='parity-media-imagebutton-clicks-summary']");
@@ -65,11 +81,13 @@ public sealed partial class BrowserSmokeTests
 
         Assert.True(clicksAfter > clicksBefore, $"Expected click count to increase. Before={clicksBefore}, After={clicksAfter}");
         Assert.True(pressedAfter > pressedBefore, $"Expected pressed count to increase. Before={pressedBefore}, After={pressedAfter}");
-        Assert.True(releasedAfter > releasedBefore, $"Expected released count to increase. Before={releasedBefore}, After={releasedAfter}");
+        Assert.True(releasedAfterDragOut > releasedBefore, $"Expected drag-out release to increase released count. Before={releasedBefore}, AfterDragOut={releasedAfterDragOut}");
+        Assert.True(releasedAfter > releasedAfterDragOut, $"Expected click release to further increase released count. AfterDragOut={releasedAfterDragOut}, AfterClick={releasedAfter}");
 
         Assert.Equal("3px", await ReadInlineStylePropertyAsync(page, borderSelector, "borderWidth"));
         Assert.Equal("solid", await ReadInlineStylePropertyAsync(page, borderSelector, "borderStyle"));
         Assert.Contains("14px", await ReadInlineStylePropertyAsync(page, borderSelector, "borderRadius"), StringComparison.Ordinal);
+        Assert.Equal(string.Empty, await ReadInlineStylePropertyAsync(page, borderSelector, "padding"));
 
         await page.Locator("[data-automation-id='parity-media-toggle-border-button']").ClickAsync();
         await page.WaitForSelectorAsync("text=Border mode: dashed-rectangle");
