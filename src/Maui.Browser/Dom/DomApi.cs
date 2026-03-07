@@ -82,6 +82,12 @@ internal static partial class DomApi
     [JSImport("subscribeEvent", Module)]
     internal static partial int SubscribeEvent(nint element, string eventName, [JSMarshalAs<JSType.Function>] Action callback);
 
+    [JSImport("subscribeClickActivation", Module)]
+    internal static partial int SubscribeClickActivation(
+        nint element,
+        [JSMarshalAs<JSType.Function>] Action pointerCallback,
+        [JSMarshalAs<JSType.Function>] Action keyboardCallback);
+
     [JSImport("unsubscribeEvent", Module)]
     internal static partial void UnsubscribeEvent(int subscriptionId);
 

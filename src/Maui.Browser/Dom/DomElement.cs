@@ -52,6 +52,9 @@ public sealed class DomElement
 
     public int On(string eventName, Action callback) => DomApi.SubscribeEvent(Handle, eventName, callback);
 
+    public int OnClickActivation(Action pointerCallback, Action keyboardCallback) =>
+        DomApi.SubscribeClickActivation(Handle, pointerCallback, keyboardCallback);
+
     public int OnEnter(Action callback) => DomApi.SubscribeEnterKey(Handle, callback);
 
     public static void Off(int subscriptionId) => DomApi.UnsubscribeEvent(subscriptionId);

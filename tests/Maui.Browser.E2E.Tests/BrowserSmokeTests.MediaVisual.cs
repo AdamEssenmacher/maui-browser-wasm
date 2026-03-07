@@ -55,6 +55,17 @@ public sealed partial class BrowserSmokeTests
         var pressedBefore = await ReadSummaryNumberAsync(page, "[data-automation-id='parity-media-imagebutton-pressed-summary']");
         var releasedBefore = await ReadSummaryNumberAsync(page, "[data-automation-id='parity-media-imagebutton-released-summary']");
 
+        await page.Locator(imageButtonSelector).FocusAsync();
+        await page.Locator(imageButtonSelector).PressAsync("Enter");
+
+        var clicksAfterKeyboard = await ReadSummaryNumberAsync(page, "[data-automation-id='parity-media-imagebutton-clicks-summary']");
+        var pressedAfterKeyboard = await ReadSummaryNumberAsync(page, "[data-automation-id='parity-media-imagebutton-pressed-summary']");
+        var releasedAfterKeyboard = await ReadSummaryNumberAsync(page, "[data-automation-id='parity-media-imagebutton-released-summary']");
+
+        Assert.True(clicksAfterKeyboard > clicksBefore, $"Expected keyboard activation to increase click count. Before={clicksBefore}, After={clicksAfterKeyboard}");
+        Assert.True(pressedAfterKeyboard > pressedBefore, $"Expected keyboard activation to increase pressed count. Before={pressedBefore}, After={pressedAfterKeyboard}");
+        Assert.True(releasedAfterKeyboard > releasedBefore, $"Expected keyboard activation to increase released count. Before={releasedBefore}, After={releasedAfterKeyboard}");
+
         await page.Locator(imageButtonSelector).DispatchEventAsync("pointerdown");
         await page.EvaluateAsync(
             @"() => {
@@ -70,7 +81,7 @@ public sealed partial class BrowserSmokeTests
 
                 return Number.parseInt(match[0], 10) > before;
             }",
-            releasedBefore);
+            releasedAfterKeyboard);
         var releasedAfterDragOut = await ReadSummaryNumberAsync(page, "[data-automation-id='parity-media-imagebutton-released-summary']");
 
         await page.Locator(imageButtonSelector).ClickAsync();
@@ -79,9 +90,9 @@ public sealed partial class BrowserSmokeTests
         var pressedAfter = await ReadSummaryNumberAsync(page, "[data-automation-id='parity-media-imagebutton-pressed-summary']");
         var releasedAfter = await ReadSummaryNumberAsync(page, "[data-automation-id='parity-media-imagebutton-released-summary']");
 
-        Assert.True(clicksAfter > clicksBefore, $"Expected click count to increase. Before={clicksBefore}, After={clicksAfter}");
-        Assert.True(pressedAfter > pressedBefore, $"Expected pressed count to increase. Before={pressedBefore}, After={pressedAfter}");
-        Assert.True(releasedAfterDragOut > releasedBefore, $"Expected drag-out release to increase released count. Before={releasedBefore}, AfterDragOut={releasedAfterDragOut}");
+        Assert.True(clicksAfter > clicksAfterKeyboard, $"Expected pointer click count to further increase. AfterKeyboard={clicksAfterKeyboard}, AfterPointer={clicksAfter}");
+        Assert.True(pressedAfter > pressedAfterKeyboard, $"Expected pointer press count to further increase. AfterKeyboard={pressedAfterKeyboard}, AfterPointer={pressedAfter}");
+        Assert.True(releasedAfterDragOut > releasedAfterKeyboard, $"Expected drag-out release to increase released count. AfterKeyboard={releasedAfterKeyboard}, AfterDragOut={releasedAfterDragOut}");
         Assert.True(releasedAfter > releasedAfterDragOut, $"Expected click release to further increase released count. AfterDragOut={releasedAfterDragOut}, AfterClick={releasedAfter}");
 
         Assert.Equal("3px", await ReadInlineStylePropertyAsync(page, borderSelector, "borderWidth"));

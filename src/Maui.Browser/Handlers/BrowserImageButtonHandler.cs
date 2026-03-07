@@ -22,7 +22,8 @@ public sealed class BrowserImageButtonHandler : BrowserViewHandler<ImageButton>
     };
 
     private DomElement? _imageElement;
-    private Action? _clickCallback;
+    private Action? _pointerClickCallback;
+    private Action? _keyboardClickCallback;
     private Action? _pressCallback;
     private Action? _releaseCallback;
     private Action? _cancelCallback;
@@ -63,7 +64,8 @@ public sealed class BrowserImageButtonHandler : BrowserViewHandler<ImageButton>
         _imageElement.Style("pointerEvents", "none");
         platformView.Append(_imageElement);
 
-        _clickCallback = OnClick;
+        _pointerClickCallback = OnPointerClick;
+        _keyboardClickCallback = OnKeyboardClick;
         _pressCallback = OnPressed;
         _releaseCallback = OnReleased;
         _cancelCallback = OnReleased;
@@ -71,7 +73,7 @@ public sealed class BrowserImageButtonHandler : BrowserViewHandler<ImageButton>
         _loadCallback = OnImageLoaded;
         _errorCallback = OnImageFailed;
 
-        _clickSubscriptionId = platformView.On("click", _clickCallback);
+        _clickSubscriptionId = platformView.OnClickActivation(_pointerClickCallback, _keyboardClickCallback);
         _pressSubscriptionId = platformView.On("pointerdown", _pressCallback);
         _releaseSubscriptionId = platformView.On("pointerup", _releaseCallback);
         _cancelSubscriptionId = platformView.On("pointercancel", _cancelCallback);
@@ -121,7 +123,8 @@ public sealed class BrowserImageButtonHandler : BrowserViewHandler<ImageButton>
             _errorSubscriptionId = 0;
         }
 
-        _clickCallback = null;
+        _pointerClickCallback = null;
+        _keyboardClickCallback = null;
         _pressCallback = null;
         _releaseCallback = null;
         _cancelCallback = null;
@@ -153,13 +156,27 @@ public sealed class BrowserImageButtonHandler : BrowserViewHandler<ImageButton>
         return Math.Max(0, Math.Min(fallback, constraint));
     }
 
-    private void OnClick()
+    private void OnPointerClick()
     {
         if (!VirtualView.IsEnabled)
         {
             return;
         }
 
+        ((IButton)VirtualView).Clicked();
+    }
+
+    private void OnKeyboardClick()
+    {
+        if (!VirtualView.IsEnabled)
+        {
+            return;
+        }
+
+        // Keyboard/assistive-tech activation dispatches click without pointer events.
+        // Synthesize Pressed/Released to match pointer interaction semantics.
+        ((IButton)VirtualView).Pressed();
+        ((IButton)VirtualView).Released();
         ((IButton)VirtualView).Clicked();
     }
 

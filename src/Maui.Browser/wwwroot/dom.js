@@ -182,6 +182,23 @@ export function subscribeEvent(elementHandle, eventName, callback) {
   return subscriptionId;
 }
 
+export function subscribeClickActivation(elementHandle, pointerCallback, keyboardCallback) {
+  const element = fromHandle(elementHandle);
+  const subscriptionId = nextEventSubscriptionId++;
+  const listener = (event) => {
+    if (event.detail === 0) {
+      keyboardCallback();
+      return;
+    }
+
+    pointerCallback();
+  };
+
+  eventSubscriptions.set(subscriptionId, { element, eventName: "click", listener });
+  element.addEventListener("click", listener);
+  return subscriptionId;
+}
+
 export function subscribeEnterKey(elementHandle, callback) {
   const element = fromHandle(elementHandle);
   const subscriptionId = nextEventSubscriptionId++;
