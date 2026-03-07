@@ -254,7 +254,8 @@ public sealed partial class BrowserSmokeTests
         Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-refreshing"));
         Assert.Equal("true", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-enabled"));
         Assert.Equal("false", await ReadAttributeAsync(page, refreshSpinnerSelector, "data-maui-rv-spinner-active"));
-        Assert.Equal("hidden", await ReadComputedStylePropertyAsync(page, refreshSpinnerSelector, "visibility"));
+        Assert.Equal("visible", await ReadComputedStylePropertyAsync(page, refreshSpinnerSelector, "visibility"));
+        Assert.Equal("paused", await ReadComputedStylePropertyAsync(page, refreshSpinnerSelector, "animationPlayState"));
         await AssertRefreshInFlowAsync("initial");
 
         await DispatchClickAsync(refreshTriggerSelector);
@@ -262,6 +263,7 @@ public sealed partial class BrowserSmokeTests
         Assert.Equal("true", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-refreshing"));
         Assert.Equal("true", await ReadAttributeAsync(page, refreshSpinnerSelector, "data-maui-rv-spinner-active"));
         Assert.Equal("visible", await ReadComputedStylePropertyAsync(page, refreshSpinnerSelector, "visibility"));
+        Assert.Equal("running", await ReadComputedStylePropertyAsync(page, refreshSpinnerSelector, "animationPlayState"));
 
         await DispatchClickAsync(refreshTriggerSelector);
 
@@ -273,7 +275,8 @@ public sealed partial class BrowserSmokeTests
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 1");
         Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-refreshing"));
         Assert.Equal("false", await ReadAttributeAsync(page, refreshSpinnerSelector, "data-maui-rv-spinner-active"));
-        Assert.Equal("hidden", await ReadComputedStylePropertyAsync(page, refreshSpinnerSelector, "visibility"));
+        Assert.Equal("visible", await ReadComputedStylePropertyAsync(page, refreshSpinnerSelector, "visibility"));
+        Assert.Equal("paused", await ReadComputedStylePropertyAsync(page, refreshSpinnerSelector, "animationPlayState"));
         await AssertRefreshInFlowAsync("after-complete");
 
         await DispatchClickAsync(refreshToggleEnabledButtonSelector);

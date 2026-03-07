@@ -84,11 +84,13 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
         _spinnerElement.Style("height", "13px");
         _spinnerElement.Style("borderWidth", "2px");
         _spinnerElement.Style("borderStyle", "solid");
+        _spinnerElement.Style("borderColor", "currentColor");
         _spinnerElement.Style("borderRadius", "999px");
         _spinnerElement.Style("boxSizing", "border-box");
         _spinnerElement.Style("borderRightColor", "transparent");
         _spinnerElement.Style("color", DefaultIndicatorColorCss);
-        _spinnerElement.Style("visibility", "hidden");
+        _spinnerElement.Style("visibility", "visible");
+        _spinnerElement.Style("opacity", "0.35");
         _spinnerElement.Style("animation", $"{SpinnerAnimationName} 0.9s linear infinite");
         _spinnerElement.Style("animationPlayState", "paused");
 
@@ -338,7 +340,8 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
         if (_spinnerElement is not null)
         {
             _spinnerElement.Attr("data-maui-rv-spinner-active", refreshing ? "true" : "false");
-            _spinnerElement.Style("visibility", refreshing ? "visible" : "hidden");
+            _spinnerElement.Style("visibility", "visible");
+            _spinnerElement.Style("opacity", refreshing ? "1" : "0.35");
             _spinnerElement.Style("animationPlayState", refreshing ? "running" : "paused");
         }
 
