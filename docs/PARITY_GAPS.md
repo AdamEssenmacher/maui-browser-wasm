@@ -73,6 +73,10 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Current behavior: showcase track proves implicit/explicit styles, `BasedOn`, `StyleClass`, runtime `DynamicResource` theme switching, and common control state styling (`Pressed`/`Disabled`/`Focused`) across mapped browser handlers.
 - Deferred: advanced trigger precedence edge cases, full VisualState parity across all control families, and complex style/resource merge-order compatibility are still partial.
 
+18. Label text-source parity depth (`FormattedText` / `TextType` / `TextTransform`)
+- Current behavior: browser `Label` mapping is `ILabel`-surface-first (`Text`/style/alignment/wrap semantics), and the interactive Label depth page exposes deterministic fallback probes for controls-only text-source features.
+- Deferred: span-level formatted text projection, HTML text rendering semantics (`TextType.Html`), and controls-layer text-transform parity are explicitly gap-documented in this slice.
+
 ## Gap lifecycle policy
 
 1. Any new gap requires:
