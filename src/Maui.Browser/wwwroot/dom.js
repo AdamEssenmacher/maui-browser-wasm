@@ -412,7 +412,15 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
       return;
     }
 
-    if (state.scroller.scrollTop > 0.5) {
+    if (!isPullGestureAllowed(root)) {
+      completeTracking(false);
+      return;
+    }
+
+    const currentTop = Number.isFinite(state.scroller.scrollTop) ? state.scroller.scrollTop : 0;
+    // Do not abort when a downward drag is consuming pre-existing scroll offset.
+    // Abort only when scroll position moves deeper than the initial offset.
+    if (currentTop > state.initialScrollTop + 0.5) {
       completeTracking(false);
     }
   };

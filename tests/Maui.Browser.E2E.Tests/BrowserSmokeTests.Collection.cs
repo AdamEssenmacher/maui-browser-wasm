@@ -385,6 +385,18 @@ public sealed partial class BrowserSmokeTests
         Assert.True(midScrollTop > 0.5, "Expected scroll host to be offset before same-gesture pull-to-top refresh.");
 
         await PullDownRefreshAsync(196, resetScrollTop: false);
+        await page.EvaluateAsync(
+            @"(selector) => {
+                const host = document.querySelector(selector);
+                if (!(host instanceof HTMLElement)) {
+                    return;
+                }
+
+                host.scrollTop = Math.max(0, host.scrollTop - 20);
+                host.dispatchEvent(new Event('scroll'));
+            }",
+            refreshScrollHostSelector);
+        Assert.Equal("true", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-pull-active"));
         await page.Mouse.UpAsync();
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 3");
         await DispatchClickAsync(refreshCompleteButtonSelector);
