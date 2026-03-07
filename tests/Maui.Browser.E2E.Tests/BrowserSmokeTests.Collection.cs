@@ -224,11 +224,11 @@ public sealed partial class BrowserSmokeTests
                 }",
                 selector);
         }
-        async Task PullDownRefreshAsync(double distance)
+        async Task PullDownRefreshAsync(double distance, bool resetScrollTop = true)
         {
             var bounds = await page.EvaluateAsync<double[]>(
-                @"(selector) => {
-                    const refresh = document.querySelector(selector);
+                @"(args) => {
+                    const refresh = document.querySelector(args.selector);
                     if (!refresh) {
                         return [Number.NaN, Number.NaN, Number.NaN, Number.NaN];
                     }
@@ -245,11 +245,14 @@ public sealed partial class BrowserSmokeTests
                         return [Number.NaN, Number.NaN, Number.NaN, Number.NaN];
                     }
 
-                    host.scrollTop = 0;
+                    if (args.resetScrollTop) {
+                        host.scrollTop = 0;
+                    }
+
                     const rect = host.getBoundingClientRect();
                     return [rect.x, rect.y, rect.width, rect.height];
                 }",
-                refreshSelector);
+                new { selector = refreshSelector, resetScrollTop });
 
             Assert.Equal(4, bounds.Length);
             Assert.True(
@@ -358,6 +361,35 @@ public sealed partial class BrowserSmokeTests
         await DispatchClickAsync(refreshCompleteButtonSelector);
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 2");
 
+        await page.EvaluateAsync(
+            @"(selector) => {
+                const host = document.querySelector(selector);
+                if (!(host instanceof HTMLElement)) {
+                    return;
+                }
+
+                const maxTop = Math.max(0, host.scrollHeight - host.clientHeight);
+                host.scrollTop = Math.min(maxTop, 84);
+            }",
+            refreshScrollHostSelector);
+        var midScrollTop = await page.EvaluateAsync<double>(
+            @"(selector) => {
+                const host = document.querySelector(selector);
+                if (!(host instanceof HTMLElement)) {
+                    return Number.NaN;
+                }
+
+                return host.scrollTop;
+            }",
+            refreshScrollHostSelector);
+        Assert.True(midScrollTop > 0.5, "Expected scroll host to be offset before same-gesture pull-to-top refresh.");
+
+        await PullDownRefreshAsync(196, resetScrollTop: false);
+        await page.Mouse.UpAsync();
+        await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 3");
+        await DispatchClickAsync(refreshCompleteButtonSelector);
+        await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 3");
+
         for (var i = 0; i < 11; i++)
         {
             await DispatchClickAsync("[data-automation-id='parity-collection-remove-button']");
@@ -390,9 +422,9 @@ public sealed partial class BrowserSmokeTests
 
         await PullDownRefreshAsync(132);
         await page.Mouse.UpAsync();
-        await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 3");
+        await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 4");
         await DispatchClickAsync(refreshCompleteButtonSelector);
-        await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 3");
+        await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 4");
 
         await page.EvaluateAsync(
             @"(selector) => {

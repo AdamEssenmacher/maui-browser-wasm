@@ -284,6 +284,7 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
     tracking: false,
     pointerId: -1,
     startY: 0,
+    initialScrollTop: 0,
     armed: false,
     scroller: null
   };
@@ -300,6 +301,7 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
     state.tracking = false;
     state.pointerId = -1;
     state.startY = 0;
+    state.initialScrollTop = 0;
     state.armed = false;
     state.scroller = null;
     resetPullState(root);
@@ -327,13 +329,14 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
     }
 
     const scroller = findScrollableAncestor(root, event.target);
-    if (!scroller || scroller.scrollTop > 0.5) {
+    if (!scroller) {
       return;
     }
 
     state.tracking = true;
     state.pointerId = event.pointerId;
     state.startY = event.clientY;
+    state.initialScrollTop = Number.isFinite(scroller.scrollTop) ? Math.max(0, scroller.scrollTop) : 0;
     state.armed = false;
     state.scroller = scroller;
     resetPullState(root);
@@ -353,12 +356,25 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
       return;
     }
 
-    if (!state.scroller || state.scroller.scrollTop > 0.5) {
+    if (!state.scroller) {
       completeTracking(false);
       return;
     }
 
-    const deltaY = event.clientY - state.startY;
+    const rawDeltaY = event.clientY - state.startY;
+    const reachedTopByScroll = state.scroller.scrollTop <= 0.5;
+    const reachedTopByDrag = state.initialScrollTop > 0 && rawDeltaY >= state.initialScrollTop;
+    if (!reachedTopByScroll && !reachedTopByDrag) {
+      // Keep tracking the same gesture so downward drag can arm once
+      // the scroller reaches top without requiring a new pointerdown.
+      state.armed = false;
+      root.setAttribute("data-maui-rv-pull-distance", "0");
+      root.setAttribute("data-maui-rv-pull-armed", "false");
+      root.setAttribute("data-maui-rv-pull-active", "false");
+      return;
+    }
+
+    const deltaY = rawDeltaY - state.initialScrollTop;
     if (deltaY <= 0) {
       root.setAttribute("data-maui-rv-pull-distance", "0");
       root.setAttribute("data-maui-rv-pull-armed", "false");
