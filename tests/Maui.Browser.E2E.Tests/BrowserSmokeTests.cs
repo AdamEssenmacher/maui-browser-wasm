@@ -15,7 +15,7 @@ public sealed partial class BrowserSmokeTests : IClassFixture<BrowserHostFixture
     private async Task<IPage> OpenDemoAsync(IBrowserContext context)
     {
         var page = await OpenCatalogAsync(context);
-        await page.Locator("[data-automation-id='parity-open-consolidated-demo']").ClickAsync();
+        await page.Locator("[data-automation-id='showcase-open-control-lab']").ClickAsync();
         await page.WaitForSelectorAsync("text=Live text:");
         return page;
     }
@@ -30,6 +30,14 @@ public sealed partial class BrowserSmokeTests : IClassFixture<BrowserHostFixture
 
     private async Task<IPage> OpenCatalogAsync(IBrowserContext context)
     {
+        var page = await OpenHomeAsync(context);
+        await page.Locator("[data-automation-id='showcase-open-catalog-button']").ClickAsync();
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-catalog']");
+        return page;
+    }
+
+    private async Task<IPage> OpenHomeAsync(IBrowserContext context)
+    {
         if (_fixture.HttpAppUrl is null)
         {
             throw new InvalidOperationException("Fixture app URL is not initialized.");
@@ -41,7 +49,7 @@ public sealed partial class BrowserSmokeTests : IClassFixture<BrowserHostFixture
             WaitUntil = WaitUntilState.DOMContentLoaded
         });
 
-        await page.WaitForSelectorAsync("[data-automation-id='parity-page-catalog']");
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-home']");
         return page;
     }
 

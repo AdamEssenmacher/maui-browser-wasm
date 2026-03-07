@@ -5,13 +5,31 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:DataType="demo:ParityMediaVisualState"
     xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
-    AutomationId="parity-page-media-visual"
+    AutomationId="showcase-page-media-visual-depth"
     Title="Media/Visual Parity">
+
+    <ContentPage.Background>
+        <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientStart}" Offset="0" />
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientEnd}" Offset="1" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <demo:ShowcaseStyles />
+                <demo:ParityLabStyles />
+            </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="Button" BasedOn="{StaticResource ShowcaseSecondaryButtonStyle}" />
+            <Style TargetType="Label" BasedOn="{StaticResource ShowcaseBaseLabelStyle}" />
+        </ResourceDictionary>
+    </ContentPage.Resources>
 
     <ScrollView>
         <VerticalStackLayout
-            Padding="16"
-            Spacing="10">
+            Padding="24,20,24,28"
+            Spacing="14">
             <Label
                 AutomationId="parity-media-heading"
                 FontSize="20"
@@ -123,7 +141,7 @@
                 TextColor="Black" />
 
             <Button
-                AutomationId="parity-page-media-visual-open-consolidated"
+                AutomationId="showcase-page-media-visual-depth-open-control-lab"
                 Clicked="OnOpenConsolidatedClicked"
                 Padding="12,8"
                 Text="Open consolidated demo probes"

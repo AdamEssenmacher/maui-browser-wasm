@@ -27,11 +27,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <MauiXaml Update="Demo/ParityLabStyles.xaml" />
     <MauiXaml Update="Demo/XamlDemoPage.xaml" />
     <MauiXaml Update="Demo/ParityContainersLayoutPage.xaml" />
     <MauiXaml Update="Demo/ParityTextInputPage.xaml" />
     <MauiXaml Update="Demo/ParityPickersDateTimePage.xaml" />
     <MauiXaml Update="Demo/ParityMediaVisualPage.xaml" />
+    <MauiXaml Update="Demo/ShowcaseStyles.xaml" />
+    <MauiXaml Update="Demo/ShowcaseHomePage.xaml" />
+    <MauiXaml Update="Demo/ShowcaseTextInputPage.xaml" />
+    <MauiXaml Update="Demo/ShowcaseFormMediaPage.xaml" />
+    <MauiXaml Update="Demo/ShowcaseLayoutCollectionPage.xaml" />
   </ItemGroup>
 
   <ItemGroup>

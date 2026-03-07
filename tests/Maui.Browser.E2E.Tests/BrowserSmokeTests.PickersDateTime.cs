@@ -8,7 +8,7 @@ public sealed partial class BrowserSmokeTests
     public async Task PickersDateTimeAndNumericFamilyParityWorks()
     {
         await using var context = await _fixture.NewContextAsync();
-        var page = await OpenFamilyPageAsync(context, "parity-open-pickers-datetime", "parity-page-pickers-datetime");
+        var page = await OpenFamilyPageAsync(context, "showcase-open-pickers-datetime-depth", "showcase-page-pickers-datetime-depth");
 
         await SetInputValueAndDispatchAsync(page, "[data-automation-id='parity-datetime-date-picker']", "2026-04-18");
         await page.WaitForSelectorAsync("text=Date value: 2026-04-18");

@@ -84,7 +84,7 @@ public sealed partial class BrowserSmokeTests
     public async Task CollectionViewParityDepthWorks()
     {
         await using var context = await _fixture.NewContextAsync();
-        var page = await OpenFamilyPageAsync(context, "parity-open-collection-templated", "parity-page-collection-templated");
+        var page = await OpenFamilyPageAsync(context, "showcase-open-collection-templated-depth", "showcase-page-collection-templated-depth");
 
         const string collectionSelector = "[data-automation-id='parity-collection-view']";
         const string itemsHostSelector = "[data-automation-id='parity-collection-view'] [data-maui-cv-items-host='true']";
@@ -202,7 +202,7 @@ public sealed partial class BrowserSmokeTests
     public async Task RefreshViewCollectionIntegrationWorks()
     {
         await using var context = await _fixture.NewContextAsync();
-        var page = await OpenFamilyPageAsync(context, "parity-open-collection-templated", "parity-page-collection-templated");
+        var page = await OpenFamilyPageAsync(context, "showcase-open-collection-templated-depth", "showcase-page-collection-templated-depth");
 
         const string refreshSelector = "[data-automation-id='parity-refresh-view']";
         const string refreshTriggerSelector = "[data-automation-id='parity-refresh-view'] [data-maui-rv-trigger='true']";

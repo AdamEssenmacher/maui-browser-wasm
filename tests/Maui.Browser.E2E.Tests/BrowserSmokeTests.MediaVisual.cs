@@ -9,7 +9,7 @@ public sealed partial class BrowserSmokeTests
     public async Task MediaVisualParityWorks()
     {
         await using var context = await _fixture.NewContextAsync();
-        var page = await OpenFamilyPageAsync(context, "parity-open-media-visual", "parity-page-media-visual");
+        var page = await OpenFamilyPageAsync(context, "showcase-open-media-visual-depth", "showcase-page-media-visual-depth");
 
         const string imageSelector = "[data-automation-id='parity-media-image']";
         const string imageButtonSelector = "[data-automation-id='parity-media-image-button']";

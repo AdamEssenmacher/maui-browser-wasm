@@ -9,7 +9,7 @@ public sealed partial class BrowserSmokeTests
     public async Task TextInputFamilyParityWorks()
     {
         await using var context = await _fixture.NewContextAsync();
-        var page = await OpenFamilyPageAsync(context, "parity-open-text-input", "parity-page-text-input");
+        var page = await OpenFamilyPageAsync(context, "showcase-open-text-input-depth", "showcase-page-text-input-depth");
 
         await page.Locator("[data-automation-id='parity-text-entry']").FillAsync("family-entry");
         await page.WaitForSelectorAsync("text=Entry text: family-entry | completed: 0");

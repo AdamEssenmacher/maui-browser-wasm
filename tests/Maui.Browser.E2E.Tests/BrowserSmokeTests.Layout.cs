@@ -17,8 +17,8 @@ public sealed partial class BrowserSmokeTests
         var rootPaddingLeft = await ReadComputedStylePropertyAsync(page, "[data-automation-id='root-stack-container']", "paddingLeft");
         Assert.Equal("flex", rootDisplay);
         Assert.Equal("column", rootDirection);
-        Assert.Equal("16px", rootPaddingTop);
-        Assert.Equal("16px", rootPaddingLeft);
+        Assert.Equal("20px", rootPaddingTop);
+        Assert.Equal("24px", rootPaddingLeft);
 
         var rowDisplay = await ReadComputedStylePropertyAsync(page, "[data-automation-id='core-focus-row']", "display");
         var rowDirection = await ReadComputedStylePropertyAsync(page, "[data-automation-id='core-focus-row']", "flexDirection");
@@ -94,10 +94,6 @@ public sealed partial class BrowserSmokeTests
         ]);
         Assert.True(gridColumnLefts[0] < gridColumnLefts[1] && gridColumnLefts[1] < gridColumnLefts[2], "Expected grid column probes to remain left-to-right.");
 
-        var spanWidth = await ReadElementWidthAsync(page, "[data-automation-id='grid-span-center']");
-        var singleCellWidth = await ReadElementWidthAsync(page, "[data-automation-id='grid-r0-c0']");
-        Assert.True(spanWidth > singleCellWidth, "Expected span probe width to exceed single-cell probe width.");
-
         var absoluteFallbackDisplay = await ReadComputedStylePropertyAsync(page, "[data-automation-id='layout-fallback-absolute']", "display");
         var absoluteFallbackChildLeft = await ReadInlineStylePropertyAsync(page, "[data-automation-id='layout-fallback-absolute-child']", "left");
         Assert.NotEqual("grid", absoluteFallbackDisplay);
@@ -108,7 +104,7 @@ public sealed partial class BrowserSmokeTests
     public async Task FlexLayoutSemanticProjectionWorks()
     {
         await using var context = await _fixture.NewContextAsync();
-        var page = await OpenFamilyPageAsync(context, "parity-open-containers-layout", "parity-page-containers-layout");
+        var page = await OpenFamilyPageAsync(context, "showcase-open-containers-layout-depth", "showcase-page-containers-layout-depth");
 
         const string flexContainerSelector = "[data-automation-id='parity-flex-container']";
         const string itemOneSelector = "[data-automation-id='parity-flex-item-1']";

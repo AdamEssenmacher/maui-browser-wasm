@@ -1,6 +1,4 @@
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Graphics;
-
 namespace Maui.Browser.Sample.Demo;
 
 internal abstract class ParityFamilyPage : ContentPage
@@ -9,19 +7,26 @@ internal abstract class ParityFamilyPage : ContentPage
     {
         Title = title;
         AutomationId = automationId;
+        SetDynamicResource(BackgroundColorProperty, ShowcaseThemeManager.PageBackgroundColorKey);
+        Resources = new ResourceDictionary
+        {
+            MergedDictionaries =
+            {
+                new ShowcaseStyles()
+            }
+        };
 
         var list = new VerticalStackLayout
         {
-            Padding = new Thickness(16),
-            Spacing = 8
+            Padding = new Thickness(24, 20, 24, 28),
+            Spacing = 12
         };
 
         list.Children.Add(new Label
         {
             AutomationId = $"{automationId}-heading",
             Text = title,
-            FontSize = 20,
-            TextColor = Colors.Black
+            Style = GetStyle("ShowcasePageHeadingStyle")
         });
 
         foreach (var probe in probeItems)
@@ -29,8 +34,7 @@ internal abstract class ParityFamilyPage : ContentPage
             list.Children.Add(new Label
             {
                 Text = $"• {probe}",
-                FontSize = 12,
-                TextColor = Colors.DarkSlateGray
+                Style = GetStyle("ShowcaseMutedLabelStyle")
             });
         }
 
@@ -38,12 +42,16 @@ internal abstract class ParityFamilyPage : ContentPage
         {
             AutomationId = $"{automationId}-open-consolidated",
             Text = "Open consolidated demo probes",
-            Padding = new Thickness(12, 8),
-            TextColor = Colors.Black
+            Style = GetStyle("ShowcaseSecondaryButtonStyle")
         };
         openConsolidated.Clicked += async (_, _) => await Navigation.PushAsync(new XamlDemoPage(), false);
         list.Children.Add(openConsolidated);
 
         Content = new ScrollView { Content = list };
+    }
+
+    private Style GetStyle(string key)
+    {
+        return (Style)Resources[key];
     }
 }

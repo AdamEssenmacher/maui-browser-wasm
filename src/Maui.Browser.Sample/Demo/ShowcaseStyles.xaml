@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ResourceDictionary
+    x:Class="Maui.Browser.Sample.Demo.ShowcaseStyles"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:shapes="clr-namespace:Microsoft.Maui.Controls.Shapes;assembly=Microsoft.Maui.Controls">
+
+    <Style x:Key="ShowcaseBaseLabelStyle" TargetType="Label">
+        <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorTextPrimary}" />
+        <Setter Property="FontFamily" Value="{DynamicResource ShowcaseFontBody}" />
+        <Setter Property="FontSize" Value="15" />
+        <Setter Property="LineBreakMode" Value="WordWrap" />
+        <Setter Property="Margin" Value="0,2,0,2" />
+    </Style>
+
+    <Style TargetType="Label" BasedOn="{StaticResource ShowcaseBaseLabelStyle}" />
+
+    <Style TargetType="HorizontalStackLayout">
+        <Setter Property="Spacing" Value="12" />
+        <Setter Property="Margin" Value="0,4,0,4" />
+    </Style>
+
+    <Style TargetType="VerticalStackLayout">
+        <Setter Property="Spacing" Value="12" />
+    </Style>
+
+    <Style TargetType="Grid">
+        <Setter Property="ColumnSpacing" Value="12" />
+        <Setter Property="RowSpacing" Value="12" />
+    </Style>
+
+    <Style x:Key="ShowcaseDisplayLabelStyle" TargetType="Label" BasedOn="{StaticResource ShowcaseBaseLabelStyle}">
+        <Setter Property="FontFamily" Value="{DynamicResource ShowcaseFontDisplay}" />
+        <Setter Property="FontSize" Value="44" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorAccentForeground}" />
+        <Setter Property="Margin" Value="0,0,0,4" />
+    </Style>
+
+    <Style x:Key="ShowcasePageHeadingStyle" TargetType="Label" BasedOn="{StaticResource ShowcaseBaseLabelStyle}">
+        <Setter Property="FontFamily" Value="{DynamicResource ShowcaseFontDisplay}" />
+        <Setter Property="FontSize" Value="32" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="Margin" Value="0,4,0,8" />
+    </Style>
+
+    <Style x:Key="ShowcaseSectionHeadingStyle" TargetType="Label" BasedOn="{StaticResource ShowcaseBaseLabelStyle}">
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="Margin" Value="0,6,0,4" />
+    </Style>
+
+    <Style x:Key="ShowcaseMutedLabelStyle" TargetType="Label" BasedOn="{StaticResource ShowcaseBaseLabelStyle}">
+        <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorTextMuted}" />
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="Margin" Value="0,2,0,4" />
+    </Style>
+
+    <Style x:Key="ShowcaseCalloutLabelStyle" TargetType="Label" BasedOn="{StaticResource ShowcaseBaseLabelStyle}">
+        <Setter Property="BackgroundColor" Value="{DynamicResource ShowcaseColorAccentSoft}" />
+        <Setter Property="Padding" Value="14,10" />
+        <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorAccentStrong}" />
+        <Setter Property="CharacterSpacing" Value="0.3" />
+        <Setter Property="Margin" Value="0,6,0,6" />
+    </Style>
+
+    <Style x:Key="ShowcaseButtonBaseStyle" TargetType="Button">
+        <Setter Property="Padding" Value="14,10" />
+        <Setter Property="Margin" Value="0,4,0,4" />
+        <Setter Property="FontFamily" Value="{DynamicResource ShowcaseFontBody}" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="MinimumHeightRequest" Value="42" />
+        <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorTextPrimary}" />
+        <Setter Property="BackgroundColor" Value="{DynamicResource ShowcaseColorSurfaceAlt}" />
+        <Setter Property="BorderColor" Value="{DynamicResource ShowcaseColorSurfaceStroke}" />
+        <Setter Property="BorderWidth" Value="1.5" />
+        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Property="Scale" Value="0.98" />
+                            <Setter Property="Opacity" Value="0.86" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="Opacity" Value="0.45" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ShowcasePrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource ShowcaseButtonBaseStyle}">
+        <Setter Property="BackgroundColor" Value="{DynamicResource ShowcaseColorAccentStrong}" />
+        <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorAccentForeground}" />
+        <Setter Property="BorderColor" Value="{DynamicResource ShowcaseColorAccentStrong}" />
+    </Style>
+
+    <Style x:Key="ShowcaseSecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource ShowcaseButtonBaseStyle}">
+        <Setter Property="BackgroundColor" Value="{DynamicResource ShowcaseColorAccentSoft}" />
+        <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorAccentStrong}" />
+        <Setter Property="BorderColor" Value="{DynamicResource ShowcaseColorAccent}" />
+    </Style>
+
+    <Style x:Key="ShowcaseGhostButtonStyle" TargetType="Button" BasedOn="{StaticResource ShowcaseButtonBaseStyle}">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorTextPrimary}" />
+    </Style>
+
+    <Style x:Key="ShowcaseEntryStyle" TargetType="Entry">
+        <Setter Property="BackgroundColor" Value="{DynamicResource ShowcaseColorInput}" />
+        <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorTextPrimary}" />
+        <Setter Property="PlaceholderColor" Value="{DynamicResource ShowcaseColorTextMuted}" />
+        <Setter Property="FontFamily" Value="{DynamicResource ShowcaseFontBody}" />
+        <Setter Property="Margin" Value="0,4,0,10" />
+        <Setter Property="VisualStateManager.VisualStateGroups">
+            <VisualStateGroupList>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="Focused">
+                        <VisualState.Setters>
+                            <Setter Property="BackgroundColor" Value="{DynamicResource ShowcaseColorInputFocused}" />
+                            <Setter Property="Scale" Value="1.01" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Property="Opacity" Value="0.6" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateGroupList>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ShowcaseEditorStyle" TargetType="Editor">
+        <Setter Property="BackgroundColor" Value="{DynamicResource ShowcaseColorInput}" />
+        <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorTextPrimary}" />
+        <Setter Property="PlaceholderColor" Value="{DynamicResource ShowcaseColorTextMuted}" />
+        <Setter Property="FontFamily" Value="{DynamicResource ShowcaseFontBody}" />
+        <Setter Property="AutoSize" Value="Disabled" />
+        <Setter Property="HeightRequest" Value="112" />
+        <Setter Property="Margin" Value="0,4,0,10" />
+    </Style>
+
+    <Style x:Key="ShowcaseSearchBarStyle" TargetType="SearchBar">
+        <Setter Property="BackgroundColor" Value="{DynamicResource ShowcaseColorInput}" />
+        <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorTextPrimary}" />
+        <Setter Property="PlaceholderColor" Value="{DynamicResource ShowcaseColorTextMuted}" />
+        <Setter Property="SearchIconColor" Value="{DynamicResource ShowcaseColorAccent}" />
+        <Setter Property="CancelButtonColor" Value="{DynamicResource ShowcaseColorDanger}" />
+        <Setter Property="Margin" Value="0,4,0,10" />
+    </Style>
+
+    <Style x:Key="ShowcaseCardStyle" TargetType="Border">
+        <Setter Property="Margin" Value="0,6,0,10" />
+        <Setter Property="Padding" Value="20,16" />
+        <Setter Property="BackgroundColor" Value="{DynamicResource ShowcaseColorSurface}" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Stroke">
+            <Setter.Value>
+                <SolidColorBrush Color="{DynamicResource ShowcaseColorSurfaceStroke}" />
+            </Setter.Value>
+        </Setter>
+        <Setter Property="StrokeShape">
+            <Setter.Value>
+                <shapes:RoundRectangle CornerRadius="18" />
+            </Setter.Value>
+        </Setter>
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="#2A0F172A" Offset="0,8" Radius="14" Opacity="0.18" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="ShowcaseHeroCardStyle" TargetType="Border" BasedOn="{StaticResource ShowcaseCardStyle}">
+        <Setter Property="Background">
+            <Setter.Value>
+                <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
+                    <GradientStop Color="{DynamicResource ShowcaseColorHeroStart}" Offset="0" />
+                    <GradientStop Color="{DynamicResource ShowcaseColorHeroEnd}" Offset="1" />
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="StrokeThickness" Value="0" />
+        <Setter Property="Shadow">
+            <Setter.Value>
+                <Shadow Brush="#4A0F172A" Offset="0,10" Radius="18" Opacity="0.34" />
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style Class="showcase-badge" TargetType="Label" BasedOn="{StaticResource ShowcaseBaseLabelStyle}">
+        <Setter Property="BackgroundColor" Value="{DynamicResource ShowcaseColorAccentSoft}" />
+        <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorAccentStrong}" />
+        <Setter Property="Padding" Value="10,5" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="CharacterSpacing" Value="0.5" />
+    </Style>
+
+    <Style Class="showcase-metric" TargetType="Label" BasedOn="{StaticResource ShowcaseBaseLabelStyle}">
+        <Setter Property="FontFamily" Value="{DynamicResource ShowcaseFontDisplay}" />
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="TextColor" Value="{DynamicResource ShowcaseColorAccentStrong}" />
+    </Style>
+</ResourceDictionary>

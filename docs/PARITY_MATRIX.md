@@ -50,3 +50,4 @@ Status values:
 - Partial: `NavigationPage`, `ScrollView`, `FlexLayout`, `Label`, `Entry`, `Editor`, `SearchBar`, `Switch`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `Stepper`, `ProgressBar`, `ActivityIndicator`, `Image`, `ImageButton`, `Border`, `CollectionView`, `RefreshView`
 - Missing: `GraphicsView`, `CarouselView`, `IndicatorView`, `SwipeView`, `WebView`
 - Shared core substrate: `IView.Clip` (`RectangleGeometry`/`RoundRectangleGeometry`), `IView.Shadow` (solid paint), and `IView.Background` (`SolidPaint` + `LinearGradientPaint`) are implemented in the common browser mapper.
+- Styling/presentation proof: showcase pages (`showcase-page-home`, `showcase-page-text-input`, `showcase-page-form-media`, `showcase-page-layout-collection`) now validate MAUI style-system behavior (`implicit`, `explicit`, `BasedOn`, `StyleClass`, `DynamicResource`) on top of parity handlers.

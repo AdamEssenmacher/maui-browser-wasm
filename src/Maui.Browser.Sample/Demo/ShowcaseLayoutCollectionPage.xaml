@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Maui.Browser.Sample.Demo.ShowcaseLayoutCollectionPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:DataType="demo:ShowcaseLayoutCollectionState"
+    xmlns:demo="clr-namespace:Maui.Browser.Sample.Demo"
+    AutomationId="showcase-page-layout-collection"
+    Title="Showcase Layout/Collection">
+
+    <ContentPage.Background>
+        <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientStart}" Offset="0" />
+            <GradientStop Color="{DynamicResource ShowcaseColorPageGradientEnd}" Offset="1" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <demo:ShowcaseStyles />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="30,26,30,36" Spacing="18">
+            <HorizontalStackLayout Spacing="12">
+                <Button
+                    AutomationId="showcase-layout-back-home"
+                    Clicked="OnBackClicked"
+                    Style="{StaticResource ShowcaseGhostButtonStyle}"
+                    Text="Back" />
+                <Button
+                    AutomationId="showcase-layout-toggle-theme"
+                    Clicked="OnToggleThemeClicked"
+                    Style="{StaticResource ShowcaseSecondaryButtonStyle}"
+                    Text="Toggle theme" />
+            </HorizontalStackLayout>
+
+            <Label
+                AutomationId="showcase-layout-heading"
+                Style="{StaticResource ShowcasePageHeadingStyle}"
+                Text="Layout and collection presentation" />
+
+            <Border Style="{StaticResource ShowcaseCardStyle}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Style="{StaticResource ShowcaseSectionHeadingStyle}" Text="Flex presentation" />
+                    <Label
+                        AutomationId="showcase-layout-flex-summary"
+                        Style="{StaticResource ShowcaseMutedLabelStyle}"
+                        Text="{Binding FlexSummary}" />
+
+                    <FlexLayout
+                        AutomationId="showcase-layout-flex"
+                        AlignContent="Start"
+                        AlignItems="Stretch"
+                        Direction="{Binding CurrentFlexDirection}"
+                        JustifyContent="Start"
+                        Wrap="{Binding CurrentFlexWrap}">
+                        <Border
+                            AutomationId="showcase-layout-flex-item-1"
+                            BackgroundColor="{DynamicResource ShowcaseColorAccentSoft}"
+                            FlexLayout.Basis="180"
+                            FlexLayout.Grow="1"
+                            Margin="0,0,10,10"
+                            Padding="10"
+                            StrokeThickness="0">
+                            <Label Text="Semantics-first projection" />
+                        </Border>
+                        <Border
+                            AutomationId="showcase-layout-flex-item-2"
+                            BackgroundColor="{DynamicResource ShowcaseColorSurfaceAlt}"
+                            FlexLayout.Basis="160"
+                            FlexLayout.Grow="1"
+                            Margin="0,0,10,10"
+                            Padding="10"
+                            StrokeThickness="0">
+                            <Label Text="Responsive cards" />
+                        </Border>
+                        <Border
+                            AutomationId="showcase-layout-flex-item-3"
+                            BackgroundColor="{DynamicResource ShowcaseColorSurfaceAlt}"
+                            FlexLayout.AlignSelf="Center"
+                            FlexLayout.Basis="220"
+                            FlexLayout.Grow="2"
+                            Margin="0,0,10,10"
+                            Padding="10"
+                            StrokeThickness="0">
+                            <Label Text="Deliberate visual rhythm" />
+                        </Border>
+                    </FlexLayout>
+
+                    <HorizontalStackLayout Spacing="12">
+                        <Button
+                            AutomationId="showcase-layout-toggle-flex-direction"
+                            Clicked="OnToggleFlexDirectionClicked"
+                            Style="{StaticResource ShowcaseSecondaryButtonStyle}"
+                            Text="Toggle direction" />
+                        <Button
+                            AutomationId="showcase-layout-toggle-flex-wrap"
+                            Clicked="OnToggleFlexWrapClicked"
+                            Style="{StaticResource ShowcaseSecondaryButtonStyle}"
+                            Text="Toggle wrap" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+
+            <Border Style="{StaticResource ShowcaseCardStyle}">
+                <VerticalStackLayout Spacing="12">
+                    <Label Style="{StaticResource ShowcaseSectionHeadingStyle}" Text="Collection + refresh" />
+                    <Label
+                        AutomationId="showcase-layout-collection-summary"
+                        Style="{StaticResource ShowcaseMutedLabelStyle}"
+                        Text="{Binding CollectionSummary}" />
+                    <Label
+                        AutomationId="showcase-layout-refresh-summary"
+                        Style="{StaticResource ShowcaseMutedLabelStyle}"
+                        Text="{Binding RefreshSummary}" />
+
+                    <RefreshView
+                        AutomationId="showcase-layout-refresh"
+                        Command="{Binding RefreshCommand}"
+                        IsRefreshEnabled="{Binding IsRefreshEnabled}"
+                        IsRefreshing="{Binding IsRefreshing}"
+                        RefreshColor="{DynamicResource ShowcaseColorAccent}">
+                        <CollectionView
+                            x:Name="CollectionProbe"
+                            AutomationId="showcase-layout-collection"
+                            HeightRequest="220"
+                            ItemsSource="{Binding Items}">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border
+                                        AutomationId="showcase-layout-item-row"
+                                        Margin="0,0,0,8"
+                                        Padding="10"
+                                        Stroke="{DynamicResource ShowcaseColorSurfaceStroke}"
+                                        StrokeShape="RoundRectangle 10"
+                                        StrokeThickness="1">
+                                        <VerticalStackLayout Spacing="4">
+                                            <Label Text="{Binding Title}" />
+                                            <Label
+                                                Style="{StaticResource ShowcaseMutedLabelStyle}"
+                                                Text="{Binding Subtitle}" />
+                                        </VerticalStackLayout>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </RefreshView>
+
+                    <HorizontalStackLayout Spacing="12">
+                        <Button
+                            AutomationId="showcase-layout-add-item"
+                            Clicked="OnAddItemClicked"
+                            Style="{StaticResource ShowcaseSecondaryButtonStyle}"
+                            Text="Add" />
+                        <Button
+                            AutomationId="showcase-layout-remove-item"
+                            Clicked="OnRemoveItemClicked"
+                            Style="{StaticResource ShowcaseSecondaryButtonStyle}"
+                            Text="Remove" />
+                        <Button
+                            AutomationId="showcase-layout-start-refresh"
+                            Clicked="OnStartRefreshClicked"
+                            Style="{StaticResource ShowcasePrimaryButtonStyle}"
+                            Text="Start refresh" />
+                        <Button
+                            AutomationId="showcase-layout-complete-refresh"
+                            Clicked="OnCompleteRefreshClicked"
+                            Style="{StaticResource ShowcaseGhostButtonStyle}"
+                            Text="Complete refresh" />
+                        <Button
+                            AutomationId="showcase-layout-toggle-refresh-enabled"
+                            Clicked="OnToggleRefreshEnabledClicked"
+                            Style="{StaticResource ShowcaseGhostButtonStyle}"
+                            Text="Toggle refresh enabled" />
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

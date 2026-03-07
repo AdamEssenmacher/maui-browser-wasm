@@ -9,7 +9,7 @@ public sealed partial class BrowserSmokeTests
     public async Task CoreViewSubstrateProjectionWorks()
     {
         await using var context = await _fixture.NewContextAsync();
-        var page = await OpenFamilyPageAsync(context, "parity-open-containers-layout", "parity-page-containers-layout");
+        var page = await OpenFamilyPageAsync(context, "showcase-open-containers-layout-depth", "showcase-page-containers-layout-depth");
 
         const string probeSelector = "[data-automation-id='parity-core-substrate-probe']";
 
