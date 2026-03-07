@@ -76,7 +76,7 @@ Expected pass signals:
 - Picker selection changes update bound index/text summary.
 - Programmatic form-state updates reflect back into control visuals.
 - CollectionView family checks pass for selection (`None`/`Single`/`Multiple`), live item mutations (`Add`/`Remove`/`Move`/`Replace`/`Reset`), header/footer rendering, and `ScrollTo` behavior.
-- Collection/Templated family checks pass for `RefreshView` command/state integration (`IsRefreshing`, `IsRefreshEnabled`, command trigger gating, completion path) while keeping CollectionView interactions working inside refresh content.
+- Collection/Templated family checks pass for `RefreshView` command/state integration plus pull-gesture activation (`IsRefreshing`, `IsRefreshEnabled`, trigger/pull gating, completion path) while keeping CollectionView interactions working inside refresh content.
 - Clearing collection data shows EmptyView; reset restores item rows.
 - Resize updates viewport text.
 - Visibility/opacity transitions apply correctly.
@@ -104,7 +104,7 @@ Expected pass signals:
 - CollectionView renders templated rows from bound data and updates selection summaries from row clicks/programmatic selection.
 - Collection action buttons add/remove/move/replace/clear/reset items and update summary text.
 - Collection selection mode toggle cycles through `None`, `Single`, and `Multiple` with deterministic selected-row markers.
-- Refresh trigger row on Collection/Templated family page sets `IsRefreshing=true`, increments refresh command count once per refresh cycle, ignores re-entry while refreshing, and respects refresh-enabled toggles.
+- Refresh trigger row or pull-down gesture on Collection/Templated family page sets `IsRefreshing=true`, increments refresh command count once per refresh cycle, ignores re-entry while refreshing, and respects refresh-enabled toggles.
 - Collection header/footer mode toggle swaps between template-backed and object-view paths.
 - Collection scroll buttons trigger deterministic `ScrollTo` (`Start`/`Center`/`End`/`MakeVisible`) behavior.
 - Clearing collection data shows the empty view; reset brings rows back.
@@ -143,7 +143,7 @@ Expected pass signals:
 - `NavigationPage` is now projected with a minimal DOM navigation bar (`Back` + title) and a single active page host; Shell is intentionally out of scope.
 - `ScrollView` uses native browser overflow scrolling and supports programmatic `RequestScrollTo` mapping.
 - `CollectionView` currently supports vertical, non-virtualized parity depth with `DataTemplate` item rendering, `EmptyView`, selection (`None`/`Single`/`Multiple`), live `Add`/`Remove`/`Move`/`Replace`/`Reset` updates, header/footer, and `ScrollTo`.
-- `RefreshView` currently supports command/state-first parity with explicit trigger UI and full state/command mapping (`Content`, `IsRefreshing`, `IsRefreshEnabled`, `RefreshColor`, `Command`, `CommandParameter`); pull-drag gesture parity is deferred.
+- `RefreshView` currently supports command/state-first parity plus pull-down threshold activation with explicit indicator UI and full state/command mapping (`Content`, `IsRefreshing`, `IsRefreshEnabled`, `RefreshColor`, `Command`, `CommandParameter`); native overscroll elasticity visuals remain deferred.
 - `Image` currently supports `UriImageSource`, `FileImageSource`, and `FontImageSource`; unsupported source types (for example stream-based sources) use deterministic fallback with diagnostics.
 - `Border` currently supports solid stroke paint with rectangle/round-rectangle mapping and dashed best-effort style projection; advanced shapes/paints are deferred.
 - Clip coverage currently supports `RectangleGeometry` and `RoundRectangleGeometry`; other clip geometries remain fallback with DEBUG diagnostics.

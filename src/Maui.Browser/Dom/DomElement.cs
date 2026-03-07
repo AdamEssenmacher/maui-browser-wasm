@@ -55,6 +55,8 @@ public sealed class DomElement
 
     public int On(string eventName, Action callback) => DomApi.SubscribeEvent(Handle, eventName, callback);
 
+    public int OnPullToRefresh(double threshold, Action callback) => DomApi.SubscribePullToRefresh(Handle, threshold, callback);
+
     public int OnClickActivation(Action pointerCallback, Action keyboardCallback) =>
         DomApi.SubscribeClickActivation(Handle, pointerCallback, keyboardCallback);
 

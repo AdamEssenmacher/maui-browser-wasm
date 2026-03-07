@@ -108,3 +108,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added `BrowserRefreshViewHandler` with command/state-first interaction to match MAUI upstream trigger semantics: user action sets `IsRefreshing=true`, while `RefreshView` raises `Refreshing` and executes `Command`.
 - This slice intentionally uses an explicit trigger/indicator row in the browser projection and defers pull-drag gesture parity; deferred behavior is tracked in `PARITY_GAPS.md`.
 - `RefreshView` proof is integrated directly with the Collection/Templated family page to validate list behavior under active refresh state transitions instead of testing refresh in isolation.
+
+## 2026-03-07 (Vertical Slice 15)
+- Added browser pull-to-refresh activation on top of the existing `RefreshView` command/state handler path using a dedicated DOM interop subscription (`subscribePullToRefresh`) that triggers refresh only after a deterministic downward threshold at scroll-top.
+- Pull detection is centralized in `DomApi` and cleaned up through existing event-subscription lifecycle, keeping JS entrypoints single-surface while avoiding handler-side direct JS calls.
+- `BrowserRefreshViewHandler` now keeps explicit pull state attributes (`data-maui-rv-pull-active`, `data-maui-rv-pull-armed`, `data-maui-rv-pull-distance`) for deterministic diagnostics/E2E assertions and maps pull triggers through the same `IsEnabled`/`IsRefreshEnabled`/`IsRefreshing` gate as button-triggered refresh.
+- Native overscroll elasticity physics and platform-specific pull affordance visuals remain deferred; this slice targets behavior parity first.

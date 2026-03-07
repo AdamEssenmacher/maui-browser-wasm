@@ -13,9 +13,9 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Current behavior: `SelectionMode.None|Single|Multiple` is supported with pointer-selection updates and MAUI `SelectedItem`/`SelectedItems` synchronization.
 - Deferred: full keyboard-modifier selection semantics, richer selected visual state parity, and grouped-selection behavior.
 
-3. RefreshView pull-gesture and native affordance parity
-- Current behavior: `RefreshView` is handler-mapped with command/state-first interaction (`Content`, `IsRefreshing`, `IsRefreshEnabled`, `RefreshColor`, `Command`, `CommandParameter`) using an explicit trigger UI.
-- Deferred: pull-drag gesture detection, overscroll-driven activation, and platform-native refresh affordance visuals.
+3. RefreshView native affordance parity depth
+- Current behavior: `RefreshView` supports command/state-first interaction plus pull-drag threshold activation on scroll-top content (`Content`, `IsRefreshing`, `IsRefreshEnabled`, `RefreshColor`, `Command`, `CommandParameter`).
+- Deferred: platform-native overscroll elasticity/physics and deeper affordance parity beyond the current deterministic browser indicator row.
 
 4. Clip geometry coverage
 - Current behavior: `RectangleGeometry` and `RoundRectangleGeometry` project to CSS `clip-path`.

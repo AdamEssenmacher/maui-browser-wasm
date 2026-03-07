@@ -198,6 +198,12 @@ function removeElementSubscriptions(element) {
       continue;
     }
 
+    if (typeof subscription.dispose === "function") {
+      subscription.dispose();
+      eventSubscriptions.delete(subscriptionId);
+      continue;
+    }
+
     subscription.element.removeEventListener(subscription.eventName, subscription.listener);
     eventSubscriptions.delete(subscriptionId);
   }
@@ -225,6 +231,251 @@ export function subscribeEvent(elementHandle, eventName, callback) {
   const listener = () => callback();
   eventSubscriptions.set(subscriptionId, { element, eventName, listener });
   element.addEventListener(eventName, listener);
+  return subscriptionId;
+}
+
+function findScrollableAncestor(root, startNode) {
+  const owner = root;
+  let node = startNode instanceof Element ? startNode : null;
+  while (node && node !== owner && owner.contains(node)) {
+    if (node instanceof HTMLElement) {
+      if (node.hasAttribute("data-maui-cv-scroll-host")) {
+        return node;
+      }
+
+      const style = getComputedStyle(node);
+      const overflowY = style?.overflowY ?? "";
+      if (overflowY === "auto" || overflowY === "scroll") {
+        return node;
+      }
+    }
+
+    node = node.parentElement;
+  }
+
+  if (owner instanceof HTMLElement) {
+    const ownerStyle = getComputedStyle(owner);
+    const overflowY = ownerStyle?.overflowY ?? "";
+    if (overflowY === "auto" || overflowY === "scroll") {
+      return owner;
+    }
+  }
+
+  return null;
+}
+
+function resetPullState(root) {
+  root.setAttribute("data-maui-rv-pull-active", "false");
+  root.setAttribute("data-maui-rv-pull-armed", "false");
+  root.setAttribute("data-maui-rv-pull-distance", "0");
+}
+
+function isPullGestureAllowed(root) {
+  const isRefreshEnabled = root.getAttribute("data-maui-rv-enabled") === "true";
+  const isRefreshing = root.getAttribute("data-maui-rv-refreshing") === "true";
+  return isRefreshEnabled && !isRefreshing;
+}
+
+export function subscribePullToRefresh(elementHandle, threshold, callback) {
+  const root = fromHandle(elementHandle);
+  const normalizedThreshold = Number.isFinite(threshold) && threshold > 8 ? threshold : 72;
+  const maxDistance = normalizedThreshold * 1.8;
+  const state = {
+    tracking: false,
+    pointerId: -1,
+    startY: 0,
+    initialScrollTop: 0,
+    touchActionOverridden: false,
+    priorTouchAction: "",
+    armed: false,
+    scroller: null
+  };
+
+  resetPullState(root);
+  const subscriptionId = nextEventSubscriptionId++;
+
+  const enableGestureTouchAction = () => {
+    if (state.touchActionOverridden) {
+      return;
+    }
+
+    state.priorTouchAction = root.style.touchAction;
+    root.style.touchAction = "none";
+    state.touchActionOverridden = true;
+  };
+
+  const restoreGestureTouchAction = () => {
+    if (!state.touchActionOverridden) {
+      return;
+    }
+
+    root.style.touchAction = state.priorTouchAction;
+    state.priorTouchAction = "";
+    state.touchActionOverridden = false;
+  };
+
+  const completeTracking = (triggerRefresh) => {
+    if (!state.tracking) {
+      restoreGestureTouchAction();
+      return;
+    }
+
+    const shouldTrigger = Boolean(triggerRefresh && state.armed);
+    state.tracking = false;
+    state.pointerId = -1;
+    state.startY = 0;
+    state.initialScrollTop = 0;
+    state.armed = false;
+    state.scroller = null;
+    restoreGestureTouchAction();
+    resetPullState(root);
+
+    if (shouldTrigger) {
+      callback();
+    }
+  };
+
+  const pointerDownListener = (event) => {
+    if (!(event instanceof PointerEvent)) {
+      return;
+    }
+
+    if (state.tracking) {
+      return;
+    }
+
+    if (event.pointerType !== "touch" && event.button !== 0) {
+      return;
+    }
+
+    if (!isPullGestureAllowed(root)) {
+      return;
+    }
+
+    const scroller = findScrollableAncestor(root, event.target);
+    if (!scroller) {
+      return;
+    }
+
+    state.tracking = true;
+    state.pointerId = event.pointerId;
+    state.startY = event.clientY;
+    state.initialScrollTop = Number.isFinite(scroller.scrollTop) ? Math.max(0, scroller.scrollTop) : 0;
+    if (state.initialScrollTop <= 0.5) {
+      enableGestureTouchAction();
+      event.preventDefault();
+    }
+    state.armed = false;
+    state.scroller = scroller;
+    resetPullState(root);
+  };
+
+  const pointerMoveListener = (event) => {
+    if (!state.tracking || !(event instanceof PointerEvent)) {
+      return;
+    }
+
+    if (!isPullGestureAllowed(root)) {
+      completeTracking(false);
+      return;
+    }
+
+    if (event.pointerId !== state.pointerId) {
+      return;
+    }
+
+    if (!state.scroller) {
+      completeTracking(false);
+      return;
+    }
+
+    const rawDeltaY = event.clientY - state.startY;
+    const reachedTopByScroll = state.scroller.scrollTop <= 0.5;
+    if (reachedTopByScroll && rawDeltaY > 0) {
+      enableGestureTouchAction();
+    }
+
+    if (!reachedTopByScroll) {
+      // Keep tracking the same gesture so downward drag can arm once
+      // the scroller reaches top without requiring a new pointerdown.
+      state.armed = false;
+      root.setAttribute("data-maui-rv-pull-distance", "0");
+      root.setAttribute("data-maui-rv-pull-armed", "false");
+      root.setAttribute("data-maui-rv-pull-active", "false");
+      return;
+    }
+
+    const deltaY = rawDeltaY - state.initialScrollTop;
+    if (deltaY <= 0) {
+      root.setAttribute("data-maui-rv-pull-distance", "0");
+      root.setAttribute("data-maui-rv-pull-armed", "false");
+      root.setAttribute("data-maui-rv-pull-active", "false");
+      state.armed = false;
+      return;
+    }
+
+    const clampedDistance = Math.min(maxDistance, deltaY);
+    state.armed = clampedDistance >= normalizedThreshold;
+    root.setAttribute("data-maui-rv-pull-active", "true");
+    root.setAttribute("data-maui-rv-pull-armed", state.armed ? "true" : "false");
+    root.setAttribute("data-maui-rv-pull-distance", String(Math.round(clampedDistance)));
+    event.preventDefault();
+  };
+
+  const pointerUpListener = (event) => {
+    if (!(event instanceof PointerEvent) || event.pointerId !== state.pointerId) {
+      return;
+    }
+
+    completeTracking(true);
+  };
+
+  const pointerCancelListener = (event) => {
+    if (event instanceof PointerEvent && state.pointerId >= 0 && event.pointerId !== state.pointerId) {
+      return;
+    }
+
+    completeTracking(false);
+  };
+
+  const scrollListener = () => {
+    if (!state.tracking || !state.scroller) {
+      return;
+    }
+
+    if (!isPullGestureAllowed(root)) {
+      completeTracking(false);
+      return;
+    }
+
+    const currentTop = Number.isFinite(state.scroller.scrollTop) ? state.scroller.scrollTop : 0;
+    // Do not abort when a downward drag is consuming pre-existing scroll offset.
+    // Abort only when scroll position moves deeper than the initial offset.
+    if (currentTop > state.initialScrollTop + 0.5) {
+      completeTracking(false);
+    }
+  };
+
+  root.addEventListener("pointerdown", pointerDownListener, { passive: false });
+  window.addEventListener("pointermove", pointerMoveListener, { passive: false, capture: true });
+  root.addEventListener("scroll", scrollListener, true);
+  window.addEventListener("pointerup", pointerUpListener, true);
+  window.addEventListener("pointercancel", pointerCancelListener, true);
+  window.addEventListener("blur", pointerCancelListener);
+
+  eventSubscriptions.set(subscriptionId, {
+    element: root,
+    dispose: () => {
+      root.removeEventListener("pointerdown", pointerDownListener);
+      window.removeEventListener("pointermove", pointerMoveListener, true);
+      root.removeEventListener("scroll", scrollListener, true);
+      window.removeEventListener("pointerup", pointerUpListener, true);
+      window.removeEventListener("pointercancel", pointerCancelListener, true);
+      window.removeEventListener("blur", pointerCancelListener);
+      completeTracking(false);
+    }
+  });
+
   return subscriptionId;
 }
 
@@ -262,6 +513,12 @@ export function subscribeEnterKey(elementHandle, callback) {
 export function unsubscribeEvent(subscriptionId) {
   const subscription = eventSubscriptions.get(subscriptionId);
   if (!subscription) {
+    return;
+  }
+
+  if (typeof subscription.dispose === "function") {
+    subscription.dispose();
+    eventSubscriptions.delete(subscriptionId);
     return;
   }
 
