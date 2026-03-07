@@ -19,7 +19,7 @@ Status values:
 | `HorizontalStackLayout` | `LayoutHandler` | `BrowserLayoutHandler` | complete | `src/Core/src/Handlers/Layout/LayoutHandler.iOS.cs` | `src/Core/src/Handlers/Layout/LayoutHandler.Android.cs` | `parity-page-containers-layout` | `StackLayoutSemanticProjectionWorks` |
 | `Grid` | `LayoutHandler` | `BrowserLayoutHandler` | complete | `src/Core/src/Handlers/Layout/LayoutHandler.iOS.cs` | `src/Core/src/Handlers/Layout/LayoutHandler.Android.cs` | `parity-page-containers-layout` | `GridSemanticProjectionWorks` |
 | `AbsoluteLayout` | `LayoutHandler` | `BrowserLayoutHandler` | complete | `src/Core/src/Handlers/Layout/LayoutHandler.iOS.cs` | `src/Core/src/Handlers/Layout/LayoutHandler.Android.cs` | `parity-page-containers-layout` | `GridSemanticProjectionWorks` |
-| `FlexLayout` | `LayoutHandler` | `-` | missing | `src/Core/src/Handlers/Layout/LayoutHandler.iOS.cs` | `src/Core/src/Handlers/Layout/LayoutHandler.Android.cs` | `parity-page-containers-layout` | `planned:layout-flex` |
+| `FlexLayout` | `LayoutHandler` | `BrowserLayoutHandler` | partial | `src/Core/src/Handlers/Layout/LayoutHandler.iOS.cs` | `src/Core/src/Handlers/Layout/LayoutHandler.Android.cs` | `parity-page-containers-layout` | `FlexLayoutSemanticProjectionWorks` |
 | `Label` | `LabelHandler` | `BrowserLabelHandler` | partial | `src/Core/src/Handlers/Label/LabelHandler.iOS.cs` | `src/Core/src/Handlers/Label/LabelHandler.Android.cs` | `parity-page-text-input` | `TextInputFamilyParityWorks` |
 | `Button` | `ButtonHandler` | `BrowserButtonHandler` | complete | `src/Core/src/Handlers/Button/ButtonHandler.iOS.cs` | `src/Core/src/Handlers/Button/ButtonHandler.Android.cs` | `parity-page-text-input` | `EntryAndButtonFlowWork` |
 | `Entry` | `EntryHandler` | `BrowserEntryHandler` | partial | `src/Core/src/Handlers/Entry/EntryHandler.iOS.cs` | `src/Core/src/Handlers/Entry/EntryHandler.Android.cs` | `parity-page-text-input` | `TextInputFamilyParityWorks` |
@@ -47,6 +47,6 @@ Status values:
 
 ## Current browser coverage snapshot
 - Complete: `Window`, `ContentPage`, `ContentView`, stack/grid/absolute layout mapping, `Button`, `CheckBox`
-- Partial: `NavigationPage`, `ScrollView`, `Label`, `Entry`, `Editor`, `SearchBar`, `Switch`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `Stepper`, `ProgressBar`, `ActivityIndicator`, `Image`, `ImageButton`, `Border`, `CollectionView`
-- Missing: `FlexLayout`, `GraphicsView`, `CarouselView`, `IndicatorView`, `RefreshView`, `SwipeView`, `WebView`
+- Partial: `NavigationPage`, `ScrollView`, `FlexLayout`, `Label`, `Entry`, `Editor`, `SearchBar`, `Switch`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `Stepper`, `ProgressBar`, `ActivityIndicator`, `Image`, `ImageButton`, `Border`, `CollectionView`
+- Missing: `GraphicsView`, `CarouselView`, `IndicatorView`, `RefreshView`, `SwipeView`, `WebView`
 - Shared core substrate: `IView.Clip` (`RectangleGeometry`/`RoundRectangleGeometry`), `IView.Shadow` (solid paint), and `IView.Background` (`SolidPaint` + `LinearGradientPaint`) are implemented in the common browser mapper.

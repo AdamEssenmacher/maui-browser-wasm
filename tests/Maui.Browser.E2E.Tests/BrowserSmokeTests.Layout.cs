@@ -103,4 +103,85 @@ public sealed partial class BrowserSmokeTests
         Assert.NotEqual("grid", absoluteFallbackDisplay);
         Assert.EndsWith("px", absoluteFallbackChildLeft, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task FlexLayoutSemanticProjectionWorks()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenFamilyPageAsync(context, "parity-open-containers-layout", "parity-page-containers-layout");
+
+        const string flexContainerSelector = "[data-automation-id='parity-flex-container']";
+        const string itemOneSelector = "[data-automation-id='parity-flex-item-1']";
+        const string itemTwoSelector = "[data-automation-id='parity-flex-item-2']";
+        const string itemThreeSelector = "[data-automation-id='parity-flex-item-3']";
+
+        var beforeDiagnostics = await ReadDiagnosticsAsync(page);
+
+        Assert.Equal("flex", await ReadComputedStylePropertyAsync(page, flexContainerSelector, "display"));
+        Assert.Equal("row", await ReadComputedStylePropertyAsync(page, flexContainerSelector, "flexDirection"));
+        Assert.Equal("nowrap", await ReadComputedStylePropertyAsync(page, flexContainerSelector, "flexWrap"));
+        Assert.Equal("flex-start", await ReadComputedStylePropertyAsync(page, flexContainerSelector, "justifyContent"));
+        Assert.Equal("stretch", await ReadComputedStylePropertyAsync(page, flexContainerSelector, "alignItems"));
+        Assert.Equal("flex-start", await ReadComputedStylePropertyAsync(page, flexContainerSelector, "alignContent"));
+
+        await page.Locator("[data-automation-id='parity-flex-toggle-direction-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Flex direction: column");
+        Assert.Equal("column", await ReadComputedStylePropertyAsync(page, flexContainerSelector, "flexDirection"));
+
+        await page.Locator("[data-automation-id='parity-flex-toggle-wrap-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Flex wrap: wrap");
+        Assert.Equal("wrap", await ReadComputedStylePropertyAsync(page, flexContainerSelector, "flexWrap"));
+
+        await page.Locator("[data-automation-id='parity-flex-toggle-justify-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Flex justify: space-between");
+        Assert.Equal("space-between", await ReadComputedStylePropertyAsync(page, flexContainerSelector, "justifyContent"));
+
+        await page.Locator("[data-automation-id='parity-flex-toggle-align-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Flex align: items=center, content=space-around");
+        Assert.Equal("center", await ReadComputedStylePropertyAsync(page, flexContainerSelector, "alignItems"));
+        Assert.Equal("space-around", await ReadComputedStylePropertyAsync(page, flexContainerSelector, "alignContent"));
+
+        await page.Locator("[data-automation-id='parity-flex-toggle-direction-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Flex direction: row");
+        Assert.Equal("row", await ReadComputedStylePropertyAsync(page, flexContainerSelector, "flexDirection"));
+
+        var leftsBeforeItemPreset = await ReadBoundingLeftsAsync(page, [itemOneSelector, itemTwoSelector, itemThreeSelector]);
+        Assert.True(
+            leftsBeforeItemPreset[0] < leftsBeforeItemPreset[1] && leftsBeforeItemPreset[1] < leftsBeforeItemPreset[2],
+            "Expected default item order to be 1,2,3.");
+
+        await page.Locator("[data-automation-id='parity-flex-toggle-item-preset-button']").ClickAsync();
+        await page.WaitForSelectorAsync("text=Flex item preset: emphasis (grow/shrink/order/basis/align-self)");
+
+        Assert.Equal("0", await ReadInlineStylePropertyAsync(page, itemTwoSelector, "order"));
+        Assert.Equal("1", await ReadInlineStylePropertyAsync(page, itemTwoSelector, "flexGrow"));
+        Assert.Equal("1", await ReadInlineStylePropertyAsync(page, itemTwoSelector, "flexShrink"));
+        Assert.Equal("50%", await ReadInlineStylePropertyAsync(page, itemTwoSelector, "flexBasis"));
+        Assert.Equal("flex-end", await ReadInlineStylePropertyAsync(page, itemTwoSelector, "alignSelf"));
+
+        var leftsAfterItemPreset = await ReadBoundingLeftsAsync(page, [itemOneSelector, itemTwoSelector, itemThreeSelector]);
+        Assert.True(
+            leftsAfterItemPreset[1] < leftsAfterItemPreset[0] && leftsAfterItemPreset[0] < leftsAfterItemPreset[2],
+            "Expected item 2 to move ahead of item 1 after order preset.");
+
+        for (var i = 0; i < 4; i++)
+        {
+            await page.Locator("[data-automation-id='parity-flex-toggle-direction-button']").ClickAsync();
+            await page.Locator("[data-automation-id='parity-flex-toggle-wrap-button']").ClickAsync();
+            await page.Locator("[data-automation-id='parity-flex-toggle-justify-button']").ClickAsync();
+            await page.Locator("[data-automation-id='parity-flex-toggle-align-button']").ClickAsync();
+            await page.Locator("[data-automation-id='parity-flex-toggle-item-preset-button']").ClickAsync();
+        }
+
+        var afterDiagnostics = await ReadDiagnosticsAsync(page);
+        Assert.True(
+            afterDiagnostics.ElementHandleCount <= beforeDiagnostics.ElementHandleCount + 20,
+            $"Expected flex probe element handles near baseline. Before={beforeDiagnostics.ElementHandleCount}, After={afterDiagnostics.ElementHandleCount}");
+        Assert.True(
+            afterDiagnostics.EventSubscriptionCount <= beforeDiagnostics.EventSubscriptionCount + 4,
+            $"Expected flex probe subscriptions near baseline. Before={beforeDiagnostics.EventSubscriptionCount}, After={afterDiagnostics.EventSubscriptionCount}");
+        Assert.True(
+            afterDiagnostics.ResizeSubscriptionCount <= beforeDiagnostics.ResizeSubscriptionCount + 1,
+            $"Expected flex probe resize subscriptions near baseline. Before={beforeDiagnostics.ResizeSubscriptionCount}, After={afterDiagnostics.ResizeSubscriptionCount}");
+    }
 }

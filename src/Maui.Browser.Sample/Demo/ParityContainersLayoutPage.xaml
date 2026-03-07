@@ -144,6 +144,115 @@
                 Text="{Binding BackgroundSummary}"
                 TextColor="DarkSlateGray" />
 
+            <Label
+                AutomationId="parity-flex-heading"
+                FontSize="18"
+                Text="FlexLayout semantic projection"
+                TextColor="Black" />
+
+            <Label
+                AutomationId="parity-flex-summary"
+                FontSize="12"
+                Text="Direction/wrap/justify/align plus attached item properties."
+                TextColor="DarkSlateGray" />
+
+            <FlexLayout
+                x:Name="FlexSemanticProbe"
+                AutomationId="parity-flex-container"
+                AlignContent="Start"
+                AlignItems="Stretch"
+                BackgroundColor="#E2E8F0"
+                Direction="Row"
+                HeightRequest="180"
+                JustifyContent="Start"
+                Padding="8"
+                WidthRequest="420"
+                Wrap="NoWrap">
+                <Label
+                    x:Name="FlexItemOne"
+                    AutomationId="parity-flex-item-1"
+                    BackgroundColor="#BFDBFE"
+                    HeightRequest="44"
+                    Padding="8,6"
+                    Text="Item 1"
+                    WidthRequest="92" />
+                <Label
+                    x:Name="FlexItemTwo"
+                    AutomationId="parity-flex-item-2"
+                    BackgroundColor="#FBCFE8"
+                    HeightRequest="44"
+                    Padding="8,6"
+                    Text="Item 2"
+                    WidthRequest="92" />
+                <Label
+                    x:Name="FlexItemThree"
+                    AutomationId="parity-flex-item-3"
+                    BackgroundColor="#BBF7D0"
+                    HeightRequest="44"
+                    Padding="8,6"
+                    Text="Item 3"
+                    WidthRequest="92" />
+            </FlexLayout>
+
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    AutomationId="parity-flex-toggle-direction-button"
+                    Clicked="OnFlexToggleDirectionClicked"
+                    Padding="10,6"
+                    Text="Toggle direction"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-flex-toggle-wrap-button"
+                    Clicked="OnFlexToggleWrapClicked"
+                    Padding="10,6"
+                    Text="Toggle wrap"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-flex-toggle-justify-button"
+                    Clicked="OnFlexToggleJustifyClicked"
+                    Padding="10,6"
+                    Text="Toggle justify"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-flex-toggle-align-button"
+                    Clicked="OnFlexToggleAlignClicked"
+                    Padding="10,6"
+                    Text="Toggle align"
+                    TextColor="Black" />
+                <Button
+                    AutomationId="parity-flex-toggle-item-preset-button"
+                    Clicked="OnFlexToggleItemPresetClicked"
+                    Padding="10,6"
+                    Text="Toggle item preset"
+                    TextColor="Black" />
+            </HorizontalStackLayout>
+
+            <Label
+                AutomationId="parity-flex-direction-summary"
+                FontSize="12"
+                Text="{Binding FlexDirectionSummary}"
+                TextColor="DarkSlateGray" />
+            <Label
+                AutomationId="parity-flex-wrap-summary"
+                FontSize="12"
+                Text="{Binding FlexWrapSummary}"
+                TextColor="DarkSlateGray" />
+            <Label
+                AutomationId="parity-flex-justify-summary"
+                FontSize="12"
+                Text="{Binding FlexJustifySummary}"
+                TextColor="DarkSlateGray" />
+            <Label
+                AutomationId="parity-flex-align-summary"
+                FontSize="12"
+                Text="{Binding FlexAlignSummary}"
+                TextColor="DarkSlateGray" />
+            <Label
+                AutomationId="parity-flex-item-preset-summary"
+                FontSize="12"
+                Text="{Binding FlexItemPresetSummary}"
+                TextColor="DarkSlateGray" />
+
             <Button
                 AutomationId="parity-page-containers-layout-open-consolidated"
                 Clicked="OnOpenConsolidatedClicked"

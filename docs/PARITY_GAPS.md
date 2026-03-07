@@ -49,15 +49,19 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Current behavior: single-child hosting, solid stroke color/thickness, round-rectangle/rectangle shape mapping, and dashed best-effort stroke style are projected to CSS.
 - Deferred: full stroke-shape and stroke-paint parity (ellipse/path/geometry groups, non-solid stroke paint, line-cap/join/miter exact behavior) remains partial.
 
-12. Font-load synchronized measurement
+12. FlexLayout parity depth
+- Current behavior: semantic CSS flex projection is implemented for container properties (`Direction`, `Wrap`, `JustifyContent`, `AlignItems`, `AlignContent`) and item attached properties (`Order`, `Grow`, `Shrink`, `Basis`, `AlignSelf`).
+- Deferred: full `FlexLayout.Position` parity and advanced edge semantics across mixed absolute/relative flex children remain partial.
+
+13. Font-load synchronized measurement
 - Current behavior: text measurement is canvas-based with deterministic fallback.
 - Deferred: async font readiness synchronization and re-measure strategy.
 
-13. Browser-hard controls not yet implemented
+14. Browser-hard controls not yet implemented
 - Current behavior: no browser handlers yet for controls marked `missing` in `PARITY_MATRIX.md`.
 - Deferred: implementation waves by family per roadmap.
 
-14. Shell
+15. Shell
 - Current behavior: out of scope by decision.
 - Deferred: no Shell implementation planned in this parity program.
 
