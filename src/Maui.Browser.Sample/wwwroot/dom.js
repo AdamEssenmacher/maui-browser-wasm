@@ -285,6 +285,8 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
     pointerId: -1,
     startY: 0,
     initialScrollTop: 0,
+    touchActionOverridden: false,
+    priorTouchAction: "",
     armed: false,
     scroller: null
   };
@@ -292,8 +294,29 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
   resetPullState(root);
   const subscriptionId = nextEventSubscriptionId++;
 
+  const enableGestureTouchAction = () => {
+    if (state.touchActionOverridden) {
+      return;
+    }
+
+    state.priorTouchAction = root.style.touchAction;
+    root.style.touchAction = "none";
+    state.touchActionOverridden = true;
+  };
+
+  const restoreGestureTouchAction = () => {
+    if (!state.touchActionOverridden) {
+      return;
+    }
+
+    root.style.touchAction = state.priorTouchAction;
+    state.priorTouchAction = "";
+    state.touchActionOverridden = false;
+  };
+
   const completeTracking = (triggerRefresh) => {
     if (!state.tracking) {
+      restoreGestureTouchAction();
       return;
     }
 
@@ -304,6 +327,7 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
     state.initialScrollTop = 0;
     state.armed = false;
     state.scroller = null;
+    restoreGestureTouchAction();
     resetPullState(root);
 
     if (shouldTrigger) {
@@ -337,6 +361,10 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
     state.pointerId = event.pointerId;
     state.startY = event.clientY;
     state.initialScrollTop = Number.isFinite(scroller.scrollTop) ? Math.max(0, scroller.scrollTop) : 0;
+    if (state.initialScrollTop <= 0.5) {
+      enableGestureTouchAction();
+      event.preventDefault();
+    }
     state.armed = false;
     state.scroller = scroller;
     resetPullState(root);
@@ -363,6 +391,10 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
 
     const rawDeltaY = event.clientY - state.startY;
     const reachedTopByScroll = state.scroller.scrollTop <= 0.5;
+    if (reachedTopByScroll && rawDeltaY > 0) {
+      enableGestureTouchAction();
+    }
+
     if (!reachedTopByScroll) {
       // Keep tracking the same gesture so downward drag can arm once
       // the scroller reaches top without requiring a new pointerdown.
@@ -424,7 +456,7 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
     }
   };
 
-  root.addEventListener("pointerdown", pointerDownListener, { passive: true });
+  root.addEventListener("pointerdown", pointerDownListener, { passive: false });
   window.addEventListener("pointermove", pointerMoveListener, { passive: false, capture: true });
   root.addEventListener("scroll", scrollListener, true);
   window.addEventListener("pointerup", pointerUpListener, true);
@@ -434,7 +466,7 @@ export function subscribePullToRefresh(elementHandle, threshold, callback) {
   eventSubscriptions.set(subscriptionId, {
     element: root,
     dispose: () => {
-      root.removeEventListener("pointerdown", pointerDownListener, { passive: true });
+      root.removeEventListener("pointerdown", pointerDownListener);
       window.removeEventListener("pointermove", pointerMoveListener, true);
       root.removeEventListener("scroll", scrollListener, true);
       window.removeEventListener("pointerup", pointerUpListener, true);
