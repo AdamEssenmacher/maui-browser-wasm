@@ -82,6 +82,12 @@ internal static partial class DomApi
     [JSImport("subscribeEvent", Module)]
     internal static partial int SubscribeEvent(nint element, string eventName, [JSMarshalAs<JSType.Function>] Action callback);
 
+    [JSImport("subscribeClickActivation", Module)]
+    internal static partial int SubscribeClickActivation(
+        nint element,
+        [JSMarshalAs<JSType.Function>] Action pointerCallback,
+        [JSMarshalAs<JSType.Function>] Action keyboardCallback);
+
     [JSImport("unsubscribeEvent", Module)]
     internal static partial void UnsubscribeEvent(int subscriptionId);
 
@@ -114,6 +120,12 @@ internal static partial class DomApi
 
     [JSImport("unsubscribeWindowResize", Module)]
     internal static partial void UnsubscribeWindowResize(int subscriptionId);
+
+    [JSImport("subscribeWindowPointerRelease", Module)]
+    internal static partial int SubscribeWindowPointerRelease([JSMarshalAs<JSType.Function>] Action callback);
+
+    [JSImport("unsubscribeWindowPointerRelease", Module)]
+    internal static partial void UnsubscribeWindowPointerRelease(int subscriptionId);
 
     [JSImport("measureText", Module)]
     internal static partial double[] MeasureText(string? text, string? font);

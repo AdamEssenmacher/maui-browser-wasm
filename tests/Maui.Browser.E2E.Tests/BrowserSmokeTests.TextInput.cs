@@ -21,6 +21,21 @@ public sealed partial class BrowserSmokeTests
             "password",
             await ReadAttributeAsync(page, "[data-automation-id='parity-text-password-entry']", "type"));
 
+        Assert.Equal(
+            "text",
+            await ReadAttributeAsync(page, "[data-automation-id='parity-text-numeric-entry']", "type"));
+        Assert.Equal(
+            "decimal",
+            await ReadAttributeAsync(page, "[data-automation-id='parity-text-numeric-entry']", "inputmode"));
+
+        await page.Locator("[data-automation-id='parity-text-numeric-entry']").ClickAsync();
+        await page.Locator("[data-automation-id='parity-text-numeric-entry']").FillAsync(string.Empty);
+        await page.Keyboard.TypeAsync("123456");
+        Assert.Equal(
+            "1234",
+            await ReadInputValueAsync(page, "[data-automation-id='parity-text-numeric-entry']"));
+        await page.WaitForSelectorAsync("text=Numeric entry text: 1234");
+
         var placeholderColor = await page.EvaluateAsync<string>(
             @"() => {
                 const entry = document.querySelector('[data-automation-id=""parity-text-entry""]');
@@ -55,6 +70,7 @@ public sealed partial class BrowserSmokeTests
 
         await page.Locator("[data-automation-id='parity-text-programmatic-update-button']").ClickAsync();
         await page.WaitForSelectorAsync("text=Entry text: programmatic-entry | completed: 1");
+        await page.WaitForSelectorAsync("text=Numeric entry text: 9876");
         Assert.Equal(
             "programmatic-search",
             await ReadInputValueAsync(page, "[data-automation-id='parity-text-searchbar-input']"));

@@ -52,6 +52,9 @@ public sealed class DomElement
 
     public int On(string eventName, Action callback) => DomApi.SubscribeEvent(Handle, eventName, callback);
 
+    public int OnClickActivation(Action pointerCallback, Action keyboardCallback) =>
+        DomApi.SubscribeClickActivation(Handle, pointerCallback, keyboardCallback);
+
     public int OnEnter(Action callback) => DomApi.SubscribeEnterKey(Handle, callback);
 
     public static void Off(int subscriptionId) => DomApi.UnsubscribeEvent(subscriptionId);
@@ -73,6 +76,10 @@ public sealed class DomElement
     public static int SubscribeWindowResize(Action callback) => DomApi.SubscribeWindowResize(callback);
 
     public static void UnsubscribeWindowResize(int subscriptionId) => DomApi.UnsubscribeWindowResize(subscriptionId);
+
+    public static int SubscribeWindowPointerRelease(Action callback) => DomApi.SubscribeWindowPointerRelease(callback);
+
+    public static void UnsubscribeWindowPointerRelease(int subscriptionId) => DomApi.UnsubscribeWindowPointerRelease(subscriptionId);
 
     public static (double Width, double Height) MeasureText(string? text, string? font)
     {

@@ -182,6 +182,23 @@ export function subscribeEvent(elementHandle, eventName, callback) {
   return subscriptionId;
 }
 
+export function subscribeClickActivation(elementHandle, pointerCallback, keyboardCallback) {
+  const element = fromHandle(elementHandle);
+  const subscriptionId = nextEventSubscriptionId++;
+  const listener = (event) => {
+    if (event.detail === 0) {
+      keyboardCallback();
+      return;
+    }
+
+    pointerCallback();
+  };
+
+  eventSubscriptions.set(subscriptionId, { element, eventName: "click", listener });
+  element.addEventListener("click", listener);
+  return subscriptionId;
+}
+
 export function subscribeEnterKey(elementHandle, callback) {
   const element = fromHandle(elementHandle);
   const subscriptionId = nextEventSubscriptionId++;
@@ -262,6 +279,8 @@ export function getSelectSelectedIndex(elementHandle) {
 
 const resizeSubscriptions = new Map();
 let nextResizeSubscriptionId = 1;
+const pointerReleaseSubscriptions = new Map();
+let nextPointerReleaseSubscriptionId = 1;
 
 export function subscribeWindowResize(callback) {
   const subscriptionId = nextResizeSubscriptionId++;
@@ -279,6 +298,28 @@ export function unsubscribeWindowResize(subscriptionId) {
 
   window.removeEventListener("resize", listener);
   resizeSubscriptions.delete(subscriptionId);
+}
+
+export function subscribeWindowPointerRelease(callback) {
+  const subscriptionId = nextPointerReleaseSubscriptionId++;
+  const listener = () => callback();
+  pointerReleaseSubscriptions.set(subscriptionId, listener);
+  window.addEventListener("pointerup", listener, true);
+  window.addEventListener("pointercancel", listener, true);
+  window.addEventListener("blur", listener);
+  return subscriptionId;
+}
+
+export function unsubscribeWindowPointerRelease(subscriptionId) {
+  const listener = pointerReleaseSubscriptions.get(subscriptionId);
+  if (!listener) {
+    return;
+  }
+
+  window.removeEventListener("pointerup", listener, true);
+  window.removeEventListener("pointercancel", listener, true);
+  window.removeEventListener("blur", listener);
+  pointerReleaseSubscriptions.delete(subscriptionId);
 }
 
 export function getDiagnostics() {

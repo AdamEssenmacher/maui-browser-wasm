@@ -58,7 +58,9 @@ internal static class BrowserTextInputMappings
         }
         else if (ReferenceEquals(keyboard, Keyboard.Numeric))
         {
-            inputType = multiline ? "text" : "number";
+            // Keep type=text so maxlength remains enforceable by the browser.
+            // inputmode still hints the numeric keyboard on mobile.
+            inputType = "text";
             inputMode = "decimal";
         }
         else if (ReferenceEquals(keyboard, Keyboard.Email))

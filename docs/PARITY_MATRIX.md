@@ -34,9 +34,9 @@ Status values:
 | `TimePicker` | `TimePickerHandler` | `BrowserTimePickerHandler` | partial | `src/Core/src/Handlers/TimePicker/TimePickerHandler.iOS.cs` | `src/Core/src/Handlers/TimePicker/TimePickerHandler.Android.cs` | `parity-page-pickers-datetime` | `PickersDateTimeAndNumericFamilyParityWorks` |
 | `ProgressBar` | `ProgressBarHandler` | `BrowserProgressBarHandler` | partial | `src/Core/src/Handlers/ProgressBar/ProgressBarHandler.iOS.cs` | `src/Core/src/Handlers/ProgressBar/ProgressBarHandler.Android.cs` | `parity-page-pickers-datetime` | `PickersDateTimeAndNumericFamilyParityWorks` |
 | `ActivityIndicator` | `ActivityIndicatorHandler` | `BrowserActivityIndicatorHandler` | partial | `src/Core/src/Handlers/ActivityIndicator/ActivityIndicatorHandler.iOS.cs` | `src/Core/src/Handlers/ActivityIndicator/ActivityIndicatorHandler.Android.cs` | `parity-page-pickers-datetime` | `PickersDateTimeAndNumericFamilyParityWorks` |
-| `Image` | `ImageHandler` | `-` | missing | `src/Core/src/Handlers/Image/ImageHandler.iOS.cs` | `src/Core/src/Handlers/Image/ImageHandler.Android.cs` | `parity-page-media-visual` | `planned:image` |
-| `ImageButton` | `ImageButtonHandler` | `-` | missing | `src/Core/src/Handlers/ImageButton/ImageButtonHandler.iOS.cs` | `src/Core/src/Handlers/ImageButton/ImageButtonHandler.Android.cs` | `parity-page-media-visual` | `planned:imagebutton` |
-| `Border` | `BorderHandler` | `-` | missing | `src/Core/src/Handlers/Border/BorderHandler.iOS.cs` | `src/Core/src/Handlers/Border/BorderHandler.Android.cs` | `parity-page-media-visual` | `planned:border` |
+| `Image` | `ImageHandler` | `BrowserImageHandler` | partial | `src/Core/src/Handlers/Image/ImageHandler.iOS.cs` | `src/Core/src/Handlers/Image/ImageHandler.Android.cs` | `parity-page-media-visual` | `MediaVisualParityWorks` |
+| `ImageButton` | `ImageButtonHandler` | `BrowserImageButtonHandler` | partial | `src/Core/src/Handlers/ImageButton/ImageButtonHandler.iOS.cs` | `src/Core/src/Handlers/ImageButton/ImageButtonHandler.Android.cs` | `parity-page-media-visual` | `MediaVisualParityWorks` |
+| `Border` | `BorderHandler` | `BrowserBorderHandler` | partial | `src/Core/src/Handlers/Border/BorderHandler.iOS.cs` | `src/Core/src/Handlers/Border/BorderHandler.Android.cs` | `parity-page-media-visual` | `MediaVisualParityWorks` |
 | `GraphicsView` | `GraphicsViewHandler` | `-` | missing | `src/Core/src/Handlers/GraphicsView/GraphicsViewHandler.iOS.cs` | `src/Core/src/Handlers/GraphicsView/GraphicsViewHandler.Android.cs` | `parity-page-media-visual` | `planned:graphicsview` |
 | `CollectionView` | `CollectionViewHandler` | `BrowserCollectionViewHandler` | partial | `src/Controls/src/Core/Handlers/Items/CollectionViewHandler.iOS.cs` | `src/Controls/src/Core/Handlers/Items/CollectionViewHandler.Android.cs` | `parity-page-collection-templated` | `CollectionViewViabilityWorks` |
 | `CarouselView` | `CarouselViewHandler` | `-` | missing | `src/Controls/src/Core/Handlers/Items/CarouselViewHandler.iOS.cs` | `src/Controls/src/Core/Handlers/Items/CarouselViewHandler.Android.cs` | `parity-page-collection-templated` | `planned:carouselview` |
@@ -47,6 +47,6 @@ Status values:
 
 ## Current browser coverage snapshot
 - Complete: `Window`, `ContentPage`, `ContentView`, stack/grid/absolute layout mapping, `Button`, `CheckBox`
-- Partial: `NavigationPage`, `ScrollView`, `Label`, `Entry`, `Editor`, `SearchBar`, `Switch`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `Stepper`, `ProgressBar`, `ActivityIndicator`, `CollectionView`
-- Missing: all other modern controls listed above
+- Partial: `NavigationPage`, `ScrollView`, `Label`, `Entry`, `Editor`, `SearchBar`, `Switch`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `Stepper`, `ProgressBar`, `ActivityIndicator`, `Image`, `ImageButton`, `Border`, `CollectionView`
+- Missing: `FlexLayout`, `GraphicsView`, `CarouselView`, `IndicatorView`, `RefreshView`, `SwipeView`, `WebView`
 - Shared core substrate: `IView.Clip` (`RectangleGeometry`/`RoundRectangleGeometry`), `IView.Shadow` (solid paint), and `IView.Background` (`SolidPaint` + `LinearGradientPaint`) are implemented in the common browser mapper.

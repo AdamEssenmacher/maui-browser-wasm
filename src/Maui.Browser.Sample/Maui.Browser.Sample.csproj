@@ -31,6 +31,7 @@
     <MauiXaml Update="Demo/ParityContainersLayoutPage.xaml" />
     <MauiXaml Update="Demo/ParityTextInputPage.xaml" />
     <MauiXaml Update="Demo/ParityPickersDateTimePage.xaml" />
+    <MauiXaml Update="Demo/ParityMediaVisualPage.xaml" />
   </ItemGroup>
 
   <ItemGroup>
