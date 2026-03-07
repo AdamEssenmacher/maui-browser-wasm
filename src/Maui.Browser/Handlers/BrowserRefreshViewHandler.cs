@@ -269,9 +269,15 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
             content.Arrange(new Rect(0, 0, width, contentHeight));
             if (_currentContentHandler?.PlatformView is DomElement contentPlatformView)
             {
-                contentPlatformView.Style("position", "absolute");
-                contentPlatformView.Style("left", "0");
-                contentPlatformView.Style("top", "0");
+                // Keep refresh content in normal flow. Forcing absolute positioning here
+                // pulls controls like CollectionView out of stack/flex layout flow.
+                contentPlatformView.Style("position", "relative");
+                contentPlatformView.Style("left", null);
+                contentPlatformView.Style("top", null);
+                contentPlatformView.Style("right", null);
+                contentPlatformView.Style("bottom", null);
+                contentPlatformView.Style("width", CssUtil.Px(width));
+                contentPlatformView.Style("height", CssUtil.Px(contentHeight));
             }
         }
     }
