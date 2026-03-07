@@ -13,6 +13,9 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
     private const double DefaultWidth = 260;
     private const double DefaultContentHeight = 220;
     private const double IndicatorRowHeight = 44;
+    private const string DefaultIndicatorColorCss = "rgba(51,65,85,1)";
+    private const string DefaultTriggerColorCss = "rgba(15,23,42,1)";
+    private const string SpinnerAnimationName = "maui-rv-spin";
 
     public static IPropertyMapper<RefreshView, BrowserRefreshViewHandler> Mapper =
         new PropertyMapper<RefreshView, BrowserRefreshViewHandler>(BrowserViewMapper.CommonViewMapper)
@@ -26,9 +29,12 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
         };
 
     private DomElement? _indicatorHost;
+    private DomElement? _stateHost;
     private DomElement? _stateElement;
+    private DomElement? _spinnerElement;
     private DomElement? _triggerButton;
     private DomElement? _contentHost;
+    private DomElement? _spinnerStyleElement;
     private IView? _currentContent;
     private IElementHandler? _currentContentHandler;
     private Action? _triggerClickCallback;
@@ -62,10 +68,34 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
         _indicatorHost.Style("boxSizing", "border-box");
         _indicatorHost.Style("borderBottom", "1px solid rgba(148,163,184,0.45)");
 
+        _stateHost = DomElement.Create("div");
+        _stateHost.Attr("data-maui-rv-state-host", "true");
+        _stateHost.Style("display", "inline-flex");
+        _stateHost.Style("alignItems", "center");
+        _stateHost.Style("gap", "6px");
+        _stateHost.Style("minHeight", "16px");
+
+        _spinnerElement = DomElement.Create("span");
+        _spinnerElement.Attr("data-maui-rv-spinner", "true");
+        _spinnerElement.Attr("data-maui-rv-spinner-active", "false");
+        _spinnerElement.Attr("aria-hidden", "true");
+        _spinnerElement.Style("display", "inline-block");
+        _spinnerElement.Style("width", "13px");
+        _spinnerElement.Style("height", "13px");
+        _spinnerElement.Style("borderWidth", "2px");
+        _spinnerElement.Style("borderStyle", "solid");
+        _spinnerElement.Style("borderRadius", "999px");
+        _spinnerElement.Style("boxSizing", "border-box");
+        _spinnerElement.Style("borderRightColor", "transparent");
+        _spinnerElement.Style("color", DefaultIndicatorColorCss);
+        _spinnerElement.Style("visibility", "hidden");
+        _spinnerElement.Style("animation", $"{SpinnerAnimationName} 0.9s linear infinite");
+        _spinnerElement.Style("animationPlayState", "paused");
+
         _stateElement = DomElement.Create("span");
         _stateElement.Attr("data-maui-rv-state", "idle");
         _stateElement.Style("fontSize", "12px");
-        _stateElement.Style("color", "rgba(51,65,85,1)");
+        _stateElement.Style("color", DefaultIndicatorColorCss);
 
         _triggerButton = DomElement.Create("button");
         _triggerButton.Attr("type", "button");
@@ -77,7 +107,7 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
         _triggerButton.Style("fontSize", "12px");
         _triggerButton.Style("lineHeight", "1.2");
         _triggerButton.Style("cursor", "pointer");
-        _triggerButton.Style("color", "rgba(15,23,42,1)");
+        _triggerButton.Style("color", DefaultTriggerColorCss);
         _triggerButton.Text("Refresh");
 
         _contentHost = DomElement.Create("div");
@@ -85,8 +115,15 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
         _contentHost.Style("boxSizing", "border-box");
         _contentHost.Style("overflow", "hidden");
 
-        _indicatorHost.Append(_stateElement);
+        _spinnerStyleElement = DomElement.Create("style");
+        _spinnerStyleElement.Attr("data-maui-rv-style", "spinner");
+        _spinnerStyleElement.Text($"@keyframes {SpinnerAnimationName}{{from{{transform:rotate(0deg);}}to{{transform:rotate(360deg);}}}}");
+
+        _stateHost.Append(_spinnerElement);
+        _stateHost.Append(_stateElement);
+        _indicatorHost.Append(_stateHost);
         _indicatorHost.Append(_triggerButton);
+        platformView.Append(_spinnerStyleElement);
         platformView.Append(_indicatorHost);
         platformView.Append(_contentHost);
 
@@ -111,9 +148,12 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
         _triggerClickCallback = null;
         DisconnectCurrentContent();
         _indicatorHost = null;
+        _stateHost = null;
         _stateElement = null;
+        _spinnerElement = null;
         _triggerButton = null;
         _contentHost = null;
+        _spinnerStyleElement = null;
         platformView.ClearChildren();
 
         base.DisconnectHandler(platformView);
@@ -295,6 +335,13 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
             });
         }
 
+        if (_spinnerElement is not null)
+        {
+            _spinnerElement.Attr("data-maui-rv-spinner-active", refreshing ? "true" : "false");
+            _spinnerElement.Style("visibility", refreshing ? "visible" : "hidden");
+            _spinnerElement.Style("animationPlayState", refreshing ? "running" : "paused");
+        }
+
         if (_triggerButton is null)
         {
             return;
@@ -313,9 +360,10 @@ public sealed class BrowserRefreshViewHandler : BrowserViewHandler<RefreshView>,
             ? CssUtil.ToCssColor(solidPaint.Color)
             : null;
 
-        _stateElement?.Style("color", refreshColorCss);
+        _stateElement?.Style("color", refreshColorCss ?? DefaultIndicatorColorCss);
+        _spinnerElement?.Style("color", refreshColorCss ?? DefaultIndicatorColorCss);
         _triggerButton?.Style("borderColor", refreshColorCss);
-        _triggerButton?.Style("color", refreshColorCss);
+        _triggerButton?.Style("color", refreshColorCss ?? DefaultTriggerColorCss);
     }
 
     private static double ResolveIndicatorHeight(IRefreshView refreshView)

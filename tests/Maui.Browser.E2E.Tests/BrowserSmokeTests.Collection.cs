@@ -206,6 +206,7 @@ public sealed partial class BrowserSmokeTests
 
         const string refreshSelector = "[data-automation-id='parity-refresh-view']";
         const string refreshTriggerSelector = "[data-automation-id='parity-refresh-view'] [data-maui-rv-trigger='true']";
+        const string refreshSpinnerSelector = "[data-automation-id='parity-refresh-view'] [data-maui-rv-spinner='true']";
         const string refreshSummarySelector = "[data-automation-id='parity-refresh-summary']";
         const string refreshCompleteButtonSelector = "[data-automation-id='parity-refresh-complete-button']";
         const string refreshToggleEnabledButtonSelector = "[data-automation-id='parity-refresh-toggle-enabled-button']";
@@ -252,11 +253,15 @@ public sealed partial class BrowserSmokeTests
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 0");
         Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-refreshing"));
         Assert.Equal("true", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-enabled"));
+        Assert.Equal("false", await ReadAttributeAsync(page, refreshSpinnerSelector, "data-maui-rv-spinner-active"));
+        Assert.Equal("hidden", await ReadComputedStylePropertyAsync(page, refreshSpinnerSelector, "visibility"));
         await AssertRefreshInFlowAsync("initial");
 
         await DispatchClickAsync(refreshTriggerSelector);
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: true, command count: 1");
         Assert.Equal("true", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-refreshing"));
+        Assert.Equal("true", await ReadAttributeAsync(page, refreshSpinnerSelector, "data-maui-rv-spinner-active"));
+        Assert.Equal("visible", await ReadComputedStylePropertyAsync(page, refreshSpinnerSelector, "visibility"));
 
         await DispatchClickAsync(refreshTriggerSelector);
 
@@ -267,11 +272,14 @@ public sealed partial class BrowserSmokeTests
         await DispatchClickAsync(refreshCompleteButtonSelector);
         await page.WaitForSelectorAsync("text=Refresh enabled: on, refreshing: false, command count: 1");
         Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-refreshing"));
+        Assert.Equal("false", await ReadAttributeAsync(page, refreshSpinnerSelector, "data-maui-rv-spinner-active"));
+        Assert.Equal("hidden", await ReadComputedStylePropertyAsync(page, refreshSpinnerSelector, "visibility"));
         await AssertRefreshInFlowAsync("after-complete");
 
         await DispatchClickAsync(refreshToggleEnabledButtonSelector);
         await page.WaitForSelectorAsync("text=Refresh enabled: off, refreshing: false, command count: 1");
         Assert.Equal("false", await ReadAttributeAsync(page, refreshSelector, "data-maui-rv-enabled"));
+        Assert.Equal("false", await ReadAttributeAsync(page, refreshSpinnerSelector, "data-maui-rv-spinner-active"));
         await AssertRefreshInFlowAsync("after-disable");
 
         await DispatchClickAsync(refreshTriggerSelector);
