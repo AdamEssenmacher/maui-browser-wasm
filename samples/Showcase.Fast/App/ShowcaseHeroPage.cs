@@ -132,16 +132,16 @@ public partial class ShowcaseHeroPage : ContentPage
 
     private void AddStatusCell(Grid table, int row, string key, ShowcaseBacklogStatus status)
     {
-        var label = new Label
+        var button = new Button
         {
             AutomationId = $"showcase-backlog-cell-{key}-status-{ToStatusSlug(status)}",
             Text = ToStatusLabel(status),
             Style = ResolveStatusStyle(status)
         };
 
-        Grid.SetRow(label, row);
-        Grid.SetColumn(label, 2);
-        table.Children.Add(label);
+        Grid.SetRow(button, row);
+        Grid.SetColumn(button, 2);
+        table.Children.Add(button);
     }
 
     private static void AddRowMarker(Grid table, ShowcaseBacklogRow row, int rowIndex)
@@ -195,9 +195,9 @@ public partial class ShowcaseHeroPage : ContentPage
     {
         var styleKey = status switch
         {
-            ShowcaseBacklogStatus.Complete => "ShowcaseBacklogStatusCompleteLabelStyle",
-            ShowcaseBacklogStatus.Started => "ShowcaseBacklogStatusStartedLabelStyle",
-            _ => "ShowcaseBacklogStatusNotStartedLabelStyle"
+            ShowcaseBacklogStatus.Complete => "ShowcaseBacklogStatusCompleteButtonStyle",
+            ShowcaseBacklogStatus.Started => "ShowcaseBacklogStatusStartedButtonStyle",
+            _ => "ShowcaseBacklogStatusNotStartedButtonStyle"
         };
 
         if (Resources.TryGetValue(styleKey, out var pageStyle)
