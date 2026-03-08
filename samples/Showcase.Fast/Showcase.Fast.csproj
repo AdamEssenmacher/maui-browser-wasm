@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <MauiXaml Update="App\ShowcaseStyles.xaml" />
     <MauiXaml Update="App\ShowcaseHeroPage.xaml" />
   </ItemGroup>
 

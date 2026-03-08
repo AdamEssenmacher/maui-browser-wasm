@@ -39,6 +39,8 @@ internal sealed class ShowcaseApp : Application
     public ShowcaseApp(Mirage.Web.Runtime.IMiragePageNavigator pageNavigator)
     {
         _pageNavigator = pageNavigator;
+        Resources ??= new ResourceDictionary();
+        Resources.MergedDictionaries.Add(new ShowcaseStyles());
     }
 
     protected override Window CreateWindow(IActivationState? activationState)

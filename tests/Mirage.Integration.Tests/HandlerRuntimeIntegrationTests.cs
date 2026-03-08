@@ -109,6 +109,42 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CommonMapper_MapsTextStylePrimitives_AndIsIdempotent()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var label = new Label
+        {
+            TextColor = Colors.Red,
+            CharacterSpacing = 1.5
+        };
+
+        label.FontFamily = "Space Grotesk";
+        label.FontSize = 22;
+        label.FontAttributes = FontAttributes.Bold;
+
+        MirageViewMapper.MapTextColor(handler, label);
+        MirageViewMapper.MapFont(handler, label);
+        MirageViewMapper.MapCharacterSpacing(handler, label);
+
+        Assert.Equal("rgba(255,0,0,1)", handler.Node.GetStyleValue("color"));
+        Assert.Equal("22px", handler.Node.GetStyleValue("fontSize"));
+        Assert.Equal("700", handler.Node.GetStyleValue("fontWeight"));
+        Assert.Equal("normal", handler.Node.GetStyleValue("fontStyle"));
+        Assert.Equal("Space Grotesk", handler.Node.GetStyleValue("fontFamily"));
+        Assert.Equal("1.5px", handler.Node.GetStyleValue("letterSpacing"));
+
+        var firstRenderCount = handler.RenderRequestCount;
+        MirageViewMapper.MapTextColor(handler, label);
+        MirageViewMapper.MapFont(handler, label);
+        MirageViewMapper.MapCharacterSpacing(handler, label);
+        Assert.Equal(firstRenderCount, handler.RenderRequestCount);
+
+        label.FontSize = -1;
+        MirageViewMapper.MapFont(handler, label);
+        Assert.Equal("14px", handler.Node.GetStyleValue("fontSize"));
+    }
+
+    [Fact]
     public void CommonMapper_SizeRequests_DoNotClearExistingWidthUntilRequestWasApplied()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "block");

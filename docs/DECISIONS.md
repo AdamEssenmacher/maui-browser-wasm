@@ -199,3 +199,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Grid v1 policy is locked to deterministic CSS Grid translation (`Auto -> auto`, `Star -> fr` with non-positive star normalized to `1fr`, `Absolute -> px`) plus row/column placement, span mapping, and row/column spacing (`row-gap`, `column-gap`).
 - Updated FAST typed mappings to include `ComponentKind.Grid` while keeping `Mirage.Web` provider-neutral and preserving typed-node built-in invariants (`ElementNode` remains extensibility path only).
 - Extended `Showcase.Fast` with stack/grid/background proof sections and expanded integration/E2E coverage for idempotent projection, layout correctness, visible DOM-backed rendering, and explicit no-canvas guarantees.
+
+## 2026-03-08 (Mirage Styling-First Wave: MAUI-Primary with CSS Escape Hatch)
+- Expanded `MirageCommonViewProjection` with shared text-style mapping (`TextColor`, `Font`, `CharacterSpacing`) using deterministic set-if-changed updates and explicit fallback font-size normalization.
+- Added button visual style primitives in `MirageButtonHandler` (`StrokeColor`, `StrokeThickness`, `CornerRadius`) so MAUI button styling can drive DOM output without provider/runtime API changes.
+- `Showcase.Fast` now uses app-level MAUI `ResourceDictionary` styles as the primary styling path; CSS in `wwwroot/index.html` is intentionally narrowed to browser/FAST escape-hatch concerns (sticky/backdrop shell, internal FAST input polish, and table chip presentation).
+- Deferred in this wave: trigger/visual-state parity expansion, global theming framework rollout, and broad control-style parity beyond the built-in surface.

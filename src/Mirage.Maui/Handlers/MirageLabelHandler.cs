@@ -12,8 +12,8 @@ internal sealed class MirageLabelHandler : MirageViewHandler<ILabel>
     public static IPropertyMapper<ILabel, MirageLabelHandler> Mapper =
         new PropertyMapper<ILabel, MirageLabelHandler>(MirageViewMapper.CommonViewMapper)
         {
-            // Phase-1 scope intentionally stays narrow: basic text + font-size.
-            // Richer label semantics (line-break, formatting runs, text transforms, color) are deferred.
+            // Phase-1 scope intentionally stays narrow: text + core text-style primitives.
+            // Richer label semantics (line-break, formatting runs, text transforms) are deferred.
             [nameof(ILabel.Text)] = MapText,
             [nameof(ILabel.Font)] = MapFont
         };
@@ -28,7 +28,7 @@ internal sealed class MirageLabelHandler : MirageViewHandler<ILabel>
     {
         var changed = SetStyleIfChanged("display", "block");
         changed |= SetStyleIfChanged("lineHeight", DefaultLineHeight);
-        changed |= ApplyFontSize(VirtualView);
+        changed |= MirageCommonViewProjection.MapFont(this, VirtualView, DefaultFontSize);
         base.ConnectHandler(platformView);
         if (changed)
         {
@@ -49,16 +49,10 @@ internal sealed class MirageLabelHandler : MirageViewHandler<ILabel>
 
     public static void MapFont(MirageLabelHandler handler, ILabel label)
     {
-        if (handler.ApplyFontSize(label))
+        if (MirageCommonViewProjection.MapFont(handler, label, DefaultFontSize))
         {
             handler.RequestRender();
         }
-    }
-
-    private bool ApplyFontSize(ILabel label)
-    {
-        var fontSize = label.Font.Size > 0 ? label.Font.Size : DefaultFontSize;
-        return SetStyleIfChanged("fontSize", MirageViewMapper.ToPx(fontSize));
     }
 
     private bool SetStyleIfChanged(string name, string? value)

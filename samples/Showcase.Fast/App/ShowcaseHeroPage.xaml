@@ -8,102 +8,126 @@
 
     <VerticalStackLayout
         AutomationId="hero-page-stack"
-        Padding="28,24,28,56"
-        Spacing="20">
+        Style="{StaticResource ShowcasePageRootStackStyle}">
 
         <HorizontalStackLayout
             AutomationId="showcase-top-nav"
-            Spacing="8">
+            Style="{StaticResource ShowcaseTopNavStyle}">
             <Label
                 AutomationId="showcase-nav-brand"
+                Style="{StaticResource ShowcaseNavBrandLabelStyle}"
                 Text="Mirage" />
-            <Label Text="|" />
+            <Label Style="{StaticResource ShowcaseNavDividerLabelStyle}" Text="|" />
             <Button
                 AutomationId="showcase-nav-demo"
                 Clicked="OnDemoNavClicked"
+                Style="{StaticResource ShowcaseNavButtonStyle}"
                 Text="Demo" />
-            <Label Text="|" />
+            <Label Style="{StaticResource ShowcaseNavDividerLabelStyle}" Text="|" />
             <Button
                 AutomationId="showcase-nav-architecture"
                 Clicked="OnArchitectureNavClicked"
+                Style="{StaticResource ShowcaseNavButtonStyle}"
                 Text="Architecture" />
-            <Label Text="|" />
+            <Label Style="{StaticResource ShowcaseNavDividerLabelStyle}" Text="|" />
             <Button
                 AutomationId="showcase-nav-providers"
                 Clicked="OnProvidersNavClicked"
+                Style="{StaticResource ShowcaseNavButtonStyle}"
                 Text="Providers" />
-            <Label Text="|" />
+            <Label Style="{StaticResource ShowcaseNavDividerLabelStyle}" Text="|" />
             <Label
                 AutomationId="showcase-nav-docs-placeholder"
+                Style="{StaticResource ShowcaseMutedSmallLabelStyle}"
                 Text="Docs" />
-            <Label Text="|" />
+            <Label Style="{StaticResource ShowcaseNavDividerLabelStyle}" Text="|" />
             <Label
                 AutomationId="showcase-nav-github-placeholder"
+                Style="{StaticResource ShowcaseMutedSmallLabelStyle}"
                 Text="GitHub" />
         </HorizontalStackLayout>
 
         <VerticalStackLayout
             AutomationId="hero"
+            Style="{StaticResource ShowcaseSectionCardStyle}"
             Spacing="10">
             <Label
                 AutomationId="hero-kicker"
+                Style="{StaticResource ShowcaseKickerLabelStyle}"
                 Text="Mirage" />
             <Label
                 AutomationId="hero-headline"
+                Style="{StaticResource ShowcaseHeadlineLabelStyle}"
                 Text="Run .NET MAUI apps in the browser — with real DOM UI." />
             <Label
                 AutomationId="hero-subheadline"
+                Style="{StaticResource ShowcaseBodyLabelStyle}"
                 Text="Mirage is a semantic runtime that brings .NET MAUI to the browser by rendering your UI as actual DOM elements and Web Components using pluggable component providers." />
             <Label
                 AutomationId="hero-description"
+                Style="{StaticResource ShowcaseBodyLabelStyle}"
                 Text="Build your UI once with MAUI and run it directly in the browser without rewriting your UI layer." />
             <Label
                 AutomationId="hero-tagline-primary"
+                Style="{StaticResource ShowcaseTaglineLabelStyle}"
                 Text="MAUI UI, rendered as real web UI." />
         </VerticalStackLayout>
 
         <VerticalStackLayout
             AutomationId="architecture"
+            Style="{StaticResource ShowcaseSectionCardStyle}"
             Spacing="8">
             <Label
                 AutomationId="architecture-title"
+                Style="{StaticResource ShowcaseSectionTitleLabelStyle}"
                 Text="Architecture Snapshot" />
             <Label
                 AutomationId="architecture-pipeline"
+                Style="{StaticResource ShowcasePipelineLabelStyle}"
                 Text="MAUI&#10;  ↓&#10;Mirage semantic runtime&#10;  ↓&#10;Component provider (FAST, UI5, ...)&#10;  ↓&#10;DOM + Web Components" />
             <Label
                 AutomationId="architecture-body"
+                Style="{StaticResource ShowcaseBodyLabelStyle}"
                 Text="Mirage preserves the MAUI programming model while producing real web UI that works naturally with the browser platform." />
         </VerticalStackLayout>
 
         <VerticalStackLayout
             AutomationId="hero-why-matters"
+            Style="{StaticResource ShowcaseSectionCardStyle}"
             Spacing="6">
             <Label
                 AutomationId="hero-why-title"
+                Style="{StaticResource ShowcaseSectionTitleLabelStyle}"
                 Text="Why This Matters" />
             <Label
                 AutomationId="hero-why-body"
+                Style="{StaticResource ShowcaseBodyLabelStyle}"
                 Text="Mirage apps behave like real web applications because they are." />
             <Label
                 AutomationId="hero-why-bullet-devtools"
+                Style="{StaticResource ShowcaseBulletLabelStyle}"
                 Text="• Inspect the UI in browser DevTools" />
             <Label
                 AutomationId="hero-why-bullet-css"
+                Style="{StaticResource ShowcaseBulletLabelStyle}"
                 Text="• Style components with CSS" />
             <Label
                 AutomationId="hero-why-bullet-components"
+                Style="{StaticResource ShowcaseBulletLabelStyle}"
                 Text="• Use Web Components" />
             <Label
                 AutomationId="hero-why-bullet-platform"
+                Style="{StaticResource ShowcaseBulletLabelStyle}"
                 Text="• Integrate naturally with the web platform" />
             <Label
                 AutomationId="hero-why-contrast"
+                Style="{StaticResource ShowcaseBodyLabelStyle}"
                 Text="Unlike canvas-based cross-platform renderers, Mirage produces inspectable DOM structure instead of drawing pixels to a graphics surface." />
         </VerticalStackLayout>
 
         <VerticalStackLayout
             AutomationId="hero-cta"
+            Style="{StaticResource ShowcaseSectionCardStyle}"
             Spacing="8">
             <HorizontalStackLayout
                 AutomationId="hero-cta-row"
@@ -119,17 +143,21 @@
             </HorizontalStackLayout>
             <Label
                 AutomationId="hero-cta-github-placeholder"
+                Style="{StaticResource ShowcaseMutedSmallLabelStyle}"
                 Text="View on GitHub" />
         </VerticalStackLayout>
 
         <VerticalStackLayout
             AutomationId="demo"
+            Style="{StaticResource ShowcaseSectionCardStyle}"
             Spacing="8">
             <Label
                 AutomationId="demo-title"
+                Style="{StaticResource ShowcaseSectionTitleLabelStyle}"
                 Text="Live Mirage Demo" />
             <Label
                 AutomationId="showcase-demo-your-name-label"
+                Style="{StaticResource ShowcaseBodyLabelStyle}"
                 Text="Your name:" />
             <Entry
                 AutomationId="showcase-demo-entry"
@@ -137,6 +165,7 @@
                 Text="{Binding Name, Mode=TwoWay}" />
             <Label
                 AutomationId="showcase-demo-greeting"
+                Style="{StaticResource ShowcaseBodyLabelStyle}"
                 Text="{Binding Greeting}" />
             <Button
                 AutomationId="showcase-demo-button"
@@ -144,15 +173,19 @@
                 Text="Click Me" />
             <Label
                 AutomationId="showcase-demo-count"
+                Style="{StaticResource ShowcaseBodyLabelStyle}"
                 Text="{Binding ClickCountText}" />
             <Label
                 AutomationId="showcase-demo-powered-by"
+                Style="{StaticResource ShowcaseBodyLabelStyle}"
                 Text="Powered by Mirage + FAST" />
             <Label
                 AutomationId="showcase-demo-devtools-hint"
+                Style="{StaticResource ShowcaseTaglineLabelStyle}"
                 Text="Open DevTools and inspect this page. The UI is rendered as real FAST Web Components and DOM elements." />
             <Label
                 AutomationId="showcase-generic-demo-title"
+                Style="{StaticResource ShowcaseSubsectionTitleLabelStyle}"
                 Text="Generic ElementNode Demo" />
             <local:ShowcaseVendorWidget
                 AutomationId="showcase-generic-widget"
@@ -164,11 +197,14 @@
 
             <VerticalStackLayout
                 AutomationId="showcase-foundations-lab"
+                Style="{StaticResource ShowcaseFeatureCardStyle}"
                 Spacing="8">
                 <Label
                     AutomationId="showcase-foundations-lab-title"
+                    Style="{StaticResource ShowcaseSubsectionTitleLabelStyle}"
                     Text="Foundations Lab (Label + IView Core + VerticalStack)" />
                 <Label
+                    Style="{StaticResource ShowcaseBodyLabelStyle}"
                     Text="Label live update" />
                 <Entry
                     AutomationId="foundations-label-input"
@@ -181,24 +217,29 @@
                 <Button
                     AutomationId="foundations-visibility-toggle"
                     Command="{Binding ToggleFoundationsVisibilityCommand}"
+                    Style="{StaticResource ShowcaseLabActionButtonStyle}"
                     Text="{Binding FoundationsVisibilityButtonText}" />
                 <Label
                     AutomationId="foundations-visibility-target"
                     IsVisible="{Binding FoundationsVisibilityTargetVisible}"
+                    Style="{StaticResource ShowcaseBodyLabelStyle}"
                     Text="Visibility target: this label should hide and show." />
 
                 <Button
                     AutomationId="foundations-margin-toggle"
                     Command="{Binding ToggleFoundationsMarginCommand}"
+                    Style="{StaticResource ShowcaseLabActionButtonStyle}"
                     Text="{Binding FoundationsMarginButtonText}" />
                 <Label
                     AutomationId="foundations-margin-target"
                     Margin="{Binding FoundationsMarginTargetMargin}"
+                    Style="{StaticResource ShowcaseBodyLabelStyle}"
                     Text="Margin target: toggle to verify deterministic margin formatting." />
 
                 <Button
                     AutomationId="foundations-stack-spacing-toggle"
                     Command="{Binding ToggleFoundationsStackSpacingCommand}"
+                    Style="{StaticResource ShowcaseLabActionButtonStyle}"
                     Text="{Binding FoundationsStackSpacingButtonText}" />
                 <VerticalStackLayout
                     AutomationId="foundations-stack-probe"
@@ -217,6 +258,7 @@
                 <Button
                     AutomationId="foundations-horizontal-spacing-toggle"
                     Command="{Binding ToggleFoundationsHorizontalStackSpacingCommand}"
+                    Style="{StaticResource ShowcaseLabActionButtonStyle}"
                     Text="{Binding FoundationsHorizontalStackSpacingButtonText}" />
                 <HorizontalStackLayout
                     AutomationId="foundations-horizontal-stack-probe"
@@ -235,6 +277,7 @@
                 <Button
                     AutomationId="foundations-grid-spacing-toggle"
                     Command="{Binding ToggleFoundationsGridSpacingCommand}"
+                    Style="{StaticResource ShowcaseLabActionButtonStyle}"
                     Text="{Binding FoundationsGridSpacingButtonText}" />
                 <Grid
                     AutomationId="foundations-grid-probe"
@@ -312,58 +355,73 @@
         <ContentView AutomationId="providers">
             <VerticalStackLayout
                 AutomationId="providers-content"
+                Style="{StaticResource ShowcaseSectionCardStyle}"
                 Spacing="12">
                 <Label
                     AutomationId="providers-title"
+                    Style="{StaticResource ShowcaseSectionTitleLabelStyle}"
                     Text="Feature Highlights" />
 
                 <VerticalStackLayout
                     AutomationId="showcase-feature-dom"
+                    Style="{StaticResource ShowcaseFeatureCardStyle}"
                     Spacing="4">
                     <Label
                         AutomationId="showcase-feature-dom-title"
+                        Style="{StaticResource ShowcaseSubsectionTitleLabelStyle}"
                         Text="Real DOM Rendering" />
                     <Label
                         AutomationId="showcase-feature-dom-body"
+                        Style="{StaticResource ShowcaseBodyLabelStyle}"
                         Text="Mirage renders UI as real DOM elements and Web Components. Use standard browser tooling to inspect, debug, and style your app." />
                 </VerticalStackLayout>
 
                 <VerticalStackLayout
                     AutomationId="showcase-feature-maui"
+                    Style="{StaticResource ShowcaseFeatureCardStyle}"
                     Spacing="4">
                     <Label
                         AutomationId="showcase-feature-maui-title"
+                        Style="{StaticResource ShowcaseSubsectionTitleLabelStyle}"
                         Text="MAUI Programming Model" />
                     <Label
                         AutomationId="showcase-feature-maui-body"
+                        Style="{StaticResource ShowcaseBodyLabelStyle}"
                         Text="Write UI with MAUI controls and layouts. Mirage translates them into semantic UI and renders them in the browser." />
                 </VerticalStackLayout>
 
                 <VerticalStackLayout
                     AutomationId="showcase-feature-providers"
+                    Style="{StaticResource ShowcaseFeatureCardStyle}"
                     Spacing="4">
                     <Label
                         AutomationId="showcase-feature-providers-title"
+                        Style="{StaticResource ShowcaseSubsectionTitleLabelStyle}"
                         Text="Pluggable Component Providers" />
                     <Label
                         AutomationId="showcase-feature-providers-body"
+                        Style="{StaticResource ShowcaseBodyLabelStyle}"
                         Text="Mirage separates UI semantics from rendering. FAST is implemented today, and the architecture is designed for providers such as UI5 and custom design systems." />
                 </VerticalStackLayout>
 
                 <Label
                     AutomationId="showcase-tagline-secondary"
+                    Style="{StaticResource ShowcaseTaglineLabelStyle}"
                     Text="MAUI UI, rendered as real web UI." />
             </VerticalStackLayout>
         </ContentView>
 
         <VerticalStackLayout
             AutomationId="showcase-backlog"
+            Style="{StaticResource ShowcaseSectionCardStyle}"
             Spacing="8">
             <Label
                 AutomationId="showcase-backlog-title"
+                Style="{StaticResource ShowcaseSectionTitleLabelStyle}"
                 Text="Control / Handler Backlog" />
             <Label
                 AutomationId="showcase-backlog-subtitle"
+                Style="{StaticResource ShowcaseBodyLabelStyle}"
                 Text="Current Mirage implementation status across MAUI controls/layouts and shared abstractions." />
             <ContentView
                 x:Name="BacklogTableHost"
@@ -372,18 +430,22 @@
 
         <VerticalStackLayout
             AutomationId="showcase-trust-signal"
+            Style="{StaticResource ShowcaseSectionCardStyle}"
             Spacing="4">
             <Label
                 AutomationId="showcase-runtime-badge"
+                Style="{StaticResource ShowcaseTaglineLabelStyle}"
                 Text="This page itself is running as a Mirage application using the FAST provider." />
             <Label
                 AutomationId="showcase-runtime-badge-detail"
+                Style="{StaticResource ShowcaseBodyLabelStyle}"
                 Text="The UI you see here is rendered by Mirage." />
         </VerticalStackLayout>
 
         <Label
             AutomationId="hero-scroll-cue"
             Margin="0,14,0,10"
+            Style="{StaticResource ShowcaseScrollCueLabelStyle}"
             Text="↓ How Mirage Works" />
     </VerticalStackLayout>
 </ContentPage>

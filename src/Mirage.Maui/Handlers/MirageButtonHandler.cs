@@ -1,4 +1,5 @@
 using Mirage.Core.Semantics;
+using Microsoft.Maui;
 using Microsoft.Maui.Handlers;
 
 namespace Mirage.Maui.Handlers;
@@ -9,7 +10,12 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         new PropertyMapper<ITextButton, MirageButtonHandler>(MirageViewMapper.CommonViewMapper)
         {
             [nameof(ITextButton.Text)] = MapText,
-            [nameof(IView.IsEnabled)] = MapIsEnabled
+            [nameof(IView.IsEnabled)] = MapIsEnabled,
+            [nameof(IButtonStroke.StrokeColor)] = MapStrokeColor,
+            [nameof(IButtonStroke.StrokeThickness)] = MapStrokeThickness,
+            [nameof(IButtonStroke.CornerRadius)] = MapCornerRadius,
+            ["BorderColor"] = MapStrokeColor,
+            ["BorderWidth"] = MapStrokeThickness
         };
 
     public MirageButtonHandler()
@@ -27,6 +33,8 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         PlatformView.SetStyle("padding", "10px 14px");
         PlatformView.SetStyle("cursor", VirtualView.IsEnabled ? "pointer" : "default");
         PlatformView.SetEvent("click", enabled: true);
+        UpdateStrokeStyles(VirtualView);
+        UpdateCornerRadius(VirtualView);
         base.ConnectHandler(platformView);
         RequestRender();
     }
@@ -49,13 +57,109 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
 
     public static void MapText(MirageButtonHandler handler, ITextButton button)
     {
+        if (string.Equals(handler.PlatformView.GetPropertyString("Text"), button.Text, StringComparison.Ordinal))
+        {
+            return;
+        }
+
         handler.PlatformView.SetProperty("Text", button.Text);
         handler.RequestRender();
     }
 
     public static void MapIsEnabled(MirageButtonHandler handler, ITextButton button)
     {
-        handler.PlatformView.SetStyle("cursor", button.IsEnabled ? "pointer" : "default");
+        if (!handler.SetStyleIfChanged("cursor", button.IsEnabled ? "pointer" : "default"))
+        {
+            return;
+        }
+
         handler.RequestRender();
+    }
+
+    public static void MapStrokeColor(MirageButtonHandler handler, ITextButton button)
+    {
+        if (!handler.UpdateStrokeStyles(button))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapStrokeThickness(MirageButtonHandler handler, ITextButton button)
+    {
+        if (!handler.UpdateStrokeStyles(button))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapCornerRadius(MirageButtonHandler handler, ITextButton button)
+    {
+        if (!handler.UpdateCornerRadius(button))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    private bool UpdateStrokeStyles(ITextButton button)
+    {
+        if (button is not IButtonStroke strokedButton)
+        {
+            var cleared = SetStyleIfChanged("borderStyle", null);
+            cleared |= SetStyleIfChanged("borderWidth", null);
+            cleared |= SetStyleIfChanged("borderColor", null);
+            return cleared;
+        }
+
+        var strokeThickness = strokedButton.StrokeThickness;
+        var normalizedThickness = double.IsFinite(strokeThickness) && strokeThickness > 0
+            ? strokeThickness
+            : 0;
+
+        if (normalizedThickness <= 0)
+        {
+            var cleared = SetStyleIfChanged("borderStyle", null);
+            cleared |= SetStyleIfChanged("borderWidth", null);
+            cleared |= SetStyleIfChanged("borderColor", null);
+            return cleared;
+        }
+
+        var strokeColor = MirageCommonViewProjection.ToCssColor(strokedButton.StrokeColor) ?? "currentColor";
+        var changed = SetStyleIfChanged("borderStyle", "solid");
+        changed |= SetStyleIfChanged("borderWidth", MirageViewMapper.ToPx(normalizedThickness));
+        changed |= SetStyleIfChanged("borderColor", strokeColor);
+        return changed;
+    }
+
+    private bool UpdateCornerRadius(ITextButton button)
+    {
+        if (button is not IButtonStroke strokedButton)
+        {
+            return SetStyleIfChanged("borderRadius", null);
+        }
+
+        var cornerRadius = strokedButton.CornerRadius;
+        if (!double.IsFinite(cornerRadius) || cornerRadius < 0)
+        {
+            return SetStyleIfChanged("borderRadius", null);
+        }
+
+        return SetStyleIfChanged("borderRadius", MirageViewMapper.ToPx(cornerRadius));
+    }
+
+    private bool SetStyleIfChanged(string styleName, string? styleValue)
+    {
+        if (string.Equals(PlatformView.GetStyleValue(styleName), styleValue, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        PlatformView.SetStyle(styleName, styleValue);
+        return true;
     }
 }

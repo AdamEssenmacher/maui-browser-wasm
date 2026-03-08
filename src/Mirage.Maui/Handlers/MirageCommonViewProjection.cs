@@ -10,6 +10,8 @@ namespace Mirage.Maui.Handlers;
 
 internal static class MirageCommonViewProjection
 {
+    private const double DefaultTextFallbackFontSize = 14;
+
     private static readonly ConditionalWeakTable<MiragePlatformView, RequestedSizeState> RequestedSizeStates = new();
 
     public static bool MapAutomationId(IViewHandler handler, IView view)
@@ -132,6 +134,55 @@ internal static class MirageCommonViewProjection
         return SetStyleIfChanged(platformHandler, "padding", ToThickness(paddingView.Padding));
     }
 
+    public static bool MapTextColor(IViewHandler handler, IView view)
+    {
+        if (!TryGetPlatformHandler(handler, out var platformHandler)
+            || view is not ITextStyle textStyle)
+        {
+            return false;
+        }
+
+        return SetStyleIfChanged(platformHandler, "color", ToCssColor(textStyle.TextColor));
+    }
+
+    public static bool MapFont(IViewHandler handler, IView view, double fallbackSize = DefaultTextFallbackFontSize)
+    {
+        if (!TryGetPlatformHandler(handler, out var platformHandler)
+            || view is not ITextStyle textStyle)
+        {
+            return false;
+        }
+
+        var font = textStyle.Font;
+        var resolvedSize = ResolveFontSize(font.Size, fallbackSize);
+        var resolvedWeight = ResolveFontWeight(font.Weight);
+        var resolvedStyle = ResolveFontStyle(font.Slant);
+        var resolvedFamily = string.IsNullOrWhiteSpace(font.Family) ? null : font.Family;
+
+        var changed = SetStyleIfChanged(platformHandler, "fontSize", ToPx(resolvedSize));
+        changed |= SetStyleIfChanged(platformHandler, "fontWeight", resolvedWeight);
+        changed |= SetStyleIfChanged(platformHandler, "fontStyle", resolvedStyle);
+        changed |= SetStyleIfChanged(platformHandler, "fontFamily", resolvedFamily);
+        return changed;
+    }
+
+    public static bool MapCharacterSpacing(IViewHandler handler, IView view)
+    {
+        if (!TryGetPlatformHandler(handler, out var platformHandler)
+            || view is not ITextStyle textStyle)
+        {
+            return false;
+        }
+
+        string? spacingStyle = null;
+        if (double.IsFinite(textStyle.CharacterSpacing))
+        {
+            spacingStyle = ToPxNoClamp(textStyle.CharacterSpacing);
+        }
+
+        return SetStyleIfChanged(platformHandler, "letterSpacing", spacingStyle);
+    }
+
     public static bool MapSizeRequests(IViewHandler handler, IView view)
     {
         if (!TryGetPlatformHandler(handler, out var platformHandler)
@@ -217,6 +268,12 @@ internal static class MirageCommonViewProjection
         return $"{normalized:0.###}px";
     }
 
+    public static string ToPxNoClamp(double value)
+    {
+        var normalized = double.IsFinite(value) ? value : 0;
+        return $"{normalized:0.###}px";
+    }
+
     public static string ToThickness(Thickness thickness)
     {
         return $"{ToPx(thickness.Top)} {ToPx(thickness.Right)} {ToPx(thickness.Bottom)} {ToPx(thickness.Left)}";
@@ -278,7 +335,7 @@ internal static class MirageCommonViewProjection
         return false;
     }
 
-    private static string? ToCssColor(Color? color)
+    internal static string? ToCssColor(Color? color)
     {
         if (color is null)
         {
@@ -306,6 +363,42 @@ internal static class MirageCommonViewProjection
         }
 
         return (byte)scaled;
+    }
+
+    private static double ResolveFontSize(double fontSize, double fallbackSize)
+    {
+        if (!double.IsFinite(fallbackSize) || fallbackSize <= 0)
+        {
+            fallbackSize = DefaultTextFallbackFontSize;
+        }
+
+        if (!double.IsFinite(fontSize) || fontSize <= 0)
+        {
+            return fallbackSize;
+        }
+
+        return fontSize;
+    }
+
+    private static string ResolveFontWeight(FontWeight weight)
+    {
+        var resolvedWeight = (int)weight;
+        if (resolvedWeight <= 0)
+        {
+            resolvedWeight = (int)FontWeight.Regular;
+        }
+
+        return resolvedWeight.ToString(CultureInfo.InvariantCulture);
+    }
+
+    private static string ResolveFontStyle(FontSlant slant)
+    {
+        return slant switch
+        {
+            FontSlant.Italic => "italic",
+            FontSlant.Oblique => "oblique",
+            _ => "normal"
+        };
     }
 
     private readonly record struct GradientStopProjection(int Index, double Offset, string ColorCss);
