@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-browser</TargetFramework>
+    <AssemblyName>Mirage.Web</AssemblyName>
+    <RootNamespace>Mirage.Web</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <WasmEnableJSImport>true</WasmEnableJSImport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mirage.Core\Mirage.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

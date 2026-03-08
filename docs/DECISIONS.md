@@ -132,3 +132,70 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - The new page is state-driven and property-editable in real time, covering mapped Label and inherited IView properties in a single live preview host to make mapping regressions immediately visible.
 - Controls-layer Label gaps (`FormattedText`, `TextType`, `TextTransform`) are now surfaced as explicit, deterministic interactive probes on the same page instead of being implicit omissions.
 - Home control catalog routing now opens Label depth directly from the Label row, while Text/Input depth remains focused on `Entry`/`Editor`/`SearchBar`.
+
+## 2026-03-07 (Mirage Architecture Reset: Phase 1)
+- The active runtime was reset from `Maui.Browser` direct handler-to-DOM projection to a new Mirage architecture with a required provider contract (`IMirageComponentProvider`) and provider-backed realization pipeline.
+- Active solution wiring now targets `Mirage.Core`, `Mirage.Web`, `Mirage.Maui`, `Mirage.Provider.Fast`, and `samples/Counter.Fast`; legacy `Maui.Browser*` projects remain in the repository but are intentionally removed from the active build/test path.
+- Phase-1 semantic scope is locked to six kinds only: `Root`, `ContentContainer`, `VerticalStack`, `Label`, `Entry`, `Button`; any other control kind is explicitly out of scope and treated as unsupported.
+- `Mirage.Core` now owns deterministic node-id-based diffing and patch operations, with parent-safe operation ordering guarantees (create before property/event/style updates, child-first removals).
+- `Mirage.Web` owns browser runtime infrastructure only (JSImport bridge, patch applier, event bridge, measurement), and provider-specific mapping logic is isolated to `Mirage.Provider.Fast`.
+- FAST is the only implemented provider in this slice; UI5/default provider implementations are intentionally deferred.
+
+## 2026-03-07 (Showcase.Fast Hero: DOM-First Public Demo)
+- Added `samples/Showcase.Fast` as a public-facing Mirage sample alongside `Counter.Fast`, keeping the minimal counter app as a stability harness while introducing a polished hero/landing proof page.
+- Extended the semantic model with exactly one new kind, `HorizontalStack`, to support nav/CTA row composition without broadening layout scope beyond what the hero requires.
+- Added a browser page-navigation capability (`IMiragePageNavigator` + JS interop `scrollToAutomationId`) for smooth in-page section scrolling to stable section ids (`hero`, `demo`, `architecture`, `providers`); routing remains out of scope.
+- Hero messaging now explicitly reinforces Mirage's differentiator in multiple places: MAUI UI rendered as real DOM and FAST Web Components, with explicit contrast against canvas-based rendering approaches.
+- Hero surface intentionally keeps interactive behavior minimal (entry binding + command button counter) and uses local sample styling only; no global theming framework, no non-FAST providers, and no canvas/Skia rendering were introduced.
+
+## 2026-03-08 (Showcase Hero Anchor + Provider Mapping Hardening)
+- Locked section anchors (`hero`, `demo`, `architecture`, `providers`) onto section container nodes rather than heading labels so smooth-scroll and automation queries target stable structural nodes.
+- Corrected a FAST provider static-initialization ordering bug so shared layout descriptors (`Root`, `ContentContainer`, `VerticalStack`, `HorizontalStack`) always carry `AutomationId -> data-automation-id` mapping metadata.
+- Added integration regression coverage asserting layout descriptors expose `AutomationId` mapping to prevent silent loss of container automation ids and to keep E2E anchor behavior deterministic.
+
+## 2026-03-08 (Showcase Hero XAML Authoring)
+- Re-authored `ShowcaseHeroPage` as XAML with a code-behind partial class so the public demo page is declarative and easier to maintain as presentation content evolves.
+- Kept the same Phase-1 control/layout surface (`ContentView`, `VerticalStackLayout`, `HorizontalStackLayout`, `Label`, `Entry`, `Button`) and preserved existing stable automation ids for E2E and smooth-scroll targets.
+- Added `Microsoft.Maui.Controls.Xaml` + `MauiXaml` build wiring in `Showcase.Fast` so page markup is loaded via MAUI XAML resource flow without changing runtime architecture boundaries.
+
+## 2026-03-08 (Mirage.Maui Common View Projection Centralization)
+- Consolidated shared MAUI adapter projection logic into `MirageCommonViewProjection` so `AutomationId`, margin, visibility, and thickness/px normalization are mapped from one internal path instead of repeated per-node helper calls.
+- Kept Phase-1 behavior unchanged: padding is still projected only where it was previously applied (`ContentPage`, `ContentView`, stack layouts), and no additional `IView` properties were introduced in this step.
+- Added integration-level regression tests for projection behavior (automation-id mapping, deterministic thickness formatting, hidden-view display mapping, and padding inclusion scope) to guard against adapter drift as additional mappings are added later.
+
+## 2026-03-08 (Mirage Handler-Centered Browser Backend Cutover)
+- Removed the translator-style `MirageMauiAdapter` path and shifted Mirage.Maui to MAUI handlers as the control mapping boundary (`Window`, `ContentPage`, `ContentView`, `VerticalStackLayout`, `HorizontalStackLayout`, `Label`, `Entry`, `Button`).
+- Added `MiragePlatformView` + `MirageRenderCoordinator` so handlers mutate platform/semantic node state while runtime rendering remains semantic-tree + deterministic diff + provider patch application.
+- Runtime event dispatch now routes from `IMirageRuntime` to handler-owned node targets by stable node id, with phase-1 handler behavior for `Entry` input and `Button` click.
+- Startup APIs were intentionally broken and renamed to platform-oriented names: `UseMirageBrowserPlatform`, `UseMirageComponentProvider<T>`, and `MirageBrowserAppHost.RunAsync`.
+
+## 2026-03-08 (Mirage Hybrid Platform Tree Cutover)
+- Replaced the typed-only semantic model with a hybrid platform tree (`TypedNode` + `ElementNode`) backed by shared node/visual foundations and stable node-id identity.
+- Added `MirageValue` as a typed property value model (`Null`, `String`, `Bool`, `Number`, `Json`) while intentionally keeping attributes/styles string-based in this cutover.
+- Broke provider contracts to dual realization paths (`ResolveTyped`, `ResolveElement`) and locked the rule that generic element realization must preserve requested element identity.
+- Extended diff/patch contracts to mixed typed/generic trees with deterministic operation ordering and explicit support for generic attributes/classes in addition to property/style/event updates.
+- Kept built-in Mirage handlers on typed-node output only, and added a minimal third-party extensibility proof via a custom handler emitting a `vendor-pill` `ElementNode` in `Showcase.Fast`.
+
+## 2026-03-08 (Early-lock Architecture Guardrails)
+- Locked built-in typed-node purity as a hard invariant: Mirage-owned built-in handlers must emit typed nodes; `ElementNode` remains the extensibility path for third-party/custom/BYO web components.
+- Formalized shared visual contract scope so `VisualNodeBase` carries only cross-cutting concerns (automation id, visibility, opacity, margin, layout metadata, common mutation channels), while attributes/classes/slots stay element-specific and richer MAUI style semantics remain deferred.
+- Tightened generic element contract wording and tests: `ResolveElement(...)` is capability/validation-oriented and must preserve requested element identity through provider/runtime realization.
+- Added explicit architectural policy for generic event payloads: default name-only payloads, opt-in input-value payloads, structured generic payload extraction deferred pending typed payload contract.
+- Constrained `MirageValue.Json`: only object/array shapes are valid, deep clone and structural equality are guaranteed, and usage is intended for structured payloads rather than high-frequency churn.
+- Added provider conformance test layer and Mirage.Web provider-neutral boundary guard tests to prevent drift before introducing additional providers.
+- Added lightweight architecture benchmark harness (`tools/benchmarks/Mirage.ArchitectureBenchmarks`) covering mixed typed/generic churn, property/event churn, JSON updates, and custom-element-heavy subtree mutation.
+
+## 2026-03-08 (Mirage Foundations Hardening: Label + IView Core + VerticalStack)
+- Added `MirageCommonViewProjection` as the single internal projection path for common `IView` concerns (`AutomationId`, `Margin`, `Visibility`, and deterministic thickness/px formatting), and routed `MirageViewMapper` through this helper.
+- Kept behavior scope intentionally unchanged: no new cross-cutting MAUI semantics were added, and padding projection remains container-only (`ContentPage`, `ContentView`, stack layouts).
+- Hardened baseline handlers for deterministic/idempotent updates: `MirageLabelHandler` now applies text/font-size updates only when values change, and stack style application avoids redundant style writes while preserving the same visual contract.
+- Extended `Showcase.Fast` with a focused Foundations Lab proving label live updates, visibility mapping (`display:none`), margin mutation formatting, and vertical stack spacing reflow through stable automation ids.
+- Added regression coverage and architectural guard tests to preserve this bounded scope and prevent accidental expansion into non-phase behavior.
+
+## 2026-03-08 (Mirage Renderer-Correctness Wave: Stack/Grid/Surface)
+- Expanded shared projection through `MirageCommonViewProjection` as the only cross-cutting path for `Background` (solid + linear-gradient), `Margin`, `Padding` (container-only policy retained), `Visibility`, `Opacity`, and explicit size requests (`Width`/`Height` + min/max), with deterministic set-if-changed behavior.
+- Added natural layout alignment projection only where supported by layout semantics: stack cross-axis alignment and grid cell self-alignment metadata; no global speculative alignment engine was introduced.
+- Promoted layout scope to typed `Grid` alongside hardened stack paths: `MirageLayoutHandler` now realizes vertical/horizontal stacks and grid deterministically, including spacing/gap behavior, child-order stability, and attach/detach/reorder safety.
+- Grid v1 policy is locked to deterministic CSS Grid translation (`Auto -> auto`, `Star -> fr` with non-positive star normalized to `1fr`, `Absolute -> px`) plus row/column placement, span mapping, and row/column spacing (`row-gap`, `column-gap`).
+- Updated FAST typed mappings to include `ComponentKind.Grid` while keeping `Mirage.Web` provider-neutral and preserving typed-node built-in invariants (`ElementNode` remains extensibility path only).
+- Extended `Showcase.Fast` with stack/grid/background proof sections and expanded integration/E2E coverage for idempotent projection, layout correctness, visible DOM-backed rendering, and explicit no-canvas guarantees.

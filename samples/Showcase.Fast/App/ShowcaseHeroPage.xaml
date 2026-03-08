@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Showcase.Fast.App.ShowcaseHeroPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:Showcase.Fast.App"
+    AutomationId="showcase-root">
+
+    <VerticalStackLayout
+        AutomationId="hero-page-stack"
+        Padding="28,24,28,56"
+        Spacing="20">
+
+        <HorizontalStackLayout
+            AutomationId="showcase-top-nav"
+            Spacing="8">
+            <Label
+                AutomationId="showcase-nav-brand"
+                Text="Mirage" />
+            <Label Text="|" />
+            <Button
+                AutomationId="showcase-nav-demo"
+                Clicked="OnDemoNavClicked"
+                Text="Demo" />
+            <Label Text="|" />
+            <Button
+                AutomationId="showcase-nav-architecture"
+                Clicked="OnArchitectureNavClicked"
+                Text="Architecture" />
+            <Label Text="|" />
+            <Button
+                AutomationId="showcase-nav-providers"
+                Clicked="OnProvidersNavClicked"
+                Text="Providers" />
+            <Label Text="|" />
+            <Label
+                AutomationId="showcase-nav-docs-placeholder"
+                Text="Docs" />
+            <Label Text="|" />
+            <Label
+                AutomationId="showcase-nav-github-placeholder"
+                Text="GitHub" />
+        </HorizontalStackLayout>
+
+        <VerticalStackLayout
+            AutomationId="hero"
+            Spacing="10">
+            <Label
+                AutomationId="hero-kicker"
+                Text="Mirage" />
+            <Label
+                AutomationId="hero-headline"
+                Text="Run .NET MAUI apps in the browser — with real DOM UI." />
+            <Label
+                AutomationId="hero-subheadline"
+                Text="Mirage is a semantic runtime that brings .NET MAUI to the browser by rendering your UI as actual DOM elements and Web Components using pluggable component providers." />
+            <Label
+                AutomationId="hero-description"
+                Text="Build your UI once with MAUI and run it directly in the browser without rewriting your UI layer." />
+            <Label
+                AutomationId="hero-tagline-primary"
+                Text="MAUI UI, rendered as real web UI." />
+        </VerticalStackLayout>
+
+        <VerticalStackLayout
+            AutomationId="architecture"
+            Spacing="8">
+            <Label
+                AutomationId="architecture-title"
+                Text="Architecture Snapshot" />
+            <Label
+                AutomationId="architecture-pipeline"
+                Text="MAUI&#10;  ↓&#10;Mirage semantic runtime&#10;  ↓&#10;Component provider (FAST, UI5, ...)&#10;  ↓&#10;DOM + Web Components" />
+            <Label
+                AutomationId="architecture-body"
+                Text="Mirage preserves the MAUI programming model while producing real web UI that works naturally with the browser platform." />
+        </VerticalStackLayout>
+
+        <VerticalStackLayout
+            AutomationId="hero-why-matters"
+            Spacing="6">
+            <Label
+                AutomationId="hero-why-title"
+                Text="Why This Matters" />
+            <Label
+                AutomationId="hero-why-body"
+                Text="Mirage apps behave like real web applications because they are." />
+            <Label
+                AutomationId="hero-why-bullet-devtools"
+                Text="• Inspect the UI in browser DevTools" />
+            <Label
+                AutomationId="hero-why-bullet-css"
+                Text="• Style components with CSS" />
+            <Label
+                AutomationId="hero-why-bullet-components"
+                Text="• Use Web Components" />
+            <Label
+                AutomationId="hero-why-bullet-platform"
+                Text="• Integrate naturally with the web platform" />
+            <Label
+                AutomationId="hero-why-contrast"
+                Text="Unlike canvas-based cross-platform renderers, Mirage produces inspectable DOM structure instead of drawing pixels to a graphics surface." />
+        </VerticalStackLayout>
+
+        <VerticalStackLayout
+            AutomationId="hero-cta"
+            Spacing="8">
+            <HorizontalStackLayout
+                AutomationId="hero-cta-row"
+                Spacing="10">
+                <Button
+                    AutomationId="hero-cta-demo"
+                    Clicked="OnDemoCtaClicked"
+                    Text="Try the Live Demo" />
+                <Button
+                    AutomationId="hero-cta-architecture"
+                    Clicked="OnArchitectureCtaClicked"
+                    Text="Explore the Architecture" />
+            </HorizontalStackLayout>
+            <Label
+                AutomationId="hero-cta-github-placeholder"
+                Text="View on GitHub" />
+        </VerticalStackLayout>
+
+        <VerticalStackLayout
+            AutomationId="demo"
+            Spacing="8">
+            <Label
+                AutomationId="demo-title"
+                Text="Live Mirage Demo" />
+            <Label
+                AutomationId="showcase-demo-your-name-label"
+                Text="Your name:" />
+            <Entry
+                AutomationId="showcase-demo-entry"
+                Placeholder="Type your name"
+                Text="{Binding Name, Mode=TwoWay}" />
+            <Label
+                AutomationId="showcase-demo-greeting"
+                Text="{Binding Greeting}" />
+            <Button
+                AutomationId="showcase-demo-button"
+                Command="{Binding ClickCommand}"
+                Text="Click Me" />
+            <Label
+                AutomationId="showcase-demo-count"
+                Text="{Binding ClickCountText}" />
+            <Label
+                AutomationId="showcase-demo-powered-by"
+                Text="Powered by Mirage + FAST" />
+            <Label
+                AutomationId="showcase-demo-devtools-hint"
+                Text="Open DevTools and inspect this page. The UI is rendered as real FAST Web Components and DOM elements." />
+            <Label
+                AutomationId="showcase-generic-demo-title"
+                Text="Generic ElementNode Demo" />
+            <local:ShowcaseVendorWidget
+                AutomationId="showcase-generic-widget"
+                Clicked="OnGenericWidgetClicked"
+                Text="{Binding GenericWidgetText}" />
+            <Label
+                AutomationId="showcase-generic-widget-count"
+                Text="{Binding GenericWidgetClicksText}" />
+
+            <VerticalStackLayout
+                AutomationId="showcase-foundations-lab"
+                Spacing="8">
+                <Label
+                    AutomationId="showcase-foundations-lab-title"
+                    Text="Foundations Lab (Label + IView Core + VerticalStack)" />
+                <Label
+                    Text="Label live update" />
+                <Entry
+                    AutomationId="foundations-label-input"
+                    Placeholder="Type to update label"
+                    Text="{Binding FoundationsLabelInput, Mode=TwoWay}" />
+                <Label
+                    AutomationId="foundations-label-output"
+                    Text="{Binding FoundationsLabelOutput}" />
+
+                <Button
+                    AutomationId="foundations-visibility-toggle"
+                    Command="{Binding ToggleFoundationsVisibilityCommand}"
+                    Text="{Binding FoundationsVisibilityButtonText}" />
+                <Label
+                    AutomationId="foundations-visibility-target"
+                    IsVisible="{Binding FoundationsVisibilityTargetVisible}"
+                    Text="Visibility target: this label should hide and show." />
+
+                <Button
+                    AutomationId="foundations-margin-toggle"
+                    Command="{Binding ToggleFoundationsMarginCommand}"
+                    Text="{Binding FoundationsMarginButtonText}" />
+                <Label
+                    AutomationId="foundations-margin-target"
+                    Margin="{Binding FoundationsMarginTargetMargin}"
+                    Text="Margin target: toggle to verify deterministic margin formatting." />
+
+                <Button
+                    AutomationId="foundations-stack-spacing-toggle"
+                    Command="{Binding ToggleFoundationsStackSpacingCommand}"
+                    Text="{Binding FoundationsStackSpacingButtonText}" />
+                <VerticalStackLayout
+                    AutomationId="foundations-stack-probe"
+                    Spacing="{Binding FoundationsStackSpacing}">
+                    <Label
+                        AutomationId="foundations-stack-probe-a"
+                        Text="Stack probe A" />
+                    <Label
+                        AutomationId="foundations-stack-probe-b"
+                        Text="Stack probe B" />
+                    <Label
+                        AutomationId="foundations-stack-probe-c"
+                        Text="Stack probe C" />
+                </VerticalStackLayout>
+
+                <Button
+                    AutomationId="foundations-horizontal-spacing-toggle"
+                    Command="{Binding ToggleFoundationsHorizontalStackSpacingCommand}"
+                    Text="{Binding FoundationsHorizontalStackSpacingButtonText}" />
+                <HorizontalStackLayout
+                    AutomationId="foundations-horizontal-stack-probe"
+                    Spacing="{Binding FoundationsHorizontalStackSpacing}">
+                    <Label
+                        AutomationId="foundations-horizontal-probe-a"
+                        Text="Horizontal A" />
+                    <Label
+                        AutomationId="foundations-horizontal-probe-b"
+                        Text="Horizontal B" />
+                    <Label
+                        AutomationId="foundations-horizontal-probe-c"
+                        Text="Horizontal C" />
+                </HorizontalStackLayout>
+
+                <Button
+                    AutomationId="foundations-grid-spacing-toggle"
+                    Command="{Binding ToggleFoundationsGridSpacingCommand}"
+                    Text="{Binding FoundationsGridSpacingButtonText}" />
+                <Grid
+                    AutomationId="foundations-grid-probe"
+                    ColumnDefinitions="Auto,*,2*"
+                    ColumnSpacing="{Binding FoundationsGridColumnSpacing}"
+                    RowDefinitions="Auto,Auto"
+                    RowSpacing="{Binding FoundationsGridRowSpacing}">
+                    <Label
+                        AutomationId="foundations-grid-cell-r0c0"
+                        Grid.Column="0"
+                        Grid.Row="0"
+                        Text="r0c0" />
+                    <Label
+                        AutomationId="foundations-grid-cell-r0c1"
+                        Grid.Column="1"
+                        Grid.Row="0"
+                        Text="r0c1" />
+                    <Label
+                        AutomationId="foundations-grid-cell-r0c2"
+                        Grid.Column="2"
+                        Grid.Row="0"
+                        Text="r0c2" />
+                    <Label
+                        AutomationId="foundations-grid-cell-span"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="2"
+                        Grid.Row="1"
+                        HorizontalOptions="Center"
+                        Text="span center" />
+                    <Label
+                        AutomationId="foundations-grid-cell-r1c2"
+                        Grid.Column="2"
+                        Grid.Row="1"
+                        HorizontalOptions="End"
+                        Text="r1c2 end" />
+                </Grid>
+
+                <ContentView
+                    AutomationId="foundations-bg-solid"
+                    BackgroundColor="#DBEAFE"
+                    HeightRequest="68"
+                    Padding="10">
+                    <Label Text="Solid background surface" />
+                </ContentView>
+
+                <ContentView
+                    AutomationId="foundations-bg-linear"
+                    HeightRequest="68"
+                    Padding="10">
+                    <ContentView.Background>
+                        <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
+                            <GradientStop Color="#BFDBFE" Offset="0.0" />
+                            <GradientStop Color="#DDD6FE" Offset="1.0" />
+                        </LinearGradientBrush>
+                    </ContentView.Background>
+                    <Label Text="Linear gradient background surface" />
+                </ContentView>
+
+                <ContentView
+                    AutomationId="foundations-size-target"
+                    BackgroundColor="#E2E8F0"
+                    HeightRequest="52"
+                    MaximumWidthRequest="260"
+                    MinimumWidthRequest="160"
+                    Padding="8"
+                    WidthRequest="220">
+                    <Label
+                        AutomationId="foundations-opacity-target"
+                        Opacity="0.58"
+                        Text="Opacity + size request probe" />
+                </ContentView>
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+
+        <ContentView AutomationId="providers">
+            <VerticalStackLayout
+                AutomationId="providers-content"
+                Spacing="12">
+                <Label
+                    AutomationId="providers-title"
+                    Text="Feature Highlights" />
+
+                <VerticalStackLayout
+                    AutomationId="showcase-feature-dom"
+                    Spacing="4">
+                    <Label
+                        AutomationId="showcase-feature-dom-title"
+                        Text="Real DOM Rendering" />
+                    <Label
+                        AutomationId="showcase-feature-dom-body"
+                        Text="Mirage renders UI as real DOM elements and Web Components. Use standard browser tooling to inspect, debug, and style your app." />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout
+                    AutomationId="showcase-feature-maui"
+                    Spacing="4">
+                    <Label
+                        AutomationId="showcase-feature-maui-title"
+                        Text="MAUI Programming Model" />
+                    <Label
+                        AutomationId="showcase-feature-maui-body"
+                        Text="Write UI with MAUI controls and layouts. Mirage translates them into semantic UI and renders them in the browser." />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout
+                    AutomationId="showcase-feature-providers"
+                    Spacing="4">
+                    <Label
+                        AutomationId="showcase-feature-providers-title"
+                        Text="Pluggable Component Providers" />
+                    <Label
+                        AutomationId="showcase-feature-providers-body"
+                        Text="Mirage separates UI semantics from rendering. FAST is implemented today, and the architecture is designed for providers such as UI5 and custom design systems." />
+                </VerticalStackLayout>
+
+                <Label
+                    AutomationId="showcase-tagline-secondary"
+                    Text="MAUI UI, rendered as real web UI." />
+            </VerticalStackLayout>
+        </ContentView>
+
+        <VerticalStackLayout
+            AutomationId="showcase-trust-signal"
+            Spacing="4">
+            <Label
+                AutomationId="showcase-runtime-badge"
+                Text="This page itself is running as a Mirage application using the FAST provider." />
+            <Label
+                AutomationId="showcase-runtime-badge-detail"
+                Text="The UI you see here is rendered by Mirage." />
+        </VerticalStackLayout>
+
+        <Label
+            AutomationId="hero-scroll-cue"
+            Margin="0,14,0,10"
+            Text="↓ How Mirage Works" />
+    </VerticalStackLayout>
+</ContentPage>
