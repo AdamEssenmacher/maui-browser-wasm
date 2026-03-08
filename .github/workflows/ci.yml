@@ -21,7 +21,12 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Install workloads
+      - name: Install workloads (Linux)
+        if: runner.os == 'Linux'
+        run: dotnet workload install wasm-tools
+
+      - name: Install workloads (non-Linux)
+        if: runner.os != 'Linux'
         run: dotnet workload install maui wasm-tools
 
       - name: Restore
