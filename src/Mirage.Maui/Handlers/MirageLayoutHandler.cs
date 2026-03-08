@@ -15,6 +15,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         new PropertyMapper<MauiLayout, MirageLayoutHandler>(MirageViewMapper.CommonViewMapper)
         {
             [nameof(MauiLayout.Padding)] = MapPadding,
+            [nameof(MauiLayout.ClipsToBounds)] = MapClipsToBounds,
             [nameof(VerticalStackLayout.Spacing)] = MapSpacing,
             [nameof(HorizontalStackLayout.Spacing)] = MapSpacing,
             [nameof(Grid.RowSpacing)] = MapGridStructure,
@@ -93,6 +94,16 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
     public static void MapPadding(MirageLayoutHandler handler, MauiLayout layout)
     {
         MirageViewMapper.MapPadding(handler, layout);
+    }
+
+    public static void MapClipsToBounds(MirageLayoutHandler handler, MauiLayout layout)
+    {
+        if (!MirageCommonViewProjection.MapLayoutClipsToBounds(handler, layout))
+        {
+            return;
+        }
+
+        handler.RequestRender();
     }
 
     public static void MapSpacing(MirageLayoutHandler handler, MauiLayout layout)
@@ -243,6 +254,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         }
 
         changed |= ApplySpacingStyles(VirtualView);
+        changed |= MirageCommonViewProjection.MapLayoutClipsToBounds(this, VirtualView);
         if (changed)
         {
             RequestRender();

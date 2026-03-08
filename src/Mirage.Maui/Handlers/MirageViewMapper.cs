@@ -16,6 +16,7 @@ public static class MirageViewMapper
         [nameof(ITextStyle.CharacterSpacing)] = MapCharacterSpacing,
         [nameof(IView.Opacity)] = MapOpacity,
         [nameof(IView.Background)] = MapBackground,
+        [nameof(IView.Clip)] = MapClip,
         [nameof(VisualElement.WidthRequest)] = MapSizeRequests,
         [nameof(VisualElement.HeightRequest)] = MapSizeRequests,
         [nameof(VisualElement.MinimumWidthRequest)] = MapSizeRequests,
@@ -111,6 +112,16 @@ public static class MirageViewMapper
     public static void MapBackground(IViewHandler handler, IView view)
     {
         if (!MirageCommonViewProjection.MapBackground(handler, view))
+        {
+            return;
+        }
+
+        ((IMiragePlatformHandler)handler).RequestRender();
+    }
+
+    public static void MapClip(IViewHandler handler, IView view)
+    {
+        if (!MirageCommonViewProjection.MapClip(handler, view))
         {
             return;
         }

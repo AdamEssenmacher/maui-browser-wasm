@@ -4,6 +4,7 @@ using Mirage.Maui.Hosting;
 using Mirage.Web.Runtime;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Shapes;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 using Xunit;
@@ -162,6 +163,105 @@ public sealed class HandlerRuntimeIntegrationTests
         view.WidthRequest = -1;
         MirageViewMapper.MapSizeRequests(handler, view);
         Assert.Null(handler.Node.GetStyleValue("width"));
+    }
+
+    [Fact]
+    public void CommonMapper_MapsLayoutClipsToBoundsToOverflowStyle()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "flex");
+        var layout = new VerticalStackLayout();
+
+        var changedVisible = MirageCommonViewProjection.MapLayoutClipsToBounds(handler, layout);
+        Assert.True(changedVisible);
+        Assert.Equal("visible", handler.Node.GetStyleValue("overflow"));
+
+        var unchanged = MirageCommonViewProjection.MapLayoutClipsToBounds(handler, layout);
+        Assert.False(unchanged);
+
+        layout.Clip = new RectangleGeometry(new Rect(0, 0, 30, 20));
+        var changedHidden = MirageCommonViewProjection.MapLayoutClipsToBounds(handler, layout);
+        Assert.True(changedHidden);
+        Assert.Equal("hidden", handler.Node.GetStyleValue("overflow"));
+    }
+
+    [Fact]
+    public void CommonMapper_MapsClipProjection_ForBuiltInGeometryTypes()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var view = new ContentView();
+
+        view.Clip = new RectangleGeometry(new Rect(0, 0, 120, 72));
+        MirageViewMapper.MapClip(handler, view);
+        Assert.Contains("path('M", handler.Node.GetStyleValue("clipPath"), StringComparison.Ordinal);
+
+        view.Clip = new RoundRectangleGeometry(new CornerRadius(12, 8, 14, 6), new Rect(4, 2, 110, 66));
+        MirageViewMapper.MapClip(handler, view);
+        Assert.Contains(" A ", handler.Node.GetStyleValue("clipPath"), StringComparison.Ordinal);
+
+        view.Clip = new EllipseGeometry(new Point(60, 36), 40, 24);
+        MirageViewMapper.MapClip(handler, view);
+        Assert.Contains(" A ", handler.Node.GetStyleValue("clipPath"), StringComparison.Ordinal);
+
+        view.Clip = new LineGeometry
+        {
+            StartPoint = new Point(2, 3),
+            EndPoint = new Point(98, 42)
+        };
+        MirageViewMapper.MapClip(handler, view);
+        Assert.Contains(" L ", handler.Node.GetStyleValue("clipPath"), StringComparison.Ordinal);
+
+        var path = new PathGeometry
+        {
+            FillRule = FillRule.EvenOdd
+        };
+        var figure = new PathFigure
+        {
+            StartPoint = new Point(4, 4),
+            IsClosed = true
+        };
+        figure.Segments.Add(new LineSegment { Point = new Point(84, 4) });
+        figure.Segments.Add(new LineSegment { Point = new Point(84, 44) });
+        figure.Segments.Add(new LineSegment { Point = new Point(4, 44) });
+        path.Figures.Add(figure);
+        view.Clip = path;
+        MirageViewMapper.MapClip(handler, view);
+        Assert.StartsWith("path(evenodd, '", handler.Node.GetStyleValue("clipPath"), StringComparison.Ordinal);
+
+        var group = new GeometryGroup
+        {
+            FillRule = FillRule.EvenOdd
+        };
+        group.Children.Add(new RectangleGeometry(new Rect(2, 2, 44, 28)));
+        group.Children.Add(new EllipseGeometry(new Point(56, 22), 18, 12));
+        view.Clip = group;
+        MirageViewMapper.MapClip(handler, view);
+        Assert.StartsWith("path(evenodd, '", handler.Node.GetStyleValue("clipPath"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CommonMapper_MapClip_InvalidOrUnsupportedGeometry_ThrowsDeterministically()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var view = new ContentView();
+
+        view.Clip = new RectangleGeometry(new Rect(0, 0, double.NaN, 20));
+        var invalidRect = Assert.Throws<InvalidOperationException>(() => MirageViewMapper.MapClip(handler, view));
+        Assert.Contains("Rect.Width", invalidRect.Message, StringComparison.Ordinal);
+
+        var invalidPath = new PathGeometry();
+        var invalidFigure = new PathFigure { StartPoint = new Point(0, 0), IsClosed = false };
+        var invalidPolyBezier = new PolyBezierSegment();
+        invalidPolyBezier.Points.Add(new Point(4, 4));
+        invalidPolyBezier.Points.Add(new Point(8, 8));
+        invalidFigure.Segments.Add(invalidPolyBezier);
+        invalidPath.Figures.Add(invalidFigure);
+        view.Clip = invalidPath;
+        var invalidPathException = Assert.Throws<InvalidOperationException>(() => MirageViewMapper.MapClip(handler, view));
+        Assert.Contains("divisible by 3", invalidPathException.Message, StringComparison.Ordinal);
+
+        view.Clip = new UnsupportedGeometry();
+        var unsupported = Assert.Throws<InvalidOperationException>(() => MirageViewMapper.MapClip(handler, view));
+        Assert.Contains("does not support clip geometry type", unsupported.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -355,6 +455,14 @@ public sealed class HandlerRuntimeIntegrationTests
         {
             _ = payload;
             LastEventName = eventName;
+        }
+    }
+
+    private sealed class UnsupportedGeometry : Geometry
+    {
+        public override void AppendPath(PathF path)
+        {
+            _ = path;
         }
     }
 }

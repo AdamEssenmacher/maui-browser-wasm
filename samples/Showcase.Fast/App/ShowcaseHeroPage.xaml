@@ -43,6 +43,12 @@
                 Style="{StaticResource ShowcaseNavButtonStyle}"
                 Text="Providers" />
             <Label Style="{StaticResource ShowcaseNavDividerLabelStyle}" Text="|" />
+            <Button
+                AutomationId="showcase-nav-content-view"
+                Clicked="OnOpenContentViewDemoClicked"
+                Style="{StaticResource ShowcaseNavButtonStyle}"
+                Text="ContentView" />
+            <Label Style="{StaticResource ShowcaseNavDividerLabelStyle}" Text="|" />
             <Label
                 AutomationId="showcase-nav-docs-placeholder"
                 Style="{StaticResource ShowcaseMutedSmallLabelStyle}"
@@ -433,6 +439,517 @@
             <ContentView
                 x:Name="BacklogTableHost"
                 AutomationId="showcase-backlog-table-host" />
+        </VerticalStackLayout>
+
+        <VerticalStackLayout
+            AutomationId="showcase-control-demos"
+            Style="{StaticResource ShowcaseSectionCardStyle}"
+            Spacing="8">
+            <Label
+                AutomationId="showcase-control-demos-title"
+                Style="{StaticResource ShowcaseSectionTitleLabelStyle}"
+                Text="Control Demo Pages" />
+            <Label
+                AutomationId="showcase-control-demos-subtitle"
+                Style="{StaticResource ShowcaseBodyLabelStyle}"
+                Text="Dedicated pages validate control/handler correctness in depth. Start with ContentView." />
+            <Button
+                AutomationId="showcase-open-content-view-demo"
+                Clicked="OnOpenContentViewDemoClicked"
+                Text="Jump to ContentView Demo" />
+        </VerticalStackLayout>
+
+        <VerticalStackLayout
+            AutomationId="content-view-demo-page"
+            Style="{StaticResource ShowcaseSectionCardStyle}"
+            Spacing="10">
+            <Label
+                AutomationId="content-view-demo-kicker"
+                Style="{StaticResource ShowcaseKickerLabelStyle}"
+                Text="Control Demo Surface" />
+            <Label
+                AutomationId="content-view-demo-title"
+                Style="{StaticResource ShowcaseSectionTitleLabelStyle}"
+                Text="ContentView" />
+            <Label
+                AutomationId="content-view-demo-description"
+                Style="{StaticResource ShowcaseBodyLabelStyle}"
+                Text="This dedicated ContentView demo verifies core IView projection into real DOM output: background, opacity, visibility, margin/padding, and layout positioning." />
+
+            <VerticalStackLayout
+                AutomationId="content-view-visual-lab"
+                Style="{StaticResource ShowcaseFeatureCardStyle}"
+                Spacing="10">
+                <Label
+                    AutomationId="content-view-visual-lab-title"
+                    Style="{StaticResource ShowcaseSubsectionTitleLabelStyle}"
+                    Text="IView Visual Core" />
+                <Label
+                    AutomationId="content-view-visual-lab-body"
+                    Style="{StaticResource ShowcaseBodyLabelStyle}"
+                    Text="Mutate visual properties through MAUI bindings and inspect the resulting DOM styles." />
+
+                <HorizontalStackLayout
+                    AutomationId="content-view-visual-actions-row-a"
+                    Spacing="8">
+                    <Button
+                        AutomationId="content-view-background-toggle"
+                        Command="{Binding ToggleContentViewBackgroundCommand}"
+                        Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                        Text="{Binding ContentViewBackgroundButtonText}" />
+                    <Button
+                        AutomationId="content-view-opacity-toggle"
+                        Command="{Binding ToggleContentViewOpacityCommand}"
+                        Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                        Text="{Binding ContentViewOpacityButtonText}" />
+                </HorizontalStackLayout>
+
+                <HorizontalStackLayout
+                    AutomationId="content-view-visual-actions-row-b"
+                    Spacing="8">
+                    <Button
+                        AutomationId="content-view-visibility-toggle"
+                        Command="{Binding ToggleContentViewVisibilityCommand}"
+                        Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                        Text="{Binding ContentViewVisibilityButtonText}" />
+                    <Button
+                        AutomationId="content-view-margin-toggle"
+                        Command="{Binding ToggleContentViewMarginCommand}"
+                        Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                        Text="{Binding ContentViewMarginButtonText}" />
+                </HorizontalStackLayout>
+
+                <Label
+                    AutomationId="content-view-visual-state"
+                    Style="{StaticResource ShowcaseBodyLabelStyle}"
+                    Text="{Binding ContentViewDiagnosticsText}" />
+
+                <ContentView
+                    AutomationId="content-view-visual-target"
+                    Background="{Binding ContentViewBackground}"
+                    IsVisible="{Binding ContentViewVisible}"
+                    Margin="{Binding ContentViewMargin}"
+                    Opacity="{Binding ContentViewOpacity}"
+                    Padding="{Binding ContentViewPadding}"
+                    Style="{StaticResource ShowcaseContentViewVisualTargetStyle}">
+                    <VerticalStackLayout Spacing="6">
+                        <Label
+                            AutomationId="content-view-visual-target-title"
+                            Style="{StaticResource ShowcaseSubsectionTitleLabelStyle}"
+                            Text="Visual Probe Surface" />
+                        <Label
+                            AutomationId="content-view-visual-target-body"
+                            Style="{StaticResource ShowcaseBodyLabelStyle}"
+                            Text="This ContentView updates background, opacity, margin, padding, and visibility through MAUI property mapping." />
+                    </VerticalStackLayout>
+                </ContentView>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout
+                AutomationId="content-view-positioning-lab"
+                Style="{StaticResource ShowcaseFeatureCardStyle}"
+                Spacing="10">
+                <Label
+                    AutomationId="content-view-positioning-lab-title"
+                    Style="{StaticResource ShowcaseSubsectionTitleLabelStyle}"
+                    Text="Positioning: HorizontalOptions + VerticalOptions" />
+                <Label
+                    AutomationId="content-view-positioning-lab-body"
+                    Style="{StaticResource ShowcaseBodyLabelStyle}"
+                    Text="The target ContentView is positioned inside fixed hosts. Compare Start/Center/End behavior for HorizontalOptions and VerticalOptions." />
+
+                <Label
+                    AutomationId="content-view-positioning-summary"
+                    Style="{StaticResource ShowcaseBodyLabelStyle}"
+                    Text="Static probes below show Start/Center/End positioning for HorizontalOptions and VerticalOptions." />
+
+                <ContentView
+                    AutomationId="content-view-positioning-host"
+                    Style="{StaticResource ShowcaseContentViewPositioningHostStyle}">
+                    <VerticalStackLayout Spacing="8">
+                        <VerticalStackLayout
+                            AutomationId="content-view-horizontal-positioning-host"
+                            BackgroundColor="#CFD9F7"
+                            HeightRequest="150"
+                            Padding="10"
+                            Spacing="4">
+                            <ContentView
+                                AutomationId="content-view-horizontal-position-start"
+                                HeightRequest="72"
+                                HorizontalOptions="Start"
+                                MaximumHeightRequest="72"
+                                MaximumWidthRequest="220"
+                                MinimumHeightRequest="72"
+                                MinimumWidthRequest="220"
+                                Style="{StaticResource ShowcaseContentViewPositioningTargetStyle}"
+                                WidthRequest="220">
+                                <Label
+                                    AutomationId="content-view-horizontal-position-start-body"
+                                    Style="{StaticResource ShowcaseBodyLabelStyle}"
+                                    Text="HorizontalOptions.Start" />
+                            </ContentView>
+                            <ContentView
+                                AutomationId="content-view-horizontal-position-center"
+                                HeightRequest="72"
+                                HorizontalOptions="Center"
+                                MaximumHeightRequest="72"
+                                MaximumWidthRequest="220"
+                                MinimumHeightRequest="72"
+                                MinimumWidthRequest="220"
+                                Style="{StaticResource ShowcaseContentViewPositioningTargetStyle}"
+                                WidthRequest="220">
+                                <Label
+                                    AutomationId="content-view-horizontal-position-center-body"
+                                    Style="{StaticResource ShowcaseBodyLabelStyle}"
+                                    Text="HorizontalOptions.Center" />
+                            </ContentView>
+                            <ContentView
+                                AutomationId="content-view-horizontal-position-end"
+                                HeightRequest="72"
+                                HorizontalOptions="End"
+                                MaximumHeightRequest="72"
+                                MaximumWidthRequest="220"
+                                MinimumHeightRequest="72"
+                                MinimumWidthRequest="220"
+                                Style="{StaticResource ShowcaseContentViewPositioningTargetStyle}"
+                                WidthRequest="220">
+                                <Label
+                                    AutomationId="content-view-horizontal-position-end-body"
+                                    Style="{StaticResource ShowcaseBodyLabelStyle}"
+                                    Text="HorizontalOptions.End" />
+                            </ContentView>
+                        </VerticalStackLayout>
+
+                        <HorizontalStackLayout
+                            AutomationId="content-view-vertical-positioning-host"
+                            BackgroundColor="#CFD9F7"
+                            HeightRequest="150"
+                            Padding="10"
+                            Spacing="8">
+                            <ContentView
+                                AutomationId="content-view-vertical-position-start"
+                                HeightRequest="72"
+                                MaximumHeightRequest="72"
+                                MaximumWidthRequest="220"
+                                MinimumHeightRequest="72"
+                                MinimumWidthRequest="220"
+                                VerticalOptions="Start"
+                                WidthRequest="220"
+                                Style="{StaticResource ShowcaseContentViewPositioningTargetStyle}">
+                                <Label
+                                    AutomationId="content-view-vertical-position-start-body"
+                                    Style="{StaticResource ShowcaseBodyLabelStyle}"
+                                    Text="VerticalOptions.Start" />
+                            </ContentView>
+                            <ContentView
+                                AutomationId="content-view-vertical-position-center"
+                                HeightRequest="72"
+                                MaximumHeightRequest="72"
+                                MaximumWidthRequest="220"
+                                MinimumHeightRequest="72"
+                                MinimumWidthRequest="220"
+                                VerticalOptions="Center"
+                                WidthRequest="220"
+                                Style="{StaticResource ShowcaseContentViewPositioningTargetStyle}">
+                                <Label
+                                    AutomationId="content-view-vertical-position-center-body"
+                                    Style="{StaticResource ShowcaseBodyLabelStyle}"
+                                    Text="VerticalOptions.Center" />
+                            </ContentView>
+                            <ContentView
+                                AutomationId="content-view-vertical-position-end"
+                                HeightRequest="72"
+                                MaximumHeightRequest="72"
+                                MaximumWidthRequest="220"
+                                MinimumHeightRequest="72"
+                                MinimumWidthRequest="220"
+                                VerticalOptions="End"
+                                WidthRequest="220"
+                                Style="{StaticResource ShowcaseContentViewPositioningTargetStyle}">
+                                <Label
+                                    AutomationId="content-view-vertical-position-end-body"
+                                    Style="{StaticResource ShowcaseBodyLabelStyle}"
+                                    Text="VerticalOptions.End" />
+                            </ContentView>
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </ContentView>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout
+                AutomationId="content-view-size-overflow-lab"
+                Style="{StaticResource ShowcaseFeatureCardStyle}"
+                Spacing="10">
+                <Label
+                    AutomationId="content-view-size-overflow-lab-title"
+                    Style="{StaticResource ShowcaseSubsectionTitleLabelStyle}"
+                    Text="Size Request + Overflow Lab" />
+                <Label
+                    AutomationId="content-view-size-overflow-lab-body"
+                    Style="{StaticResource ShowcaseBodyLabelStyle}"
+                    Text="These probes verify WidthRequest/HeightRequest behavior with alignment and overflow under clipped and unclipped hosts." />
+
+                <VerticalStackLayout
+                    AutomationId="content-view-size-overflow-static-matrix"
+                    Spacing="8">
+                    <Label
+                        AutomationId="content-view-size-width-baseline-title"
+                        Style="{StaticResource ShowcaseBodyLabelStyle}"
+                        Text="1) WidthRequest + HorizontalOptions (fit baseline)" />
+                    <ContentView
+                        AutomationId="content-view-size-width-baseline-host"
+                        HeightRequest="150"
+                        Style="{StaticResource ShowcaseContentViewSizeHostStyle}">
+                        <VerticalStackLayout Spacing="4">
+                            <ContentView
+                                AutomationId="content-view-size-width-fit-start"
+                                HeightRequest="72"
+                                HorizontalOptions="Start"
+                                Style="{StaticResource ShowcaseContentViewSizeProbeStyle}"
+                                WidthRequest="220">
+                                <Label Text="Width fit + Horizontal Start" />
+                            </ContentView>
+                            <ContentView
+                                AutomationId="content-view-size-width-fit-center"
+                                HeightRequest="72"
+                                HorizontalOptions="Center"
+                                Style="{StaticResource ShowcaseContentViewSizeProbeStyle}"
+                                WidthRequest="220">
+                                <Label Text="Width fit + Horizontal Center" />
+                            </ContentView>
+                            <ContentView
+                                AutomationId="content-view-size-width-fit-end"
+                                HeightRequest="72"
+                                HorizontalOptions="End"
+                                Style="{StaticResource ShowcaseContentViewSizeProbeStyle}"
+                                WidthRequest="220">
+                                <Label Text="Width fit + Horizontal End" />
+                            </ContentView>
+                        </VerticalStackLayout>
+                    </ContentView>
+
+                    <Label
+                        AutomationId="content-view-size-width-overflow-unclipped-title"
+                        Style="{StaticResource ShowcaseBodyLabelStyle}"
+                        Text="2) Width overflow, unclipped host" />
+                    <VerticalStackLayout
+                        AutomationId="content-view-size-width-overflow-unclipped-host"
+                        BackgroundColor="#CFD9F7"
+                        HeightRequest="96"
+                        Padding="10"
+                        Spacing="0"
+                        WidthRequest="240">
+                        <ContentView
+                            AutomationId="content-view-size-width-overflow-unclipped-probe"
+                            HeightRequest="72"
+                            HorizontalOptions="Center"
+                            Style="{StaticResource ShowcaseContentViewSizeProbeStyle}"
+                            WidthRequest="360">
+                            <Label Text="Width overflow probe (unclipped host)" />
+                        </ContentView>
+                    </VerticalStackLayout>
+
+                    <Label
+                        AutomationId="content-view-size-width-overflow-clipped-title"
+                        Style="{StaticResource ShowcaseBodyLabelStyle}"
+                        Text="3) Width overflow, clipped host" />
+                    <VerticalStackLayout
+                        AutomationId="content-view-size-width-overflow-clipped-host"
+                        BackgroundColor="#CFD9F7"
+                        HeightRequest="96"
+                        Padding="10"
+                        Spacing="0"
+                        WidthRequest="240">
+                        <VerticalStackLayout.Clip>
+                            <RectangleGeometry Rect="0,0,240,96" />
+                        </VerticalStackLayout.Clip>
+                        <ContentView
+                            AutomationId="content-view-size-width-overflow-clipped-probe"
+                            HeightRequest="72"
+                            HorizontalOptions="Center"
+                            Style="{StaticResource ShowcaseContentViewSizeProbeStyle}"
+                            WidthRequest="360">
+                            <Label Text="Width overflow probe (clipped host)" />
+                        </ContentView>
+                    </VerticalStackLayout>
+
+                    <Label
+                        AutomationId="content-view-size-height-baseline-title"
+                        Style="{StaticResource ShowcaseBodyLabelStyle}"
+                        Text="4) HeightRequest + VerticalOptions (fit baseline)" />
+                    <ContentView
+                        AutomationId="content-view-size-height-baseline-host"
+                        HeightRequest="150"
+                        Style="{StaticResource ShowcaseContentViewSizeHostStyle}">
+                        <HorizontalStackLayout HeightRequest="130" Spacing="8">
+                            <ContentView
+                                AutomationId="content-view-size-height-fit-start"
+                                HeightRequest="72"
+                                Style="{StaticResource ShowcaseContentViewSizeProbeStyle}"
+                                VerticalOptions="Start"
+                                WidthRequest="220">
+                                <Label Text="Height fit + Vertical Start" />
+                            </ContentView>
+                            <ContentView
+                                AutomationId="content-view-size-height-fit-center"
+                                HeightRequest="72"
+                                Style="{StaticResource ShowcaseContentViewSizeProbeStyle}"
+                                VerticalOptions="Center"
+                                WidthRequest="220">
+                                <Label Text="Height fit + Vertical Center" />
+                            </ContentView>
+                            <ContentView
+                                AutomationId="content-view-size-height-fit-end"
+                                HeightRequest="72"
+                                Style="{StaticResource ShowcaseContentViewSizeProbeStyle}"
+                                VerticalOptions="End"
+                                WidthRequest="220">
+                                <Label Text="Height fit + Vertical End" />
+                            </ContentView>
+                        </HorizontalStackLayout>
+                    </ContentView>
+
+                    <Label
+                        AutomationId="content-view-size-height-overflow-unclipped-title"
+                        Style="{StaticResource ShowcaseBodyLabelStyle}"
+                        Text="5) Height overflow, unclipped host" />
+                    <HorizontalStackLayout
+                        AutomationId="content-view-size-height-overflow-unclipped-host"
+                        BackgroundColor="#CFD9F7"
+                        HeightRequest="100"
+                        Padding="10"
+                        Spacing="6"
+                        WidthRequest="240">
+                        <ContentView
+                            AutomationId="content-view-size-height-overflow-unclipped-probe"
+                            HeightRequest="176"
+                            Style="{StaticResource ShowcaseContentViewSizeProbeStyle}"
+                            VerticalOptions="Center"
+                            WidthRequest="200">
+                            <Label Text="Height overflow probe (unclipped host)" />
+                        </ContentView>
+                    </HorizontalStackLayout>
+
+                    <Label
+                        AutomationId="content-view-size-height-overflow-clipped-title"
+                        Style="{StaticResource ShowcaseBodyLabelStyle}"
+                        Text="6) Height overflow, clipped host" />
+                    <HorizontalStackLayout
+                        AutomationId="content-view-size-height-overflow-clipped-host"
+                        BackgroundColor="#CFD9F7"
+                        HeightRequest="100"
+                        Padding="10"
+                        Spacing="6"
+                        WidthRequest="240">
+                        <HorizontalStackLayout.Clip>
+                            <RectangleGeometry Rect="0,0,240,100" />
+                        </HorizontalStackLayout.Clip>
+                        <ContentView
+                            AutomationId="content-view-size-height-overflow-clipped-probe"
+                            HeightRequest="176"
+                            Style="{StaticResource ShowcaseContentViewSizeProbeStyle}"
+                            VerticalOptions="Center"
+                            WidthRequest="200">
+                            <Label Text="Height overflow probe (clipped host)" />
+                        </ContentView>
+                    </HorizontalStackLayout>
+                </VerticalStackLayout>
+
+                <VerticalStackLayout
+                    AutomationId="content-view-size-overflow-interactive-row"
+                    Spacing="8">
+                    <Label
+                        AutomationId="content-view-size-overflow-interactive-title"
+                        Style="{StaticResource ShowcaseBodyLabelStyle}"
+                        Text="Interactive probe: toggle fit/overflow, alignment, and clip on/off." />
+
+                    <HorizontalStackLayout
+                        AutomationId="content-view-size-interactive-width-actions"
+                        Spacing="8">
+                        <Button
+                            AutomationId="content-view-size-interactive-width-mode-toggle"
+                            Command="{Binding ToggleContentViewWidthModeCommand}"
+                            Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                            Text="{Binding ContentViewWidthModeButtonText}" />
+                        <Button
+                            AutomationId="content-view-size-interactive-horizontal-option-toggle"
+                            Command="{Binding CycleContentViewHorizontalOptionCommand}"
+                            Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                            Text="{Binding ContentViewHorizontalOptionButtonText}" />
+                        <Button
+                            AutomationId="content-view-size-interactive-width-clip-toggle"
+                            Command="{Binding ToggleContentViewWidthClipCommand}"
+                            Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                            Text="{Binding ContentViewWidthClipButtonText}" />
+                    </HorizontalStackLayout>
+
+                    <ContentView
+                        AutomationId="content-view-size-interactive-width-host"
+                        HeightRequest="96"
+                        Style="{StaticResource ShowcaseContentViewSizeHostStyle}"
+                        WidthRequest="240">
+                        <VerticalStackLayout>
+                            <ContentView
+                                AutomationId="content-view-size-interactive-width-probe"
+                                Clip="{Binding ContentViewInteractiveWidthClip}"
+                                HeightRequest="72"
+                                HorizontalOptions="{Binding ContentViewInteractiveHorizontalOptions}"
+                                Style="{StaticResource ShowcaseContentViewSizeProbeStyle}"
+                                WidthRequest="{Binding ContentViewInteractiveWidthRequest}">
+                                <Label Text="Interactive width probe" />
+                            </ContentView>
+                        </VerticalStackLayout>
+                    </ContentView>
+
+                    <HorizontalStackLayout
+                        AutomationId="content-view-size-interactive-height-actions"
+                        Spacing="8">
+                        <Button
+                            AutomationId="content-view-size-interactive-height-mode-toggle"
+                            Command="{Binding ToggleContentViewHeightModeCommand}"
+                            Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                            Text="{Binding ContentViewHeightModeButtonText}" />
+                        <Button
+                            AutomationId="content-view-size-interactive-vertical-option-toggle"
+                            Command="{Binding CycleContentViewVerticalOptionCommand}"
+                            Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                            Text="{Binding ContentViewVerticalOptionButtonText}" />
+                        <Button
+                            AutomationId="content-view-size-interactive-height-clip-toggle"
+                            Command="{Binding ToggleContentViewHeightClipCommand}"
+                            Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                            Text="{Binding ContentViewHeightClipButtonText}" />
+                    </HorizontalStackLayout>
+
+                    <ContentView
+                        AutomationId="content-view-size-interactive-height-host"
+                        HeightRequest="100"
+                        Style="{StaticResource ShowcaseContentViewSizeHostStyle}"
+                        WidthRequest="240">
+                        <HorizontalStackLayout HeightRequest="80" Spacing="6">
+                            <ContentView
+                                AutomationId="content-view-size-interactive-height-probe"
+                                Clip="{Binding ContentViewInteractiveHeightClip}"
+                                HeightRequest="{Binding ContentViewInteractiveHeightRequest}"
+                                Style="{StaticResource ShowcaseContentViewSizeProbeStyle}"
+                                VerticalOptions="{Binding ContentViewInteractiveVerticalOptions}"
+                                WidthRequest="200">
+                                <Label Text="Interactive height probe" />
+                            </ContentView>
+                        </HorizontalStackLayout>
+                    </ContentView>
+
+                    <Label
+                        AutomationId="content-view-size-overflow-diagnostics"
+                        Style="{StaticResource ShowcaseBodyLabelStyle}"
+                        Text="{Binding ContentViewSizeOverflowDiagnosticsText}" />
+                </VerticalStackLayout>
+            </VerticalStackLayout>
+
+            <Label
+                AutomationId="content-view-dom-proof"
+                Style="{StaticResource ShowcaseTaglineLabelStyle}"
+                Text="Open DevTools and inspect this section. The ContentView demo is rendered as real DOM and FAST-backed elements." />
         </VerticalStackLayout>
 
         <VerticalStackLayout

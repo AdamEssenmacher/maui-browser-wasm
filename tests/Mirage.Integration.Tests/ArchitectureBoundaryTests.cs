@@ -141,6 +141,22 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void LayoutHandler_MapsClipsToBoundsThroughSharedProjection()
+    {
+        var layoutHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageLayoutHandler.cs");
+        var projectionPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageCommonViewProjection.cs");
+        Assert.True(File.Exists(layoutHandlerPath), $"Expected handler file not found: {layoutHandlerPath}");
+        Assert.True(File.Exists(projectionPath), $"Expected projection file not found: {projectionPath}");
+
+        var layoutText = File.ReadAllText(layoutHandlerPath);
+        var projectionText = File.ReadAllText(projectionPath);
+        Assert.Contains("nameof(MauiLayout.ClipsToBounds)", layoutText, StringComparison.Ordinal);
+        Assert.Contains("MapClipsToBounds", layoutText, StringComparison.Ordinal);
+        Assert.Contains("MapLayoutClipsToBounds", projectionText, StringComparison.Ordinal);
+        Assert.Contains("\"overflow\"", projectionText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CommonViewMapper_RoutesVisualConcernsThroughSharedProjection()
     {
         var mapperPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageViewMapper.cs");
@@ -153,6 +169,7 @@ public sealed class ArchitectureBoundaryTests
 
         Assert.Contains("nameof(IView.Background)", mapperText, StringComparison.Ordinal);
         Assert.Contains("nameof(IView.Opacity)", mapperText, StringComparison.Ordinal);
+        Assert.Contains("nameof(IView.Clip)", mapperText, StringComparison.Ordinal);
         Assert.Contains("nameof(ITextStyle.TextColor)", mapperText, StringComparison.Ordinal);
         Assert.Contains("nameof(ITextStyle.Font)", mapperText, StringComparison.Ordinal);
         Assert.Contains("nameof(ITextStyle.CharacterSpacing)", mapperText, StringComparison.Ordinal);
@@ -161,6 +178,7 @@ public sealed class ArchitectureBoundaryTests
 
         Assert.Contains("MapBackground", projectionText, StringComparison.Ordinal);
         Assert.Contains("MapOpacity", projectionText, StringComparison.Ordinal);
+        Assert.Contains("MapClip", projectionText, StringComparison.Ordinal);
         Assert.Contains("MapTextColor", projectionText, StringComparison.Ordinal);
         Assert.Contains("MapFont", projectionText, StringComparison.Ordinal);
         Assert.Contains("MapCharacterSpacing", projectionText, StringComparison.Ordinal);
