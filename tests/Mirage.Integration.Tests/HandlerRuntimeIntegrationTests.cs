@@ -305,6 +305,10 @@ public sealed class HandlerRuntimeIntegrationTests
             _ = nodeId;
             return null;
         }
+
+        public void Dispose()
+        {
+        }
     }
 
     private sealed class EventTargetProbe : IMirageRuntimeEventTarget

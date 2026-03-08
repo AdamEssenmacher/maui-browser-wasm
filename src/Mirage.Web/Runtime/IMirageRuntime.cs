@@ -2,7 +2,7 @@ using Mirage.Core.Semantics;
 
 namespace Mirage.Web.Runtime;
 
-public interface IMirageRuntime
+public interface IMirageRuntime : IDisposable
 {
     void SetEventSink(IMirageEventSink? eventSink);
 

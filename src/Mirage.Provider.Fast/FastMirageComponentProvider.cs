@@ -53,13 +53,12 @@ public sealed class FastMirageComponentProvider : IMirageComponentProvider
                 {
                     ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
                     ["Text"] = new(PropertyTarget.InputValue),
-                    ["Placeholder"] = new(PropertyTarget.Attribute, "placeholder", PropertyElementTarget.ValueElement)
+                    ["Placeholder"] = new(PropertyTarget.Attribute, "placeholder")
                 },
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
-                    ["input"] = new("input", EventTarget.ValueElement, EventPayloadKind.InputValue)
-                },
-                valueElementTagName: "input"),
+                    ["input"] = new("input", EventTarget.Self, EventPayloadKind.InputValue)
+                }),
             [ComponentKind.Button] = new(
                 ComponentKind.Button,
                 "fast-button",

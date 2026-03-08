@@ -118,4 +118,20 @@ public sealed class SemanticDiffEngineTests
         var exception = Assert.Throws<InvalidOperationException>(() => _diff.Diff(previous, next));
         Assert.Contains("changed node type", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void VisualVisibility_HiddenAndCollapsedMapToDistinctStyles()
+    {
+        var hidden = new TypedNode("label-hidden", ComponentKind.Label, visibility: MirageVisibility.Hidden);
+        var collapsed = new TypedNode("label-collapsed", ComponentKind.Label, visibility: MirageVisibility.Collapsed);
+
+        Assert.True(hidden.Styles.TryGetValue("visibility", out var hiddenVisibility));
+        Assert.Equal("hidden", hiddenVisibility);
+        Assert.False(hidden.Styles.ContainsKey("display"));
+
+        Assert.True(collapsed.Styles.TryGetValue("display", out var collapsedDisplay));
+        Assert.Equal("none", collapsedDisplay);
+        Assert.True(collapsed.Styles.TryGetValue("visibility", out var collapsedVisibility));
+        Assert.Equal("hidden", collapsedVisibility);
+    }
 }

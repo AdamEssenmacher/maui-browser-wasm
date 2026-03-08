@@ -115,6 +115,7 @@ public static class MirageBrowserAppHost
         s_renderCoordinator?.DetachRuntime();
         s_renderCoordinator = null;
 
+        s_runtime?.Dispose();
         s_runtime = null;
 
         rootDomElement.ClearChildren();

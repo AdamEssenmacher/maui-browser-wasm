@@ -49,7 +49,15 @@ export function appendChild(parentHandle, childHandle) {
 export function insertChildAt(parentHandle, childHandle, index) {
   const parent = fromHandle(parentHandle);
   const child = fromHandle(childHandle);
-  const normalizedIndex = Number.isInteger(index) ? Math.max(0, index) : parent.children.length;
+  let normalizedIndex = Number.isInteger(index) ? Math.max(0, index) : parent.children.length;
+
+  if (child.parentElement === parent) {
+    const currentIndex = Array.prototype.indexOf.call(parent.children, child);
+    if (currentIndex >= 0 && currentIndex < normalizedIndex) {
+      normalizedIndex = Math.min(parent.children.length, normalizedIndex + 1);
+    }
+  }
+
   const reference = parent.children.item(normalizedIndex);
   if (reference) {
     parent.insertBefore(child, reference);

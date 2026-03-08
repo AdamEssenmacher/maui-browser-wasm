@@ -103,9 +103,15 @@ public abstract class VisualNodeBase : NodeBase
             }
         }
 
-        if (visibility != MirageVisibility.Visible)
+        switch (visibility)
         {
-            clone["display"] = "none";
+            case MirageVisibility.Hidden:
+                clone["visibility"] = "hidden";
+                break;
+            case MirageVisibility.Collapsed:
+                clone["display"] = "none";
+                clone["visibility"] = "hidden";
+                break;
         }
 
         if (opacity is double explicitOpacity)

@@ -47,7 +47,7 @@ public sealed class ShowcaseFastHeroE2ETests : IClassFixture<ShowcaseHostFixture
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenAsync(context);
 
-        await page.Locator("[data-automation-id='showcase-demo-entry'] input").FillAsync("Sam");
+        await SetFastTextFieldValueAsync(page, "[data-automation-id='showcase-demo-entry']", "Sam");
         await page.WaitForTimeoutAsync(140);
         var greeting = await page.Locator("[data-automation-id='showcase-demo-greeting']").InnerTextAsync();
         Assert.Contains("Hello, Sam", greeting, StringComparison.Ordinal);
@@ -64,7 +64,7 @@ public sealed class ShowcaseFastHeroE2ETests : IClassFixture<ShowcaseHostFixture
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenAsync(context);
 
-        await page.Locator("[data-automation-id='foundations-label-input'] input").FillAsync("Foundations state");
+        await SetFastTextFieldValueAsync(page, "[data-automation-id='foundations-label-input']", "Foundations state");
         await page.WaitForTimeoutAsync(120);
         var text = await page.Locator("[data-automation-id='foundations-label-output']").InnerTextAsync();
         Assert.Contains("Foundations state", text, StringComparison.Ordinal);
@@ -360,5 +360,30 @@ public sealed class ShowcaseFastHeroE2ETests : IClassFixture<ShowcaseHostFixture
                                 : Number.NaN;
             }",
             new { selector, key });
+    }
+
+    private static async Task SetFastTextFieldValueAsync(IPage page, string selector, string value)
+    {
+        var applied = await page.EvaluateAsync<bool>(
+            @"({ selector, value }) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return false;
+                }
+
+                element.value = value ?? '';
+                let inputEvent;
+                try {
+                    inputEvent = new InputEvent('input', { bubbles: true, composed: true });
+                } catch {
+                    inputEvent = new Event('input', { bubbles: true, composed: true });
+                }
+
+                element.dispatchEvent(inputEvent);
+                return true;
+            }",
+            new { selector, value });
+
+        Assert.True(applied, $"Failed to set FAST text field value for selector '{selector}'.");
     }
 }

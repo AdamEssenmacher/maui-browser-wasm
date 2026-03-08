@@ -18,7 +18,7 @@ public sealed class CounterFastE2ETests : IClassFixture<BrowserHostFixture>
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenAsync(context);
 
-        await page.Locator("[data-automation-id='counter-entry'] input").FillAsync("Mirage input");
+        await SetFastTextFieldValueAsync(page, "[data-automation-id='counter-entry']", "Mirage input");
         await page.WaitForTimeoutAsync(120);
 
         var labelText = await page.Locator("[data-automation-id='counter-live-label']").InnerTextAsync();
@@ -105,5 +105,30 @@ public sealed class CounterFastE2ETests : IClassFixture<BrowserHostFixture>
                 return element.getBoundingClientRect().width;
             }",
             selector);
+    }
+
+    private static async Task SetFastTextFieldValueAsync(IPage page, string selector, string value)
+    {
+        var applied = await page.EvaluateAsync<bool>(
+            @"({ selector, value }) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return false;
+                }
+
+                element.value = value ?? '';
+                let inputEvent;
+                try {
+                    inputEvent = new InputEvent('input', { bubbles: true, composed: true });
+                } catch {
+                    inputEvent = new Event('input', { bubbles: true, composed: true });
+                }
+
+                element.dispatchEvent(inputEvent);
+                return true;
+            }",
+            new { selector, value });
+
+        Assert.True(applied, $"Failed to set FAST text field value for selector '{selector}'.");
     }
 }

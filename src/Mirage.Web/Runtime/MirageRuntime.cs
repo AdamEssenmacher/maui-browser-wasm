@@ -65,6 +65,27 @@ public sealed class MirageRuntime : IMirageRuntime
             : null;
     }
 
+    public void Dispose()
+    {
+        foreach (var subscriptionId in _eventSubscriptions.Values.ToArray())
+        {
+            DomElement.Off(subscriptionId);
+        }
+
+        _eventSubscriptions.Clear();
+
+        foreach (var node in _nodes.Values.ToArray())
+        {
+            node.Element.Release();
+        }
+
+        _nodes.Clear();
+        _currentRoot = null;
+        _eventSink = null;
+
+        _mountRoot.ClearChildren();
+    }
+
     private void Apply(PatchOperation operation)
     {
         switch (operation)
