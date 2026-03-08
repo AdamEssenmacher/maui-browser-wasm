@@ -109,7 +109,7 @@ public partial class ShowcaseHeroPage : ContentPage
             AddRowMarker(table, row, rowIndex);
             AddDataCell(table, rowIndex, 0, $"{row.Key}-maui-type", row.MauiType);
             AddDataCell(table, rowIndex, 1, $"{row.Key}-category", row.Category);
-            AddDataCell(table, rowIndex, 2, $"{row.Key}-status-{ToStatusSlug(row.Status)}", ToStatusLabel(row.Status));
+            AddStatusCell(table, rowIndex, row.Key, row.Status);
             AddDataCell(table, rowIndex, 3, $"{row.Key}-notes", row.Notes);
             rowIndex++;
         }
@@ -128,6 +128,20 @@ public partial class ShowcaseHeroPage : ContentPage
         Grid.SetRow(label, row);
         Grid.SetColumn(label, column);
         table.Children.Add(label);
+    }
+
+    private void AddStatusCell(Grid table, int row, string key, ShowcaseBacklogStatus status)
+    {
+        var button = new Button
+        {
+            AutomationId = $"showcase-backlog-cell-{key}-status-{ToStatusSlug(status)}",
+            Text = ToStatusLabel(status),
+            Style = ResolveStatusStyle(status)
+        };
+
+        Grid.SetRow(button, row);
+        Grid.SetColumn(button, 2);
+        table.Children.Add(button);
     }
 
     private static void AddRowMarker(Grid table, ShowcaseBacklogRow row, int rowIndex)
@@ -175,5 +189,29 @@ public partial class ShowcaseHeroPage : ContentPage
             ShowcaseBacklogStatus.Started => "started",
             _ => "not-started"
         };
+    }
+
+    private Style? ResolveStatusStyle(ShowcaseBacklogStatus status)
+    {
+        var styleKey = status switch
+        {
+            ShowcaseBacklogStatus.Complete => "ShowcaseBacklogStatusCompleteButtonStyle",
+            ShowcaseBacklogStatus.Started => "ShowcaseBacklogStatusStartedButtonStyle",
+            _ => "ShowcaseBacklogStatusNotStartedButtonStyle"
+        };
+
+        if (Resources.TryGetValue(styleKey, out var pageStyle)
+            && pageStyle is Style typedPageStyle)
+        {
+            return typedPageStyle;
+        }
+
+        if (Application.Current?.Resources.TryGetValue(styleKey, out var appStyle) == true
+            && appStyle is Style typedAppStyle)
+        {
+            return typedAppStyle;
+        }
+
+        return null;
     }
 }

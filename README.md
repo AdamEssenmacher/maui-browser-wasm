@@ -42,6 +42,7 @@ Built-in handlers stay inside this typed set. Third-party/custom handlers can em
 - `samples/Showcase.Fast`
   - Public-facing Mirage hero demo proving real DOM + FAST rendering
   - Includes focused foundations/layout labs for `Label`, core `IView` mapping, stack behavior, grid placement/spans, and surface rendering
+  - Demonstrates MAUI ResourceDictionary-first styling with CSS retained only as a targeted browser/FAST escape hatch
 - `tests/Mirage.Core.Tests`
   - Diff correctness + determinism
 - `tests/Mirage.Integration.Tests`

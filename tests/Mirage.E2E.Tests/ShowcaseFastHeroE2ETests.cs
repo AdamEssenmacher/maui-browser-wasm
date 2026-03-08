@@ -42,6 +42,25 @@ public sealed class ShowcaseFastHeroE2ETests : IClassFixture<ShowcaseHostFixture
     }
 
     [Fact]
+    public async Task HeroStyles_AreProjectedFromMauiResourceStyles()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenAsync(context);
+
+        var heroBackground = await ReadCssPropertyAsync(page, "[data-automation-id='hero']", "background-color");
+        var headlineColor = await ReadCssPropertyAsync(page, "[data-automation-id='hero-headline']", "color");
+        var subheadlineColor = await ReadCssPropertyAsync(page, "[data-automation-id='hero-subheadline']", "color");
+        var ctaBorderRadius = await ReadCssPropertyAsync(page, "[data-automation-id='hero-cta-demo']", "border-radius");
+        var ctaBorderWidth = await ReadCssPropertyAsync(page, "[data-automation-id='hero-cta-demo']", "border-top-width");
+
+        Assert.NotEqual("rgba(0, 0, 0, 0)", heroBackground);
+        Assert.Contains("15, 23, 42", headlineColor, StringComparison.Ordinal);
+        Assert.Contains("51, 65, 85", subheadlineColor, StringComparison.Ordinal);
+        Assert.Equal("12px", ctaBorderRadius);
+        Assert.Equal("1px", ctaBorderWidth);
+    }
+
+    [Fact]
     public async Task LiveDemoWidgetBindsInputAndCommand()
     {
         await using var context = await _fixture.NewContextAsync();
@@ -329,7 +348,6 @@ public sealed class ShowcaseFastHeroE2ETests : IClassFixture<ShowcaseHostFixture
         {
             WaitUntil = WaitUntilState.DOMContentLoaded
         });
-
         await page.WaitForSelectorAsync("[data-automation-id='hero-headline']");
         return page;
     }

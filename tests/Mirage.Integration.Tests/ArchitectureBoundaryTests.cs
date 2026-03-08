@@ -94,7 +94,21 @@ public sealed class ArchitectureBoundaryTests
         Assert.DoesNotContain("nameof(ILabel.FormattedText)", text, StringComparison.Ordinal);
         Assert.DoesNotContain("nameof(ILabel.LineBreakMode)", text, StringComparison.Ordinal);
         Assert.DoesNotContain("nameof(ILabel.MaxLines)", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("nameof(ILabel.TextColor)", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ButtonHandler_MapsStrokeAndCornerStylePrimitives()
+    {
+        var buttonHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageButtonHandler.cs");
+        Assert.True(File.Exists(buttonHandlerPath), $"Expected handler file not found: {buttonHandlerPath}");
+
+        var text = File.ReadAllText(buttonHandlerPath);
+        Assert.Contains("nameof(IButtonStroke.StrokeColor)", text, StringComparison.Ordinal);
+        Assert.Contains("nameof(IButtonStroke.StrokeThickness)", text, StringComparison.Ordinal);
+        Assert.Contains("nameof(IButtonStroke.CornerRadius)", text, StringComparison.Ordinal);
+        Assert.Contains("MapStrokeColor", text, StringComparison.Ordinal);
+        Assert.Contains("MapStrokeThickness", text, StringComparison.Ordinal);
+        Assert.Contains("MapCornerRadius", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -139,11 +153,17 @@ public sealed class ArchitectureBoundaryTests
 
         Assert.Contains("nameof(IView.Background)", mapperText, StringComparison.Ordinal);
         Assert.Contains("nameof(IView.Opacity)", mapperText, StringComparison.Ordinal);
+        Assert.Contains("nameof(ITextStyle.TextColor)", mapperText, StringComparison.Ordinal);
+        Assert.Contains("nameof(ITextStyle.Font)", mapperText, StringComparison.Ordinal);
+        Assert.Contains("nameof(ITextStyle.CharacterSpacing)", mapperText, StringComparison.Ordinal);
         Assert.Contains("MapSizeRequests", mapperText, StringComparison.Ordinal);
         Assert.Contains("MapLayoutAlignment", mapperText, StringComparison.Ordinal);
 
         Assert.Contains("MapBackground", projectionText, StringComparison.Ordinal);
         Assert.Contains("MapOpacity", projectionText, StringComparison.Ordinal);
+        Assert.Contains("MapTextColor", projectionText, StringComparison.Ordinal);
+        Assert.Contains("MapFont", projectionText, StringComparison.Ordinal);
+        Assert.Contains("MapCharacterSpacing", projectionText, StringComparison.Ordinal);
         Assert.Contains("MapSizeRequests", projectionText, StringComparison.Ordinal);
         Assert.Contains("MapLayoutAlignment", projectionText, StringComparison.Ordinal);
     }

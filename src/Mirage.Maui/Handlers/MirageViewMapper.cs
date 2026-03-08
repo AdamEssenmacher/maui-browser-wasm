@@ -11,6 +11,9 @@ public static class MirageViewMapper
         [nameof(IView.AutomationId)] = MapAutomationId,
         [nameof(IView.Margin)] = MapMargin,
         [nameof(IView.Visibility)] = MapVisibility,
+        [nameof(ITextStyle.TextColor)] = MapTextColor,
+        [nameof(ITextStyle.Font)] = MapFont,
+        [nameof(ITextStyle.CharacterSpacing)] = MapCharacterSpacing,
         [nameof(IView.Opacity)] = MapOpacity,
         [nameof(IView.Background)] = MapBackground,
         [nameof(VisualElement.WidthRequest)] = MapSizeRequests,
@@ -68,6 +71,36 @@ public static class MirageViewMapper
     public static void MapOpacity(IViewHandler handler, IView view)
     {
         if (!MirageCommonViewProjection.MapOpacity(handler, view))
+        {
+            return;
+        }
+
+        ((IMiragePlatformHandler)handler).RequestRender();
+    }
+
+    public static void MapTextColor(IViewHandler handler, IView view)
+    {
+        if (!MirageCommonViewProjection.MapTextColor(handler, view))
+        {
+            return;
+        }
+
+        ((IMiragePlatformHandler)handler).RequestRender();
+    }
+
+    public static void MapFont(IViewHandler handler, IView view)
+    {
+        if (!MirageCommonViewProjection.MapFont(handler, view))
+        {
+            return;
+        }
+
+        ((IMiragePlatformHandler)handler).RequestRender();
+    }
+
+    public static void MapCharacterSpacing(IViewHandler handler, IView view)
+    {
+        if (!MirageCommonViewProjection.MapCharacterSpacing(handler, view))
         {
             return;
         }
