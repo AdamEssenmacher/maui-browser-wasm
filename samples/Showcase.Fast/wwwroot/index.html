@@ -96,6 +96,7 @@
     [data-automation-id="hero-cta"],
     [data-automation-id="demo"],
     [data-automation-id="providers"],
+    [data-automation-id="showcase-backlog"],
     [data-automation-id="showcase-trust-signal"] {
       border: 1px solid var(--card-border);
       border-radius: 20px;
@@ -288,6 +289,71 @@
     [data-automation-id="showcase-runtime-badge"] {
       font-weight: 700;
       color: #0b7285;
+    }
+
+    [data-automation-id="showcase-backlog-subtitle"] {
+      font-size: 0.97rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    [data-automation-id="showcase-backlog-table-host"] {
+      overflow-x: auto;
+      border-radius: 14px;
+      border: 1px solid rgba(15, 23, 42, 0.16);
+      background: rgba(255, 255, 255, 0.88);
+    }
+
+    [data-automation-id="showcase-backlog-table"] {
+      min-width: 980px;
+    }
+
+    [data-automation-id^="showcase-backlog-cell-header-"] {
+      font-family: var(--heading);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #0f172a;
+      background: rgba(15, 23, 42, 0.06);
+      border-bottom: 1px solid rgba(15, 23, 42, 0.16);
+      padding: 10px 12px;
+    }
+
+    [data-automation-id^="showcase-backlog-cell-"]:not([data-automation-id^="showcase-backlog-cell-header-"]) {
+      font-size: 0.9rem;
+      line-height: 1.45;
+      color: #102a43;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+      padding: 10px 12px;
+    }
+
+    [data-automation-id*="-status-"] {
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.22);
+      font-size: 0.79rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      width: max-content;
+      padding: 4px 8px;
+    }
+
+    [data-automation-id$="-status-complete"] {
+      color: #166534;
+      border-color: rgba(22, 101, 52, 0.45);
+      background: rgba(220, 252, 231, 0.85);
+    }
+
+    [data-automation-id$="-status-started"] {
+      color: #0f766e;
+      border-color: rgba(15, 118, 110, 0.45);
+      background: rgba(204, 251, 241, 0.85);
+    }
+
+    [data-automation-id$="-status-not-started"] {
+      color: #7c2d12;
+      border-color: rgba(124, 45, 18, 0.4);
+      background: rgba(254, 215, 170, 0.85);
     }
 
     [data-automation-id="hero-scroll-cue"] {

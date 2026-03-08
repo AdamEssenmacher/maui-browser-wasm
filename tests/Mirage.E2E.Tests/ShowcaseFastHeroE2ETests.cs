@@ -264,6 +264,59 @@ public sealed class ShowcaseFastHeroE2ETests : IClassFixture<ShowcaseHostFixture
         Assert.Equal("typed", containerNodeType);
     }
 
+    [Fact]
+    public async Task BacklogTable_RendersGridStructure()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenAsync(context);
+
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-backlog-table-host']");
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-backlog-table']");
+        var display = await ReadCssPropertyAsync(page, "[data-automation-id='showcase-backlog-table']", "display");
+        Assert.Equal("grid", display);
+    }
+
+    [Fact]
+    public async Task BacklogTable_ContainsExpectedRows()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenAsync(context);
+
+        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-label']").CountAsync() > 0);
+        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-content-view']").CountAsync() > 0);
+        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-check-box']").CountAsync() > 0);
+        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-grid']").CountAsync() > 0);
+        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-horizontal-stack-layout']").CountAsync() > 0);
+        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-web-view']").CountAsync() > 0);
+        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-element']").CountAsync() > 0);
+        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-image-element']").CountAsync() > 0);
+    }
+
+    [Fact]
+    public async Task BacklogTable_StatusLabelsMatchPolicy()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenAsync(context);
+
+        var complete = await page.Locator("[data-automation-id='showcase-backlog-cell-button-status-complete']").InnerTextAsync();
+        var started = await page.Locator("[data-automation-id='showcase-backlog-cell-label-status-started']").InnerTextAsync();
+        var notStarted = await page.Locator("[data-automation-id='showcase-backlog-cell-web-view-status-not-started']").InnerTextAsync();
+
+        Assert.Equal("Fully Implemented (Complete)", complete);
+        Assert.Equal("Partially Implemented (Started)", started);
+        Assert.Equal("Not Implemented (Not Started)", notStarted);
+    }
+
+    [Fact]
+    public async Task BacklogTable_HasMinimumRowCount()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenAsync(context);
+
+        var rows = await page.Locator("[data-automation-id^='showcase-backlog-row-']").CountAsync();
+        Assert.Equal(40, rows);
+    }
+
     private async Task<IPage> OpenAsync(IBrowserContext context)
     {
         if (_fixture.HttpAppUrl is null)

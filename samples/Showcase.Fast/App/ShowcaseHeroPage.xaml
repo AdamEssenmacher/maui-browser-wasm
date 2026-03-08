@@ -357,6 +357,20 @@
         </ContentView>
 
         <VerticalStackLayout
+            AutomationId="showcase-backlog"
+            Spacing="8">
+            <Label
+                AutomationId="showcase-backlog-title"
+                Text="Control / Handler Backlog" />
+            <Label
+                AutomationId="showcase-backlog-subtitle"
+                Text="Current Mirage implementation status across MAUI controls/layouts and shared abstractions." />
+            <ContentView
+                x:Name="BacklogTableHost"
+                AutomationId="showcase-backlog-table-host" />
+        </VerticalStackLayout>
+
+        <VerticalStackLayout
             AutomationId="showcase-trust-signal"
             Spacing="4">
             <Label
