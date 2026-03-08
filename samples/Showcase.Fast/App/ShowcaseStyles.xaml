@@ -167,4 +167,19 @@
         <Setter Property="TextTransform" Value="Uppercase" />
     </Style>
 
+    <Style x:Key="ShowcaseBacklogStatusCompleteLabelStyle" TargetType="Label">
+        <Setter Property="TextColor" Value="#166534" />
+        <Setter Property="BackgroundColor" Value="#D9DCFCE7" />
+    </Style>
+
+    <Style x:Key="ShowcaseBacklogStatusStartedLabelStyle" TargetType="Label">
+        <Setter Property="TextColor" Value="#0F766E" />
+        <Setter Property="BackgroundColor" Value="#D9CCFBF1" />
+    </Style>
+
+    <Style x:Key="ShowcaseBacklogStatusNotStartedLabelStyle" TargetType="Label">
+        <Setter Property="TextColor" Value="#7C2D12" />
+        <Setter Property="BackgroundColor" Value="#D9FED7AA" />
+    </Style>
+
 </ResourceDictionary>
