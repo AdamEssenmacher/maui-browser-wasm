@@ -6,9 +6,16 @@
     xmlns:local="clr-namespace:Showcase.Fast.App"
     AutomationId="showcase-root">
 
-    <VerticalStackLayout
-        AutomationId="hero-page-stack"
-        Style="{StaticResource ShowcasePageRootStackStyle}">
+    <Grid
+        AutomationId="showcase-page-grid"
+        ColumnDefinitions="*,Auto,*"
+        RowDefinitions="Auto">
+        <VerticalStackLayout
+            Grid.Column="1"
+            AutomationId="hero-page-stack"
+            HorizontalOptions="Center"
+            MaximumWidthRequest="1040"
+            Style="{StaticResource ShowcasePageRootStackStyle}">
 
         <HorizontalStackLayout
             AutomationId="showcase-top-nav"
@@ -442,10 +449,11 @@
                 Text="The UI you see here is rendered by Mirage." />
         </VerticalStackLayout>
 
-        <Label
-            AutomationId="hero-scroll-cue"
-            Margin="0,14,0,10"
-            Style="{StaticResource ShowcaseScrollCueLabelStyle}"
-            Text="↓ How Mirage Works" />
-    </VerticalStackLayout>
+            <Label
+                AutomationId="hero-scroll-cue"
+                Margin="0,14,0,10"
+                Style="{StaticResource ShowcaseScrollCueLabelStyle}"
+                Text="↓ How Mirage Works" />
+        </VerticalStackLayout>
+    </Grid>
 </ContentPage>
