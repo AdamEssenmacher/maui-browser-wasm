@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Mirage.Core\Mirage.Core.csproj" />
+    <ProjectReference Include="..\..\src\Mirage.Provider.Fast\Mirage.Provider.Fast.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\IMiragePlatformHandler.cs" Link="Handlers\IMiragePlatformHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\IMirageRuntimeEventTarget.cs" Link="Handlers\IMirageRuntimeEventTarget.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\IMirageRenderCoordinator.cs" Link="Handlers\IMirageRenderCoordinator.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageCommonViewProjection.cs" Link="Handlers\MirageCommonViewProjection.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MiragePlatformView.cs" Link="Handlers\MiragePlatformView.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageRenderCoordinator.cs" Link="Handlers\MirageRenderCoordinator.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageViewMapper.cs" Link="Handlers\MirageViewMapper.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Hosting\BrowserDispatcher.cs" Link="Hosting\BrowserDispatcher.cs" />
+    <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageEventSink.cs" Link="Runtime\IMirageEventSink.cs" />
+    <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageRuntime.cs" Link="Runtime\IMirageRuntime.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiPackageVersion)" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiPackageVersion)" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>

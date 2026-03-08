@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-browser</TargetFramework>
+    <AssemblyName>Mirage.Maui</AssemblyName>
+    <RootNamespace>Mirage.Maui</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Mirage.Core\Mirage.Core.csproj" />
+    <ProjectReference Include="..\Mirage.Web\Mirage.Web.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiPackageVersion)" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiPackageVersion)" />
+  </ItemGroup>
+</Project>

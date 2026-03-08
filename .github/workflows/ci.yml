@@ -21,21 +21,29 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Install workloads
+      - name: Install workloads (Linux)
+        if: runner.os == 'Linux'
         run: dotnet workload install wasm-tools
 
-      - name: Restore
-        run: dotnet restore MauiDomWasm.sln
+      - name: Install workloads (non-Linux)
+        if: runner.os != 'Linux'
+        run: dotnet workload install maui wasm-tools
 
-      - name: Parity matrix completeness
-        run: bash tools/parity/check_parity_matrix.sh
+      - name: Restore
+        run: dotnet restore Mirage.sln
 
       - name: Build
-        run: dotnet build MauiDomWasm.sln --configuration Release --no-restore
+        run: dotnet build Mirage.sln --configuration Release --no-restore
 
       - name: Install Playwright browser
         run: |
-          pwsh tests/Maui.Browser.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
+          pwsh tests/Mirage.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
 
-      - name: E2E smoke
-        run: dotnet test tests/Maui.Browser.E2E.Tests/Maui.Browser.E2E.Tests.csproj --configuration Release --no-build
+      - name: Core tests
+        run: dotnet test tests/Mirage.Core.Tests/Mirage.Core.Tests.csproj --configuration Release --no-build
+
+      - name: Integration tests
+        run: dotnet test tests/Mirage.Integration.Tests/Mirage.Integration.Tests.csproj --configuration Release --no-build
+
+      - name: E2E tests
+        run: dotnet test tests/Mirage.E2E.Tests/Mirage.E2E.Tests.csproj --configuration Release --no-build
