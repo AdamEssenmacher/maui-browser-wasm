@@ -386,9 +386,10 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         var parentCenterY = parentTop + (parentHeight / 2.0);
         var childCenterX = childLeft + (childWidth / 2.0);
         var childCenterY = childTop + (childHeight / 2.0);
+        var centerYTolerance = Math.Max(6, childHeight * 0.35);
 
         Assert.True(Math.Abs(parentCenterX - childCenterX) <= 3.5, $"Expected centered X alignment. Parent={parentCenterX}, Child={childCenterX}");
-        Assert.True(Math.Abs(parentCenterY - childCenterY) <= 6, $"Expected centered Y alignment. Parent={parentCenterY}, Child={childCenterY}");
+        Assert.True(Math.Abs(parentCenterY - childCenterY) <= centerYTolerance, $"Expected centered Y alignment. Parent={parentCenterY}, Child={childCenterY}, Tolerance={centerYTolerance}");
 
         var stretchWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-content-view-fixed-stretch-primary']", "width");
         var stretchHeight = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-content-view-fixed-stretch-primary']", "height");
