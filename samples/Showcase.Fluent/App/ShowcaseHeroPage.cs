@@ -55,11 +55,11 @@ public partial class ShowcaseHeroPage : ContentPage
         ScrollTo("architecture");
     }
 
-    private void OnOpenContentViewDemoClicked(object? sender, EventArgs e)
+    private void OnLayoutLabNavClicked(object? sender, EventArgs e)
     {
         _ = sender;
         _ = e;
-        ScrollTo("content-view-demo-page");
+        ScrollTo("layout-lab");
     }
 
     private void LoadXamlFromResource()

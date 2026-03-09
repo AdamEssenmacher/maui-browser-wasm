@@ -337,187 +337,214 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     }
 
     [Fact]
-    public async Task ContentViewDemoPage_VisualAndPositioningProbesWork()
+    public async Task LayoutLab_RendersAllGroupsAndScenarioCardCount()
     {
-        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
         var page = await OpenAsync(context);
 
-        await page.Locator("[data-automation-id='showcase-nav-content-view']").ClickAsync();
+        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
         await page.WaitForTimeoutAsync(700);
-        var sectionTop = await ReadTopAsync(page, "[data-automation-id='content-view-demo-page']");
-        Assert.True(sectionTop < 320, $"Expected content-view demo section near top after nav click, got {sectionTop}.");
+        var sectionTop = await ReadTopAsync(page, "[data-automation-id='layout-lab']");
+        Assert.True(sectionTop < 320, $"Expected layout-lab section near top after nav click, got {sectionTop}.");
 
-        var automationIds = await page.EvaluateAsync<string[]>(
-            @"() => Array.from(document.querySelectorAll('[data-automation-id]'))
-                .map((node) => node.getAttribute('data-automation-id') ?? '')
-                .filter((id) => id.length > 0)");
-
-        Assert.Contains("content-view-demo-title", automationIds);
-        Assert.Contains("content-view-visual-target", automationIds);
-
-        var initialOpacity = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-visual-target']", "opacity");
-        await page.Locator("[data-automation-id='content-view-opacity-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(140);
-        var toggledOpacity = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-visual-target']", "opacity");
-        Assert.NotEqual(initialOpacity, toggledOpacity);
-
-        var initialBackground = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-visual-target']", "background-color");
-        await page.Locator("[data-automation-id='content-view-background-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(140);
-        var toggledBackground = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-visual-target']", "background-color");
-        Assert.NotEqual(initialBackground, toggledBackground);
-
-        await page.Locator("[data-automation-id='content-view-visibility-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(120);
-        var hiddenDisplay = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-visual-target']", "display");
-        Assert.Equal("none", hiddenDisplay);
-
-        await page.Locator("[data-automation-id='content-view-visibility-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(120);
-        var shownDisplay = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-visual-target']", "display");
-        Assert.NotEqual("none", shownDisplay);
-
-        var initialMarginTop = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-visual-target']", "margin-top");
-        await page.Locator("[data-automation-id='content-view-margin-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(120);
-        var toggledMarginTop = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-visual-target']", "margin-top");
-        Assert.NotEqual(initialMarginTop, toggledMarginTop);
-
-        var scaffoldCount = await page.Locator("text=Host filler row").CountAsync();
-        Assert.Equal(0, scaffoldCount);
-
-        var startLeft = await ReadRectValueAsync(page, "[data-automation-id='content-view-horizontal-position-start']", "left");
-        var centerLeft = await ReadRectValueAsync(page, "[data-automation-id='content-view-horizontal-position-center']", "left");
-        var endLeft = await ReadRectValueAsync(page, "[data-automation-id='content-view-horizontal-position-end']", "left");
-
-        Assert.True(centerLeft > startLeft, $"Expected HorizontalOptions.Center probe to be right of Start. Start={startLeft}, Center={centerLeft}");
-        Assert.True(endLeft > centerLeft, $"Expected HorizontalOptions.End probe to be right of Center. Center={centerLeft}, End={endLeft}");
-
-        var startTop = await ReadRectValueAsync(page, "[data-automation-id='content-view-vertical-position-start']", "top");
-        var centerTop = await ReadRectValueAsync(page, "[data-automation-id='content-view-vertical-position-center']", "top");
-        var endTop = await ReadRectValueAsync(page, "[data-automation-id='content-view-vertical-position-end']", "top");
-
-        Assert.True(centerTop > startTop, $"Expected VerticalOptions.Center probe to be below Start. Start={startTop}, Center={centerTop}");
-        Assert.True(endTop > centerTop, $"Expected VerticalOptions.End probe to be below Center. Center={centerTop}, End={endTop}");
-
-        var horizontalHeight = await ReadRectValueAsync(page, "[data-automation-id='content-view-horizontal-position-start']", "height");
-        var verticalHeight = await ReadRectValueAsync(page, "[data-automation-id='content-view-vertical-position-start']", "height");
-        Assert.True(
-            Math.Abs(horizontalHeight - verticalHeight) <= 1.5,
-            $"Expected horizontal/vertical positioning probes to have equal height. Horizontal={horizontalHeight}, Vertical={verticalHeight}");
-
+        var groupCount = await page.Locator(
+            "[data-automation-id='layout-lab-group-content-view'],"
+            + "[data-automation-id='layout-lab-group-vertical-stack'],"
+            + "[data-automation-id='layout-lab-group-horizontal-stack'],"
+            + "[data-automation-id='layout-lab-group-grid'],"
+            + "[data-automation-id='layout-lab-group-nested']").CountAsync();
+        var cardCount = await page.Locator("[data-automation-id^='layout-lab-card-']").CountAsync();
+        var expectedCount = await page.Locator("[data-automation-id^='layout-lab-expected-']").CountAsync();
         var canvasCount = await page.Locator("canvas").CountAsync();
+
+        Assert.Equal(5, groupCount);
+        Assert.Equal(25, cardCount);
+        Assert.Equal(25, expectedCount);
         Assert.Equal(0, canvasCount);
     }
 
     [Fact]
-    public async Task ContentViewSizeOverflowLab_StaticRowsMatchExpectedGeometryAndClipping()
+    public async Task LayoutLab_ContentViewScenarios_ShowCenteredAndStretchBehavior()
     {
         await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
         var page = await OpenAsync(context);
 
-        await page.Locator("[data-automation-id='showcase-nav-content-view']").ClickAsync();
+        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
         await page.WaitForTimeoutAsync(700);
 
-        var widthBaselineStartLeft = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-width-fit-start']", "left");
-        var widthBaselineCenterLeft = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-width-fit-center']", "left");
-        var widthBaselineEndLeft = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-width-fit-end']", "left");
-        Assert.True(widthBaselineCenterLeft > widthBaselineStartLeft);
-        Assert.True(widthBaselineEndLeft > widthBaselineCenterLeft);
+        var parentLeft = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-content-view-fixed-centered']", "left");
+        var parentTop = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-content-view-fixed-centered']", "top");
+        var parentWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-content-view-fixed-centered']", "width");
+        var parentHeight = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-content-view-fixed-centered']", "height");
 
-        var heightBaselineStartTop = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-height-fit-start']", "top");
-        var heightBaselineCenterTop = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-height-fit-center']", "top");
-        var heightBaselineEndTop = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-height-fit-end']", "top");
-        Assert.True(heightBaselineCenterTop > heightBaselineStartTop);
-        Assert.True(heightBaselineEndTop > heightBaselineCenterTop);
+        var childLeft = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-content-view-fixed-centered-primary']", "left");
+        var childTop = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-content-view-fixed-centered-primary']", "top");
+        var childWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-content-view-fixed-centered-primary']", "width");
+        var childHeight = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-content-view-fixed-centered-primary']", "height");
 
-        var widthOverflowUnclippedProbeWidth = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-width-overflow-unclipped-probe']", "width");
-        var widthOverflowUnclippedHostWidth = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-width-overflow-unclipped-host']", "width");
-        var widthOverflowClippedProbeWidth = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-width-overflow-clipped-probe']", "width");
-        var widthOverflowClippedHostWidth = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-width-overflow-clipped-host']", "width");
-        Assert.True(widthOverflowUnclippedProbeWidth > widthOverflowUnclippedHostWidth);
-        Assert.True(widthOverflowClippedProbeWidth > widthOverflowClippedHostWidth);
+        var parentCenterX = parentLeft + (parentWidth / 2.0);
+        var parentCenterY = parentTop + (parentHeight / 2.0);
+        var childCenterX = childLeft + (childWidth / 2.0);
+        var childCenterY = childTop + (childHeight / 2.0);
+        var centerYTolerance = Math.Max(6, childHeight * 0.35);
 
-        var heightOverflowUnclippedProbeHeight = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-height-overflow-unclipped-probe']", "height");
-        var heightOverflowUnclippedHostHeight = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-height-overflow-unclipped-host']", "height");
-        var heightOverflowClippedProbeHeight = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-height-overflow-clipped-probe']", "height");
-        var heightOverflowClippedHostHeight = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-height-overflow-clipped-host']", "height");
-        Assert.True(heightOverflowUnclippedProbeHeight > heightOverflowUnclippedHostHeight);
-        Assert.True(heightOverflowClippedProbeHeight > heightOverflowClippedHostHeight);
+        Assert.True(Math.Abs(parentCenterX - childCenterX) <= 3.5, $"Expected centered X alignment. Parent={parentCenterX}, Child={childCenterX}");
+        Assert.True(Math.Abs(parentCenterY - childCenterY) <= centerYTolerance, $"Expected centered Y alignment. Parent={parentCenterY}, Child={childCenterY}, Tolerance={centerYTolerance}");
 
-        var unclippedWidthOverflow = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-size-width-overflow-unclipped-host']", "overflow");
-        var clippedWidthOverflow = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-size-width-overflow-clipped-host']", "overflow");
-        Assert.Equal("visible", unclippedWidthOverflow);
-        Assert.Equal("hidden", clippedWidthOverflow);
-
-        var unclippedHeightOverflow = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-size-height-overflow-unclipped-host']", "overflow");
-        var clippedHeightOverflow = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-size-height-overflow-clipped-host']", "overflow");
-        Assert.Equal("visible", unclippedHeightOverflow);
-        Assert.Equal("hidden", clippedHeightOverflow);
-
-        var unclippedWidthClipPath = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-size-width-overflow-unclipped-host']", "clip-path");
-        var clippedWidthClipPath = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-size-width-overflow-clipped-host']", "clip-path");
-        Assert.True(unclippedWidthClipPath is "" or "none");
-        Assert.NotEqual("none", clippedWidthClipPath);
-
-        var unclippedHeightClipPath = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-size-height-overflow-unclipped-host']", "clip-path");
-        var clippedHeightClipPath = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-size-height-overflow-clipped-host']", "clip-path");
-        Assert.True(unclippedHeightClipPath is "" or "none");
-        Assert.NotEqual("none", clippedHeightClipPath);
+        var stretchWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-content-view-fixed-stretch-primary']", "width");
+        var stretchHeight = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-content-view-fixed-stretch-primary']", "height");
+        Assert.True(stretchWidth >= 260, $"Expected stretched child width. Got {stretchWidth}");
+        Assert.True(stretchHeight >= 120, $"Expected stretched child height. Got {stretchHeight}");
     }
 
     [Fact]
-    public async Task ContentViewSizeOverflowLab_InteractiveProbeTogglesAreDeterministic()
+    public async Task LayoutLab_ContentViewExplicitSizeScenario_PreservesChildMinHeightBehavior()
     {
         await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
         var page = await OpenAsync(context);
 
-        await page.Locator("[data-automation-id='showcase-nav-content-view']").ClickAsync();
+        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
         await page.WaitForTimeoutAsync(700);
 
-        var widthHostWidth = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-interactive-width-host']", "width");
-        var widthFit = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-interactive-width-probe']", "width");
-        Assert.True(widthFit < widthHostWidth);
+        var minHeight = await ReadCssPropertyAsync(page, "[data-automation-id='layout-lab-child-content-view-explicit-size-request-primary']", "min-height");
+        Assert.EndsWith("px", minHeight, StringComparison.Ordinal);
+        Assert.NotEqual("0px", minHeight);
 
-        await page.Locator("[data-automation-id='content-view-size-interactive-width-mode-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(120);
-        var widthOverflow = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-interactive-width-probe']", "width");
-        Assert.True(widthOverflow > widthHostWidth);
+        var minHeightValue = ParsePx(minHeight);
+        Assert.True(minHeightValue >= 30, $"Expected handler-driven non-zero min-height for content child. Actual={minHeight}");
+    }
 
-        var initialWidthOptionText = await page.Locator("[data-automation-id='content-view-size-interactive-horizontal-option-toggle']").InnerTextAsync();
-        await page.Locator("[data-automation-id='content-view-size-interactive-horizontal-option-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(120);
-        var centeredWidthOptionText = await page.Locator("[data-automation-id='content-view-size-interactive-horizontal-option-toggle']").InnerTextAsync();
-        Assert.NotEqual(initialWidthOptionText, centeredWidthOptionText);
+    [Fact]
+    public async Task ShowcaseRootContentPageChild_IsNotForcedToZeroMinHeight()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        var page = await OpenAsync(context);
 
-        var widthClipBefore = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-size-interactive-width-probe']", "clip-path");
-        await page.Locator("[data-automation-id='content-view-size-interactive-width-clip-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(120);
-        var widthClipAfter = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-size-interactive-width-probe']", "clip-path");
-        Assert.True(widthClipBefore is "" or "none");
-        Assert.NotEqual("none", widthClipAfter);
+        var minHeight = await ReadCssPropertyAsync(page, "[data-automation-id='showcase-page-grid']", "min-height");
+        Assert.NotEqual("0px", minHeight);
 
-        var heightHostHeight = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-interactive-height-host']", "height");
-        var heightFit = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-interactive-height-probe']", "height");
-        Assert.True(heightFit < heightHostHeight);
+        if (minHeight.EndsWith("px", StringComparison.Ordinal))
+        {
+            var minHeightValue = ParsePx(minHeight);
+            Assert.True(minHeightValue > 0, $"Expected non-zero min-height when expressed as px. Actual={minHeight}");
+        }
+    }
 
-        await page.Locator("[data-automation-id='content-view-size-interactive-height-mode-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(120);
-        var heightOverflow = await ReadRectValueAsync(page, "[data-automation-id='content-view-size-interactive-height-probe']", "height");
-        Assert.True(heightOverflow > heightHostHeight);
+    [Fact]
+    public async Task LayoutLab_VerticalStackScenarios_ShowSpacingAndHiddenCollapse()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
+        var page = await OpenAsync(context);
 
-        var initialHeightOptionText = await page.Locator("[data-automation-id='content-view-size-interactive-vertical-option-toggle']").InnerTextAsync();
-        await page.Locator("[data-automation-id='content-view-size-interactive-vertical-option-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(120);
-        var centeredHeightOptionText = await page.Locator("[data-automation-id='content-view-size-interactive-vertical-option-toggle']").InnerTextAsync();
-        Assert.NotEqual(initialHeightOptionText, centeredHeightOptionText);
+        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
+        await page.WaitForTimeoutAsync(700);
 
-        var heightClipBefore = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-size-interactive-height-probe']", "clip-path");
-        await page.Locator("[data-automation-id='content-view-size-interactive-height-clip-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(120);
-        var heightClipAfter = await ReadCssPropertyAsync(page, "[data-automation-id='content-view-size-interactive-height-probe']", "clip-path");
-        Assert.True(heightClipBefore is "" or "none");
-        Assert.NotEqual("none", heightClipAfter);
+        var stackGap = await ReadTopDeltaAsync(
+            page,
+            "[data-automation-id='layout-lab-child-vertical-stack-multi-child-spacing-primary']",
+            "[data-automation-id='layout-lab-child-vertical-stack-multi-child-spacing-secondary']");
+        Assert.True(stackGap >= 25, $"Expected visible vertical stack spacing gap. Got {stackGap}");
+
+        var hiddenDisplay = await ReadCssPropertyAsync(page, "[data-automation-id='layout-lab-child-vertical-stack-hidden-child-collapse-primary']", "display");
+        Assert.Equal("none", hiddenDisplay);
+
+        var firstTop = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-vertical-stack-hidden-child-collapse-first']", "top");
+        var thirdTop = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-vertical-stack-hidden-child-collapse-third']", "top");
+        var collapsedDelta = thirdTop - firstTop;
+        Assert.True(collapsedDelta < 90, $"Expected collapsed layout delta under hidden middle child. Delta={collapsedDelta}");
+    }
+
+    [Fact]
+    public async Task LayoutLab_HorizontalStackScenarios_ShowConstraintAndAlignment()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
+        var page = await OpenAsync(context);
+
+        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
+        await page.WaitForTimeoutAsync(700);
+
+        var overflowHostLeft = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-horizontal-stack-constrained-width-overflow']", "left");
+        var overflowHostWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-horizontal-stack-constrained-width-overflow']", "width");
+        var overflowHostRight = overflowHostLeft + overflowHostWidth;
+        var overflowSecondLeft = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-horizontal-stack-constrained-width-overflow-secondary']", "left");
+        var overflowSecondWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-horizontal-stack-constrained-width-overflow-secondary']", "width");
+        var overflowSecondRight = overflowSecondLeft + overflowSecondWidth;
+        Assert.True(overflowSecondRight > overflowHostRight, $"Expected constrained-width overflow beyond host edge. HostRight={overflowHostRight}, ChildRight={overflowSecondRight}");
+
+        var clippedHostLeft = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-horizontal-stack-constrained-width-overflow-clipped']", "left");
+        var clippedHostWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-horizontal-stack-constrained-width-overflow-clipped']", "width");
+        var clippedHostRight = clippedHostLeft + clippedHostWidth;
+        var clippedChildLeft = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-horizontal-stack-constrained-width-overflow-clipped-secondary']", "left");
+        var clippedChildWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-horizontal-stack-constrained-width-overflow-clipped-secondary']", "width");
+        var clippedChildRight = clippedChildLeft + clippedChildWidth;
+        Assert.True(clippedChildRight > clippedHostRight, $"Expected clipped host scenario to still generate overflow geometry. HostRight={clippedHostRight}, ChildRight={clippedChildRight}");
+
+        var centerParentTop = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-horizontal-stack-centered-child']", "top");
+        var centerParentHeight = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-horizontal-stack-centered-child']", "height");
+        var centerChildTop = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-horizontal-stack-centered-child-primary']", "top");
+        var centerChildHeight = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-horizontal-stack-centered-child-primary']", "height");
+        var centerParentY = centerParentTop + (centerParentHeight / 2.0);
+        var centerChildY = centerChildTop + (centerChildHeight / 2.0);
+        Assert.True(Math.Abs(centerParentY - centerChildY) <= 14, $"Expected roughly centered child Y in row host. Parent={centerParentY}, Child={centerChildY}");
+
+        var flexShrink = await ReadCssPropertyAsync(page, "[data-automation-id='layout-lab-child-horizontal-stack-constrained-width-overflow-secondary']", "flex-shrink");
+        Assert.Equal("0", flexShrink);
+
+        var unclippedOverflow = await ReadCssPropertyAsync(page, "[data-automation-id='layout-lab-overflow-host-horizontal-unclipped']", "overflow");
+        var clippedOverflow = await ReadCssPropertyAsync(page, "[data-automation-id='layout-lab-overflow-host-horizontal-clipped']", "overflow");
+        Assert.Equal("visible", unclippedOverflow);
+        Assert.Equal("hidden", clippedOverflow);
+
+        var unclippedClipPath = await ReadCssPropertyAsync(page, "[data-automation-id='layout-lab-overflow-host-horizontal-unclipped']", "clip-path");
+        var clippedClipPath = await ReadCssPropertyAsync(page, "[data-automation-id='layout-lab-overflow-host-horizontal-clipped']", "clip-path");
+        Assert.True(unclippedClipPath is "" or "none");
+        Assert.NotEqual("none", clippedClipPath);
+    }
+
+    [Fact]
+    public async Task LayoutLab_GridScenarios_ShowPlacementSpanAndTrackBehavior()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
+        var page = await OpenAsync(context);
+
+        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
+        await page.WaitForTimeoutAsync(700);
+
+        var r0c0Left = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-grid-placement-rows-columns-primary']", "left");
+        var r0c1Left = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-grid-placement-rows-columns-r0c1']", "left");
+        var r1c0Top = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-grid-placement-rows-columns-r1c0']", "top");
+        var r0c0Top = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-grid-placement-rows-columns-primary']", "top");
+        Assert.True(r0c1Left > r0c0Left, "Expected row/column placement to move second cell to the right.");
+        Assert.True(r1c0Top > r0c0Top, "Expected second-row probe to be below first-row probe.");
+
+        var spanWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-grid-row-column-span-primary']", "width");
+        var singleWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-grid-row-column-span-peer']", "width");
+        Assert.True(spanWidth > singleWidth, $"Expected span probe width to exceed single-cell peer width. Span={spanWidth}, Peer={singleWidth}");
+
+        var absoluteTrackWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-grid-absolute-track-probe']", "width");
+        Assert.InRange(absoluteTrackWidth, 115, 125);
+    }
+
+    [Fact]
+    public async Task LayoutLab_NestedScenarios_ShowConstraintPropagation()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
+        var page = await OpenAsync(context);
+
+        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
+        await page.WaitForTimeoutAsync(700);
+
+        var boundedParentWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-nested-fixed-nested-in-bounded']", "width");
+        var boundedChildWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-nested-fixed-nested-in-bounded-primary']", "width");
+        Assert.True(boundedChildWidth < boundedParentWidth, $"Expected fixed nested child to remain bounded by parent. Parent={boundedParentWidth}, Child={boundedChildWidth}");
+
+        var autoParentWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-nested-auto-nested-with-siblings']", "width");
+        var autoPrimaryWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-nested-auto-nested-with-siblings-primary']", "width");
+        var autoParentTop = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-nested-auto-nested-with-siblings']", "top");
+        var autoPrimaryTop = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-nested-auto-nested-with-siblings-primary']", "top");
+
+        Assert.True(autoPrimaryWidth <= autoParentWidth, $"Expected auto nested child to stay within parent width. Parent={autoParentWidth}, Child={autoPrimaryWidth}");
+        Assert.True(autoPrimaryTop >= autoParentTop, $"Expected auto nested child to be positioned within parent bounds. ParentTop={autoParentTop}, ChildTop={autoPrimaryTop}");
     }
 
     private async Task<IPage> OpenAsync(IBrowserContext context)
@@ -615,6 +642,17 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
                                 : Number.NaN;
             }",
             new { selector, key });
+    }
+
+    private static double ParsePx(string value)
+    {
+        if (!value.EndsWith("px", StringComparison.Ordinal))
+        {
+            return double.NaN;
+        }
+
+        var numeric = value[..^2];
+        return double.Parse(numeric, System.Globalization.CultureInfo.InvariantCulture);
     }
 
     private static async Task SetFluentTextFieldValueAsync(IPage page, string selector, string value)

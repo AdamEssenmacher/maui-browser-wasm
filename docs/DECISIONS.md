@@ -230,3 +230,16 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Kept behavior intact while tightening architecture language: MAUI framework/logical semantics stay MAUI-side, handlers remain the mapping boundary, and Mirage models platform realization through control/web node trees.
 - Updated runtime diagnostics and DOM markers to `control`/`web` node-type values and retained web-node element-identity preservation as a hard provider/runtime invariant.
 - Added regression coverage preventing stale pre-cutover terminology in active source/docs and preserving built-in control-node purity vs web-node extensibility.
+
+## 2026-03-09 (Showcase Layout Lab: Container Sizing / Constraints / Positioning)
+- Added a dedicated same-page `layout-lab` section in `Showcase.Fluent` as a correctness surface (not marketing) with an exhaustive 25-card scenario matrix spanning `ContentView`, `VerticalStackLayout`, `HorizontalStackLayout`, `Grid`, and nested layout contexts.
+- Locked stable automation-id conventions for layout-lab cards, parent surfaces, primary child probes, and expected-behavior notes so geometry and visibility assertions can be expanded safely in E2E.
+- Added targeted handler-side layout correctness fixes needed for MAUI semantics in these scenarios: content-container child alignment projection (`HorizontalOptions`/`VerticalOptions`) and deterministic stack child no-shrink defaults (`flexGrow=0`, `flexShrink=0`, `flexBasis=auto`) under constrained bounds.
+- Updated `ContentView`/`ContentPage` container base realization to a single-cell container model to support deterministic child placement semantics without provider-specific shortcuts.
+- Scope remains layout/rendering correctness only; no control-breadth expansion, no provider contract changes, and no runtime/provider hacks specific to showcase scenarios.
+
+## 2026-03-09 (Layout Lab Consolidation + Handler Guard Tightening)
+- Removed the standalone `ContentView` demo section from `Showcase.Fluent` (including nav target/state/actions) so the new `Layout Lab` is the single correctness surface for container sizing, constraints, and positioning behavior.
+- Removed ad hoc child `minWidth/minHeight = 0px` overrides from `MirageContentViewHandler` and `MirageContentPageHandler` to avoid clobbering explicit child minimum-size intent.
+- Replaced brittle source-text regression coverage with behavior-focused verification in E2E (horizontal constrained stack probe asserts `flex-shrink: 0`, and content-container behavior checks guard against forced zero child minimum-size in both `ContentView` and `ContentPage` paths).
+- Kept architectural boundaries unchanged: handler-centered mapping, built-in control-node paths, provider-neutral runtime, and DOM-first output.
