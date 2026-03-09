@@ -220,7 +220,15 @@ internal static class MirageXamlHotReloadApplicator
             return true;
         }
 
-        return exception.StackTrace?.Contains("get_PlatformView", StringComparison.Ordinal) == true;
+        if (exception.StackTrace?.Contains("get_PlatformView", StringComparison.Ordinal) == true)
+        {
+            return true;
+        }
+
+        var message = exception.Message;
+        return !string.IsNullOrWhiteSpace(message)
+            && message.Contains("PlatformView", StringComparison.OrdinalIgnoreCase)
+            && message.Contains("null", StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool TryReplaceLivePageWithDetachedClone(
