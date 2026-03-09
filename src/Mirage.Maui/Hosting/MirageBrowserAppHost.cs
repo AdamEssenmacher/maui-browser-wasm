@@ -59,9 +59,9 @@ public static class MirageBrowserAppHost
         s_pageNavigator = pageNavigator;
         s_windowHandler = windowHandler;
 
-        if (IsDotNetWatchSession() && application is Application controlsApplication)
+        if (application is Application controlsApplication)
         {
-            s_hotReloadService = new MirageXamlHotReloadService(controlsApplication, dispatcher, renderCoordinator);
+            s_hotReloadService = new MirageXamlHotReloadService(controlsApplication, window, dispatcher, renderCoordinator);
             s_hotReloadService.Start();
         }
 
@@ -102,7 +102,10 @@ public static class MirageBrowserAppHost
 
         if (dispatcher.IsDispatchRequired)
         {
-            _ = dispatcher.Dispatch(Notify);
+            if (!dispatcher.Dispatch(Notify))
+            {
+                Notify();
+            }
             return;
         }
 
@@ -163,8 +166,4 @@ public static class MirageBrowserAppHost
         rootDomElement.ClearChildren();
     }
 
-    private static bool IsDotNetWatchSession()
-    {
-        return string.Equals(Environment.GetEnvironmentVariable("DOTNET_WATCH"), "1", StringComparison.Ordinal);
-    }
 }

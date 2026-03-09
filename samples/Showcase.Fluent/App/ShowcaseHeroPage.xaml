@@ -74,7 +74,7 @@
             <Label
                 AutomationId="hero-headline"
                 Style="{StaticResource ShowcaseHeadlineLabelStyle}"
-                Text="Run .NET MAUI apps in the browser — with real DOM UI!!!" />
+                Text="Run .NET MAUI apps in the browser — with real DOM UI" />
             <Label
                 AutomationId="hero-subheadline"
                 Style="{StaticResource ShowcaseBodyLabelStyle}"
@@ -86,7 +86,7 @@
             <Label
                 AutomationId="hero-tagline-primary"
                 Style="{StaticResource ShowcaseTaglineLabelStyle}"
-                Text="MAUI UI, rendered as real web UI." />
+                Text="MAUI UI, rendered as real web UI!" />
         </VerticalStackLayout>
 
         <VerticalStackLayout

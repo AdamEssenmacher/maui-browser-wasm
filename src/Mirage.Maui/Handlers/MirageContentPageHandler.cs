@@ -54,7 +54,14 @@ internal sealed class MirageContentPageHandler : MirageViewHandler<ContentPage>
             DisconnectCurrentContent();
         }
 
-        PlatformView.ClearChildren();
+        _currentContent = content;
+        if (!TryGetPlatformView(out var platformView))
+        {
+            RequestRender();
+            return;
+        }
+
+        platformView.ClearChildren();
 
         if (content is null || MauiContext is null)
         {
@@ -68,13 +75,11 @@ internal sealed class MirageContentPageHandler : MirageViewHandler<ContentPage>
             throw new InvalidOperationException("MirageContentPageHandler requires child handlers to expose MiragePlatformView.");
         }
 
-        PlatformView.AddChild(contentPlatformView);
+        platformView.AddChild(contentPlatformView);
         if (contentHandler is IViewHandler viewHandler && content is IView childView)
         {
             MirageViewMapper.MapLayoutAlignment(viewHandler, childView);
         }
-
-        _currentContent = content;
         _currentContentHandler = contentHandler;
         RequestRender();
     }
@@ -88,29 +93,38 @@ internal sealed class MirageContentPageHandler : MirageViewHandler<ContentPage>
 
         _currentContentHandler = null;
         _currentContent = null;
-        PlatformView.ClearChildren();
+        if (TryGetPlatformView(out var platformView))
+        {
+            platformView.ClearChildren();
+        }
+
         RequestRender();
     }
 
     private void ApplyBaseStyles()
     {
-        PlatformView.SetStyle("display", "grid");
-        PlatformView.SetStyle("gridTemplateColumns", "minmax(0, 1fr)");
-        PlatformView.SetStyle("gridTemplateRows", "minmax(0, 1fr)");
-        PlatformView.SetStyle("justifyItems", "stretch");
-        PlatformView.SetStyle("alignItems", "stretch");
-        PlatformView.SetStyle("flexDirection", null);
-        PlatformView.SetStyle("flexWrap", null);
-        PlatformView.SetStyle("justifyContent", null);
-        PlatformView.SetStyle("rowGap", null);
-        PlatformView.SetStyle("columnGap", null);
-        PlatformView.SetStyle("gap", null);
-        PlatformView.SetStyle("width", "100%");
-        PlatformView.SetStyle("height", "100%");
-        PlatformView.SetStyle("minHeight", null);
-        PlatformView.SetStyle("overflow", "hidden");
-        PlatformView.SetStyle("overflowY", "hidden");
-        PlatformView.SetStyle("overflowX", "hidden");
+        if (!TryGetPlatformView(out var platformView))
+        {
+            return;
+        }
+
+        platformView.SetStyle("display", "grid");
+        platformView.SetStyle("gridTemplateColumns", "minmax(0, 1fr)");
+        platformView.SetStyle("gridTemplateRows", "minmax(0, 1fr)");
+        platformView.SetStyle("justifyItems", "stretch");
+        platformView.SetStyle("alignItems", "stretch");
+        platformView.SetStyle("flexDirection", null);
+        platformView.SetStyle("flexWrap", null);
+        platformView.SetStyle("justifyContent", null);
+        platformView.SetStyle("rowGap", null);
+        platformView.SetStyle("columnGap", null);
+        platformView.SetStyle("gap", null);
+        platformView.SetStyle("width", "100%");
+        platformView.SetStyle("height", "100%");
+        platformView.SetStyle("minHeight", null);
+        platformView.SetStyle("overflow", "hidden");
+        platformView.SetStyle("overflowY", "hidden");
+        platformView.SetStyle("overflowX", "hidden");
         MirageViewMapper.MapPadding(this, VirtualView);
         RequestRender();
     }

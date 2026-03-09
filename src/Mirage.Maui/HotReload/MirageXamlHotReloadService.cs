@@ -21,6 +21,7 @@ internal sealed class MirageXamlHotReloadService : IDisposable
         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
     private readonly Application _application;
+    private readonly Window _primaryWindow;
     private readonly IDispatcher _dispatcher;
     private readonly IMirageRenderCoordinator _renderCoordinator;
     private readonly Dictionary<string, TrackedXamlDocument> _documentsByPath = new(StringComparer.Ordinal);
@@ -33,10 +34,12 @@ internal sealed class MirageXamlHotReloadService : IDisposable
 
     public MirageXamlHotReloadService(
         Application application,
+        Window primaryWindow,
         IDispatcher dispatcher,
         IMirageRenderCoordinator renderCoordinator)
     {
         _application = application;
+        _primaryWindow = primaryWindow;
         _dispatcher = dispatcher;
         _renderCoordinator = renderCoordinator;
     }
@@ -126,7 +129,7 @@ internal sealed class MirageXamlHotReloadService : IDisposable
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var currentXaml = await DomElement.FetchTextAsync(document.HotReloadPath);
+            var currentXaml = await FetchDocumentTextAsync(document, hints);
             if (string.IsNullOrWhiteSpace(currentXaml))
             {
                 continue;
@@ -174,9 +177,21 @@ internal sealed class MirageXamlHotReloadService : IDisposable
             }
 
             var applyResult = ApplyXamlChange(changedDocument, liveTree);
+            if (applyResult.AttemptCount == 0)
+            {
+                Console.Error.WriteLine(
+                    $"[Mirage.HotReload] No live targets matched '{changedDocument.Document.HotReloadPath}' ({changedDocument.Document.TargetType.FullName}).");
+                continue;
+            }
+
             if (applyResult.AttemptCount > 0 && applyResult.SuccessCount == 0)
             {
                 _failedHashesByPath[changedDocument.Document.HotReloadPath] = contentHash;
+                if (applyResult.LastError is not null)
+                {
+                    Console.Error.WriteLine(
+                        $"[Mirage.HotReload] Failed to apply '{changedDocument.Document.HotReloadPath}' to '{changedDocument.Document.TargetType.FullName}': {applyResult.LastError}");
+                }
                 continue;
             }
 
@@ -190,12 +205,13 @@ internal sealed class MirageXamlHotReloadService : IDisposable
         return appliedCount;
     }
 
-    private static ApplyResult ApplyXamlChange(ChangedXamlDocument changedDocument, LiveTreeSnapshot liveTree)
+    private ApplyResult ApplyXamlChange(ChangedXamlDocument changedDocument, LiveTreeSnapshot liveTree)
     {
         if (typeof(ResourceDictionary).IsAssignableFrom(changedDocument.Document.TargetType))
         {
             var attempts = 0;
             var successes = 0;
+            Exception? firstError = null;
 
             foreach (var dictionary in liveTree.ResourceDictionaries)
             {
@@ -205,18 +221,22 @@ internal sealed class MirageXamlHotReloadService : IDisposable
                 }
 
                 attempts++;
-                if (MirageXamlHotReloadApplicator.TryApplyResourceDictionaryXaml(dictionary, changedDocument.XamlText, out _))
+                if (MirageXamlHotReloadApplicator.TryApplyResourceDictionaryXaml(dictionary, changedDocument.XamlText, out var error))
                 {
                     successes++;
+                    continue;
                 }
+
+                firstError ??= error;
             }
 
-            return new ApplyResult(attempts, successes);
+            return new ApplyResult(attempts, successes, firstError);
         }
 
         {
             var attempts = 0;
             var successes = 0;
+            Exception? firstError = null;
 
             foreach (var element in liveTree.Elements)
             {
@@ -226,13 +246,20 @@ internal sealed class MirageXamlHotReloadService : IDisposable
                 }
 
                 attempts++;
-                if (MirageXamlHotReloadApplicator.TryApplyElementXaml(element, changedDocument.XamlText, out _))
+                if (MirageXamlHotReloadApplicator.TryApplyElementXaml(
+                        element,
+                        changedDocument.XamlText,
+                        out var error,
+                        _primaryWindow))
                 {
                     successes++;
+                    continue;
                 }
+
+                firstError ??= error;
             }
 
-            return new ApplyResult(attempts, successes);
+            return new ApplyResult(attempts, successes, firstError);
         }
     }
 
@@ -241,7 +268,13 @@ internal sealed class MirageXamlHotReloadService : IDisposable
         var elements = new List<Element>();
         var visitedElements = new HashSet<Element>(ReferenceEqualityComparer.Instance);
 
-        foreach (var window in _application.Windows)
+        var windows = _application.Windows.OfType<Window>().ToList();
+        if (!windows.Contains(_primaryWindow))
+        {
+            windows.Add(_primaryWindow);
+        }
+
+        foreach (var window in windows)
         {
             if (window.Page is not Element rootElement)
             {
@@ -374,7 +407,8 @@ internal sealed class MirageXamlHotReloadService : IDisposable
         }
 
         var matches = _documentsByPath.Values
-            .Where(document => normalizedHints.Contains(document.HotReloadPath))
+            .Where(document =>
+                normalizedHints.Contains(document.HotReloadPath))
             .ToArray();
 
         return matches.Length > 0 ? matches : _documentsByPath.Values.ToArray();
@@ -423,6 +457,64 @@ internal sealed class MirageXamlHotReloadService : IDisposable
 
                 var hotReloadPath = $"/_hotreload/{assemblyName}/{normalizedRelativePath}";
                 yield return new TrackedXamlDocument(targetType, hotReloadPath);
+            }
+        }
+    }
+
+    private static async Task<string?> FetchDocumentTextAsync(
+        TrackedXamlDocument document,
+        IReadOnlyList<string> hints)
+    {
+        var attemptedPaths = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var hintPath in ResolveHintFetchPaths(document, hints))
+        {
+            if (!attemptedPaths.Add(hintPath))
+            {
+                continue;
+            }
+
+            var hintedText = await DomElement.FetchTextAsync(hintPath);
+            if (!string.IsNullOrWhiteSpace(hintedText))
+            {
+                return hintedText;
+            }
+        }
+
+        if (!attemptedPaths.Add(document.HotReloadPath))
+        {
+            return null;
+        }
+
+        return await DomElement.FetchTextAsync(document.HotReloadPath);
+    }
+
+    private static IEnumerable<string> ResolveHintFetchPaths(
+        TrackedXamlDocument document,
+        IReadOnlyList<string> hints)
+    {
+        if (hints.Count == 0)
+        {
+            yield break;
+        }
+
+        foreach (var hint in hints)
+        {
+            var normalizedHintPath = NormalizeHintPath(hint);
+            if (string.IsNullOrWhiteSpace(normalizedHintPath) || normalizedHintPath == "*")
+            {
+                continue;
+            }
+
+            if (!string.Equals(normalizedHintPath, document.HotReloadPath, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var fetchPath = NormalizeFetchPath(hint);
+            if (!string.IsNullOrWhiteSpace(fetchPath)
+                && fetchPath.StartsWith("/_hotreload/", StringComparison.Ordinal))
+            {
+                yield return fetchPath;
             }
         }
     }
@@ -494,6 +586,32 @@ internal sealed class MirageXamlHotReloadService : IDisposable
         return normalized;
     }
 
+    private static string? NormalizeFetchPath(string? hint)
+    {
+        if (string.IsNullOrWhiteSpace(hint))
+        {
+            return null;
+        }
+
+        var normalized = hint.Trim();
+        if (normalized == "*")
+        {
+            return null;
+        }
+
+        if (Uri.TryCreate(normalized, UriKind.Absolute, out var absoluteUri))
+        {
+            normalized = absoluteUri.PathAndQuery;
+        }
+
+        if (!normalized.StartsWith("/", StringComparison.Ordinal))
+        {
+            normalized = "/" + normalized;
+        }
+
+        return normalized;
+    }
+
     private static string ComputeContentHash(string content)
     {
         var bytes = Encoding.UTF8.GetBytes(content);
@@ -519,7 +637,7 @@ internal sealed class MirageXamlHotReloadService : IDisposable
         }
 
         var completionSource = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-        if (!_dispatcher.Dispatch(() =>
+        var dispatched = _dispatcher.Dispatch(() =>
             {
                 try
                 {
@@ -529,9 +647,20 @@ internal sealed class MirageXamlHotReloadService : IDisposable
                 {
                     completionSource.SetException(ex);
                 }
-            }))
+            });
+
+        if (!dispatched)
         {
-            completionSource.SetException(new InvalidOperationException("Failed to dispatch hot reload update."));
+            // Browser-WASM can report dispatch required while refusing to enqueue.
+            // Fall back to inline execution so hot reload changes still apply.
+            try
+            {
+                return Task.FromResult(callback());
+            }
+            catch (Exception ex)
+            {
+                completionSource.SetException(new InvalidOperationException("Failed to dispatch hot reload update.", ex));
+            }
         }
 
         return completionSource.Task;
@@ -550,7 +679,7 @@ internal sealed class MirageXamlHotReloadService : IDisposable
 
     private sealed record ChangedXamlDocument(TrackedXamlDocument Document, string XamlText);
 
-    private sealed record ApplyResult(int AttemptCount, int SuccessCount);
+    private sealed record ApplyResult(int AttemptCount, int SuccessCount, Exception? LastError);
 
     private sealed record LiveTreeSnapshot(
         IReadOnlyList<Element> Elements,
