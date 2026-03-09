@@ -490,9 +490,7 @@
                                     HorizontalOptions="Center"
                                     Style="{StaticResource ShowcaseLayoutLabProbeSurfaceStyle}"
                                     VerticalOptions="Center"
-                                    WidthRequest="140">
-                                    <Label Text="Centered probe" />
-                                </ContentView>
+                                    WidthRequest="140" />
                             </ContentView>
                         </VerticalStackLayout>
                     </ContentView>
