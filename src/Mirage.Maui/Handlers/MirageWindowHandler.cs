@@ -133,7 +133,8 @@ internal sealed class MirageWindowHandler : ElementHandler<Window, MiragePlatfor
         PlatformView.SetStyle("alignItems", "stretch");
         PlatformView.SetStyle("width", "100%");
         PlatformView.SetStyle("height", "100%");
-        PlatformView.SetStyle("overflowY", "auto");
+        PlatformView.SetStyle("overflow", "hidden");
+        PlatformView.SetStyle("overflowY", "hidden");
         PlatformView.SetStyle("overflowX", "hidden");
         PlatformView.SetStyle("margin", "0");
         PlatformView.SetStyle("padding", "0");

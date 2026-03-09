@@ -62,6 +62,27 @@ public partial class ShowcaseHeroPage : ContentPage
         ScrollTo("layout-lab");
     }
 
+    private async void OnLayoutLabScrollToTopClicked(object? sender, EventArgs e)
+    {
+        _ = sender;
+        _ = e;
+        if (sender is VisualElement visualElement)
+        {
+            visualElement.Unfocus();
+        }
+
+        _state.RegisterLayoutLabScrollCommandAttempt();
+        await Task.Yield();
+        await ShowcaseScrollRoot.ScrollToAsync(0, 0, animated: true);
+    }
+
+    private void OnCommandScrollToLayoutLabClicked(object? sender, EventArgs e)
+    {
+        _ = sender;
+        _ = e;
+        ScrollTo("layout-lab");
+    }
+
     private void LoadXamlFromResource()
     {
 #pragma warning disable IL2026

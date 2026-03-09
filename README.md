@@ -46,6 +46,7 @@ Built-in handlers stay inside this control set. Third-party/custom handlers can 
   - Public-facing Mirage hero demo proving real DOM + Fluent UI Web Components rendering
   - Includes focused foundations/layout labs for `Label`, core `IView` mapping, stack behavior, grid placement/spans, and surface rendering
   - Includes an exhaustive `Layout Lab` matrix validating sizing, constraints, positioning, and nested container behavior across `ContentView`, stacks, and `Grid`
+  - Uses explicit `ScrollView` hosting for long-page scrolling; `ContentPage` remains non-scrollable by default
   - Demonstrates MAUI ResourceDictionary-first styling with CSS retained only as a targeted browser/provider escape hatch
 - `tests/Mirage.Core.Tests`
   - Diff correctness + determinism
@@ -100,6 +101,7 @@ If missing, startup fails with:
 - Provider-specific mappings (Fluent, UI5, custom) live only in provider projects.
 - Fluent UI Web Components are built on FAST foundations, but Mirage’s public reference-provider story is Fluent-first.
 - Providers must support control-node and web-node realization for full Mirage behavior.
+- Mirage preserves MAUI’s explicit scrolling model: `ContentPage` is non-scrollable by default and scrolling is introduced explicitly with `ScrollView`.
 - The old `Maui.Browser*` showcase/parity stack is not part of the active solution wiring.
 - Architecture benchmark harness: `tools/benchmarks/Mirage.ArchitectureBenchmarks`.
 - Current rendering wave focus is correctness-first (shared visual projection, stack/grid determinism, and DOM-backed surface rendering) before richer control breadth.

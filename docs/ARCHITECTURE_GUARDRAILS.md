@@ -112,3 +112,10 @@ Policy:
 - `Showcase.Fluent` is a proof and dogfood sample, not a framework-design driver.
 - `Counter.Fluent` remains minimal stability harness.
 - Architectural decisions must be justified in core runtime/provider/handler layers, not by demo convenience.
+
+## 9. Explicit scrolling policy
+
+- Mirage follows MAUI’s explicit scroll model.
+- `ContentPage` is non-scrollable by default.
+- Scrolling must be introduced with `ScrollView` (or future dedicated scrolling controls).
+- Browser document/page scrolling must not be used as an implicit substitute for missing `ScrollView`.

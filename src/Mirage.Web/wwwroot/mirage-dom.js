@@ -230,6 +230,19 @@ export function getInputValue(elementHandle) {
   return element.value ?? "";
 }
 
+export function setScrollPosition(elementHandle, left, top) {
+  const element = fromHandle(elementHandle);
+  element.scrollLeft = Number.isFinite(left) ? Math.max(0, left) : 0;
+  element.scrollTop = Number.isFinite(top) ? Math.max(0, top) : 0;
+}
+
+export function getScrollPosition(elementHandle) {
+  const element = fromHandle(elementHandle);
+  const left = Number.isFinite(element.scrollLeft) ? element.scrollLeft : 0;
+  const top = Number.isFinite(element.scrollTop) ? element.scrollTop : 0;
+  return [left, top];
+}
+
 const resizeSubscriptions = new Map();
 let nextResizeSubscriptionId = 1;
 

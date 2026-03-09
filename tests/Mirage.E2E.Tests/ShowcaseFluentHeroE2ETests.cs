@@ -364,6 +364,92 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     }
 
     [Fact]
+    public async Task ContentPage_DefaultSurface_IsNotDocumentScrollable()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        var page = await OpenAsync(context);
+
+        var rootOverflowY = await ReadCssPropertyAsync(page, "[data-automation-id='showcase-root']", "overflow-y");
+        var scrollRootOverflowY = await ReadCssPropertyAsync(page, "[data-automation-id='showcase-scroll-root']", "overflow-y");
+        var metrics = await ReadScrollGeometryAsync(page, "[data-automation-id='showcase-scroll-root']");
+        var docMetrics = await ReadDocumentScrollGeometryAsync(page);
+
+        Assert.Equal("hidden", rootOverflowY);
+        Assert.True(scrollRootOverflowY is "auto" or "scroll");
+        Assert.True(metrics.ScrollHeight > metrics.ClientHeight + 120, $"Expected explicit ScrollView overflow. Height={metrics.ScrollHeight}, Client={metrics.ClientHeight}");
+        Assert.True(docMetrics.DocumentScrollHeight <= docMetrics.DocumentClientHeight + 2, $"Expected document to remain non-scrollable. ScrollHeight={docMetrics.DocumentScrollHeight}, ClientHeight={docMetrics.DocumentClientHeight}");
+        Assert.True(docMetrics.BodyScrollHeight <= docMetrics.BodyClientHeight + 2, $"Expected body to remain non-scrollable. ScrollHeight={docMetrics.BodyScrollHeight}, ClientHeight={docMetrics.BodyClientHeight}");
+
+        await page.EvaluateAsync("() => window.scrollTo(0, 2000)");
+        await page.WaitForTimeoutAsync(120);
+        var windowScrollY = await ReadWindowScrollYAsync(page);
+        Assert.True(windowScrollY <= 1, $"Expected window scroll position to remain near zero. Actual={windowScrollY}");
+    }
+
+    [Fact]
+    public async Task Showcase_ExplicitRootScrollView_IsScrollable()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        var page = await OpenAsync(context);
+
+        await SetElementScrollTopAsync(page, "[data-automation-id='showcase-scroll-root']", 0);
+        var initial = await ReadScrollGeometryAsync(page, "[data-automation-id='showcase-scroll-root']");
+        Assert.True(initial.ScrollHeight > initial.ClientHeight + 120, $"Expected scrollable root geometry. Height={initial.ScrollHeight}, Client={initial.ClientHeight}");
+
+        await SetElementScrollTopAsync(page, "[data-automation-id='showcase-scroll-root']", 700);
+        await page.WaitForTimeoutAsync(120);
+
+        var scrolled = await ReadScrollGeometryAsync(page, "[data-automation-id='showcase-scroll-root']");
+        Assert.True(scrolled.ScrollTop > 120, $"Expected scroll root top to change. Actual={scrolled.ScrollTop}");
+    }
+
+    [Fact]
+    public async Task Showcase_NavScroll_UsesExplicitScrollSurface()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        var page = await OpenAsync(context);
+
+        await SetElementScrollTopAsync(page, "[data-automation-id='showcase-scroll-root']", 0);
+        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
+        await page.WaitForFunctionAsync(
+            @"() => {
+                const root = document.querySelector('[data-automation-id=""showcase-scroll-root""]');
+                return !!root && root.scrollTop > 120;
+            }");
+
+        var scrolled = await ReadScrollGeometryAsync(page, "[data-automation-id='showcase-scroll-root']");
+        var windowScrollY = await ReadWindowScrollYAsync(page);
+        Assert.True(scrolled.ScrollTop > 120, $"Expected nav click to scroll explicit root. Actual={scrolled.ScrollTop}");
+        Assert.True(windowScrollY <= 1, $"Expected document scroll to remain near zero. Actual={windowScrollY}");
+    }
+
+    [Fact]
+    public async Task Showcase_RequestScrollTo_CommandPath_IsInvoked()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        var page = await OpenAsync(context);
+
+        await SetElementScrollTopAsync(page, "[data-automation-id='showcase-scroll-root']", 0);
+        await page.Locator("[data-automation-id='layout-lab-scroll-command-top']").ScrollIntoViewIfNeededAsync();
+        var before = await ReadScrollGeometryAsync(page, "[data-automation-id='showcase-scroll-root']");
+        Assert.True(before.ScrollTop > 120, $"Expected command probe to require scrolling first. Actual={before.ScrollTop}");
+        await page.Locator("[data-automation-id='layout-lab-scroll-command-top']").ClickAsync();
+        await page.WaitForFunctionAsync(
+            @"() => {
+                const counter = document.querySelector('[data-automation-id=""layout-lab-scroll-command-count""]');
+                return !!counter && (counter.textContent ?? '').includes('1');
+            }");
+
+        var after = await ReadScrollGeometryAsync(page, "[data-automation-id='showcase-scroll-root']");
+        var afterCounter = await page.Locator("[data-automation-id='layout-lab-scroll-command-count']").InnerTextAsync();
+        var windowScrollY = await ReadWindowScrollYAsync(page);
+
+        Assert.Contains("1", afterCounter, StringComparison.Ordinal);
+        Assert.True(after.ScrollTop <= before.ScrollTop + 5, $"Expected command invocation to avoid downward root scroll drift. Before={before.ScrollTop}, After={after.ScrollTop}");
+        Assert.True(windowScrollY <= 1, $"Expected document scroll to remain near zero. Actual={windowScrollY}");
+    }
+
+    [Fact]
     public async Task LayoutLab_ContentViewScenarios_ShowCenteredAndStretchBehavior()
     {
         await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
@@ -642,6 +728,67 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
                                 : Number.NaN;
             }",
             new { selector, key });
+    }
+
+    private static async Task<(double ScrollTop, double ScrollHeight, double ClientHeight)> ReadScrollGeometryAsync(IPage page, string selector)
+    {
+        var values = await page.EvaluateAsync<double[]>(
+            @"(selector) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return [Number.NaN, Number.NaN, Number.NaN];
+                }
+
+                return [element.scrollTop, element.scrollHeight, element.clientHeight];
+            }",
+            selector);
+
+        return (
+            values.Length > 0 ? values[0] : double.NaN,
+            values.Length > 1 ? values[1] : double.NaN,
+            values.Length > 2 ? values[2] : double.NaN);
+    }
+
+    private static async Task<(double DocumentScrollHeight, double DocumentClientHeight, double BodyScrollHeight, double BodyClientHeight)> ReadDocumentScrollGeometryAsync(IPage page)
+    {
+        var values = await page.EvaluateAsync<double[]>(
+            @"() => {
+                const doc = document.documentElement;
+                const body = document.body;
+                return [
+                    doc?.scrollHeight ?? Number.NaN,
+                    doc?.clientHeight ?? Number.NaN,
+                    body?.scrollHeight ?? Number.NaN,
+                    body?.clientHeight ?? Number.NaN
+                ];
+            }");
+
+        return (
+            values.Length > 0 ? values[0] : double.NaN,
+            values.Length > 1 ? values[1] : double.NaN,
+            values.Length > 2 ? values[2] : double.NaN,
+            values.Length > 3 ? values[3] : double.NaN);
+    }
+
+    private static async Task SetElementScrollTopAsync(IPage page, string selector, double top)
+    {
+        _ = await page.EvaluateAsync<bool>(
+            @"({ selector, top }) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return false;
+                }
+
+                element.scrollTop = Number.isFinite(top) ? Math.max(0, top) : 0;
+                element.dispatchEvent(new Event('scroll', { bubbles: true }));
+                return true;
+            }",
+            new { selector, top });
+    }
+
+    private static async Task<double> ReadWindowScrollYAsync(IPage page)
+    {
+        return await page.EvaluateAsync<double>("() => window.scrollY ?? 0");
     }
 
     private static double ParsePx(string value)

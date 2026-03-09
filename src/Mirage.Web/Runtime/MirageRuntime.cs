@@ -65,6 +65,39 @@ public sealed class MirageRuntime : IMirageRuntime
             : null;
     }
 
+    public bool TryGetNodeScrollPosition(string nodeId, out double left, out double top)
+    {
+        left = 0;
+        top = 0;
+
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        var position = node.Element.GetScrollPosition();
+        left = position.Left;
+        top = position.Top;
+        return true;
+    }
+
+    public bool TrySetNodeScrollPosition(string nodeId, double left, double top, out double actualLeft, out double actualTop)
+    {
+        actualLeft = 0;
+        actualTop = 0;
+
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        node.Element.SetScrollPosition(left, top);
+        var position = node.Element.GetScrollPosition();
+        actualLeft = position.Left;
+        actualTop = position.Top;
+        return true;
+    }
+
     public void Dispose()
     {
         foreach (var subscriptionId in _eventSubscriptions.Values.ToArray())

@@ -186,6 +186,57 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void ContentPageAndWindow_DefaultToNonScrollableOverflowBehavior()
+    {
+        var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");
+        Assert.True(Directory.Exists(handlersPath), $"Handlers path was not found: {handlersPath}");
+
+        var windowText = File.ReadAllText(Path.Combine(handlersPath, "MirageWindowHandler.cs"));
+        var pageText = File.ReadAllText(Path.Combine(handlersPath, "MirageContentPageHandler.cs"));
+
+        Assert.Contains("overflow\", \"hidden\"", windowText, StringComparison.Ordinal);
+        Assert.DoesNotContain("overflowY\", \"auto\"", windowText, StringComparison.Ordinal);
+        Assert.Contains("overflow\", \"hidden\"", pageText, StringComparison.Ordinal);
+        Assert.DoesNotContain("overflowY\", \"auto\"", pageText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BrowserPlatform_RegistersScrollViewHandler()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var text = File.ReadAllText(hostingPath);
+        Assert.Contains("typeof(ScrollView)", text, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageScrollViewHandler)", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ScrollViewHandler_MapsExplicitRequestScrollToThroughRuntimeBridge()
+    {
+        var handlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageScrollViewHandler.cs");
+        Assert.True(File.Exists(handlerPath), $"Expected handler file not found: {handlerPath}");
+
+        var text = File.ReadAllText(handlerPath);
+        Assert.Contains("nameof(IScrollView.RequestScrollTo)", text, StringComparison.Ordinal);
+        Assert.Contains("MapRequestScrollTo", text, StringComparison.Ordinal);
+        Assert.Contains("TryResolveScrollRequest", text, StringComparison.Ordinal);
+        Assert.Contains("TrySetNodeScrollPosition", text, StringComparison.Ordinal);
+        Assert.Contains("SendScrollFinished", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ScrollViewHandler_DoesNotForceFillSizeStyles()
+    {
+        var handlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageScrollViewHandler.cs");
+        Assert.True(File.Exists(handlerPath), $"Expected handler file not found: {handlerPath}");
+
+        var text = File.ReadAllText(handlerPath);
+        Assert.DoesNotContain("SetStyle(\"width\", \"100%\")", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("SetStyle(\"height\", \"100%\")", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void GridContract_UsesCssGridProjectionSemantics()
     {
         var layoutHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageLayoutHandler.cs");

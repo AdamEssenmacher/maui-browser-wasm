@@ -22,7 +22,7 @@ internal static class ShowcaseBacklogCatalog
         new("navigation-page", "Host", "NavigationPage", ShowcaseBacklogStatus.Started, "Single-stack browser navigation flow is implemented."),
         new("content-page", "Host", "ContentPage", ShowcaseBacklogStatus.Complete, "Content page hosting is implemented."),
         new("content-view", "Container", "ContentView", ShowcaseBacklogStatus.Complete, "Single-child content hosting is implemented."),
-        new("scroll-view", "Container", "ScrollView", ShowcaseBacklogStatus.Started, "Native overflow + programmatic scroll path is implemented."),
+        new("scroll-view", "Container", "ScrollView", ShowcaseBacklogStatus.Started, "Explicit scroll-container behavior with orientation, scrollbar visibility, and command scrolling is implemented."),
         new("vertical-stack-layout", "Layout", "VerticalStackLayout", ShowcaseBacklogStatus.Complete, "Semantic flex-column realization is implemented."),
         new("horizontal-stack-layout", "Layout", "HorizontalStackLayout", ShowcaseBacklogStatus.Complete, "Semantic flex-row realization is implemented."),
         new("grid", "Layout", "Grid", ShowcaseBacklogStatus.Complete, "Typed grid realization with row/column/span is implemented."),
