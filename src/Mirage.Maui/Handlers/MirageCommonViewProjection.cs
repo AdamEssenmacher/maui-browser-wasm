@@ -246,20 +246,27 @@ internal static class MirageCommonViewProjection
             return false;
         }
 
+        var horizontalAlignment = ResolveHorizontalAlignment(view);
+        var verticalAlignment = ResolveVerticalAlignment(view);
+
         var changed = false;
         switch (parentKind.Value)
         {
             case Core.Semantics.ComponentKind.VerticalStack:
-                changed |= SetStyleIfChanged(platformHandler, "alignSelf", ResolveStackCrossAxisAlignment(view.HorizontalLayoutAlignment));
+                changed |= SetStyleIfChanged(platformHandler, "alignSelf", ResolveStackCrossAxisAlignment(horizontalAlignment));
                 changed |= SetStyleIfChanged(platformHandler, "justifySelf", null);
                 break;
             case Core.Semantics.ComponentKind.HorizontalStack:
-                changed |= SetStyleIfChanged(platformHandler, "alignSelf", ResolveStackCrossAxisAlignment(view.VerticalLayoutAlignment));
+                changed |= SetStyleIfChanged(platformHandler, "alignSelf", ResolveStackCrossAxisAlignment(verticalAlignment));
                 changed |= SetStyleIfChanged(platformHandler, "justifySelf", null);
                 break;
+            case Core.Semantics.ComponentKind.ContentContainer:
+                changed |= SetStyleIfChanged(platformHandler, "justifySelf", ResolveGridSelfAlignment(horizontalAlignment));
+                changed |= SetStyleIfChanged(platformHandler, "alignSelf", ResolveGridSelfAlignment(verticalAlignment));
+                break;
             case Core.Semantics.ComponentKind.Grid:
-                changed |= SetStyleIfChanged(platformHandler, "justifySelf", ResolveGridSelfAlignment(view.HorizontalLayoutAlignment));
-                changed |= SetStyleIfChanged(platformHandler, "alignSelf", ResolveGridSelfAlignment(view.VerticalLayoutAlignment));
+                changed |= SetStyleIfChanged(platformHandler, "justifySelf", ResolveGridSelfAlignment(horizontalAlignment));
+                changed |= SetStyleIfChanged(platformHandler, "alignSelf", ResolveGridSelfAlignment(verticalAlignment));
                 break;
             default:
                 changed |= SetStyleIfChanged(platformHandler, "justifySelf", null);
@@ -289,6 +296,37 @@ internal static class MirageCommonViewProjection
             Microsoft.Maui.Primitives.LayoutAlignment.Center => "center",
             Microsoft.Maui.Primitives.LayoutAlignment.End => "end",
             _ => "stretch"
+        };
+    }
+
+    private static Microsoft.Maui.Primitives.LayoutAlignment ResolveHorizontalAlignment(IView view)
+    {
+        if (view is View mauiView)
+        {
+            return ToPrimitivesAlignment(mauiView.HorizontalOptions.Alignment);
+        }
+
+        return view.HorizontalLayoutAlignment;
+    }
+
+    private static Microsoft.Maui.Primitives.LayoutAlignment ResolveVerticalAlignment(IView view)
+    {
+        if (view is View mauiView)
+        {
+            return ToPrimitivesAlignment(mauiView.VerticalOptions.Alignment);
+        }
+
+        return view.VerticalLayoutAlignment;
+    }
+
+    private static Microsoft.Maui.Primitives.LayoutAlignment ToPrimitivesAlignment(Microsoft.Maui.Controls.LayoutAlignment alignment)
+    {
+        return alignment switch
+        {
+            Microsoft.Maui.Controls.LayoutAlignment.Start => Microsoft.Maui.Primitives.LayoutAlignment.Start,
+            Microsoft.Maui.Controls.LayoutAlignment.Center => Microsoft.Maui.Primitives.LayoutAlignment.Center,
+            Microsoft.Maui.Controls.LayoutAlignment.End => Microsoft.Maui.Primitives.LayoutAlignment.End,
+            _ => Microsoft.Maui.Primitives.LayoutAlignment.Fill
         };
     }
 

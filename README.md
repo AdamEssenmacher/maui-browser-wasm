@@ -45,8 +45,7 @@ Built-in handlers stay inside this control set. Third-party/custom handlers can 
 - `samples/Showcase.Fluent`
   - Public-facing Mirage hero demo proving real DOM + Fluent UI Web Components rendering
   - Includes focused foundations/layout labs for `Label`, core `IView` mapping, stack behavior, grid placement/spans, and surface rendering
-  - Includes dedicated control demo surfaces (starting with `ContentView`) for control/handler correctness depth checks
-  - Includes a `ContentView` size/overflow parity lab covering `WidthRequest`/`HeightRequest`, layout alignment, `ClipsToBounds`, and `IView.Clip`-driven clipping
+  - Includes an exhaustive `Layout Lab` matrix validating sizing, constraints, positioning, and nested container behavior across `ContentView`, stacks, and `Grid`
   - Demonstrates MAUI ResourceDictionary-first styling with CSS retained only as a targeted browser/provider escape hatch
 - `tests/Mirage.Core.Tests`
   - Diff correctness + determinism

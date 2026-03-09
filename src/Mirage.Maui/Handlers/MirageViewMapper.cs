@@ -23,6 +23,8 @@ public static class MirageViewMapper
         [nameof(VisualElement.MinimumHeightRequest)] = MapSizeRequests,
         [nameof(VisualElement.MaximumWidthRequest)] = MapSizeRequests,
         [nameof(VisualElement.MaximumHeightRequest)] = MapSizeRequests,
+        [nameof(View.HorizontalOptions)] = MapLayoutAlignment,
+        [nameof(View.VerticalOptions)] = MapLayoutAlignment,
         [nameof(IView.HorizontalLayoutAlignment)] = MapLayoutAlignment,
         [nameof(IView.VerticalLayoutAlignment)] = MapLayoutAlignment
     };

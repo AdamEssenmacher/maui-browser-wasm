@@ -285,6 +285,12 @@ public sealed class HandlerRuntimeIntegrationTests
         verticalParent.AddChild(handler.Node);
         MirageViewMapper.MapLayoutAlignment(handler, child);
         Assert.Equal("flex-end", handler.Node.GetStyleValue("alignSelf"));
+
+        var contentContainerParent = MiragePlatformView.CreateControl(ComponentKind.ContentContainer);
+        contentContainerParent.AddChild(handler.Node);
+        MirageViewMapper.MapLayoutAlignment(handler, child);
+        Assert.Equal("end", handler.Node.GetStyleValue("justifySelf"));
+        Assert.Equal("center", handler.Node.GetStyleValue("alignSelf"));
     }
 
     [Fact]

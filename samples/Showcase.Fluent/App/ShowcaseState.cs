@@ -3,47 +3,12 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Shapes;
-using Microsoft.Maui.Graphics;
 
 namespace Showcase.Fluent.App;
 
 internal sealed class ShowcaseState : INotifyPropertyChanged
 {
-    private static readonly Brush[] ContentViewBackgroundSequence =
-    [
-        new SolidColorBrush(Color.FromArgb("#DBEAFE")),
-        new SolidColorBrush(Color.FromArgb("#CCFBF1")),
-        new LinearGradientBrush(
-            new GradientStopCollection
-            {
-                new GradientStop(Color.FromArgb("#BFDBFE"), 0),
-                new GradientStop(Color.FromArgb("#DDD6FE"), 1)
-            },
-            new Point(0, 0),
-            new Point(1, 1)),
-        new SolidColorBrush(Color.FromArgb("#FDE68A"))
-    ];
-
-    private static readonly string[] ContentViewBackgroundNames =
-    [
-        "Blue Solid",
-        "Mint Solid",
-        "Linear Gradient",
-        "Amber Solid"
-    ];
-
     private int _clickCount;
-    private int _contentViewBackgroundIndex;
-    private bool _contentViewHeightClipEnabled;
-    private bool _contentViewHeightOverflow;
-    private int _contentViewMarginIndex;
-    private int _contentViewOpacityIndex;
-    private int _contentViewVerticalOptionIndex;
-    private bool _contentViewVisible = true;
-    private bool _contentViewWidthClipEnabled;
-    private bool _contentViewWidthOverflow;
-    private int _contentViewHorizontalOptionIndex;
     private string _foundationsLabelInput = "Mirage";
     private bool _foundationsGridSpacingExpanded;
     private bool _foundationsHorizontalSpacingExpanded;
@@ -61,16 +26,6 @@ internal sealed class ShowcaseState : INotifyPropertyChanged
         ToggleFoundationsStackSpacingCommand = new Command(ToggleFoundationsSpacing);
         ToggleFoundationsHorizontalStackSpacingCommand = new Command(ToggleFoundationsHorizontalSpacing);
         ToggleFoundationsGridSpacingCommand = new Command(ToggleFoundationsGridSpacing);
-        ToggleContentViewBackgroundCommand = new Command(ToggleContentViewBackground);
-        ToggleContentViewOpacityCommand = new Command(ToggleContentViewOpacity);
-        ToggleContentViewVisibilityCommand = new Command(ToggleContentViewVisibility);
-        ToggleContentViewMarginCommand = new Command(ToggleContentViewMargin);
-        ToggleContentViewWidthModeCommand = new Command(ToggleContentViewWidthMode);
-        CycleContentViewHorizontalOptionCommand = new Command(CycleContentViewHorizontalOption);
-        ToggleContentViewWidthClipCommand = new Command(ToggleContentViewWidthClip);
-        ToggleContentViewHeightModeCommand = new Command(ToggleContentViewHeightMode);
-        CycleContentViewVerticalOptionCommand = new Command(CycleContentViewVerticalOption);
-        ToggleContentViewHeightClipCommand = new Command(ToggleContentViewHeightClip);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -86,26 +41,6 @@ internal sealed class ShowcaseState : INotifyPropertyChanged
     public ICommand ToggleFoundationsHorizontalStackSpacingCommand { get; }
 
     public ICommand ToggleFoundationsGridSpacingCommand { get; }
-
-    public ICommand ToggleContentViewBackgroundCommand { get; }
-
-    public ICommand ToggleContentViewOpacityCommand { get; }
-
-    public ICommand ToggleContentViewVisibilityCommand { get; }
-
-    public ICommand ToggleContentViewMarginCommand { get; }
-
-    public ICommand ToggleContentViewWidthModeCommand { get; }
-
-    public ICommand CycleContentViewHorizontalOptionCommand { get; }
-
-    public ICommand ToggleContentViewWidthClipCommand { get; }
-
-    public ICommand ToggleContentViewHeightModeCommand { get; }
-
-    public ICommand CycleContentViewVerticalOptionCommand { get; }
-
-    public ICommand ToggleContentViewHeightClipCommand { get; }
 
     public string Name
     {
@@ -190,93 +125,6 @@ internal sealed class ShowcaseState : INotifyPropertyChanged
         ? "Set Compact Grid Spacing"
         : "Set Expanded Grid Spacing";
 
-    public Brush ContentViewBackground => ContentViewBackgroundSequence[_contentViewBackgroundIndex];
-
-    public double ContentViewOpacity => _contentViewOpacityIndex switch
-    {
-        1 => 0.65,
-        2 => 0.35,
-        _ => 1.0
-    };
-
-    public bool ContentViewVisible => _contentViewVisible;
-
-    public Thickness ContentViewMargin => _contentViewMarginIndex == 0
-        ? new Thickness(0)
-        : new Thickness(8, 16, 12, 10);
-
-    public Thickness ContentViewPadding => _contentViewMarginIndex == 0
-        ? new Thickness(12, 10, 12, 10)
-        : new Thickness(18, 14, 18, 14);
-
-    public string ContentViewBackgroundButtonText => $"Background: {ContentViewBackgroundNames[_contentViewBackgroundIndex]}";
-
-    public string ContentViewOpacityButtonText => $"Opacity: {ContentViewOpacity:0.##}";
-
-    public string ContentViewVisibilityButtonText => _contentViewVisible
-        ? "Hide Target"
-        : "Show Target";
-
-    public string ContentViewMarginButtonText => _contentViewMarginIndex == 0
-        ? "Set Expanded Margin/Padding"
-        : "Set Compact Margin/Padding";
-
-    public string ContentViewDiagnosticsText =>
-        $"Background={ContentViewBackgroundNames[_contentViewBackgroundIndex]} | Opacity={ContentViewOpacity:0.##} | IsVisible={_contentViewVisible} | Margin={FormatThickness(ContentViewMargin)}";
-
-    public double ContentViewInteractiveWidthRequest => _contentViewWidthOverflow ? 360 : 180;
-
-    public LayoutOptions ContentViewInteractiveHorizontalOptions => _contentViewHorizontalOptionIndex switch
-    {
-        1 => LayoutOptions.Center,
-        2 => LayoutOptions.End,
-        _ => LayoutOptions.Start
-    };
-
-    public bool ContentViewInteractiveWidthClipEnabled => _contentViewWidthClipEnabled;
-
-    public Geometry? ContentViewInteractiveWidthClip => _contentViewWidthClipEnabled
-        ? new RectangleGeometry(new Rect(0, 0, 240, 78))
-        : null;
-
-    public double ContentViewInteractiveHeightRequest => _contentViewHeightOverflow ? 176 : 72;
-
-    public LayoutOptions ContentViewInteractiveVerticalOptions => _contentViewVerticalOptionIndex switch
-    {
-        1 => LayoutOptions.Center,
-        2 => LayoutOptions.End,
-        _ => LayoutOptions.Start
-    };
-
-    public bool ContentViewInteractiveHeightClipEnabled => _contentViewHeightClipEnabled;
-
-    public Geometry? ContentViewInteractiveHeightClip => _contentViewHeightClipEnabled
-        ? new RectangleGeometry(new Rect(0, 0, 220, 90))
-        : null;
-
-    public string ContentViewWidthModeButtonText => _contentViewWidthOverflow
-        ? "Width mode: overflow"
-        : "Width mode: fit";
-
-    public string ContentViewHorizontalOptionButtonText => $"Horizontal option: {LayoutOptionLabel(ContentViewInteractiveHorizontalOptions)}";
-
-    public string ContentViewWidthClipButtonText => _contentViewWidthClipEnabled
-        ? "Width clip: on"
-        : "Width clip: off";
-
-    public string ContentViewHeightModeButtonText => _contentViewHeightOverflow
-        ? "Height mode: overflow"
-        : "Height mode: fit";
-
-    public string ContentViewVerticalOptionButtonText => $"Vertical option: {LayoutOptionLabel(ContentViewInteractiveVerticalOptions)}";
-
-    public string ContentViewHeightClipButtonText => _contentViewHeightClipEnabled
-        ? "Height clip: on"
-        : "Height clip: off";
-
-    public string ContentViewSizeOverflowDiagnosticsText =>
-        $"Width={ContentViewInteractiveWidthRequest:0}px/{LayoutOptionLabel(ContentViewInteractiveHorizontalOptions)}/{(_contentViewWidthClipEnabled ? "clip" : "no-clip")} | Height={ContentViewInteractiveHeightRequest:0}px/{LayoutOptionLabel(ContentViewInteractiveVerticalOptions)}/{(_contentViewHeightClipEnabled ? "clip" : "no-clip")}";
-
     private void OnClick()
     {
         _clickCount++;
@@ -323,110 +171,6 @@ internal sealed class ShowcaseState : INotifyPropertyChanged
         OnPropertyChanged(nameof(FoundationsGridColumnSpacing));
         OnPropertyChanged(nameof(FoundationsGridRowSpacing));
         OnPropertyChanged(nameof(FoundationsGridSpacingButtonText));
-    }
-
-    private static string FormatThickness(Thickness thickness)
-    {
-        return $"{thickness.Left:0.###},{thickness.Top:0.###},{thickness.Right:0.###},{thickness.Bottom:0.###}";
-    }
-
-    private void ToggleContentViewBackground()
-    {
-        _contentViewBackgroundIndex = (_contentViewBackgroundIndex + 1) % ContentViewBackgroundSequence.Length;
-        OnPropertyChanged(nameof(ContentViewBackground));
-        OnPropertyChanged(nameof(ContentViewBackgroundButtonText));
-        OnPropertyChanged(nameof(ContentViewDiagnosticsText));
-    }
-
-    private void ToggleContentViewOpacity()
-    {
-        _contentViewOpacityIndex = (_contentViewOpacityIndex + 1) % 3;
-        OnPropertyChanged(nameof(ContentViewOpacity));
-        OnPropertyChanged(nameof(ContentViewOpacityButtonText));
-        OnPropertyChanged(nameof(ContentViewDiagnosticsText));
-    }
-
-    private void ToggleContentViewVisibility()
-    {
-        _contentViewVisible = !_contentViewVisible;
-        OnPropertyChanged(nameof(ContentViewVisible));
-        OnPropertyChanged(nameof(ContentViewVisibilityButtonText));
-        OnPropertyChanged(nameof(ContentViewDiagnosticsText));
-    }
-
-    private void ToggleContentViewMargin()
-    {
-        _contentViewMarginIndex = (_contentViewMarginIndex + 1) % 2;
-        OnPropertyChanged(nameof(ContentViewMargin));
-        OnPropertyChanged(nameof(ContentViewPadding));
-        OnPropertyChanged(nameof(ContentViewMarginButtonText));
-        OnPropertyChanged(nameof(ContentViewDiagnosticsText));
-    }
-
-    private void ToggleContentViewWidthMode()
-    {
-        _contentViewWidthOverflow = !_contentViewWidthOverflow;
-        OnPropertyChanged(nameof(ContentViewInteractiveWidthRequest));
-        OnPropertyChanged(nameof(ContentViewWidthModeButtonText));
-        OnPropertyChanged(nameof(ContentViewSizeOverflowDiagnosticsText));
-    }
-
-    private void CycleContentViewHorizontalOption()
-    {
-        _contentViewHorizontalOptionIndex = (_contentViewHorizontalOptionIndex + 1) % 3;
-        OnPropertyChanged(nameof(ContentViewInteractiveHorizontalOptions));
-        OnPropertyChanged(nameof(ContentViewHorizontalOptionButtonText));
-        OnPropertyChanged(nameof(ContentViewSizeOverflowDiagnosticsText));
-    }
-
-    private void ToggleContentViewWidthClip()
-    {
-        _contentViewWidthClipEnabled = !_contentViewWidthClipEnabled;
-        OnPropertyChanged(nameof(ContentViewInteractiveWidthClipEnabled));
-        OnPropertyChanged(nameof(ContentViewInteractiveWidthClip));
-        OnPropertyChanged(nameof(ContentViewWidthClipButtonText));
-        OnPropertyChanged(nameof(ContentViewSizeOverflowDiagnosticsText));
-    }
-
-    private void ToggleContentViewHeightMode()
-    {
-        _contentViewHeightOverflow = !_contentViewHeightOverflow;
-        OnPropertyChanged(nameof(ContentViewInteractiveHeightRequest));
-        OnPropertyChanged(nameof(ContentViewHeightModeButtonText));
-        OnPropertyChanged(nameof(ContentViewSizeOverflowDiagnosticsText));
-    }
-
-    private void CycleContentViewVerticalOption()
-    {
-        _contentViewVerticalOptionIndex = (_contentViewVerticalOptionIndex + 1) % 3;
-        OnPropertyChanged(nameof(ContentViewInteractiveVerticalOptions));
-        OnPropertyChanged(nameof(ContentViewVerticalOptionButtonText));
-        OnPropertyChanged(nameof(ContentViewSizeOverflowDiagnosticsText));
-    }
-
-    private void ToggleContentViewHeightClip()
-    {
-        _contentViewHeightClipEnabled = !_contentViewHeightClipEnabled;
-        OnPropertyChanged(nameof(ContentViewInteractiveHeightClipEnabled));
-        OnPropertyChanged(nameof(ContentViewInteractiveHeightClip));
-        OnPropertyChanged(nameof(ContentViewHeightClipButtonText));
-        OnPropertyChanged(nameof(ContentViewSizeOverflowDiagnosticsText));
-    }
-
-    private static string LayoutOptionLabel(LayoutOptions options)
-    {
-        var alignment = options.Alignment.ToString();
-        if (string.Equals(alignment, "Center", StringComparison.Ordinal))
-        {
-            return "Center";
-        }
-
-        if (string.Equals(alignment, "End", StringComparison.Ordinal))
-        {
-            return "End";
-        }
-
-        return "Start";
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
