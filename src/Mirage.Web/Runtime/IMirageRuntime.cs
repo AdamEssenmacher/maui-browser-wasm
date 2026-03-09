@@ -11,4 +11,8 @@ public interface IMirageRuntime : IDisposable
     void SetViewport(double width, double height);
 
     string? TryGetNodeInputValue(string nodeId);
+
+    bool TryGetNodeScrollPosition(string nodeId, out double left, out double top);
+
+    bool TrySetNodeScrollPosition(string nodeId, double left, double top, out double actualLeft, out double actualTop);
 }

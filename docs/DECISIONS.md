@@ -243,3 +243,10 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Removed ad hoc child `minWidth/minHeight = 0px` overrides from `MirageContentViewHandler` and `MirageContentPageHandler` to avoid clobbering explicit child minimum-size intent.
 - Replaced brittle source-text regression coverage with behavior-focused verification in E2E (horizontal constrained stack probe asserts `flex-shrink: 0`, and content-container behavior checks guard against forced zero child minimum-size in both `ContentView` and `ContentPage` paths).
 - Kept architectural boundaries unchanged: handler-centered mapping, built-in control-node paths, provider-neutral runtime, and DOM-first output.
+
+## 2026-03-09 (ContentPage Scrolling Policy Lock: Explicit ScrollView)
+- Locked Mirage to MAUI’s explicit scrolling model: `ContentPage` and window surfaces are non-scrollable by default, and scrolling must be introduced explicitly through `ScrollView`.
+- Updated default platform styles to bounded app surfaces (`overflow:hidden` on window/page hosts) and removed implicit page/document scroll assumptions from handler defaults.
+- Added a phase-bounded `MirageScrollViewHandler` (control-node `ContentContainer` reuse) covering content hosting, orientation, scrollbar-visibility projection, and `RequestScrollTo` command payload handling.
+- Extended runtime/coordinator + DOM interop with node-id scroll read/write APIs so handlers can issue deterministic scroll commands without bypassing runtime/provider boundaries.
+- Migrated `Showcase.Fluent` long-page hosting to an explicit root `ScrollView` (`showcase-scroll-root`) and kept DOM-first/no-canvas guarantees with updated integration/E2E coverage for non-scroll default page behavior and explicit scroll-surface navigation.

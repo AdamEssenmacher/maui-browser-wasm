@@ -81,6 +81,14 @@ public sealed class DomElement
 
     public string GetInputValue() => DomApi.GetInputValue(Handle);
 
+    public void SetScrollPosition(double left, double top) => DomApi.SetScrollPosition(Handle, left, top);
+
+    public (double Left, double Top) GetScrollPosition()
+    {
+        var values = DomApi.GetScrollPosition(Handle);
+        return (values.Length > 0 ? values[0] : 0, values.Length > 1 ? values[1] : 0);
+    }
+
     public static int SubscribeWindowResize(Action callback) => DomApi.SubscribeWindowResize(callback);
 
     public static void UnsubscribeWindowResize(int subscriptionId) => DomApi.UnsubscribeWindowResize(subscriptionId);

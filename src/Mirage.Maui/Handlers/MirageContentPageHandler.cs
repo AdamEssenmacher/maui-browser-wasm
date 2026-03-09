@@ -106,7 +106,11 @@ internal sealed class MirageContentPageHandler : MirageViewHandler<ContentPage>
         PlatformView.SetStyle("columnGap", null);
         PlatformView.SetStyle("gap", null);
         PlatformView.SetStyle("width", "100%");
-        PlatformView.SetStyle("minHeight", "100%");
+        PlatformView.SetStyle("height", "100%");
+        PlatformView.SetStyle("minHeight", null);
+        PlatformView.SetStyle("overflow", "hidden");
+        PlatformView.SetStyle("overflowY", "hidden");
+        PlatformView.SetStyle("overflowX", "hidden");
         MirageViewMapper.MapPadding(this, VirtualView);
         RequestRender();
     }

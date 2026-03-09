@@ -7,6 +7,7 @@ using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Shapes;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Mirage.Integration.Tests;
@@ -375,6 +376,78 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void RenderCoordinator_ScrollBridge_RoutesToRuntimeDeterministically()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var set = coordinator.TrySetNodeScrollPosition("node-scroll", 18, 72, out var actualLeft, out var actualTop);
+        var got = coordinator.TryGetNodeScrollPosition("node-scroll", out var currentLeft, out var currentTop);
+
+        Assert.True(set);
+        Assert.True(got);
+        Assert.Equal(18, actualLeft);
+        Assert.Equal(72, actualTop);
+        Assert.Equal(18, currentLeft);
+        Assert.Equal(72, currentTop);
+    }
+
+    [Fact]
+    public void ScrollViewHandler_RequestScrollTo_ExecutesThroughCoordinatorRuntimeBridge()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var scrollView = new ScrollView();
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        handler.Invoke(nameof(IScrollView.RequestScrollTo), new ScrollToRequest(14, 96, true));
+
+        Assert.True(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out var left, out var top));
+        Assert.Equal(14, left);
+        Assert.Equal(96, top);
+        Assert.Equal(14, scrollView.ScrollX);
+        Assert.Equal(96, scrollView.ScrollY);
+    }
+
+    [Fact]
+    public async Task ScrollView_ScrollToAsync_RoutesThroughHandlerCommandBridge()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var scrollView = new ScrollView();
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        await scrollView.ScrollToAsync(22, 140, animated: true);
+
+        Assert.True(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out var left, out var top));
+        Assert.Equal(22, left);
+        Assert.Equal(140, top);
+        Assert.Equal(22, scrollView.ScrollX);
+        Assert.Equal(140, scrollView.ScrollY);
+    }
+
+    [Fact]
     public void PlatformView_ChildOrderRemainsDeterministicAcrossMutations()
     {
         var root = MiragePlatformView.CreateControl(ComponentKind.VerticalStack);
@@ -422,6 +495,8 @@ public sealed class HandlerRuntimeIntegrationTests
 
     private sealed class RuntimeProbe : IMirageRuntime
     {
+        private readonly Dictionary<string, (double Left, double Top)> _scrollPositions = new(StringComparer.Ordinal);
+
         public NodeBase? LastRendered { get; private set; }
 
         public IMirageEventSink? Sink { get; private set; }
@@ -446,6 +521,28 @@ public sealed class HandlerRuntimeIntegrationTests
         {
             _ = nodeId;
             return null;
+        }
+
+        public bool TryGetNodeScrollPosition(string nodeId, out double left, out double top)
+        {
+            if (_scrollPositions.TryGetValue(nodeId, out var position))
+            {
+                left = position.Left;
+                top = position.Top;
+                return true;
+            }
+
+            left = 0;
+            top = 0;
+            return false;
+        }
+
+        public bool TrySetNodeScrollPosition(string nodeId, double left, double top, out double actualLeft, out double actualTop)
+        {
+            actualLeft = Math.Max(0, left);
+            actualTop = Math.Max(0, top);
+            _scrollPositions[nodeId] = (actualLeft, actualTop);
+            return true;
         }
 
         public void Dispose()

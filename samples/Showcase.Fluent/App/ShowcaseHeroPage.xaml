@@ -8,10 +8,13 @@
 
     <Grid
         AutomationId="showcase-page-grid"
-        ColumnDefinitions="*,Auto,*"
-        RowDefinitions="Auto">
-        <VerticalStackLayout
-            Grid.Column="1"
+        ColumnDefinitions="*"
+        RowDefinitions="*">
+        <ScrollView
+            x:Name="ShowcaseScrollRoot"
+            AutomationId="showcase-scroll-root"
+            Orientation="Vertical">
+            <VerticalStackLayout
             AutomationId="hero-page-stack"
             HorizontalOptions="Center"
             MaximumWidthRequest="1040"
@@ -153,6 +156,10 @@
                     AutomationId="hero-cta-architecture"
                     Clicked="OnArchitectureCtaClicked"
                     Text="Explore the Architecture" />
+                <Button
+                    AutomationId="hero-cta-command-layout-lab"
+                    Clicked="OnCommandScrollToLayoutLabClicked"
+                    Text="Open Layout Lab" />
             </HorizontalStackLayout>
             <Label
                 AutomationId="hero-cta-github-placeholder"
@@ -453,6 +460,16 @@
                 AutomationId="layout-lab-body"
                 Style="{StaticResource ShowcaseBodyLabelStyle}"
                 Text="Container sizing, constraints, and positioning correctness across ContentView, stack layouts, Grid, and nested layout contexts." />
+            <Button
+                AutomationId="layout-lab-scroll-command-top"
+                Clicked="OnLayoutLabScrollToTopClicked"
+                HorizontalOptions="Start"
+                Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                Text="Command Scroll To Top" />
+            <Label
+                AutomationId="layout-lab-scroll-command-count"
+                Style="{StaticResource ShowcaseMutedSmallLabelStyle}"
+                Text="{Binding LayoutLabScrollCommandCountText}" />
 
             <VerticalStackLayout
                 AutomationId="layout-lab-group-content-view"
@@ -1411,5 +1428,6 @@
                 Style="{StaticResource ShowcaseScrollCueLabelStyle}"
                 Text="↓ How Mirage Works" />
         </VerticalStackLayout>
+        </ScrollView>
     </Grid>
 </ContentPage>

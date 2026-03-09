@@ -16,6 +16,7 @@ internal sealed class ShowcaseState : INotifyPropertyChanged
     private bool _foundationsSpacingExpanded;
     private bool _foundationsVisibilityTargetVisible = true;
     private int _genericWidgetClickCount;
+    private int _layoutLabScrollCommandAttemptCount;
     private string _name = "Adam";
 
     public ShowcaseState()
@@ -125,6 +126,8 @@ internal sealed class ShowcaseState : INotifyPropertyChanged
         ? "Set Compact Grid Spacing"
         : "Set Expanded Grid Spacing";
 
+    public string LayoutLabScrollCommandCountText => $"LayoutLab RequestScrollTo attempts: {_layoutLabScrollCommandAttemptCount}";
+
     private void OnClick()
     {
         _clickCount++;
@@ -135,6 +138,12 @@ internal sealed class ShowcaseState : INotifyPropertyChanged
     {
         _genericWidgetClickCount++;
         OnPropertyChanged(nameof(GenericWidgetClicksText));
+    }
+
+    public void RegisterLayoutLabScrollCommandAttempt()
+    {
+        _layoutLabScrollCommandAttemptCount++;
+        OnPropertyChanged(nameof(LayoutLabScrollCommandCountText));
     }
 
     private void ToggleFoundationsVisibility()

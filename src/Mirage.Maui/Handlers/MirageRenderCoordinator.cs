@@ -91,6 +91,30 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         _ = _dispatcher.Dispatch(RenderPending);
     }
 
+    public bool TryGetNodeScrollPosition(string nodeId, out double left, out double top)
+    {
+        if (_runtime is null)
+        {
+            left = 0;
+            top = 0;
+            return false;
+        }
+
+        return _runtime.TryGetNodeScrollPosition(nodeId, out left, out top);
+    }
+
+    public bool TrySetNodeScrollPosition(string nodeId, double left, double top, out double actualLeft, out double actualTop)
+    {
+        if (_runtime is null)
+        {
+            actualLeft = 0;
+            actualTop = 0;
+            return false;
+        }
+
+        return _runtime.TrySetNodeScrollPosition(nodeId, left, top, out actualLeft, out actualTop);
+    }
+
     public void OnEvent(string nodeId, string eventName, string? payload)
     {
         if (!_eventTargetsByNodeId.TryGetValue(nodeId, out var target))
