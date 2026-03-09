@@ -43,7 +43,7 @@ public abstract class MirageViewHandler<TVirtualView> : ViewHandler<TVirtualView
             platformView = PlatformView;
             return true;
         }
-        catch (InvalidOperationException exception) when (exception.Message.Contains("PlatformView cannot be null", StringComparison.OrdinalIgnoreCase))
+        catch (InvalidOperationException)
         {
             platformView = null!;
             return false;

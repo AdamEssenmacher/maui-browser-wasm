@@ -401,7 +401,7 @@ internal static class MirageCommonViewProjection
                 platformHandler = miragePlatformHandler;
                 return true;
             }
-            catch (InvalidOperationException exception) when (exception.Message.Contains("PlatformView cannot be null", StringComparison.OrdinalIgnoreCase))
+            catch (InvalidOperationException)
             {
                 platformHandler = null!;
                 return false;

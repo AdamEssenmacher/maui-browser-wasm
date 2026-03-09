@@ -312,7 +312,7 @@ public sealed class XamlHotReloadApplicatorTests
 
     private sealed class ThrowingPlatformElementHandler : IViewHandler
     {
-        public object PlatformView => throw new InvalidOperationException("PlatformView cannot be null here");
+        public object PlatformView => throw new InvalidOperationException("Handler detached unexpectedly");
 
         public IView VirtualView { get; private set; } = null!;
 
@@ -361,4 +361,5 @@ public sealed class XamlHotReloadApplicatorTests
             _ = frame;
         }
     }
+
 }

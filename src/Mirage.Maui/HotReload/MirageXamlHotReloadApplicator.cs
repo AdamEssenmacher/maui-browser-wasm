@@ -149,7 +149,10 @@ internal static class MirageXamlHotReloadApplicator
         }
         catch (Exception applyException)
         {
-            if (!ShouldTryDetachedFallback(applyException))
+            var shouldAttemptFallback = ShouldTryDetachedFallback(applyException)
+                || HasMissingPlatformView(liveElement.Handler);
+
+            if (!shouldAttemptFallback)
             {
                 error = applyException;
                 return false;
@@ -201,13 +204,23 @@ internal static class MirageXamlHotReloadApplicator
                 continue;
             }
 
-            if (invalidOperationException.Message.Contains("PlatformView cannot be null", StringComparison.OrdinalIgnoreCase))
+            if (IsPlatformViewGetterFailure(invalidOperationException))
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private static bool IsPlatformViewGetterFailure(InvalidOperationException exception)
+    {
+        if (string.Equals(exception.TargetSite?.Name, "get_PlatformView", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return exception.StackTrace?.Contains("get_PlatformView", StringComparison.Ordinal) == true;
     }
 
     private static bool TryReplaceLivePageWithDetachedClone(
@@ -713,7 +726,7 @@ internal static class MirageXamlHotReloadApplicator
             platformView = handler.PlatformView;
             return platformView is not null;
         }
-        catch (InvalidOperationException exception) when (exception.Message.Contains("PlatformView cannot be null", StringComparison.OrdinalIgnoreCase))
+        catch (InvalidOperationException)
         {
             platformView = null;
             return false;

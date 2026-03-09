@@ -9,11 +9,14 @@ using Microsoft.Maui.Controls;
 using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Hosting;
 using Microsoft.Maui.Platform;
+using System.Reflection;
 
 namespace Mirage.Maui.Hosting;
 
 public static class MirageBrowserAppHost
 {
+    private const string MetadataUpdateHandlerAttributeName = "System.Reflection.Metadata.MetadataUpdateHandlerAttribute";
+
     private static int s_resizeSubscriptionId;
     private static IElementHandler? s_windowHandler;
     private static IMirageRenderCoordinator? s_renderCoordinator;
@@ -21,6 +24,8 @@ public static class MirageBrowserAppHost
     private static IDispatcher? s_dispatcher;
     private static MirageXamlHotReloadService? s_hotReloadService;
     private static BrowserPageNavigator? s_pageNavigator;
+    private static Application? s_controlsApplication;
+    private static Window? s_primaryWindow;
 
     public static async Task RunAsync(MauiApp mauiApp, string rootElementId = "app")
     {
@@ -61,8 +66,9 @@ public static class MirageBrowserAppHost
 
         if (application is Application controlsApplication)
         {
-            s_hotReloadService = new MirageXamlHotReloadService(controlsApplication, window, dispatcher, renderCoordinator);
-            s_hotReloadService.Start();
+            s_controlsApplication = controlsApplication;
+            s_primaryWindow = window;
+            EnsureHotReloadServiceStarted();
         }
 
         void ArrangeAndRender()
@@ -86,6 +92,8 @@ public static class MirageBrowserAppHost
 
     public static void NotifyHotReloadApplied()
     {
+        EnsureHotReloadServiceStarted();
+
         var dispatcher = s_dispatcher;
         if (dispatcher is null)
         {
@@ -110,6 +118,56 @@ public static class MirageBrowserAppHost
         }
 
         Notify();
+    }
+
+    private static void EnsureHotReloadServiceStarted()
+    {
+        if (s_hotReloadService is not null
+            || !IsMirageHotReloadConfigured()
+            || s_controlsApplication is null
+            || s_primaryWindow is null
+            || s_dispatcher is null
+            || s_renderCoordinator is null)
+        {
+            return;
+        }
+
+        s_hotReloadService = new MirageXamlHotReloadService(s_controlsApplication, s_primaryWindow, s_dispatcher, s_renderCoordinator);
+        s_hotReloadService.Start();
+    }
+
+    private static bool IsMirageHotReloadConfigured()
+    {
+        var expectedHandlerType = typeof(MirageHotReloadMetadataUpdateHandler);
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            IList<CustomAttributeData> attributes;
+            try
+            {
+                attributes = assembly.GetCustomAttributesData();
+            }
+            catch
+            {
+                continue;
+            }
+
+            foreach (var attribute in attributes)
+            {
+                if (!string.Equals(attribute.AttributeType.FullName, MetadataUpdateHandlerAttributeName, StringComparison.Ordinal)
+                    || attribute.ConstructorArguments.Count != 1)
+                {
+                    continue;
+                }
+
+                if (attribute.ConstructorArguments[0].Value is Type handlerType
+                    && handlerType == expectedHandlerType)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static Window ResolvePrimaryWindow(IApplication application)
@@ -162,6 +220,8 @@ public static class MirageBrowserAppHost
         s_runtime = null;
 
         s_dispatcher = null;
+        s_controlsApplication = null;
+        s_primaryWindow = null;
 
         rootDomElement.ClearChildren();
     }

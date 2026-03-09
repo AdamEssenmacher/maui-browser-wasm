@@ -16,8 +16,10 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageCommonViewProjection.cs" Link="Handlers\MirageCommonViewProjection.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MiragePlatformView.cs" Link="Handlers\MiragePlatformView.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageRenderCoordinator.cs" Link="Handlers\MirageRenderCoordinator.cs" />
-    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageScrollViewHandler.cs" Link="Handlers\MirageScrollViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageViewHandler.cs" Link="Handlers\MirageViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentPageHandler.cs" Link="Handlers\MirageContentPageHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentViewHandler.cs" Link="Handlers\MirageContentViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageScrollViewHandler.cs" Link="Handlers\MirageScrollViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageViewMapper.cs" Link="Handlers\MirageViewMapper.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Hosting\BrowserDispatcher.cs" Link="Hosting\BrowserDispatcher.cs" />
     <Compile Include="..\..\src\Mirage.Maui\HotReload\MirageXamlHotReloadApplicator.cs" Link="HotReload\MirageXamlHotReloadApplicator.cs" />

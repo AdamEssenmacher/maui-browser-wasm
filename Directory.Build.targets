@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
     <MirageBrowserHotReloadEnabled>false</MirageBrowserHotReloadEnabled>
-    <MirageBrowserHotReloadEnabled Condition="'$(MirageBrowserApp)' == 'true' and '$(TargetFramework)' == 'net10.0-browser' and '$(OutputType)' == 'Exe'">true</MirageBrowserHotReloadEnabled>
+    <MirageBrowserHotReloadEnabled Condition="'$(MirageBrowserApp)' == 'true' and '$(TargetFramework)' == 'net10.0-browser' and '$(OutputType)' == 'Exe' and ('$(DOTNET_WATCH)' == '1' or '$(MirageBrowserHotReloadAlwaysOn)' == 'true')">true</MirageBrowserHotReloadEnabled>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MirageBrowserHotReloadEnabled)' == 'true'">
