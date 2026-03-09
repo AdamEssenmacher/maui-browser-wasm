@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Shapes;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 
@@ -122,6 +123,35 @@ internal static class MirageCommonViewProjection
         }
 
         return ClearBackgroundStyles(platformHandler);
+    }
+
+    public static bool MapClip(IViewHandler handler, IView view)
+    {
+        if (!TryGetPlatformHandler(handler, out var platformHandler))
+        {
+            return false;
+        }
+
+        if (view.Clip is null)
+        {
+            return SetStyleIfChanged(platformHandler, "clipPath", null);
+        }
+
+        var projection = BuildClipPathProjection(view.Clip);
+        return SetStyleIfChanged(platformHandler, "clipPath", projection.ToCssValue());
+    }
+
+    public static bool MapLayoutClipsToBounds(IViewHandler handler, Microsoft.Maui.ILayout layout)
+    {
+        if (!TryGetPlatformHandler(handler, out var platformHandler))
+        {
+            return false;
+        }
+
+        var clipsToBounds = layout.ClipsToBounds
+            || (layout is IView layoutView && layoutView.Clip is not null);
+
+        return SetStyleIfChanged(platformHandler, "overflow", clipsToBounds ? "hidden" : "visible");
     }
 
     public static bool MapPadding(IViewHandler handler, IPadding paddingView)
@@ -399,6 +429,358 @@ internal static class MirageCommonViewProjection
             FontSlant.Oblique => "oblique",
             _ => "normal"
         };
+    }
+
+    private static ClipPathProjection BuildClipPathProjection(IShape geometry)
+    {
+        return geometry switch
+        {
+            RectangleGeometry rectangleGeometry => new ClipPathProjection(
+                BuildRectanglePathData(ValidateRect(rectangleGeometry.Rect, nameof(RectangleGeometry))),
+                false),
+            RoundRectangleGeometry roundRectangleGeometry => new ClipPathProjection(
+                BuildRoundRectanglePathData(
+                    ValidateRect(roundRectangleGeometry.Rect, nameof(RoundRectangleGeometry)),
+                    roundRectangleGeometry.CornerRadius),
+                false),
+            EllipseGeometry ellipseGeometry => new ClipPathProjection(
+                BuildEllipsePathData(ellipseGeometry),
+                false),
+            LineGeometry lineGeometry => new ClipPathProjection(
+                BuildLinePathData(lineGeometry),
+                false),
+            PathGeometry pathGeometry => BuildPathGeometryProjection(pathGeometry),
+            GeometryGroup geometryGroup => BuildGeometryGroupProjection(geometryGroup),
+            _ => throw new InvalidOperationException(
+                $"Mirage does not support clip geometry type '{geometry.GetType().FullName}'.")
+        };
+    }
+
+    private static ClipPathProjection BuildPathGeometryProjection(PathGeometry pathGeometry)
+    {
+        if (pathGeometry.Figures is null || pathGeometry.Figures.Count == 0)
+        {
+            throw new InvalidOperationException("Mirage clip projection requires PathGeometry with at least one figure.");
+        }
+
+        var builder = new StringBuilder();
+        foreach (var figure in pathGeometry.Figures)
+        {
+            if (figure is null)
+            {
+                continue;
+            }
+
+            AppendPathFigure(builder, figure);
+        }
+
+        if (builder.Length == 0)
+        {
+            throw new InvalidOperationException("Mirage clip projection requires PathGeometry with valid figure content.");
+        }
+
+        return new ClipPathProjection(
+            builder.ToString().Trim(),
+            pathGeometry.FillRule == FillRule.EvenOdd);
+    }
+
+    private static ClipPathProjection BuildGeometryGroupProjection(GeometryGroup geometryGroup)
+    {
+        if (geometryGroup.Children is null || geometryGroup.Children.Count == 0)
+        {
+            throw new InvalidOperationException("Mirage clip projection requires GeometryGroup with at least one child geometry.");
+        }
+
+        var builder = new StringBuilder();
+        foreach (var child in geometryGroup.Children)
+        {
+            if (child is null)
+            {
+                continue;
+            }
+
+            var childProjection = BuildClipPathProjection(child);
+            if (builder.Length > 0)
+            {
+                builder.Append(' ');
+            }
+
+            builder.Append(childProjection.PathData);
+        }
+
+        if (builder.Length == 0)
+        {
+            throw new InvalidOperationException("Mirage clip projection requires GeometryGroup with valid child geometries.");
+        }
+
+        return new ClipPathProjection(
+            builder.ToString(),
+            geometryGroup.FillRule == FillRule.EvenOdd);
+    }
+
+    private static void AppendPathFigure(StringBuilder builder, PathFigure figure)
+    {
+        var start = ValidatePoint(figure.StartPoint, $"{nameof(PathFigure)}.{nameof(PathFigure.StartPoint)}");
+        if (builder.Length > 0)
+        {
+            builder.Append(' ');
+        }
+
+        builder.Append("M ").Append(CssNumber(start.X)).Append(' ').Append(CssNumber(start.Y));
+
+        if (figure.Segments is not null)
+        {
+            foreach (var segment in figure.Segments)
+            {
+                if (segment is null)
+                {
+                    continue;
+                }
+
+                AppendPathSegment(builder, segment);
+            }
+        }
+
+        if (figure.IsClosed)
+        {
+            builder.Append(" Z");
+        }
+    }
+
+    private static void AppendPathSegment(StringBuilder builder, PathSegment segment)
+    {
+        switch (segment)
+        {
+            case LineSegment lineSegment:
+            {
+                var point = ValidatePoint(lineSegment.Point, $"{nameof(LineSegment)}.{nameof(LineSegment.Point)}");
+                builder.Append(" L ").Append(CssNumber(point.X)).Append(' ').Append(CssNumber(point.Y));
+                break;
+            }
+            case PolyLineSegment polyLineSegment:
+            {
+                AppendPolyPoints(builder, polyLineSegment.Points, 1, "L", nameof(PolyLineSegment));
+                break;
+            }
+            case BezierSegment bezierSegment:
+            {
+                var point1 = ValidatePoint(bezierSegment.Point1, $"{nameof(BezierSegment)}.{nameof(BezierSegment.Point1)}");
+                var point2 = ValidatePoint(bezierSegment.Point2, $"{nameof(BezierSegment)}.{nameof(BezierSegment.Point2)}");
+                var point3 = ValidatePoint(bezierSegment.Point3, $"{nameof(BezierSegment)}.{nameof(BezierSegment.Point3)}");
+                builder.Append(" C ")
+                    .Append(CssNumber(point1.X)).Append(' ').Append(CssNumber(point1.Y)).Append(' ')
+                    .Append(CssNumber(point2.X)).Append(' ').Append(CssNumber(point2.Y)).Append(' ')
+                    .Append(CssNumber(point3.X)).Append(' ').Append(CssNumber(point3.Y));
+                break;
+            }
+            case PolyBezierSegment polyBezierSegment:
+            {
+                AppendPolyPoints(builder, polyBezierSegment.Points, 3, "C", nameof(PolyBezierSegment));
+                break;
+            }
+            case QuadraticBezierSegment quadraticBezierSegment:
+            {
+                var point1 = ValidatePoint(quadraticBezierSegment.Point1, $"{nameof(QuadraticBezierSegment)}.{nameof(QuadraticBezierSegment.Point1)}");
+                var point2 = ValidatePoint(quadraticBezierSegment.Point2, $"{nameof(QuadraticBezierSegment)}.{nameof(QuadraticBezierSegment.Point2)}");
+                builder.Append(" Q ")
+                    .Append(CssNumber(point1.X)).Append(' ').Append(CssNumber(point1.Y)).Append(' ')
+                    .Append(CssNumber(point2.X)).Append(' ').Append(CssNumber(point2.Y));
+                break;
+            }
+            case PolyQuadraticBezierSegment polyQuadraticBezierSegment:
+            {
+                AppendPolyPoints(builder, polyQuadraticBezierSegment.Points, 2, "Q", nameof(PolyQuadraticBezierSegment));
+                break;
+            }
+            case ArcSegment arcSegment:
+            {
+                var point = ValidatePoint(arcSegment.Point, $"{nameof(ArcSegment)}.{nameof(ArcSegment.Point)}");
+                var size = arcSegment.Size;
+                var radiusX = ValidateNonNegativeFinite(size.Width, $"{nameof(ArcSegment)}.{nameof(ArcSegment.Size)}.Width");
+                var radiusY = ValidateNonNegativeFinite(size.Height, $"{nameof(ArcSegment)}.{nameof(ArcSegment.Size)}.Height");
+                if (radiusX <= 0 || radiusY <= 0)
+                {
+                    builder.Append(" L ").Append(CssNumber(point.X)).Append(' ').Append(CssNumber(point.Y));
+                    break;
+                }
+
+                var rotation = ValidateFinite(arcSegment.RotationAngle, $"{nameof(ArcSegment)}.{nameof(ArcSegment.RotationAngle)}");
+                var largeArc = arcSegment.IsLargeArc ? "1" : "0";
+                var sweep = arcSegment.SweepDirection == SweepDirection.Clockwise ? "1" : "0";
+                builder.Append(" A ")
+                    .Append(CssNumber(radiusX)).Append(' ').Append(CssNumber(radiusY)).Append(' ')
+                    .Append(CssNumber(rotation)).Append(' ')
+                    .Append(largeArc).Append(' ')
+                    .Append(sweep).Append(' ')
+                    .Append(CssNumber(point.X)).Append(' ').Append(CssNumber(point.Y));
+                break;
+            }
+            default:
+                throw new InvalidOperationException(
+                    $"Mirage does not support clip path segment type '{segment.GetType().FullName}'.");
+        }
+    }
+
+    private static void AppendPolyPoints(
+        StringBuilder builder,
+        IList<Point>? points,
+        int expectedStep,
+        string command,
+        string segmentName)
+    {
+        if (points is null || points.Count == 0)
+        {
+            return;
+        }
+
+        if (points.Count % expectedStep != 0)
+        {
+            throw new InvalidOperationException(
+                $"Mirage clip projection requires '{segmentName}' points count to be divisible by {expectedStep.ToString(CultureInfo.InvariantCulture)}.");
+        }
+
+        for (var index = 0; index < points.Count; index += expectedStep)
+        {
+            builder.Append(' ').Append(command).Append(' ');
+            for (var step = 0; step < expectedStep; step++)
+            {
+                var point = ValidatePoint(points[index + step], $"{segmentName}.Points[{(index + step).ToString(CultureInfo.InvariantCulture)}]");
+                if (step > 0)
+                {
+                    builder.Append(' ');
+                }
+
+                builder.Append(CssNumber(point.X)).Append(' ').Append(CssNumber(point.Y));
+            }
+        }
+    }
+
+    private static string BuildRectanglePathData(Rect rect)
+    {
+        var left = rect.X;
+        var top = rect.Y;
+        var right = rect.X + rect.Width;
+        var bottom = rect.Y + rect.Height;
+
+        return $"M {CssNumber(left)} {CssNumber(top)} H {CssNumber(right)} V {CssNumber(bottom)} H {CssNumber(left)} Z";
+    }
+
+    private static string BuildRoundRectanglePathData(Rect rect, CornerRadius cornerRadius)
+    {
+        var left = rect.X;
+        var top = rect.Y;
+        var right = rect.X + rect.Width;
+        var bottom = rect.Y + rect.Height;
+
+        var topLeft = NormalizeCornerRadius(cornerRadius.TopLeft, rect, nameof(CornerRadius.TopLeft));
+        var topRight = NormalizeCornerRadius(cornerRadius.TopRight, rect, nameof(CornerRadius.TopRight));
+        var bottomRight = NormalizeCornerRadius(cornerRadius.BottomRight, rect, nameof(CornerRadius.BottomRight));
+        var bottomLeft = NormalizeCornerRadius(cornerRadius.BottomLeft, rect, nameof(CornerRadius.BottomLeft));
+
+        var builder = new StringBuilder();
+        builder.Append("M ").Append(CssNumber(left + topLeft)).Append(' ').Append(CssNumber(top));
+        builder.Append(" H ").Append(CssNumber(right - topRight));
+        AppendArcOrLine(builder, topRight, right, top + topRight);
+        builder.Append(" V ").Append(CssNumber(bottom - bottomRight));
+        AppendArcOrLine(builder, bottomRight, right - bottomRight, bottom);
+        builder.Append(" H ").Append(CssNumber(left + bottomLeft));
+        AppendArcOrLine(builder, bottomLeft, left, bottom - bottomLeft);
+        builder.Append(" V ").Append(CssNumber(top + topLeft));
+        AppendArcOrLine(builder, topLeft, left + topLeft, top);
+        builder.Append(" Z");
+        return builder.ToString();
+    }
+
+    private static string BuildEllipsePathData(EllipseGeometry ellipseGeometry)
+    {
+        var center = ValidatePoint(ellipseGeometry.Center, $"{nameof(EllipseGeometry)}.{nameof(EllipseGeometry.Center)}");
+        var radiusX = ValidateNonNegativeFinite(ellipseGeometry.RadiusX, $"{nameof(EllipseGeometry)}.{nameof(EllipseGeometry.RadiusX)}");
+        var radiusY = ValidateNonNegativeFinite(ellipseGeometry.RadiusY, $"{nameof(EllipseGeometry)}.{nameof(EllipseGeometry.RadiusY)}");
+        if (radiusX <= 0 || radiusY <= 0)
+        {
+            return $"M {CssNumber(center.X)} {CssNumber(center.Y)} Z";
+        }
+
+        var startX = center.X - radiusX;
+        var endX = center.X + radiusX;
+        var centerY = center.Y;
+
+        return $"M {CssNumber(startX)} {CssNumber(centerY)} A {CssNumber(radiusX)} {CssNumber(radiusY)} 0 1 0 {CssNumber(endX)} {CssNumber(centerY)} A {CssNumber(radiusX)} {CssNumber(radiusY)} 0 1 0 {CssNumber(startX)} {CssNumber(centerY)} Z";
+    }
+
+    private static string BuildLinePathData(LineGeometry lineGeometry)
+    {
+        var start = ValidatePoint(lineGeometry.StartPoint, $"{nameof(LineGeometry)}.{nameof(LineGeometry.StartPoint)}");
+        var end = ValidatePoint(lineGeometry.EndPoint, $"{nameof(LineGeometry)}.{nameof(LineGeometry.EndPoint)}");
+        return $"M {CssNumber(start.X)} {CssNumber(start.Y)} L {CssNumber(end.X)} {CssNumber(end.Y)} Z";
+    }
+
+    private static void AppendArcOrLine(StringBuilder builder, double radius, double targetX, double targetY)
+    {
+        if (radius <= 0)
+        {
+            builder.Append(" L ").Append(CssNumber(targetX)).Append(' ').Append(CssNumber(targetY));
+            return;
+        }
+
+        builder.Append(" A ")
+            .Append(CssNumber(radius)).Append(' ').Append(CssNumber(radius))
+            .Append(" 0 0 1 ")
+            .Append(CssNumber(targetX)).Append(' ').Append(CssNumber(targetY));
+    }
+
+    private static Rect ValidateRect(Rect rect, string geometryName)
+    {
+        var x = ValidateFinite(rect.X, $"{geometryName}.Rect.X");
+        var y = ValidateFinite(rect.Y, $"{geometryName}.Rect.Y");
+        var width = ValidateNonNegativeFinite(rect.Width, $"{geometryName}.Rect.Width");
+        var height = ValidateNonNegativeFinite(rect.Height, $"{geometryName}.Rect.Height");
+        return new Rect(x, y, width, height);
+    }
+
+    private static Point ValidatePoint(Point point, string pointName)
+    {
+        var x = ValidateFinite(point.X, $"{pointName}.X");
+        var y = ValidateFinite(point.Y, $"{pointName}.Y");
+        return new Point(x, y);
+    }
+
+    private static double NormalizeCornerRadius(double value, Rect rect, string cornerName)
+    {
+        var radius = ValidateNonNegativeFinite(value, cornerName);
+        var maxRadius = Math.Min(rect.Width, rect.Height) * 0.5;
+        return Math.Min(radius, maxRadius);
+    }
+
+    private static double ValidateFinite(double value, string memberName)
+    {
+        if (!double.IsFinite(value))
+        {
+            throw new InvalidOperationException($"Mirage clip projection requires finite value for '{memberName}'.");
+        }
+
+        return value;
+    }
+
+    private static double ValidateNonNegativeFinite(double value, string memberName)
+    {
+        if (!double.IsFinite(value) || value < 0)
+        {
+            throw new InvalidOperationException(
+                $"Mirage clip projection requires non-negative finite value for '{memberName}'.");
+        }
+
+        return value;
+    }
+
+    private readonly record struct ClipPathProjection(string PathData, bool UseEvenOdd)
+    {
+        public string ToCssValue()
+        {
+            return UseEvenOdd
+                ? $"path(evenodd, '{PathData}')"
+                : $"path('{PathData}')";
+        }
     }
 
     private readonly record struct GradientStopProjection(int Index, double Offset, string ColorCss);

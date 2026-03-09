@@ -205,3 +205,15 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added button visual style primitives in `MirageButtonHandler` (`StrokeColor`, `StrokeThickness`, `CornerRadius`) so MAUI button styling can drive DOM output without provider/runtime API changes.
 - `Showcase.Fast` now uses app-level MAUI `ResourceDictionary` styles as the primary styling path; CSS in `wwwroot/index.html` is intentionally narrowed to browser/FAST escape-hatch concerns (sticky/backdrop shell, internal FAST input polish, and table chip presentation).
 - Deferred in this wave: trigger/visual-state parity expansion, global theming framework rollout, and broad control-style parity beyond the built-in surface.
+
+## 2026-03-08 (Showcase Dedicated Control Demo Pages: ContentView First)
+- Showcase now includes a dedicated `ContentView` demo surface (page-style section) focused on handler correctness depth rather than marketing narrative.
+- Navigation to the demo uses existing in-page automation-id scrolling (`IMiragePageNavigator`) and avoids introducing routing or runtime page-switch infrastructure in this slice.
+- The `ContentView` demo is locked to core `IView` probes (background, opacity, visibility, margin/padding, and `HorizontalOptions`/`VerticalOptions` positioning) with stable automation IDs for E2E verification.
+- Styling for the demo follows the MAUI ResourceDictionary-first policy; no additional global `index.html` styling was introduced for this feature.
+
+## 2026-03-08 (ContentView Size/Overflow Parity + Clip Mapping)
+- Added a dedicated `ContentView` size/overflow lab in `Showcase.Fast` with deterministic static rows and interactive probes for `WidthRequest`/`HeightRequest`, alignment (`HorizontalOptions`/`VerticalOptions`), and clipped vs unclipped overflow behavior.
+- Removed positioning scaffold filler text and normalized horizontal/vertical positioning probes to explicit equal width/height constraints to keep visual comparison unambiguous.
+- `Mirage.Maui` now maps `IView.Clip` into CSS `clip-path` and maps `Layout.ClipsToBounds` into `overflow:hidden|visible` via the shared projection path, preserving idempotent set-if-changed behavior.
+- Clip projection policy for this wave is strict and deterministic: all built-in MAUI geometry classes (`RectangleGeometry`, `RoundRectangleGeometry`, `EllipseGeometry`, `LineGeometry`, `PathGeometry`, `GeometryGroup`) are supported, while unsupported geometry types or invalid numeric geometry state throw in both Debug and Release builds (no fallback).

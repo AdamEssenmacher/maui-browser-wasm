@@ -55,6 +55,13 @@ public partial class ShowcaseHeroPage : ContentPage
         ScrollTo("architecture");
     }
 
+    private void OnOpenContentViewDemoClicked(object? sender, EventArgs e)
+    {
+        _ = sender;
+        _ = e;
+        ScrollTo("content-view-demo-page");
+    }
+
     private void LoadXamlFromResource()
     {
 #pragma warning disable IL2026
