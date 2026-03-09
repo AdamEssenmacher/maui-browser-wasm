@@ -1,6 +1,6 @@
-using Counter.Fast.App;
+using Counter.Fluent.App;
 using Mirage.Maui.Hosting;
-using Mirage.Provider.Fast;
+using Mirage.Provider.Fluent;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Hosting;
 
@@ -10,15 +10,15 @@ public static class Program
     {
         if (!OperatingSystem.IsBrowser())
         {
-            Console.Error.WriteLine("Counter.Fast must run inside browser WebAssembly runtime.");
-            Console.Error.WriteLine("Use: dotnet run --project samples/Counter.Fast/Counter.Fast.csproj -r browser-wasm");
+            Console.Error.WriteLine("Counter.Fluent must run inside browser WebAssembly runtime.");
+            Console.Error.WriteLine("Use: dotnet run --project samples/Counter.Fluent/Counter.Fluent.csproj -r browser-wasm");
             return;
         }
 
         var builder = MauiApp.CreateBuilder();
         builder.UseMauiApp<CounterApp>();
         builder.UseMirageBrowserPlatform();
-        builder.UseMirageComponentProvider<FastMirageComponentProvider>();
+        builder.UseMirageComponentProvider<FluentMirageComponentProvider>();
 
         var app = builder.Build();
         await MirageBrowserAppHost.RunAsync(app, rootElementId: "app");

@@ -6,6 +6,9 @@ It renders MAUI UI through a provider-based pipeline:
 
 `MAUI virtual view -> Mirage MAUI handlers -> Mirage platform tree (typed + generic) -> Mirage diff -> Provider -> DOM/Web Components`
 
+Mirage is provider-based and designed to adapt complete web component libraries.
+`Mirage.Provider.Fluent` is the first polished reference provider.
+
 ## Phase 1 scope (locked)
 
 Supported semantic kinds:
@@ -35,22 +38,22 @@ Built-in handlers stay inside this typed set. Third-party/custom handlers can em
   - MAUI browser handlers + host APIs
   - `UseMirageBrowserPlatform()` / `UseMirageComponentProvider<T>()`
   - `MirageBrowserAppHost.RunAsync(...)`
-- `src/Mirage.Provider.Fast`
-  - FAST provider implementation for phase 1
-- `samples/Counter.Fast`
+- `src/Mirage.Provider.Fluent`
+  - Fluent UI Web Components provider implementation for phase 1
+- `samples/Counter.Fluent`
   - Minimal reference app proving label/entry/button/layout loop
-- `samples/Showcase.Fast`
-  - Public-facing Mirage hero demo proving real DOM + FAST rendering
+- `samples/Showcase.Fluent`
+  - Public-facing Mirage hero demo proving real DOM + Fluent UI Web Components rendering
   - Includes focused foundations/layout labs for `Label`, core `IView` mapping, stack behavior, grid placement/spans, and surface rendering
   - Includes dedicated control demo surfaces (starting with `ContentView`) for control/handler correctness depth checks
   - Includes a `ContentView` size/overflow parity lab covering `WidthRequest`/`HeightRequest`, layout alignment, `ClipsToBounds`, and `IView.Clip`-driven clipping
-  - Demonstrates MAUI ResourceDictionary-first styling with CSS retained only as a targeted browser/FAST escape hatch
+  - Demonstrates MAUI ResourceDictionary-first styling with CSS retained only as a targeted browser/provider escape hatch
 - `tests/Mirage.Core.Tests`
   - Diff correctness + determinism
 - `tests/Mirage.Integration.Tests`
   - Provider validation + provider metadata coverage
 - `tests/Mirage.E2E.Tests`
-  - Browser smoke for `Counter.Fast` and `Showcase.Fast`
+  - Browser smoke for `Counter.Fluent` and `Showcase.Fluent`
 
 ## Prerequisites
 
@@ -70,8 +73,8 @@ dotnet build Mirage.sln
 ## Run samples
 
 ```bash
-dotnet run --project samples/Counter.Fast/Counter.Fast.csproj
-dotnet run --project samples/Showcase.Fast/Showcase.Fast.csproj
+dotnet run --project samples/Counter.Fluent/Counter.Fluent.csproj
+dotnet run --project samples/Showcase.Fluent/Showcase.Fluent.csproj
 ```
 
 ## Run tests
@@ -93,7 +96,8 @@ If missing, startup fails with:
 ## Notes
 
 - `Mirage.Web` is provider-neutral browser infrastructure.
-- FAST-specific mappings live only in `Mirage.Provider.Fast`.
+- Provider-specific mappings (Fluent, UI5, custom) live only in provider projects.
+- Fluent UI Web Components are built on FAST foundations, but Mirage’s public reference-provider story is Fluent-first.
 - Providers must support typed and generic node realization for full Mirage behavior.
 - The old `Maui.Browser*` showcase/parity stack is not part of the active solution wiring.
 - Architecture benchmark harness: `tools/benchmarks/Mirage.ArchitectureBenchmarks`.

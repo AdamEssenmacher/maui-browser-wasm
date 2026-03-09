@@ -6,7 +6,7 @@ using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Shapes;
 using Microsoft.Maui.Graphics;
 
-namespace Showcase.Fast.App;
+namespace Showcase.Fluent.App;
 
 internal sealed class ShowcaseState : INotifyPropertyChanged
 {

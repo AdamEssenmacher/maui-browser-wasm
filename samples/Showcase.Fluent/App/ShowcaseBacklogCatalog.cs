@@ -1,4 +1,4 @@
-namespace Showcase.Fast.App;
+namespace Showcase.Fluent.App;
 
 internal enum ShowcaseBacklogStatus
 {

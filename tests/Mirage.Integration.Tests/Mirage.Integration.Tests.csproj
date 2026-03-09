@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Mirage.Core\Mirage.Core.csproj" />
-    <ProjectReference Include="..\..\src\Mirage.Provider.Fast\Mirage.Provider.Fast.csproj" />
+    <ProjectReference Include="..\..\src\Mirage.Provider.Fluent\Mirage.Provider.Fluent.csproj" />
   </ItemGroup>
 
   <ItemGroup>

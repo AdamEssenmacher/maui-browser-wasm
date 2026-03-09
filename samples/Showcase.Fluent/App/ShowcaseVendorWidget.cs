@@ -1,6 +1,6 @@
 using Microsoft.Maui.Controls;
 
-namespace Showcase.Fast.App;
+namespace Showcase.Fluent.App;
 
 public sealed class ShowcaseVendorWidget : View
 {

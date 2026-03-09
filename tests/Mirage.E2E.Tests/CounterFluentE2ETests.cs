@@ -3,11 +3,11 @@ using Xunit;
 
 namespace Mirage.E2E.Tests;
 
-public sealed class CounterFastE2ETests : IClassFixture<BrowserHostFixture>
+public sealed class CounterFluentE2ETests : IClassFixture<BrowserHostFixture>
 {
     private readonly BrowserHostFixture _fixture;
 
-    public CounterFastE2ETests(BrowserHostFixture fixture)
+    public CounterFluentE2ETests(BrowserHostFixture fixture)
     {
         _fixture = fixture;
     }
@@ -18,7 +18,7 @@ public sealed class CounterFastE2ETests : IClassFixture<BrowserHostFixture>
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenAsync(context);
 
-        await SetFastTextFieldValueAsync(page, "[data-automation-id='counter-entry']", "Mirage input");
+        await SetFluentTextFieldValueAsync(page, "[data-automation-id='counter-entry']", "Mirage input");
         await page.WaitForTimeoutAsync(120);
 
         var labelText = await page.Locator("[data-automation-id='counter-live-label']").InnerTextAsync();
@@ -53,16 +53,16 @@ public sealed class CounterFastE2ETests : IClassFixture<BrowserHostFixture>
     }
 
     [Fact]
-    public async Task RendersFastElementsInDom()
+    public async Task RendersFluentElementsInDom()
     {
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenAsync(context);
 
-        var fastButtonCount = await page.Locator("fast-button").CountAsync();
-        var fastTextFieldCount = await page.Locator("fast-text-field").CountAsync();
+        var fluentButtonCount = await page.Locator("fluent-button").CountAsync();
+        var fluentTextFieldCount = await page.Locator("fluent-text-field").CountAsync();
 
-        Assert.True(fastButtonCount > 0, "Expected at least one <fast-button> element.");
-        Assert.True(fastTextFieldCount > 0, "Expected at least one <fast-text-field> element.");
+        Assert.True(fluentButtonCount > 0, "Expected at least one <fluent-button> element.");
+        Assert.True(fluentTextFieldCount > 0, "Expected at least one <fluent-text-field> element.");
     }
 
     private async Task<IPage> OpenAsync(IBrowserContext context)
@@ -107,7 +107,7 @@ public sealed class CounterFastE2ETests : IClassFixture<BrowserHostFixture>
             selector);
     }
 
-    private static async Task SetFastTextFieldValueAsync(IPage page, string selector, string value)
+    private static async Task SetFluentTextFieldValueAsync(IPage page, string selector, string value)
     {
         var applied = await page.EvaluateAsync<bool>(
             @"({ selector, value }) => {
@@ -129,6 +129,6 @@ public sealed class CounterFastE2ETests : IClassFixture<BrowserHostFixture>
             }",
             new { selector, value });
 
-        Assert.True(applied, $"Failed to set FAST text field value for selector '{selector}'.");
+        Assert.True(applied, $"Failed to set Fluent text field value for selector '{selector}'.");
     }
 }

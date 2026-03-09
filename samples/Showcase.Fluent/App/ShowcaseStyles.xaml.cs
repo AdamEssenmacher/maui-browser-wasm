@@ -1,7 +1,7 @@
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Xaml;
 
-namespace Showcase.Fast.App;
+namespace Showcase.Fluent.App;
 
 public partial class ShowcaseStyles : ResourceDictionary
 {

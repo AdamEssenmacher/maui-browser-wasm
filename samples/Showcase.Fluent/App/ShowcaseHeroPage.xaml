@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage
-    x:Class="Showcase.Fast.App.ShowcaseHeroPage"
+    x:Class="Showcase.Fluent.App.ShowcaseHeroPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:local="clr-namespace:Showcase.Fast.App"
+    xmlns:local="clr-namespace:Showcase.Fluent.App"
     AutomationId="showcase-root">
 
     <Grid
@@ -97,7 +97,7 @@
             <Label
                 AutomationId="architecture-pipeline"
                 Style="{StaticResource ShowcasePipelineLabelStyle}"
-                Text="MAUI&#10;  ↓&#10;Mirage semantic runtime&#10;  ↓&#10;Component provider (FAST, UI5, ...)&#10;  ↓&#10;DOM + Web Components" />
+                Text="MAUI&#10;  ↓&#10;Mirage semantic runtime&#10;  ↓&#10;Component provider (Fluent, UI5, custom, ...)&#10;  ↓&#10;DOM + Web Components" />
             <Label
                 AutomationId="architecture-body"
                 Style="{StaticResource ShowcaseBodyLabelStyle}"
@@ -191,11 +191,11 @@
             <Label
                 AutomationId="showcase-demo-powered-by"
                 Style="{StaticResource ShowcaseBodyLabelStyle}"
-                Text="Powered by Mirage + FAST" />
+                Text="Powered by Mirage + Fluent UI Web Components" />
             <Label
                 AutomationId="showcase-demo-devtools-hint"
                 Style="{StaticResource ShowcaseTaglineLabelStyle}"
-                Text="Open DevTools and inspect this page. The UI is rendered as real FAST Web Components and DOM elements." />
+                Text="Open DevTools and inspect this page. The UI is rendered as real Fluent UI Web Components and DOM elements." />
             <Label
                 AutomationId="showcase-generic-demo-title"
                 Style="{StaticResource ShowcaseSubsectionTitleLabelStyle}"
@@ -414,7 +414,7 @@
                     <Label
                         AutomationId="showcase-feature-providers-body"
                         Style="{StaticResource ShowcaseBodyLabelStyle}"
-                        Text="Mirage separates UI semantics from rendering. FAST is implemented today, and the architecture is designed for providers such as UI5 and custom design systems." />
+                        Text="Mirage separates UI semantics from rendering. Fluent UI Web Components is the first polished reference provider (built on FAST foundations), and the architecture is designed for providers such as UI5 and custom design systems." />
                 </VerticalStackLayout>
 
                 <Label
@@ -949,7 +949,7 @@
             <Label
                 AutomationId="content-view-dom-proof"
                 Style="{StaticResource ShowcaseTaglineLabelStyle}"
-                Text="Open DevTools and inspect this section. The ContentView demo is rendered as real DOM and FAST-backed elements." />
+                Text="Open DevTools and inspect this section. The ContentView demo is rendered as real DOM and Fluent-backed elements." />
         </VerticalStackLayout>
 
         <VerticalStackLayout
@@ -959,7 +959,7 @@
             <Label
                 AutomationId="showcase-runtime-badge"
                 Style="{StaticResource ShowcaseTaglineLabelStyle}"
-                Text="This page itself is running as a Mirage application using the FAST provider." />
+                Text="This page itself is running as a Mirage application using the Fluent provider." />
             <Label
                 AutomationId="showcase-runtime-badge-detail"
                 Style="{StaticResource ShowcaseBodyLabelStyle}"

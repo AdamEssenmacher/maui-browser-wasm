@@ -1,9 +1,9 @@
 using Mirage.Maui.Hosting;
-using Mirage.Provider.Fast;
+using Mirage.Provider.Fluent;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Hosting;
-using Showcase.Fast.App;
+using Showcase.Fluent.App;
 
 public static class Program
 {
@@ -11,8 +11,8 @@ public static class Program
     {
         if (!OperatingSystem.IsBrowser())
         {
-            Console.Error.WriteLine("Showcase.Fast must run inside browser WebAssembly runtime.");
-            Console.Error.WriteLine("Use: dotnet run --project samples/Showcase.Fast/Showcase.Fast.csproj -r browser-wasm");
+            Console.Error.WriteLine("Showcase.Fluent must run inside browser WebAssembly runtime.");
+            Console.Error.WriteLine("Use: dotnet run --project samples/Showcase.Fluent/Showcase.Fluent.csproj -r browser-wasm");
             return;
         }
 
@@ -23,7 +23,7 @@ public static class Program
         {
             handlers.AddHandler(typeof(ShowcaseVendorWidget), typeof(ShowcaseVendorWidgetHandler));
         });
-        builder.UseMirageComponentProvider<FastMirageComponentProvider>();
+        builder.UseMirageComponentProvider<FluentMirageComponentProvider>();
 
         var app = builder.Build();
         await MirageBrowserAppHost.RunAsync(app, rootElementId: "app");
