@@ -280,6 +280,6 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added integration regression coverage for hot-reload apply with a handler that throws from `PlatformView` (matching MAUI `ViewHandler` behavior), validating detached fallback remains successful.
 
 ## 2026-03-09 (Hot Reload Scope Tightening)
-- Browser-app hot reload build wiring now defaults to watch-driven activation (`DOTNET_WATCH=1`) with explicit opt-in override (`MirageBrowserHotReloadAlwaysOn=true`) so non-watch builds do not automatically publish hot-reload asset mirrors.
-- Runtime hot-reload service startup is now guarded by presence of Mirage’s metadata-update handler attribute, keeping the service inactive when hot reload metadata wiring is not present for the running app assembly.
+- Browser-app hot reload build wiring now defaults to watch-driven activation (`DOTNET_WATCH=1` or `DotNetWatchBuild=true`) with explicit opt-in override (`MirageBrowserHotReloadAlwaysOn=true`) so non-watch builds do not automatically publish hot-reload asset mirrors.
+- Runtime host startup keeps the hot-reload service available for browser apps, while build-time watch gating controls whether hot-reload metadata/assets are emitted.
 - Platform-view null detection no longer depends on an exact exception message match; applicator fallbacks now detect platform-view getter failures by callsite (`get_PlatformView`) and include regression coverage for non-canonical exception messages.

@@ -9,14 +9,11 @@ using Microsoft.Maui.Controls;
 using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Hosting;
 using Microsoft.Maui.Platform;
-using System.Reflection;
 
 namespace Mirage.Maui.Hosting;
 
 public static class MirageBrowserAppHost
 {
-    private const string MetadataUpdateHandlerAttributeName = "System.Reflection.Metadata.MetadataUpdateHandlerAttribute";
-
     private static int s_resizeSubscriptionId;
     private static IElementHandler? s_windowHandler;
     private static IMirageRenderCoordinator? s_renderCoordinator;
@@ -123,7 +120,6 @@ public static class MirageBrowserAppHost
     private static void EnsureHotReloadServiceStarted()
     {
         if (s_hotReloadService is not null
-            || !IsMirageHotReloadConfigured()
             || s_controlsApplication is null
             || s_primaryWindow is null
             || s_dispatcher is null
@@ -134,40 +130,6 @@ public static class MirageBrowserAppHost
 
         s_hotReloadService = new MirageXamlHotReloadService(s_controlsApplication, s_primaryWindow, s_dispatcher, s_renderCoordinator);
         s_hotReloadService.Start();
-    }
-
-    private static bool IsMirageHotReloadConfigured()
-    {
-        var expectedHandlerType = typeof(MirageHotReloadMetadataUpdateHandler);
-        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-        {
-            IList<CustomAttributeData> attributes;
-            try
-            {
-                attributes = assembly.GetCustomAttributesData();
-            }
-            catch
-            {
-                continue;
-            }
-
-            foreach (var attribute in attributes)
-            {
-                if (!string.Equals(attribute.AttributeType.FullName, MetadataUpdateHandlerAttributeName, StringComparison.Ordinal)
-                    || attribute.ConstructorArguments.Count != 1)
-                {
-                    continue;
-                }
-
-                if (attribute.ConstructorArguments[0].Value is Type handlerType
-                    && handlerType == expectedHandlerType)
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     private static Window ResolvePrimaryWindow(IApplication application)
