@@ -1,78 +1,119 @@
-using Counter.Fast.App;
+using Mirage.Maui.Hosting;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Xaml;
+using System.Runtime.InteropServices.JavaScript;
 
 namespace Counter.Fast.App;
 
-internal sealed class CounterPage : ContentPage
+public sealed partial class CounterPage : ContentPage
 {
+    private const string HotReloadXamlPath = "/_hotreload/CounterPage.xaml";
+    private static readonly TimeSpan HotReloadPollInterval = TimeSpan.FromMilliseconds(750);
+    private readonly CancellationTokenSource _hotReloadCancellation = new();
+    private string? _lastHotReloadXaml;
+
     public CounterPage()
     {
-        AutomationId = "counter-page-root";
+        BindingContext = new CounterState();
+        InitializeComponent();
 
-        var state = new CounterState();
-        BindingContext = state;
-
-        var header = new Label
+        if (OperatingSystem.IsBrowser() && string.Equals(Environment.GetEnvironmentVariable("DOTNET_WATCH"), "1", StringComparison.Ordinal))
         {
-            AutomationId = "counter-title",
-            Text = "Mirage Counter (FAST)",
-            FontSize = 26,
-            Margin = new Thickness(0, 0, 0, 4)
-        };
+            _ = WatchForXamlChangesAsync(_hotReloadCancellation.Token);
+        }
+    }
 
-        var subtitle = new Label
-        {
-            AutomationId = "counter-subtitle",
-            Text = "Type into Entry and click Increment.",
-            FontSize = 14,
-            Margin = new Thickness(0, 0, 0, 10)
-        };
+    protected override void OnDisappearing()
+    {
+        _hotReloadCancellation.Cancel();
+        base.OnDisappearing();
+    }
 
-        var entry = new Entry
+    private async Task WatchForXamlChangesAsync(CancellationToken cancellationToken)
+    {
+        try
         {
-            AutomationId = "counter-entry",
-            Placeholder = "Type here",
-            Margin = new Thickness(0, 0, 0, 10)
-        };
-        entry.SetBinding(Entry.TextProperty, static (CounterState state) => state.InputText, mode: BindingMode.TwoWay);
+            await CounterPageHotReloadInterop.EnsureModuleLoadedAsync();
+        }
+        catch
+        {
+            return;
+        }
 
-        var liveLabel = new Label
+        while (!cancellationToken.IsCancellationRequested)
         {
-            AutomationId = "counter-live-label",
-            FontSize = 16,
-            Margin = new Thickness(0, 0, 0, 10)
-        };
-        liveLabel.SetBinding(Label.TextProperty, static (CounterState state) => state.LiveText);
-
-        var button = new Button
-        {
-            AutomationId = "counter-button",
-            Text = "Increment",
-            Margin = new Thickness(0, 0, 0, 10)
-        };
-        button.SetBinding(Button.CommandProperty, static (CounterState state) => state.IncrementCommand);
-
-        var countLabel = new Label
-        {
-            AutomationId = "counter-count-label",
-            FontSize = 18
-        };
-        countLabel.SetBinding(Label.TextProperty, static (CounterState state) => state.CountText);
-
-        Content = new VerticalStackLayout
-        {
-            AutomationId = "counter-stack",
-            Padding = new Thickness(24),
-            Spacing = 8,
-            Children =
+            string? xaml;
+            try
             {
-                header,
-                subtitle,
-                entry,
-                liveLabel,
-                button,
-                countLabel
+                xaml = await CounterPageHotReloadInterop.FetchTextAsync($"{HotReloadXamlPath}?nonce={DateTime.UtcNow.Ticks}");
             }
-        };
+            catch
+            {
+                xaml = null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(xaml) && !string.Equals(_lastHotReloadXaml, xaml, StringComparison.Ordinal))
+            {
+                _lastHotReloadXaml = xaml;
+                ApplyHotReloadXamlOnDispatcher(xaml);
+            }
+
+            try
+            {
+                await Task.Delay(HotReloadPollInterval, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
+    }
+
+    private void ApplyHotReloadXamlOnDispatcher(string xaml)
+    {
+        var dispatcher = Dispatcher;
+        if (dispatcher is null)
+        {
+            ApplyHotReloadXaml(xaml);
+            return;
+        }
+
+        if (!dispatcher.Dispatch(() => ApplyHotReloadXaml(xaml)))
+        {
+            ApplyHotReloadXaml(xaml);
+        }
+    }
+
+    private void ApplyHotReloadXaml(string xaml)
+    {
+        var bindingContext = BindingContext;
+#pragma warning disable IL2026
+        this.LoadFromXaml(xaml);
+#pragma warning restore IL2026
+        BindingContext = bindingContext;
+        MirageBrowserAppHost.NotifyHotReloadApplied();
+    }
+
+    private static partial class CounterPageHotReloadInterop
+    {
+        private const string Module = "mirage-dom";
+        private const string ModuleUrl = "../_framework/mirage-dom.js";
+        private static Task? s_moduleLoadTask;
+
+        internal static Task EnsureModuleLoadedAsync()
+        {
+            var existing = Volatile.Read(ref s_moduleLoadTask);
+            if (existing is not null)
+            {
+                return existing;
+            }
+
+            var created = JSHost.ImportAsync(Module, ModuleUrl);
+            var prior = Interlocked.CompareExchange(ref s_moduleLoadTask, created, null);
+            return prior ?? created;
+        }
+
+        [JSImport("fetchText", "mirage-dom")]
+        internal static partial Task<string?> FetchTextAsync(string path);
     }
 }

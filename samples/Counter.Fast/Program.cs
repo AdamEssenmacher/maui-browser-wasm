@@ -4,6 +4,8 @@ using Mirage.Provider.Fast;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Hosting;
 
+[assembly: System.Reflection.Metadata.MetadataUpdateHandler(typeof(CounterHotReloadHandler))]
+
 public static class Program
 {
     public static async Task Main()
@@ -24,6 +26,21 @@ public static class Program
         await MirageBrowserAppHost.RunAsync(app, rootElementId: "app");
 
         await Task.Delay(Timeout.InfiniteTimeSpan);
+    }
+}
+
+internal static class CounterHotReloadHandler
+{
+    public static void ClearCache(Type[]? updatedTypes)
+    {
+    }
+
+    public static void UpdateApplication(Type[]? updatedTypes)
+    {
+        if (OperatingSystem.IsBrowser())
+        {
+            MirageBrowserAppHost.NotifyHotReloadApplied();
+        }
     }
 }
 

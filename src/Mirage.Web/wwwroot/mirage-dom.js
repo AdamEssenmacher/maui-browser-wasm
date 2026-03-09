@@ -316,3 +316,16 @@ export function scrollToAutomationId(rootHandle, automationId, smooth) {
 
   return true;
 }
+
+export async function fetchText(path) {
+  if (!path) {
+    return null;
+  }
+
+  const response = await fetch(path, { cache: "no-store" });
+  if (!response.ok) {
+    return null;
+  }
+
+  return await response.text();
+}

@@ -199,3 +199,16 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Grid v1 policy is locked to deterministic CSS Grid translation (`Auto -> auto`, `Star -> fr` with non-positive star normalized to `1fr`, `Absolute -> px`) plus row/column placement, span mapping, and row/column spacing (`row-gap`, `column-gap`).
 - Updated FAST typed mappings to include `ComponentKind.Grid` while keeping `Mirage.Web` provider-neutral and preserving typed-node built-in invariants (`ElementNode` remains extensibility path only).
 - Extended `Showcase.Fast` with stack/grid/background proof sections and expanded integration/E2E coverage for idempotent projection, layout correctness, visible DOM-backed rendering, and explicit no-canvas guarantees.
+
+## 2026-03-08 (Counter.Fast Blazor-Style Hot Reload Wiring)
+- `samples/Counter.Fast` now uses `Microsoft.NET.Sdk.WebAssembly` so browser hot reload wiring follows the same SDK pipeline used by Blazor, including JS initializer module injection.
+- Added an app-level metadata update handler that calls `MirageBrowserAppHost.NotifyHotReloadApplied()` and performs a render-only refresh after deltas apply, without restarting the host or recreating the MAUI window/page.
+- Added a watch-specific restore workaround (`RestoreBuildInParallel=false` + `BuildInParallel=false` when `DOTNET_WATCH=1`) to force non-parallel restore in watch builds and avoid observed restore stalls in this environment.
+- Added `samples/Counter.Fast/wwwroot/_framework/mirage-dom.js` as a concrete static asset path (synced from Mirage.Web via a pre-build copy target) so watch/dev static-web-asset serving resolves `../_framework/mirage-dom.js` against a real file with correct module MIME type.
+- Replaced lambda-based `SetBinding` expressions in `CounterPage` with `nameof(...)` path bindings to avoid a Roslyn Edit-and-Continue crash observed during hot reload (`DeltaMetadataWriter` null reference when editing that file).
+- Converted `CounterPage` from C# UI construction to XAML + code-behind loading (`MauiXaml` + `Microsoft.Maui.Controls.Xaml`) so XAML edit/hot-reload behavior can be validated directly in `Counter.Fast`.
+
+## 2026-03-08 (Counter.Fast XAML Watch-Reload Bridge)
+- Added a watch-time static asset mapping for `App/CounterPage.xaml` (`StaticWebAssetPath=/_hotreload/CounterPage.xaml`) so dotnet-watch can treat XAML edits as static-file updates instead of ignored non-C# edits.
+- Added a symlinked static path at `samples/Counter.Fast/wwwroot/_hotreload/CounterPage.xaml -> ../../App/CounterPage.xaml` to keep a single source XAML file while making the live file resolvable by the browser static asset pipeline.
+- Added `fetchText(...)` to the shared Mirage DOM JS module and updated `CounterPage` to poll/reapply XAML via `LoadFromXaml(string)` in `DOTNET_WATCH` browser runs, following the same runtime reparse strategy used by .NET Meteor’s hot reload plugin model.

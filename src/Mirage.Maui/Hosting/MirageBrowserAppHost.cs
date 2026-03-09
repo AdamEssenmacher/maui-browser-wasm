@@ -72,6 +72,11 @@ public static class MirageBrowserAppHost
         s_resizeSubscriptionId = DomElement.SubscribeWindowResize(ArrangeAndRender);
     }
 
+    public static void NotifyHotReloadApplied()
+    {
+        s_renderCoordinator?.RequestRender();
+    }
+
     private static Window ResolvePrimaryWindow(IApplication application)
     {
         if (application.Windows.Count > 0)
