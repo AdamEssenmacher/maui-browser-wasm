@@ -1,10 +1,12 @@
 using Mirage.Core.Providers;
+using Mirage.Maui.HotReload;
 using Mirage.Maui.Handlers;
 using Mirage.Web.Dom;
 using Mirage.Web.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Hosting;
 using Microsoft.Maui.Platform;
 
@@ -16,6 +18,8 @@ public static class MirageBrowserAppHost
     private static IElementHandler? s_windowHandler;
     private static IMirageRenderCoordinator? s_renderCoordinator;
     private static IMirageRuntime? s_runtime;
+    private static IDispatcher? s_dispatcher;
+    private static MirageXamlHotReloadService? s_hotReloadService;
     private static BrowserPageNavigator? s_pageNavigator;
 
     public static async Task RunAsync(MauiApp mauiApp, string rootElementId = "app")
@@ -33,6 +37,7 @@ public static class MirageBrowserAppHost
 
         var runtime = new MirageRuntime(rootDomElement, provider);
         var renderCoordinator = mauiApp.Services.GetRequiredService<IMirageRenderCoordinator>();
+        var dispatcher = mauiApp.Services.GetRequiredService<IDispatcher>();
         var pageNavigator = mauiApp.Services.GetService<BrowserPageNavigator>();
 
         renderCoordinator.AttachRuntime(runtime);
@@ -50,8 +55,15 @@ public static class MirageBrowserAppHost
 
         s_runtime = runtime;
         s_renderCoordinator = renderCoordinator;
+        s_dispatcher = dispatcher;
         s_pageNavigator = pageNavigator;
         s_windowHandler = windowHandler;
+
+        if (IsDotNetWatchSession() && application is Application controlsApplication)
+        {
+            s_hotReloadService = new MirageXamlHotReloadService(controlsApplication, dispatcher, renderCoordinator);
+            s_hotReloadService.Start();
+        }
 
         void ArrangeAndRender()
         {
@@ -70,6 +82,31 @@ public static class MirageBrowserAppHost
 
         ArrangeAndRender();
         s_resizeSubscriptionId = DomElement.SubscribeWindowResize(ArrangeAndRender);
+    }
+
+    public static void NotifyHotReloadApplied()
+    {
+        var dispatcher = s_dispatcher;
+        if (dispatcher is null)
+        {
+            s_renderCoordinator?.RequestRender();
+            s_hotReloadService?.RequestImmediateScan();
+            return;
+        }
+
+        void Notify()
+        {
+            s_renderCoordinator?.RequestRender();
+            s_hotReloadService?.RequestImmediateScan();
+        }
+
+        if (dispatcher.IsDispatchRequired)
+        {
+            _ = dispatcher.Dispatch(Notify);
+            return;
+        }
+
+        Notify();
     }
 
     private static Window ResolvePrimaryWindow(IApplication application)
@@ -106,6 +143,9 @@ public static class MirageBrowserAppHost
             s_resizeSubscriptionId = 0;
         }
 
+        s_hotReloadService?.Stop();
+        s_hotReloadService = null;
+
         s_windowHandler?.DisconnectHandler();
         s_windowHandler = null;
 
@@ -118,6 +158,13 @@ public static class MirageBrowserAppHost
         s_runtime?.Dispose();
         s_runtime = null;
 
+        s_dispatcher = null;
+
         rootDomElement.ClearChildren();
+    }
+
+    private static bool IsDotNetWatchSession()
+    {
+        return string.Equals(Environment.GetEnvironmentVariable("DOTNET_WATCH"), "1", StringComparison.Ordinal);
     }
 }

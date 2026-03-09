@@ -1,0 +1,49 @@
+<Project>
+  <PropertyGroup>
+    <MirageBrowserHotReloadEnabled>false</MirageBrowserHotReloadEnabled>
+    <MirageBrowserHotReloadEnabled Condition="'$(MirageBrowserApp)' == 'true' and '$(TargetFramework)' == 'net10.0-browser' and '$(OutputType)' == 'Exe'">true</MirageBrowserHotReloadEnabled>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MirageBrowserHotReloadEnabled)' == 'true'">
+    <MirageHotReloadGeneratedDir>$(IntermediateOutputPath)Mirage.HotReload/</MirageHotReloadGeneratedDir>
+    <MirageHotReloadMetadataFile>$(MirageHotReloadGeneratedDir)MirageHotReload.MetadataUpdateHandler.g.cs</MirageHotReloadMetadataFile>
+    <MirageDomSourcePath>$(MSBuildThisFileDirectory)src/Mirage.Web/wwwroot/mirage-dom.js</MirageDomSourcePath>
+    <MirageDomDestinationPath>$(MSBuildProjectDirectory)/wwwroot/_framework/mirage-dom.js</MirageDomDestinationPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MirageBrowserHotReloadEnabled)' == 'true' and '$(DOTNET_WATCH)' == '1'">
+    <RestoreBuildInParallel>false</RestoreBuildInParallel>
+    <BuildInParallel>false</BuildInParallel>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MirageBrowserHotReloadEnabled)' == 'true'">
+    <Watch Include="@(MauiXaml)">
+      <StaticWebAssetPath>/_hotreload/$(AssemblyName)/$([System.String]::Copy('%(Identity)').Replace('\\', '/'))</StaticWebAssetPath>
+    </Watch>
+    <Compile Include="$(MirageHotReloadMetadataFile)" AutoGen="true" Visible="false" />
+  </ItemGroup>
+
+  <Target Name="MirageGenerateHotReloadMetadataHandler"
+          BeforeTargets="CoreCompile"
+          Condition="'$(MirageBrowserHotReloadEnabled)' == 'true'">
+    <MakeDir Directories="$(MirageHotReloadGeneratedDir)" />
+    <ItemGroup>
+      <_MirageHotReloadMetadataLines Include="// &lt;auto-generated /&gt;" />
+      <_MirageHotReloadMetadataLines Include="[assembly: System.Reflection.Metadata.MetadataUpdateHandler(typeof(Mirage.Maui.HotReload.MirageHotReloadMetadataUpdateHandler))]" />
+    </ItemGroup>
+    <WriteLinesToFile
+        File="$(MirageHotReloadMetadataFile)"
+        Lines="@(_MirageHotReloadMetadataLines)"
+        Overwrite="true"
+        WriteOnlyWhenDifferent="true" />
+  </Target>
+
+  <Target Name="MirageSyncDomModuleForBrowserApps"
+          BeforeTargets="PrepareForBuild"
+          Condition="'$(MirageBrowserHotReloadEnabled)' == 'true' and Exists('$(MirageDomSourcePath)')">
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(MirageDomDestinationPath)'))" />
+    <Copy SourceFiles="$(MirageDomSourcePath)"
+          DestinationFiles="$(MirageDomDestinationPath)"
+          SkipUnchangedFiles="true" />
+  </Target>
+</Project>

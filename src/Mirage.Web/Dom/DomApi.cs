@@ -108,4 +108,13 @@ internal static partial class DomApi
 
     [JSImport("scrollToAutomationId", Module)]
     internal static partial bool ScrollToAutomationId(nint rootElement, string automationId, bool smooth);
+
+    [JSImport("fetchText", Module)]
+    internal static partial Task<string?> FetchTextAsync(string path);
+
+    [JSImport("installHotReloadHintBridge", Module)]
+    internal static partial void InstallHotReloadHintBridge();
+
+    [JSImport("drainHotReloadHintsJson", Module)]
+    internal static partial string DrainHotReloadHintsJson();
 }

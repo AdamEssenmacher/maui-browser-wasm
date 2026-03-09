@@ -1,9 +1,20 @@
 import { dotnet } from "./_framework/dotnet.js";
 
+async function installMirageHotReloadHints() {
+  try {
+    const mirageDom = await import("./_framework/mirage-dom.js");
+    mirageDom.installHotReloadHintBridge?.();
+  } catch {
+    // Hot reload hinting is optional; polling fallback remains active in .NET.
+  }
+}
+
 async function start() {
   const appRoot = document.getElementById("app");
 
   try {
+    await installMirageHotReloadHints();
+
     const runtime = await dotnet
       .withDiagnosticTracing(false)
       .create();

@@ -1,6 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <MirageBrowserApp>true</MirageBrowserApp>
     <TargetFramework>net10.0-browser</TargetFramework>
     <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
     <DefaultWasmHostConfig>browser</DefaultWasmHostConfig>
@@ -26,8 +27,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <MauiXaml Update="App\**\*.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiPackageVersion)" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiPackageVersion)" />
+    <PackageReference Include="Microsoft.Maui.Controls.Xaml" Version="$(MauiPackageVersion)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,9 +43,6 @@
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="wwwroot\**\*.*">
       <TargetPath>%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
-    </WasmExtraFilesToDeploy>
-    <WasmExtraFilesToDeploy Include="..\..\src\Mirage.Web\wwwroot\mirage-dom.js">
-      <TargetPath>_framework/mirage-dom.js</TargetPath>
     </WasmExtraFilesToDeploy>
   </ItemGroup>
 </Project>

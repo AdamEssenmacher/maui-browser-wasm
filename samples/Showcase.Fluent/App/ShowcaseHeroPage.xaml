@@ -74,7 +74,7 @@
             <Label
                 AutomationId="hero-headline"
                 Style="{StaticResource ShowcaseHeadlineLabelStyle}"
-                Text="Run .NET MAUI apps in the browser — with real DOM UI." />
+                Text="Run .NET MAUI apps in the browser — with real DOM UI!!!" />
             <Label
                 AutomationId="hero-subheadline"
                 Style="{StaticResource ShowcaseBodyLabelStyle}"

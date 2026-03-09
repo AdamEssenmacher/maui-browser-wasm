@@ -250,3 +250,10 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added a phase-bounded `MirageScrollViewHandler` (control-node `ContentContainer` reuse) covering content hosting, orientation, scrollbar-visibility projection, and `RequestScrollTo` command payload handling.
 - Extended runtime/coordinator + DOM interop with node-id scroll read/write APIs so handlers can issue deterministic scroll commands without bypassing runtime/provider boundaries.
 - Migrated `Showcase.Fluent` long-page hosting to an explicit root `ScrollView` (`showcase-scroll-root`) and kept DOM-first/no-canvas guarantees with updated integration/E2E coverage for non-scroll default page behavior and explicit scroll-surface navigation.
+
+## 2026-03-09 (Mirage Production Hot Reload Infrastructure)
+- Standardized active browser sample apps on `Microsoft.NET.Sdk.WebAssembly` and moved shared watch/runtime wiring into `Directory.Build.targets` so hot-reload boot/module behavior follows the official WebAssembly pipeline rather than per-app patching.
+- Added shared browser-app watch safeguards (`RestoreBuildInParallel=false`, `BuildInParallel=false` under `DOTNET_WATCH=1`), automatic MauiXaml watch path mapping (`/_hotreload/{AssemblyName}/{relative-xaml-path}`), generated metadata-update handler attributes, and prebuild `mirage-dom.js` sync into each app `_framework` folder.
+- Added a Mirage.Maui hot-reload runtime service and metadata update handler that use render-only refresh plus XAML reapply for live `Page/View/ResourceDictionary` instances (including NameScope clearing and `x:Name` field rebinding) without host restart.
+- Added hybrid detection hooks in `mirage-dom.js`/`main.mjs`: websocket hint sniffing for low-latency scans plus polling fallback for correctness when hints are absent or partial.
+- Added integration tests for repeated `x:Name` XAML reapply and `ResourceDictionary` clear+reload semantics, and converted `Counter.Fluent` page authoring to XAML as the minimal app-level hot-reload harness.
