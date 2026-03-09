@@ -274,14 +274,14 @@ public sealed class HandlerRuntimeIntegrationTests
             VerticalOptions = LayoutOptions.Center
         };
 
-        var gridParent = MiragePlatformView.CreateTyped(ComponentKind.Grid);
+        var gridParent = MiragePlatformView.CreateControl(ComponentKind.Grid);
         gridParent.AddChild(handler.Node);
 
         MirageViewMapper.MapLayoutAlignment(handler, child);
         Assert.Equal("end", handler.Node.GetStyleValue("justifySelf"));
         Assert.Equal("center", handler.Node.GetStyleValue("alignSelf"));
 
-        var verticalParent = MiragePlatformView.CreateTyped(ComponentKind.VerticalStack);
+        var verticalParent = MiragePlatformView.CreateControl(ComponentKind.VerticalStack);
         verticalParent.AddChild(handler.Node);
         MirageViewMapper.MapLayoutAlignment(handler, child);
         Assert.Equal("flex-end", handler.Node.GetStyleValue("alignSelf"));
@@ -294,10 +294,10 @@ public sealed class HandlerRuntimeIntegrationTests
         var runtime = new RuntimeProbe();
         coordinator.AttachRuntime(runtime);
 
-        var root = MiragePlatformView.CreateTyped(ComponentKind.Root);
+        var root = MiragePlatformView.CreateControl(ComponentKind.Root);
         root.SetStyle("display", "flex");
 
-        var button = MiragePlatformView.CreateTyped(ComponentKind.Button);
+        var button = MiragePlatformView.CreateControl(ComponentKind.Button);
         button.SetProperty("Text", "Click");
         button.SetEvent("click", enabled: true);
         root.AddChild(button);
@@ -308,26 +308,26 @@ public sealed class HandlerRuntimeIntegrationTests
         coordinator.SetRoot(root);
 
         Assert.NotNull(runtime.LastRendered);
-        var rootNode = Assert.IsType<TypedNode>(runtime.LastRendered);
+        var rootNode = Assert.IsType<ControlNode>(runtime.LastRendered);
         Assert.Equal(ComponentKind.Root, rootNode.Kind);
         var child = Assert.Single(rootNode.Children);
-        var typedChild = Assert.IsType<TypedNode>(child);
-        Assert.Equal(ComponentKind.Button, typedChild.Kind);
-        Assert.Equal("Click", typedChild.Properties["Text"].GetStringOrNull());
+        var controlChild = Assert.IsType<ControlNode>(child);
+        Assert.Equal(ComponentKind.Button, controlChild.Kind);
+        Assert.Equal("Click", controlChild.Properties["Text"].GetStringOrNull());
 
         coordinator.OnEvent(button.NodeId, "click", null);
         Assert.Equal("click", target.LastEventName);
     }
 
     [Fact]
-    public void RenderCoordinator_RendersGenericElementNode_AndRoutesEventsByNodeId()
+    public void RenderCoordinator_RendersGenericWebNode_AndRoutesEventsByNodeId()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
         var runtime = new RuntimeProbe();
         coordinator.AttachRuntime(runtime);
 
-        var root = MiragePlatformView.CreateTyped(ComponentKind.Root);
-        var vendor = MiragePlatformView.CreateElement("vendor-widget");
+        var root = MiragePlatformView.CreateControl(ComponentKind.Root);
+        var vendor = MiragePlatformView.CreateWeb("vendor-widget");
         vendor.SetProperty("open", MirageValue.Bool(true));
         vendor.SetProperty("payload", MirageValue.Json(System.Text.Json.Nodes.JsonNode.Parse("""{"mode":"demo"}""")));
         vendor.SetAttribute("aria-label", "Vendor Widget");
@@ -340,13 +340,13 @@ public sealed class HandlerRuntimeIntegrationTests
         coordinator.Register(vendor, eventTarget: target);
         coordinator.SetRoot(root);
 
-        var rootNode = Assert.IsType<TypedNode>(runtime.LastRendered);
+        var rootNode = Assert.IsType<ControlNode>(runtime.LastRendered);
         var child = Assert.Single(rootNode.Children);
-        var elementNode = Assert.IsType<ElementNode>(child);
-        Assert.Equal("vendor-widget", elementNode.ElementName);
-        Assert.True(elementNode.Properties["open"].TryGetBool(out var isOpen) && isOpen);
-        Assert.Contains("is-ready", elementNode.Classes);
-        Assert.Equal("Vendor Widget", elementNode.Attributes["aria-label"]);
+        var webNode = Assert.IsType<WebNode>(child);
+        Assert.Equal("vendor-widget", webNode.ElementName);
+        Assert.True(webNode.Properties["open"].TryGetBool(out var isOpen) && isOpen);
+        Assert.Contains("is-ready", webNode.Classes);
+        Assert.Equal("Vendor Widget", webNode.Attributes["aria-label"]);
 
         coordinator.OnEvent(vendor.NodeId, "widget-click", payload: null);
         Assert.Equal("widget-click", target.LastEventName);
@@ -358,8 +358,8 @@ public sealed class HandlerRuntimeIntegrationTests
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
         coordinator.AttachRuntime(new RuntimeProbe());
 
-        var first = MiragePlatformView.CreateTyped(ComponentKind.Label);
-        var second = MiragePlatformView.CreateElement("vendor-input");
+        var first = MiragePlatformView.CreateControl(ComponentKind.Label);
+        var second = MiragePlatformView.CreateWeb("vendor-input");
 
         coordinator.Register(first, null);
         coordinator.Register(second, null);
@@ -371,13 +371,13 @@ public sealed class HandlerRuntimeIntegrationTests
     [Fact]
     public void PlatformView_ChildOrderRemainsDeterministicAcrossMutations()
     {
-        var root = MiragePlatformView.CreateTyped(ComponentKind.VerticalStack);
+        var root = MiragePlatformView.CreateControl(ComponentKind.VerticalStack);
         root.AssignNodeId("root");
-        var first = MiragePlatformView.CreateTyped(ComponentKind.Label);
+        var first = MiragePlatformView.CreateControl(ComponentKind.Label);
         first.AssignNodeId("first");
-        var second = MiragePlatformView.CreateTyped(ComponentKind.Label);
+        var second = MiragePlatformView.CreateControl(ComponentKind.Label);
         second.AssignNodeId("second");
-        var third = MiragePlatformView.CreateTyped(ComponentKind.Label);
+        var third = MiragePlatformView.CreateControl(ComponentKind.Label);
         third.AssignNodeId("third");
 
         root.AddChild(first);
@@ -398,7 +398,7 @@ public sealed class HandlerRuntimeIntegrationTests
             DefaultDisplayStyle = defaultDisplayStyle;
         }
 
-        public MiragePlatformView Node { get; } = MiragePlatformView.CreateTyped(ComponentKind.Label);
+        public MiragePlatformView Node { get; } = MiragePlatformView.CreateControl(ComponentKind.Label);
 
         public int RenderRequestCount { get; private set; }
 

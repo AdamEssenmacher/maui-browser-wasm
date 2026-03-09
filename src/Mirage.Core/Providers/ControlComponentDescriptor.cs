@@ -2,9 +2,9 @@ using Mirage.Core.Semantics;
 
 namespace Mirage.Core.Providers;
 
-public sealed class TypedComponentDescriptor
+public sealed class ControlComponentDescriptor
 {
-    public TypedComponentDescriptor(
+    public ControlComponentDescriptor(
         ComponentKind kind,
         string elementTagName,
         IReadOnlyDictionary<string, string>? defaultAttributes = null,

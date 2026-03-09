@@ -135,8 +135,8 @@ public sealed class MirageRuntime : IMirageRuntime
     {
         var realized = (operation.CreationKind switch
         {
-            NodeCreationKind.Typed => CreateTypedNode(operation),
-            NodeCreationKind.Element => CreateElementNode(operation),
+            NodeCreationKind.Control => CreateControlNode(operation),
+            NodeCreationKind.Web => CreateWebNode(operation),
             _ => throw new InvalidOperationException($"Unsupported creation kind: {operation.CreationKind}")
         }).WithNodeId(operation.NodeId);
 
@@ -157,22 +157,22 @@ public sealed class MirageRuntime : IMirageRuntime
         parent.Element.Insert(operation.Index, realized.Element);
     }
 
-    private RealizedNode CreateTypedNode(CreateNodeOperation operation)
+    private RealizedNode CreateControlNode(CreateNodeOperation operation)
     {
-        if (operation.TypedKind is not ComponentKind kind)
+        if (operation.ControlKind is not ComponentKind kind)
         {
-            throw new InvalidOperationException($"CreateNode '{operation.NodeId}' is typed but missing ComponentKind.");
+            throw new InvalidOperationException($"CreateNode '{operation.NodeId}' is control node but missing ComponentKind.");
         }
 
-        if (!_provider.Capabilities.SupportsTypedNodes)
+        if (!_provider.Capabilities.SupportsControlNodes)
         {
-            throw new InvalidOperationException("Provider capabilities do not support typed node realization.");
+            throw new InvalidOperationException("Provider capabilities do not support control-node realization.");
         }
 
-        var descriptor = _provider.ResolveTyped(kind);
+        var descriptor = _provider.ResolveControl(kind);
         var element = DomElement.Create(descriptor.ElementTagName);
         element.Attr("data-mirage-node-id", operation.NodeId);
-        element.Attr("data-mirage-node-type", "typed");
+        element.Attr("data-mirage-node-type", "control");
         element.Attr("data-mirage-kind", kind.ToString());
         element.Style("boxSizing", "border-box");
 
@@ -191,32 +191,32 @@ public sealed class MirageRuntime : IMirageRuntime
             element.Append(valueElement);
         }
 
-        return RealizedNode.ForTyped(element, descriptor, valueElement);
+        return RealizedNode.ForControl(element, descriptor, valueElement);
     }
 
-    private RealizedNode CreateElementNode(CreateNodeOperation operation)
+    private RealizedNode CreateWebNode(CreateNodeOperation operation)
     {
         if (string.IsNullOrWhiteSpace(operation.ElementName))
         {
-            throw new InvalidOperationException($"CreateNode '{operation.NodeId}' is generic element but missing ElementName.");
+            throw new InvalidOperationException($"CreateNode '{operation.NodeId}' is web node but missing ElementName.");
         }
 
-        if (!_provider.Capabilities.SupportsElementNodes)
+        if (!_provider.Capabilities.SupportsWebNodes)
         {
-            throw new InvalidOperationException("Provider capabilities do not support generic element node realization.");
+            throw new InvalidOperationException("Provider capabilities do not support web-node realization.");
         }
 
         var requestedElementName = operation.ElementName!;
-        var descriptor = _provider.ResolveElement(requestedElementName);
+        var descriptor = _provider.ResolveWebNode(requestedElementName);
         if (!string.Equals(descriptor.ElementName, requestedElementName, StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
-                $"Provider returned element descriptor '{descriptor.ElementName}' for requested '{requestedElementName}'. Providers must preserve generic element identity.");
+                $"Provider returned element descriptor '{descriptor.ElementName}' for requested '{requestedElementName}'. Providers must preserve web-node element identity.");
         }
 
         var element = DomElement.Create(descriptor.ElementName);
         element.Attr("data-mirage-node-id", operation.NodeId);
-        element.Attr("data-mirage-node-type", "element");
+        element.Attr("data-mirage-node-type", "web");
         element.Attr("data-mirage-element-name", descriptor.ElementName);
         element.Style("boxSizing", "border-box");
 
@@ -225,7 +225,7 @@ public sealed class MirageRuntime : IMirageRuntime
             element.Attr(name, value);
         }
 
-        return RealizedNode.ForElement(element, descriptor);
+        return RealizedNode.ForWeb(element, descriptor);
     }
 
     private void ApplyMove(MoveNodeOperation operation)
@@ -274,9 +274,9 @@ public sealed class MirageRuntime : IMirageRuntime
             return;
         }
 
-        if (node.TryGetTypedDescriptor(out var typedDescriptor))
+        if (node.TryGetControlDescriptor(out var controlDescriptor))
         {
-            if (!typedDescriptor.PropertyMappings.TryGetValue(operation.PropertyName, out var mapping))
+            if (!controlDescriptor.PropertyMappings.TryGetValue(operation.PropertyName, out var mapping))
             {
                 return;
             }
@@ -306,7 +306,7 @@ public sealed class MirageRuntime : IMirageRuntime
             return;
         }
 
-        if (!node.TryGetElementDescriptor(out var elementDescriptor))
+        if (!node.TryGetWebDescriptor(out var webDescriptor))
         {
             return;
         }
@@ -317,9 +317,9 @@ public sealed class MirageRuntime : IMirageRuntime
             return;
         }
 
-        if (!elementDescriptor.SupportsProperties)
+        if (!webDescriptor.SupportsProperties)
         {
-            throw new InvalidOperationException($"Provider does not support generic properties for element node '{operation.NodeId}'.");
+            throw new InvalidOperationException($"Provider does not support web-node properties for node '{operation.NodeId}'.");
         }
 
         node.Element.SetProperty(operation.PropertyName, operation.Value);
@@ -332,9 +332,9 @@ public sealed class MirageRuntime : IMirageRuntime
             return;
         }
 
-        if (node.TryGetTypedDescriptor(out var typedDescriptor))
+        if (node.TryGetControlDescriptor(out var controlDescriptor))
         {
-            if (!typedDescriptor.PropertyMappings.TryGetValue(operation.PropertyName, out var mapping))
+            if (!controlDescriptor.PropertyMappings.TryGetValue(operation.PropertyName, out var mapping))
             {
                 return;
             }
@@ -364,7 +364,7 @@ public sealed class MirageRuntime : IMirageRuntime
             return;
         }
 
-        if (!node.TryGetElementDescriptor(out var elementDescriptor))
+        if (!node.TryGetWebDescriptor(out var webDescriptor))
         {
             return;
         }
@@ -375,9 +375,9 @@ public sealed class MirageRuntime : IMirageRuntime
             return;
         }
 
-        if (!elementDescriptor.SupportsProperties)
+        if (!webDescriptor.SupportsProperties)
         {
-            throw new InvalidOperationException($"Provider does not support generic properties for element node '{operation.NodeId}'.");
+            throw new InvalidOperationException($"Provider does not support web-node properties for node '{operation.NodeId}'.");
         }
 
         node.Element.RemoveProperty(operation.PropertyName);
@@ -386,14 +386,14 @@ public sealed class MirageRuntime : IMirageRuntime
     private void ApplySetAttribute(SetAttributeOperation operation)
     {
         if (!_nodes.TryGetValue(operation.NodeId, out var node)
-            || !node.TryGetElementDescriptor(out var descriptor))
+            || !node.TryGetWebDescriptor(out var descriptor))
         {
             return;
         }
 
         if (!descriptor.SupportsAttributes)
         {
-            throw new InvalidOperationException($"Provider does not support generic attributes for element node '{operation.NodeId}'.");
+            throw new InvalidOperationException($"Provider does not support web-node attributes for node '{operation.NodeId}'.");
         }
 
         node.Element.Attr(operation.AttributeName, operation.Value);
@@ -402,14 +402,14 @@ public sealed class MirageRuntime : IMirageRuntime
     private void ApplyRemoveAttribute(RemoveAttributeOperation operation)
     {
         if (!_nodes.TryGetValue(operation.NodeId, out var node)
-            || !node.TryGetElementDescriptor(out var descriptor))
+            || !node.TryGetWebDescriptor(out var descriptor))
         {
             return;
         }
 
         if (!descriptor.SupportsAttributes)
         {
-            throw new InvalidOperationException($"Provider does not support generic attributes for element node '{operation.NodeId}'.");
+            throw new InvalidOperationException($"Provider does not support web-node attributes for node '{operation.NodeId}'.");
         }
 
         node.Element.Attr(operation.AttributeName, null);
@@ -418,14 +418,14 @@ public sealed class MirageRuntime : IMirageRuntime
     private void ApplyAddClass(AddClassOperation operation)
     {
         if (!_nodes.TryGetValue(operation.NodeId, out var node)
-            || !node.TryGetElementDescriptor(out var descriptor))
+            || !node.TryGetWebDescriptor(out var descriptor))
         {
             return;
         }
 
         if (!descriptor.SupportsClasses)
         {
-            throw new InvalidOperationException($"Provider does not support generic class mutation for element node '{operation.NodeId}'.");
+            throw new InvalidOperationException($"Provider does not support web-node class mutation for node '{operation.NodeId}'.");
         }
 
         node.Element.AddClass(operation.ClassName);
@@ -434,14 +434,14 @@ public sealed class MirageRuntime : IMirageRuntime
     private void ApplyRemoveClass(RemoveClassOperation operation)
     {
         if (!_nodes.TryGetValue(operation.NodeId, out var node)
-            || !node.TryGetElementDescriptor(out var descriptor))
+            || !node.TryGetWebDescriptor(out var descriptor))
         {
             return;
         }
 
         if (!descriptor.SupportsClasses)
         {
-            throw new InvalidOperationException($"Provider does not support generic class mutation for element node '{operation.NodeId}'.");
+            throw new InvalidOperationException($"Provider does not support web-node class mutation for node '{operation.NodeId}'.");
         }
 
         node.Element.RemoveClass(operation.ClassName);
@@ -454,9 +454,9 @@ public sealed class MirageRuntime : IMirageRuntime
             return;
         }
 
-        if (node.TryGetElementDescriptor(out var descriptor) && !descriptor.SupportsStyles)
+        if (node.TryGetWebDescriptor(out var descriptor) && !descriptor.SupportsStyles)
         {
-            throw new InvalidOperationException($"Provider does not support generic styles for element node '{operation.NodeId}'.");
+            throw new InvalidOperationException($"Provider does not support web-node styles for node '{operation.NodeId}'.");
         }
 
         node.Element.Style(operation.StyleName, operation.Value);
@@ -501,21 +501,21 @@ public sealed class MirageRuntime : IMirageRuntime
 
     private ProviderEventDescriptor ResolveEventDescriptor(RealizedNode node, string eventName)
     {
-        if (node.TryGetTypedDescriptor(out var typedDescriptor))
+        if (node.TryGetControlDescriptor(out var controlDescriptor))
         {
-            return typedDescriptor.EventMappings.TryGetValue(eventName, out var mapped)
+            return controlDescriptor.EventMappings.TryGetValue(eventName, out var mapped)
                 ? mapped
                 : new ProviderEventDescriptor(eventName);
         }
 
-        if (node.TryGetElementDescriptor(out var elementDescriptor))
+        if (node.TryGetWebDescriptor(out var webDescriptor))
         {
-            if (!elementDescriptor.SupportsEvents)
+            if (!webDescriptor.SupportsEvents)
             {
-                throw new InvalidOperationException($"Provider does not support generic events for element node '{node.NodeId}'.");
+                throw new InvalidOperationException($"Provider does not support web-node events for node '{node.NodeId}'.");
             }
 
-            return elementDescriptor.EventMappings.TryGetValue(eventName, out var mapped)
+            return webDescriptor.EventMappings.TryGetValue(eventName, out var mapped)
                 ? mapped
                 : new ProviderEventDescriptor(eventName);
         }
@@ -551,14 +551,14 @@ public sealed class MirageRuntime : IMirageRuntime
         private RealizedNode(
             string nodeId,
             DomElement element,
-            TypedComponentDescriptor? typedDescriptor,
-            ElementComponentDescriptor? elementDescriptor,
+            ControlComponentDescriptor? controlDescriptor,
+            WebComponentDescriptor? webDescriptor,
             DomElement? valueElement)
         {
             NodeId = nodeId;
             Element = element;
-            TypedDescriptor = typedDescriptor;
-            ElementDescriptor = elementDescriptor;
+            ControlDescriptor = controlDescriptor;
+            WebDescriptor = webDescriptor;
             ValueElement = valueElement;
         }
 
@@ -568,21 +568,21 @@ public sealed class MirageRuntime : IMirageRuntime
 
         public DomElement? ValueElement { get; }
 
-        private TypedComponentDescriptor? TypedDescriptor { get; }
+        private ControlComponentDescriptor? ControlDescriptor { get; }
 
-        private ElementComponentDescriptor? ElementDescriptor { get; }
+        private WebComponentDescriptor? WebDescriptor { get; }
 
-        public static RealizedNode ForTyped(DomElement element, TypedComponentDescriptor descriptor, DomElement? valueElement)
-            => new(nodeId: string.Empty, element, descriptor, elementDescriptor: null, valueElement);
+        public static RealizedNode ForControl(DomElement element, ControlComponentDescriptor descriptor, DomElement? valueElement)
+            => new(nodeId: string.Empty, element, descriptor, webDescriptor: null, valueElement);
 
-        public static RealizedNode ForElement(DomElement element, ElementComponentDescriptor descriptor)
-            => new(nodeId: string.Empty, element, typedDescriptor: null, descriptor, valueElement: null);
+        public static RealizedNode ForWeb(DomElement element, WebComponentDescriptor descriptor)
+            => new(nodeId: string.Empty, element, controlDescriptor: null, descriptor, valueElement: null);
 
-        public bool TryGetTypedDescriptor(out TypedComponentDescriptor descriptor)
+        public bool TryGetControlDescriptor(out ControlComponentDescriptor descriptor)
         {
-            if (TypedDescriptor is not null)
+            if (ControlDescriptor is not null)
             {
-                descriptor = TypedDescriptor;
+                descriptor = ControlDescriptor;
                 return true;
             }
 
@@ -590,11 +590,11 @@ public sealed class MirageRuntime : IMirageRuntime
             return false;
         }
 
-        public bool TryGetElementDescriptor(out ElementComponentDescriptor descriptor)
+        public bool TryGetWebDescriptor(out WebComponentDescriptor descriptor)
         {
-            if (ElementDescriptor is not null)
+            if (WebDescriptor is not null)
             {
-                descriptor = ElementDescriptor;
+                descriptor = WebDescriptor;
                 return true;
             }
 

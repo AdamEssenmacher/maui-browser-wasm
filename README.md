@@ -4,7 +4,7 @@ Mirage is an experimental **MAUI handler-backed browser platform** for `net10.0-
 
 It renders MAUI UI through a provider-based pipeline:
 
-`MAUI virtual view -> Mirage MAUI handlers -> Mirage platform tree (typed + generic) -> Mirage diff -> Provider -> DOM/Web Components`
+`MAUI virtual view -> Mirage MAUI handlers -> Mirage platform tree (control + web) -> Mirage diff -> Provider -> DOM/Web Components`
 
 Mirage is provider-based and designed to adapt complete web component libraries.
 `Mirage.Provider.Fluent` is the first polished reference provider.
@@ -21,12 +21,12 @@ Supported semantic kinds:
 - `Entry`
 - `Button`
 
-Built-in handlers stay inside this typed set. Third-party/custom handlers can emit generic `ElementNode` for arbitrary DOM/Web Components.
+Built-in handlers stay inside this control set. Third-party/custom handlers can emit `WebNode` for generic web realization of arbitrary DOM/Web Components.
 
 ## Active project layout
 
 - `src/Mirage.Core`
-  - Hybrid platform node model (`TypedNode` + `ElementNode`)
+  - Hybrid platform node model (`ControlNode` + `WebNode`)
   - Typed value model (`MirageValue`)
   - Diff engine
   - Provider contracts
@@ -96,17 +96,19 @@ If missing, startup fails with:
 ## Notes
 
 - `Mirage.Web` is provider-neutral browser infrastructure.
+- MAUI framework/logical semantics remain MAUI-side; Mirage models platform realization only.
+- `VisualNodeBase` is a shared platform-side visual/layout projection layer, not a duplicate MAUI framework model.
 - Provider-specific mappings (Fluent, UI5, custom) live only in provider projects.
 - Fluent UI Web Components are built on FAST foundations, but Mirage’s public reference-provider story is Fluent-first.
-- Providers must support typed and generic node realization for full Mirage behavior.
+- Providers must support control-node and web-node realization for full Mirage behavior.
 - The old `Maui.Browser*` showcase/parity stack is not part of the active solution wiring.
 - Architecture benchmark harness: `tools/benchmarks/Mirage.ArchitectureBenchmarks`.
 - Current rendering wave focus is correctness-first (shared visual projection, stack/grid determinism, and DOM-backed surface rendering) before richer control breadth.
 
 ## Early-lock architecture guardrails
 
-- Built-in Mirage handlers must continue to emit typed nodes.
-- `ElementNode` is for extensibility (third-party/custom/BYO components), not built-in fallback.
+- Built-in Mirage handlers must continue to emit control nodes.
+- `WebNode` is for extensibility (third-party/custom/BYO components), not built-in fallback.
 - `Mirage.Web` stays provider-neutral and must not contain provider mappings.
-- Generic node realization must preserve requested element identity end-to-end.
+- Web-node realization must preserve requested element identity end-to-end.
 - See [Architecture Guardrails](docs/ARCHITECTURE_GUARDRAILS.md) and [Provider Authoring](docs/PROVIDER_AUTHORING.md).

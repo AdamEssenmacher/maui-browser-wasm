@@ -14,7 +14,7 @@ public abstract class MirageViewHandler<TVirtualView> : ViewHandler<TVirtualView
         ComponentKind kind,
         IPropertyMapper mapper,
         CommandMapper? commandMapper = null)
-        : this(() => MiragePlatformView.CreateTyped(kind), mapper, commandMapper)
+        : this(() => MiragePlatformView.CreateControl(kind), mapper, commandMapper)
     {
     }
 

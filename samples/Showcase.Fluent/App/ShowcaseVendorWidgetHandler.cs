@@ -13,7 +13,7 @@ public sealed class ShowcaseVendorWidgetHandler : MirageViewHandler<ShowcaseVend
         };
 
     public ShowcaseVendorWidgetHandler()
-        : base(() => MiragePlatformView.CreateElement("vendor-pill"), Mapper)
+        : base(() => MiragePlatformView.CreateWeb("vendor-pill"), Mapper)
     {
         DefaultDisplayStyle = "inline-flex";
     }

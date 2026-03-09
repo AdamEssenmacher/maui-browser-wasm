@@ -1,8 +1,8 @@
 namespace Mirage.Core.Providers;
 
-public sealed class ElementComponentDescriptor
+public sealed class WebComponentDescriptor
 {
-    public ElementComponentDescriptor(
+    public WebComponentDescriptor(
         string elementName,
         IReadOnlyDictionary<string, string>? defaultAttributes = null,
         IReadOnlyDictionary<string, ProviderEventDescriptor>? eventMappings = null,

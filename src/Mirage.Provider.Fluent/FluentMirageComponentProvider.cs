@@ -11,8 +11,8 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
             ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id")
         };
 
-    private static readonly IReadOnlyDictionary<ComponentKind, TypedComponentDescriptor> TypedComponents =
-        new Dictionary<ComponentKind, TypedComponentDescriptor>
+    private static readonly IReadOnlyDictionary<ComponentKind, ControlComponentDescriptor> ControlComponents =
+        new Dictionary<ComponentKind, ControlComponentDescriptor>
         {
             [ComponentKind.Root] = new(
                 ComponentKind.Root,
@@ -74,8 +74,8 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
         };
 
     public ProviderCapabilities Capabilities { get; } = new(
-        supportsTypedNodes: true,
-        supportsElementNodes: true,
+        supportsControlNodes: true,
+        supportsWebNodes: true,
         features: new ProviderFeatureSet(
             supportsAdvancedInputSemantics: true,
             supportsOverlayHosting: false,
@@ -86,13 +86,13 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
         {
             ["provider"] = "fluent",
             ["phase"] = "1",
-            ["supports-typed"] = "true",
-            ["supports-generic-element"] = "true"
+            ["supports-control-nodes"] = "true",
+            ["supports-web-nodes"] = "true"
         });
 
-    public TypedComponentDescriptor ResolveTyped(ComponentKind kind)
+    public ControlComponentDescriptor ResolveControl(ComponentKind kind)
     {
-        if (!TypedComponents.TryGetValue(kind, out var descriptor))
+        if (!ControlComponents.TryGetValue(kind, out var descriptor))
         {
             throw new InvalidOperationException($"Fluent provider does not map component kind '{kind}'.");
         }
@@ -100,11 +100,11 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
         return descriptor;
     }
 
-    public ElementComponentDescriptor ResolveElement(string elementName)
+    public WebComponentDescriptor ResolveWebNode(string elementName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(elementName);
 
-        return new ElementComponentDescriptor(
+        return new WebComponentDescriptor(
             elementName,
             supportsAttributes: true,
             supportsProperties: true,

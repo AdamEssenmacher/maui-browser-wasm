@@ -9,50 +9,50 @@ public abstract class ProviderConformanceTestsBase
     protected abstract IMirageComponentProvider CreateProvider();
 
     [Fact]
-    public void Conformance_ReportsTypedNodeCapability()
+    public void Conformance_ReportsControlNodeCapability()
     {
         var provider = CreateProvider();
-        Assert.True(provider.Capabilities.SupportsTypedNodes);
+        Assert.True(provider.Capabilities.SupportsControlNodes);
     }
 
     [Fact]
-    public void Conformance_ReportsGenericElementCapability()
+    public void Conformance_ReportsWebNodeCapability()
     {
         var provider = CreateProvider();
-        Assert.True(provider.Capabilities.SupportsElementNodes);
+        Assert.True(provider.Capabilities.SupportsWebNodes);
     }
 
     [Fact]
-    public void Conformance_ResolvesAllPhaseOneTypedKindsWithoutCanvasRoot()
+    public void Conformance_ResolvesAllPhaseOneControlKindsWithoutCanvasRoot()
     {
         var provider = CreateProvider();
 
         foreach (var kind in Enum.GetValues<ComponentKind>())
         {
-            var descriptor = provider.ResolveTyped(kind);
+            var descriptor = provider.ResolveControl(kind);
             Assert.False(string.IsNullOrWhiteSpace(descriptor.ElementTagName));
             Assert.False(string.Equals("canvas", descriptor.ElementTagName, StringComparison.OrdinalIgnoreCase));
         }
     }
 
     [Fact]
-    public void Conformance_PreservesRequestedGenericElementIdentity()
+    public void Conformance_PreservesRequestedWebNodeIdentity()
     {
         var provider = CreateProvider();
         var requestedNames = new[] { "vendor-widget", "fluent-button", "ui5-input", "x-custom-grid" };
 
         foreach (var requested in requestedNames)
         {
-            var descriptor = provider.ResolveElement(requested);
+            var descriptor = provider.ResolveWebNode(requested);
             Assert.Equal(requested, descriptor.ElementName);
         }
     }
 
     [Fact]
-    public void Conformance_GenericDescriptorSupportsCoreMutationChannels()
+    public void Conformance_WebNodeDescriptorSupportsCoreMutationChannels()
     {
         var provider = CreateProvider();
-        var descriptor = provider.ResolveElement("vendor-widget");
+        var descriptor = provider.ResolveWebNode("vendor-widget");
 
         Assert.True(descriptor.SupportsAttributes);
         Assert.True(descriptor.SupportsProperties);
@@ -65,7 +65,7 @@ public abstract class ProviderConformanceTestsBase
     public void Conformance_EntryInputEventHasInputPayloadMapping()
     {
         var provider = CreateProvider();
-        var entry = provider.ResolveTyped(ComponentKind.Entry);
+        var entry = provider.ResolveControl(ComponentKind.Entry);
 
         Assert.True(entry.EventMappings.TryGetValue("input", out var mapping));
         Assert.Equal(EventPayloadKind.InputValue, mapping.PayloadKind);

@@ -250,7 +250,7 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     }
 
     [Fact]
-    public async Task GenericElementNodeIsInteractiveAndInspectable()
+    public async Task GenericWebNodeIsInteractiveAndInspectable()
     {
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenAsync(context);
@@ -261,13 +261,13 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
 
         Assert.Contains("Generic widget clicks: 1", counter, StringComparison.Ordinal);
         var nodeType = await page.Locator("[data-automation-id='showcase-generic-widget']").GetAttributeAsync("data-mirage-node-type");
-        Assert.Equal("element", nodeType);
+        Assert.Equal("web", nodeType);
         var elementName = await page.Locator("[data-automation-id='showcase-generic-widget']").GetAttributeAsync("data-mirage-element-name");
         Assert.Equal("vendor-pill", elementName);
     }
 
     [Fact]
-    public async Task BuiltInHeroControlsRemainTypedNodes()
+    public async Task BuiltInHeroControlsRemainControlNodes()
     {
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenAsync(context);
@@ -277,10 +277,10 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         var labelNodeType = await page.Locator("[data-automation-id='showcase-demo-greeting']").GetAttributeAsync("data-mirage-node-type");
         var containerNodeType = await page.Locator("[data-automation-id='demo']").GetAttributeAsync("data-mirage-node-type");
 
-        Assert.Equal("typed", buttonNodeType);
-        Assert.Equal("typed", entryNodeType);
-        Assert.Equal("typed", labelNodeType);
-        Assert.Equal("typed", containerNodeType);
+        Assert.Equal("control", buttonNodeType);
+        Assert.Equal("control", entryNodeType);
+        Assert.Equal("control", labelNodeType);
+        Assert.Equal("control", containerNodeType);
     }
 
     [Fact]
