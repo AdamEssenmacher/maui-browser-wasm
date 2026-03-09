@@ -36,6 +36,20 @@ public abstract class MirageViewHandler<TVirtualView> : ViewHandler<TVirtualView
 
     protected override MiragePlatformView CreatePlatformView() => _platformViewFactory();
 
+    protected bool TryGetPlatformView(out MiragePlatformView platformView)
+    {
+        try
+        {
+            platformView = PlatformView;
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            platformView = null!;
+            return false;
+        }
+    }
+
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
         var eventTarget = this as IMirageRuntimeEventTarget;

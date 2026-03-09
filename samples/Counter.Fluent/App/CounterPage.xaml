@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Counter.Fluent.App.CounterPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    AutomationId="counter-page-root">
+
+    <VerticalStackLayout
+        x:Name="CounterStack"
+        AutomationId="counter-stack"
+        Padding="24"
+        Spacing="8">
+        <Label
+            x:Name="CounterTitle"
+            AutomationId="counter-title"
+            FontSize="26"
+            Margin="0,0,0,4"
+            Text="Mirage Counter (Fluent)" />
+        <Label
+            x:Name="CounterSubtitle"
+            AutomationId="counter-subtitle"
+            FontSize="14"
+            Margin="0,0,0,10"
+            Text="Type into Entry and click Increment." />
+        <Entry
+            x:Name="CounterEntry"
+            AutomationId="counter-entry"
+            Margin="0,0,0,10"
+            Placeholder="Type here"
+            Text="{Binding InputText, Mode=TwoWay}" />
+        <Label
+            x:Name="LiveLabel"
+            AutomationId="counter-live-label"
+            FontSize="16"
+            Margin="0,0,0,10"
+            Text="{Binding LiveText}" />
+        <Button
+            x:Name="IncrementButton"
+            AutomationId="counter-button"
+            Command="{Binding IncrementCommand}"
+            Margin="0,0,0,10"
+            Text="Increment" />
+        <Label
+            x:Name="CountLabel"
+            AutomationId="counter-count-label"
+            FontSize="18"
+            Text="{Binding CountText}" />
+    </VerticalStackLayout>
+</ContentPage>

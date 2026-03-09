@@ -110,4 +110,14 @@ public sealed class DomElement
         ArgumentException.ThrowIfNullOrWhiteSpace(automationId);
         return DomApi.ScrollToAutomationId(Handle, automationId, smooth);
     }
+
+    public static Task<string?> FetchTextAsync(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        return DomApi.FetchTextAsync(path);
+    }
+
+    public static void InstallHotReloadHintBridge() => DomApi.InstallHotReloadHintBridge();
+
+    public static string DrainHotReloadHintsJson() => DomApi.DrainHotReloadHintsJson();
 }

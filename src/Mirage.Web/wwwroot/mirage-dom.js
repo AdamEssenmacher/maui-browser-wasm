@@ -1,6 +1,163 @@
 const elementByHandle = new Map();
 const handleByElement = new WeakMap();
 let nextElementHandle = 1;
+const hotReloadHints = [];
+const HOT_RELOAD_HINT_LIMIT = 256;
+const HOT_RELOAD_PATH_PATTERN = /\/_hotreload\/[A-Za-z0-9_.-]+\/[^"'\\\s]+/g;
+let hotReloadHintBridgeInstalled = false;
+
+function normalizeHotReloadHint(rawHint) {
+  if (typeof rawHint !== "string") {
+    return null;
+  }
+
+  let hint = rawHint.trim();
+  if (hint.length === 0) {
+    return null;
+  }
+
+  if (hint === "*") {
+    return hint;
+  }
+
+  try {
+    if (hint.startsWith("http://") || hint.startsWith("https://")) {
+      hint = new URL(hint).pathname;
+    }
+  } catch {
+    // Keep original hint when URL parsing fails.
+  }
+
+  if (!hint.startsWith("/")) {
+    hint = `/${hint}`;
+  }
+
+  return hint;
+}
+
+function enqueueHotReloadHint(rawHint) {
+  const normalized = normalizeHotReloadHint(rawHint);
+  if (!normalized) {
+    return;
+  }
+
+  if (hotReloadHints.length > 0 && hotReloadHints[hotReloadHints.length - 1] === normalized) {
+    return;
+  }
+
+  hotReloadHints.push(normalized);
+  if (hotReloadHints.length > HOT_RELOAD_HINT_LIMIT) {
+    hotReloadHints.splice(0, hotReloadHints.length - HOT_RELOAD_HINT_LIMIT);
+  }
+}
+
+function collectHotReloadHints(value, sink) {
+  if (value == null) {
+    return;
+  }
+
+  if (typeof value === "string") {
+    const pathMatches = value.match(HOT_RELOAD_PATH_PATTERN);
+    if (pathMatches) {
+      for (const pathMatch of pathMatches) {
+        sink.push(pathMatch);
+      }
+    }
+
+    const lowered = value.toLowerCase();
+    if (lowered.includes("updatestaticfile") || lowered.includes("hotreload")) {
+      sink.push("*");
+    }
+
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectHotReloadHints(item, sink);
+    }
+    return;
+  }
+
+  if (typeof value !== "object") {
+    return;
+  }
+
+  for (const [key, child] of Object.entries(value)) {
+    if (typeof child === "string" && key.toLowerCase().includes("path")) {
+      sink.push(child);
+    }
+
+    collectHotReloadHints(child, sink);
+  }
+}
+
+function inspectHotReloadMessage(rawData) {
+  if (typeof rawData !== "string" || rawData.length === 0) {
+    return;
+  }
+
+  const hints = [];
+  collectHotReloadHints(rawData, hints);
+
+  try {
+    const parsed = JSON.parse(rawData);
+    collectHotReloadHints(parsed, hints);
+  } catch {
+    // Not a JSON payload; raw string hint extraction already ran.
+  }
+
+  for (const hint of hints) {
+    enqueueHotReloadHint(hint);
+  }
+}
+
+export function installHotReloadHintBridge() {
+  if (hotReloadHintBridgeInstalled || typeof window === "undefined" || typeof window.WebSocket !== "function") {
+    return;
+  }
+
+  hotReloadHintBridgeInstalled = true;
+
+  const NativeWebSocket = window.WebSocket;
+  function WrappedWebSocket(...args) {
+    const socket = new NativeWebSocket(...args);
+    socket.addEventListener("message", (event) => {
+      inspectHotReloadMessage(event.data);
+    });
+    return socket;
+  }
+
+  WrappedWebSocket.prototype = NativeWebSocket.prototype;
+  Object.setPrototypeOf(WrappedWebSocket, NativeWebSocket);
+  window.WebSocket = WrappedWebSocket;
+}
+
+export function drainHotReloadHintsJson() {
+  if (hotReloadHints.length === 0) {
+    return "[]";
+  }
+
+  const drained = hotReloadHints.splice(0, hotReloadHints.length);
+  return JSON.stringify(drained);
+}
+
+export async function fetchText(path) {
+  if (typeof path !== "string" || path.length === 0) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(path, { cache: "no-store" });
+    if (!response.ok) {
+      return null;
+    }
+
+    return await response.text();
+  } catch {
+    return null;
+  }
+}
 
 function toHandle(element) {
   const existing = handleByElement.get(element);
