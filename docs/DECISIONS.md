@@ -241,5 +241,5 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 ## 2026-03-09 (Layout Lab Consolidation + Handler Guard Tightening)
 - Removed the standalone `ContentView` demo section from `Showcase.Fluent` (including nav target/state/actions) so the new `Layout Lab` is the single correctness surface for container sizing, constraints, and positioning behavior.
 - Removed ad hoc child `minWidth/minHeight = 0px` overrides from `MirageContentViewHandler` and `MirageContentPageHandler` to avoid clobbering explicit child minimum-size intent.
-- Replaced brittle source-text regression coverage with behavior-focused verification in E2E (horizontal constrained stack probe asserts `flex-shrink: 0`) while retaining a boundary guard that content-container handlers do not reintroduce forced zero minimum-size overrides.
+- Replaced brittle source-text regression coverage with behavior-focused verification in E2E (horizontal constrained stack probe asserts `flex-shrink: 0`, and content-container behavior checks guard against forced zero child minimum-size in both `ContentView` and `ContentPage` paths).
 - Kept architectural boundaries unchanged: handler-centered mapping, built-in control-node paths, provider-neutral runtime, and DOM-first output.

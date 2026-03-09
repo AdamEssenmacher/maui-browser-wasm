@@ -414,6 +414,22 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     }
 
     [Fact]
+    public async Task ShowcaseRootContentPageChild_IsNotForcedToZeroMinHeight()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        var page = await OpenAsync(context);
+
+        var minHeight = await ReadCssPropertyAsync(page, "[data-automation-id='showcase-page-grid']", "min-height");
+        Assert.NotEqual("0px", minHeight);
+
+        if (minHeight.EndsWith("px", StringComparison.Ordinal))
+        {
+            var minHeightValue = ParsePx(minHeight);
+            Assert.True(minHeightValue > 0, $"Expected non-zero min-height when expressed as px. Actual={minHeight}");
+        }
+    }
+
+    [Fact]
     public async Task LayoutLab_VerticalStackScenarios_ShowSpacingAndHiddenCollapse()
     {
         await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
