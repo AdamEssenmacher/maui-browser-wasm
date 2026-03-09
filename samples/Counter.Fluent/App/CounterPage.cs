@@ -1,7 +1,7 @@
-using Counter.Fast.App;
+using Counter.Fluent.App;
 using Microsoft.Maui.Controls;
 
-namespace Counter.Fast.App;
+namespace Counter.Fluent.App;
 
 internal sealed class CounterPage : ContentPage
 {
@@ -15,7 +15,7 @@ internal sealed class CounterPage : ContentPage
         var header = new Label
         {
             AutomationId = "counter-title",
-            Text = "Mirage Counter (FAST)",
+            Text = "Mirage Counter (Fluent)",
             FontSize = 26,
             Margin = new Thickness(0, 0, 0, 4)
         };

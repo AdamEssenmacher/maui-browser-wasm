@@ -11,11 +11,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mirage.Web", "src\Mirage.We
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mirage.Maui", "src\Mirage.Maui\Mirage.Maui.csproj", "{5A82D9E5-6E1A-4DDA-A5E0-EB2EC145AC9B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mirage.Provider.Fast", "src\Mirage.Provider.Fast\Mirage.Provider.Fast.csproj", "{980996D9-27BF-4F79-A7E4-5A785FDF92E2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mirage.Provider.Fluent", "src\Mirage.Provider.Fluent\Mirage.Provider.Fluent.csproj", "{980996D9-27BF-4F79-A7E4-5A785FDF92E2}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{5D20AA90-6969-D8BD-9DCD-8634F4692FDA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Counter.Fast", "samples\Counter.Fast\Counter.Fast.csproj", "{E0D37AC8-B20C-4F8D-A350-3FD8F68625A6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Counter.Fluent", "samples\Counter.Fluent\Counter.Fluent.csproj", "{E0D37AC8-B20C-4F8D-A350-3FD8F68625A6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
@@ -25,7 +25,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mirage.Integration.Tests", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mirage.E2E.Tests", "tests\Mirage.E2E.Tests\Mirage.E2E.Tests.csproj", "{3FE2AF96-DAE0-4869-B0EC-5263E37144C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Showcase.Fast", "samples\Showcase.Fast\Showcase.Fast.csproj", "{4D7B6A11-8D44-4704-9E4B-CF29647B5694}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Showcase.Fluent", "samples\Showcase.Fluent\Showcase.Fluent.csproj", "{4D7B6A11-8D44-4704-9E4B-CF29647B5694}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

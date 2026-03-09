@@ -55,8 +55,8 @@
       cursor: pointer;
     }
 
-    /* FAST internal input styling remains CSS escape hatch. */
-    fast-text-field[data-automation-id="showcase-demo-entry"] {
+    /* Fluent internal input styling remains CSS escape hatch. */
+    fluent-text-field[data-automation-id="showcase-demo-entry"] {
       border: 1px solid rgba(15, 23, 42, 0.28);
       border-radius: 12px;
       padding: 6px 8px;
@@ -64,11 +64,7 @@
       box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.02);
     }
 
-    fast-text-field[data-automation-id="showcase-demo-entry"] input[data-mirage-value-element="true"] {
-      width: 100%;
-      border: 0;
-      outline: 0;
-      background: transparent;
+    fluent-text-field[data-automation-id="showcase-demo-entry"]::part(control) {
       font-family: "IBM Plex Sans", "Avenir Next", "Trebuchet MS", sans-serif;
       font-size: 1rem;
       color: #0f172a;
@@ -115,6 +111,7 @@
 </head>
 <body>
   <div id="app"></div>
+  <script type="module" src="https://unpkg.com/@fluentui/web-components@2.6.1"></script>
   <script type="module" src="main.mjs"></script>
 </body>
 </html>

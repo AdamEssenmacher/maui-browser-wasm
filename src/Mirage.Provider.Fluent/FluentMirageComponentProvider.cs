@@ -1,9 +1,9 @@
 using Mirage.Core.Providers;
 using Mirage.Core.Semantics;
 
-namespace Mirage.Provider.Fast;
+namespace Mirage.Provider.Fluent;
 
-public sealed class FastMirageComponentProvider : IMirageComponentProvider
+public sealed class FluentMirageComponentProvider : IMirageComponentProvider
 {
     private static readonly IReadOnlyDictionary<string, ProviderPropertyDescriptor> CommonProperties =
         new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
@@ -19,7 +19,7 @@ public sealed class FastMirageComponentProvider : IMirageComponentProvider
                 "div",
                 defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
                 {
-                    ["data-mirage-provider"] = "fast"
+                    ["data-mirage-provider"] = "fluent"
                 },
                 propertyMappings: CommonProperties),
             [ComponentKind.ContentContainer] = new(
@@ -48,7 +48,7 @@ public sealed class FastMirageComponentProvider : IMirageComponentProvider
                 }),
             [ComponentKind.Entry] = new(
                 ComponentKind.Entry,
-                "fast-text-field",
+                "fluent-text-field",
                 propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
                     ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
@@ -61,12 +61,7 @@ public sealed class FastMirageComponentProvider : IMirageComponentProvider
                 }),
             [ComponentKind.Button] = new(
                 ComponentKind.Button,
-                "fast-button",
-                defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
-                {
-                    ["role"] = "button",
-                    ["tabindex"] = "0"
-                },
+                "fluent-button",
                 propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
                     ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
@@ -85,11 +80,11 @@ public sealed class FastMirageComponentProvider : IMirageComponentProvider
             supportsAdvancedInputSemantics: true,
             supportsOverlayHosting: false,
             supportsVirtualization: false,
-            supportsThemingTokens: false,
+            supportsThemingTokens: true,
             eventPayloadSupport: ProviderEventPayloadSupport.InputValueString),
         values: new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["provider"] = "fast",
+            ["provider"] = "fluent",
             ["phase"] = "1",
             ["supports-typed"] = "true",
             ["supports-generic-element"] = "true"
@@ -99,7 +94,7 @@ public sealed class FastMirageComponentProvider : IMirageComponentProvider
     {
         if (!TypedComponents.TryGetValue(kind, out var descriptor))
         {
-            throw new InvalidOperationException($"FAST provider does not map component kind '{kind}'.");
+            throw new InvalidOperationException($"Fluent provider does not map component kind '{kind}'.");
         }
 
         return descriptor;

@@ -39,7 +39,7 @@ public abstract class ProviderConformanceTestsBase
     public void Conformance_PreservesRequestedGenericElementIdentity()
     {
         var provider = CreateProvider();
-        var requestedNames = new[] { "vendor-widget", "fast-button", "ui5-input", "x-custom-grid" };
+        var requestedNames = new[] { "vendor-widget", "fluent-button", "ui5-input", "x-custom-grid" };
 
         foreach (var requested in requestedNames)
         {

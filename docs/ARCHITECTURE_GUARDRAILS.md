@@ -103,12 +103,12 @@ Policy:
 
 `Mirage.Web` must not include:
 
-- FAST-specific mappings
+- provider-specific mappings (Fluent/FAST/UI5/etc.)
 - UI5-specific assumptions
 - vendor-specific control realization logic
 
 ## 8. Showcase role
 
-- `Showcase.Fast` is a proof and dogfood sample, not a framework-design driver.
-- `Counter.Fast` remains minimal stability harness.
+- `Showcase.Fluent` is a proof and dogfood sample, not a framework-design driver.
+- `Counter.Fluent` remains minimal stability harness.
 - Architectural decisions must be justified in core runtime/provider/handler layers, not by demo convenience.

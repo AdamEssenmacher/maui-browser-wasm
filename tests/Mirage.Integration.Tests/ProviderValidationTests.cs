@@ -1,6 +1,6 @@
 using Mirage.Core.Providers;
 using Mirage.Core.Semantics;
-using Mirage.Provider.Fast;
+using Mirage.Provider.Fluent;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -20,9 +20,9 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
-    public void FastProvider_ResolvesAllPhaseOneKinds()
+    public void FluentProvider_ResolvesAllPhaseOneKinds()
     {
-        IMirageComponentProvider provider = new FastMirageComponentProvider();
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
 
         foreach (var kind in Enum.GetValues<ComponentKind>())
         {
@@ -33,20 +33,31 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
-    public void FastEntryDescriptor_ExposesInputMappingMetadata()
+    public void FluentEntryDescriptor_ExposesInputMappingMetadata()
     {
-        IMirageComponentProvider provider = new FastMirageComponentProvider();
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
         var descriptor = provider.ResolveTyped(ComponentKind.Entry);
 
+        Assert.Equal("fluent-text-field", descriptor.ElementTagName);
         Assert.True(descriptor.PropertyMappings.ContainsKey("Text"));
         Assert.True(descriptor.PropertyMappings.ContainsKey("Placeholder"));
         Assert.True(descriptor.EventMappings.ContainsKey("input"));
     }
 
     [Fact]
-    public void FastProvider_ResolvesHorizontalStackSemanticKind()
+    public void FluentButtonDescriptor_MapsToFluentWebComponent()
     {
-        IMirageComponentProvider provider = new FastMirageComponentProvider();
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveTyped(ComponentKind.Button);
+
+        Assert.Equal("fluent-button", descriptor.ElementTagName);
+        Assert.True(descriptor.EventMappings.ContainsKey("click"));
+    }
+
+    [Fact]
+    public void FluentProvider_ResolvesHorizontalStackSemanticKind()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
         var descriptor = provider.ResolveTyped(ComponentKind.HorizontalStack);
 
         Assert.Equal(ComponentKind.HorizontalStack, descriptor.Kind);
@@ -54,9 +65,9 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
-    public void FastProvider_ResolvesGridSemanticKind()
+    public void FluentProvider_ResolvesGridSemanticKind()
     {
-        IMirageComponentProvider provider = new FastMirageComponentProvider();
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
         var descriptor = provider.ResolveTyped(ComponentKind.Grid);
 
         Assert.Equal(ComponentKind.Grid, descriptor.Kind);
@@ -64,9 +75,9 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
-    public void FastLayoutDescriptors_ExposeAutomationIdMapping()
+    public void FluentLayoutDescriptors_ExposeAutomationIdMapping()
     {
-        IMirageComponentProvider provider = new FastMirageComponentProvider();
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
         var layoutKinds = new[]
         {
             ComponentKind.Root,
@@ -84,9 +95,9 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
-    public void FastProvider_ResolvesGenericElementWithoutReinterpretingIdentity()
+    public void FluentProvider_ResolvesGenericElementWithoutReinterpretingIdentity()
     {
-        IMirageComponentProvider provider = new FastMirageComponentProvider();
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
         var descriptor = provider.ResolveElement("vendor-widget");
 
         Assert.Equal("vendor-widget", descriptor.ElementName);

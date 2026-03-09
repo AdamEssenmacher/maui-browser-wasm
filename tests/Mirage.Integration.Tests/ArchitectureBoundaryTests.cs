@@ -19,8 +19,11 @@ public sealed class ArchitectureBoundaryTests
         var forbiddenMarkers = new[]
         {
             "Mirage.Provider.Fast",
+            "Mirage.Provider.Fluent",
             "fast-button",
             "fast-text-field",
+            "fluent-button",
+            "fluent-text-field",
             "ui5-"
         };
 

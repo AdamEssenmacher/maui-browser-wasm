@@ -2,6 +2,8 @@
 
 A Mirage provider implements `IMirageComponentProvider` and must realize both typed built-in nodes and generic `ElementNode` paths.
 
+Mirage providers are adapters from Mirage semantic kinds to complete web component libraries (for example, Fluent UI Web Components), while preserving a raw BYO generic element path for arbitrary custom/vendor elements.
+
 ## Required contract
 
 ```csharp
@@ -22,6 +24,10 @@ Capability surface is structured through:
 ## Typed realization
 
 `ResolveTyped` maps Mirage-owned semantic kinds to concrete realization metadata.
+
+Current polished reference-provider example:
+- `Mirage.Provider.Fluent` maps typed Mirage nodes to Fluent UI Web Components where there is a natural fit.
+- Provider-specific implementation details stay inside the provider project and do not leak into `Mirage.Core`, `Mirage.Maui`, or `Mirage.Web`.
 
 Phase-1 typed kinds:
 - `Root`

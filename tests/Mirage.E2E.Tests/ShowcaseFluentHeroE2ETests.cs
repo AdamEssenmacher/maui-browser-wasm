@@ -3,11 +3,11 @@ using Xunit;
 
 namespace Mirage.E2E.Tests;
 
-public sealed class ShowcaseFastHeroE2ETests : IClassFixture<ShowcaseHostFixture>
+public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixture>
 {
     private readonly ShowcaseHostFixture _fixture;
 
-    public ShowcaseFastHeroE2ETests(ShowcaseHostFixture fixture)
+    public ShowcaseFluentHeroE2ETests(ShowcaseHostFixture fixture)
     {
         _fixture = fixture;
     }
@@ -34,7 +34,7 @@ public sealed class ShowcaseFastHeroE2ETests : IClassFixture<ShowcaseHostFixture
         Assert.Contains("real DOM UI", headline, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("DOM + Web Components", pipeline, StringComparison.Ordinal);
         Assert.Contains("canvas-based", contrast, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("FAST provider", runtimeBadge, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("fluent provider", runtimeBadge, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("How Mirage Works", scrollCue, StringComparison.OrdinalIgnoreCase);
         Assert.True(hasDemoSectionId > 0, $"Expected demo section id. IDs: {string.Join(',', automationIds)}");
         Assert.True(hasArchitectureSectionId > 0, $"Expected architecture section id. IDs: {string.Join(',', automationIds)}");
@@ -66,7 +66,7 @@ public sealed class ShowcaseFastHeroE2ETests : IClassFixture<ShowcaseHostFixture
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenAsync(context);
 
-        await SetFastTextFieldValueAsync(page, "[data-automation-id='showcase-demo-entry']", "Sam");
+        await SetFluentTextFieldValueAsync(page, "[data-automation-id='showcase-demo-entry']", "Sam");
         await page.WaitForTimeoutAsync(140);
         var greeting = await page.Locator("[data-automation-id='showcase-demo-greeting']").InnerTextAsync();
         Assert.Contains("Hello, Sam", greeting, StringComparison.Ordinal);
@@ -83,7 +83,7 @@ public sealed class ShowcaseFastHeroE2ETests : IClassFixture<ShowcaseHostFixture
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenAsync(context);
 
-        await SetFastTextFieldValueAsync(page, "[data-automation-id='foundations-label-input']", "Foundations state");
+        await SetFluentTextFieldValueAsync(page, "[data-automation-id='foundations-label-input']", "Foundations state");
         await page.WaitForTimeoutAsync(120);
         var text = await page.Locator("[data-automation-id='foundations-label-output']").InnerTextAsync();
         Assert.Contains("Foundations state", text, StringComparison.Ordinal);
@@ -233,18 +233,18 @@ public sealed class ShowcaseFastHeroE2ETests : IClassFixture<ShowcaseHostFixture
     }
 
     [Fact]
-    public async Task HeroRendersFastDomElementsAndNoCanvasSurface()
+    public async Task HeroRendersFluentDomElementsAndNoCanvasSurface()
     {
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenAsync(context);
 
-        var fastButtonCount = await page.Locator("fast-button").CountAsync();
-        var fastTextFieldCount = await page.Locator("fast-text-field").CountAsync();
+        var fluentButtonCount = await page.Locator("fluent-button").CountAsync();
+        var fluentTextFieldCount = await page.Locator("fluent-text-field").CountAsync();
         var genericElementCount = await page.Locator("vendor-pill").CountAsync();
         var canvasCount = await page.Locator("canvas").CountAsync();
 
-        Assert.True(fastButtonCount > 0, "Expected FAST buttons in the hero page DOM.");
-        Assert.True(fastTextFieldCount > 0, "Expected FAST text fields in the hero page DOM.");
+        Assert.True(fluentButtonCount > 0, "Expected Fluent buttons in the hero page DOM.");
+        Assert.True(fluentTextFieldCount > 0, "Expected Fluent text fields in the hero page DOM.");
         Assert.True(genericElementCount > 0, "Expected generic custom element (vendor-pill) in the hero page DOM.");
         Assert.Equal(0, canvasCount);
     }
@@ -617,7 +617,7 @@ public sealed class ShowcaseFastHeroE2ETests : IClassFixture<ShowcaseHostFixture
             new { selector, key });
     }
 
-    private static async Task SetFastTextFieldValueAsync(IPage page, string selector, string value)
+    private static async Task SetFluentTextFieldValueAsync(IPage page, string selector, string value)
     {
         var applied = await page.EvaluateAsync<bool>(
             @"({ selector, value }) => {
@@ -639,6 +639,6 @@ public sealed class ShowcaseFastHeroE2ETests : IClassFixture<ShowcaseHostFixture
             }",
             new { selector, value });
 
-        Assert.True(applied, $"Failed to set FAST text field value for selector '{selector}'.");
+        Assert.True(applied, $"Failed to set Fluent text field value for selector '{selector}'.");
     }
 }

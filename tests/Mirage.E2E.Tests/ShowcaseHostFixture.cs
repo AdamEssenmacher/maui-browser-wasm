@@ -71,7 +71,7 @@ public sealed class ShowcaseHostFixture : IAsyncLifetime
     private async Task<Uri> StartSampleHostAsync()
     {
         var repoRoot = FindRepoRoot();
-        var sampleProjectPath = Path.Combine(repoRoot, "samples", "Showcase.Fast", "Showcase.Fast.csproj");
+        var sampleProjectPath = Path.Combine(repoRoot, "samples", "Showcase.Fluent", "Showcase.Fluent.csproj");
         var urlSource = new TaskCompletionSource<Uri>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var startInfo = new ProcessStartInfo
@@ -100,12 +100,12 @@ public sealed class ShowcaseHostFixture : IAsyncLifetime
             }
 
             urlSource.TrySetException(new InvalidOperationException(
-                $"Showcase.Fast host exited before publishing app URL. ExitCode={process.ExitCode}.\n{RenderHostLogs()}"));
+                $"Showcase.Fluent host exited before publishing app URL. ExitCode={process.ExitCode}.\n{RenderHostLogs()}"));
         };
 
         if (!process.Start())
         {
-            throw new InvalidOperationException("Failed to start Showcase.Fast host process.");
+            throw new InvalidOperationException("Failed to start Showcase.Fluent host process.");
         }
 
         _sampleProcess = process;
@@ -114,7 +114,7 @@ public sealed class ShowcaseHostFixture : IAsyncLifetime
 
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
         using var _ = timeout.Token.Register(() =>
-            urlSource.TrySetException(new TimeoutException($"Timed out waiting for Showcase.Fast URL.\n{RenderHostLogs()}")));
+            urlSource.TrySetException(new TimeoutException($"Timed out waiting for Showcase.Fluent URL.\n{RenderHostLogs()}")));
 
         return await urlSource.Task;
     }

@@ -2,7 +2,7 @@ using Mirage.Core.Semantics;
 using Mirage.Maui.Handlers;
 using Microsoft.Maui.Handlers;
 
-namespace Showcase.Fast.App;
+namespace Showcase.Fluent.App;
 
 public sealed class ShowcaseVendorWidgetHandler : MirageViewHandler<ShowcaseVendorWidget>, IMirageRuntimeEventTarget
 {

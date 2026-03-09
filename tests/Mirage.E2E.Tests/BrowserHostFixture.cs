@@ -71,7 +71,7 @@ public sealed class BrowserHostFixture : IAsyncLifetime
     private async Task<Uri> StartSampleHostAsync()
     {
         var repoRoot = FindRepoRoot();
-        var sampleProjectPath = Path.Combine(repoRoot, "samples", "Counter.Fast", "Counter.Fast.csproj");
+        var sampleProjectPath = Path.Combine(repoRoot, "samples", "Counter.Fluent", "Counter.Fluent.csproj");
         var urlSource = new TaskCompletionSource<Uri>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         var startInfo = new ProcessStartInfo
@@ -100,12 +100,12 @@ public sealed class BrowserHostFixture : IAsyncLifetime
             }
 
             urlSource.TrySetException(new InvalidOperationException(
-                $"Counter.Fast host exited before publishing app URL. ExitCode={process.ExitCode}.\n{RenderHostLogs()}"));
+                $"Counter.Fluent host exited before publishing app URL. ExitCode={process.ExitCode}.\n{RenderHostLogs()}"));
         };
 
         if (!process.Start())
         {
-            throw new InvalidOperationException("Failed to start Counter.Fast host process.");
+            throw new InvalidOperationException("Failed to start Counter.Fluent host process.");
         }
 
         _sampleProcess = process;
@@ -114,7 +114,7 @@ public sealed class BrowserHostFixture : IAsyncLifetime
 
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
         using var _ = timeout.Token.Register(() =>
-            urlSource.TrySetException(new TimeoutException($"Timed out waiting for Counter.Fast URL.\n{RenderHostLogs()}")));
+            urlSource.TrySetException(new TimeoutException($"Timed out waiting for Counter.Fluent URL.\n{RenderHostLogs()}")));
 
         return await urlSource.Task;
     }

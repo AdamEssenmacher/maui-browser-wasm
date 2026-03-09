@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Microsoft.Maui.Controls;
 
-namespace Counter.Fast.App;
+namespace Counter.Fluent.App;
 
 internal sealed class CounterState : INotifyPropertyChanged
 {

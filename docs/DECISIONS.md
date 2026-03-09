@@ -217,3 +217,10 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Removed positioning scaffold filler text and normalized horizontal/vertical positioning probes to explicit equal width/height constraints to keep visual comparison unambiguous.
 - `Mirage.Maui` now maps `IView.Clip` into CSS `clip-path` and maps `Layout.ClipsToBounds` into `overflow:hidden|visible` via the shared projection path, preserving idempotent set-if-changed behavior.
 - Clip projection policy for this wave is strict and deterministic: all built-in MAUI geometry classes (`RectangleGeometry`, `RoundRectangleGeometry`, `EllipseGeometry`, `LineGeometry`, `PathGeometry`, `GeometryGroup`) are supported, while unsupported geometry types or invalid numeric geometry state throw in both Debug and Release builds (no fallback).
+
+## 2026-03-09 (Fluent-First Provider Cutover)
+- Switched the active reference provider from `Mirage.Provider.Fast` to `Mirage.Provider.Fluent` and renamed public sample harnesses to `Counter.Fluent` and `Showcase.Fluent` so the default Mirage story is Fluent-first.
+- Typed phase-1 mapping stays architecture-neutral in core contracts while provider realization now targets Fluent elements (`fluent-button`, `fluent-text-field`) and keeps generic `ElementNode` identity passthrough unchanged.
+- Public messaging and docs now position Mirage as a provider-based runtime that adapts complete web component libraries, with Fluent UI Web Components as the first polished reference provider.
+- FAST remains acknowledged as a lower-level foundation for Fluent, but it is no longer the primary public-facing provider identity in active solution/docs/tests.
+- This cutover intentionally does not expand `ComponentKind` or rewrite Mirage core/runtime contracts; additional typed control breadth remains a follow-up wave.
