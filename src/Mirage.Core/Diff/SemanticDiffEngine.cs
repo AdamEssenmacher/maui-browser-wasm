@@ -61,7 +61,7 @@ public sealed class SemanticDiffEngine
                 operations.Add(new AttachEventOperation(info.Node.NodeId, eventName));
             }
 
-            if (info.Node is ElementNode element)
+            if (info.Node is WebNode element)
             {
                 foreach (var @class in element.Classes)
                 {
@@ -172,16 +172,16 @@ public sealed class SemanticDiffEngine
 
     private static void AppendClassDiffs(List<PatchOperation> operations, NodeIndex previousIndex, NodeIndex nextIndex)
     {
-        foreach (var info in nextIndex.PreOrder.Where(static info => info.Node is ElementNode))
+        foreach (var info in nextIndex.PreOrder.Where(static info => info.Node is WebNode))
         {
-            if (info.Node is not ElementNode nextElement
+            if (info.Node is not WebNode nextElement
                 || !previousIndex.TryGet(info.Node.NodeId, out var previousInfo))
             {
                 continue;
             }
 
             EnsureNodeShapeStable(previousInfo.Node, info.Node);
-            if (previousInfo.Node is not ElementNode previousElement)
+            if (previousInfo.Node is not WebNode previousElement)
             {
                 continue;
             }
@@ -203,16 +203,16 @@ public sealed class SemanticDiffEngine
 
     private static void AppendAttributeDiffs(List<PatchOperation> operations, NodeIndex previousIndex, NodeIndex nextIndex)
     {
-        foreach (var info in nextIndex.PreOrder.Where(static info => info.Node is ElementNode))
+        foreach (var info in nextIndex.PreOrder.Where(static info => info.Node is WebNode))
         {
-            if (info.Node is not ElementNode nextElement
+            if (info.Node is not WebNode nextElement
                 || !previousIndex.TryGet(info.Node.NodeId, out var previousInfo))
             {
                 continue;
             }
 
             EnsureNodeShapeStable(previousInfo.Node, info.Node);
-            if (previousInfo.Node is not ElementNode previousElement)
+            if (previousInfo.Node is not WebNode previousElement)
             {
                 continue;
             }
@@ -281,18 +281,18 @@ public sealed class SemanticDiffEngine
                 $"Node '{next.NodeId}' changed node type from '{previous.NodeType}' to '{next.NodeType}'. Node shape must remain stable.");
         }
 
-        if (previous is TypedNode previousTyped && next is TypedNode nextTyped && previousTyped.Kind != nextTyped.Kind)
+        if (previous is ControlNode previousControl && next is ControlNode nextControl && previousControl.Kind != nextControl.Kind)
         {
             throw new InvalidOperationException(
-                $"Node '{next.NodeId}' changed component kind from '{previousTyped.Kind}' to '{nextTyped.Kind}'. Node kind must remain stable.");
+                $"Node '{next.NodeId}' changed component kind from '{previousControl.Kind}' to '{nextControl.Kind}'. Node kind must remain stable.");
         }
 
-        if (previous is ElementNode previousElement
-            && next is ElementNode nextElement
-            && !string.Equals(previousElement.ElementName, nextElement.ElementName, StringComparison.Ordinal))
+        if (previous is WebNode previousWeb
+            && next is WebNode nextWeb
+            && !string.Equals(previousWeb.ElementName, nextWeb.ElementName, StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
-                $"Node '{next.NodeId}' changed element name from '{previousElement.ElementName}' to '{nextElement.ElementName}'. Element identity must remain stable.");
+                $"Node '{next.NodeId}' changed element name from '{previousWeb.ElementName}' to '{nextWeb.ElementName}'. Web-node identity must remain stable.");
         }
     }
 
@@ -300,18 +300,18 @@ public sealed class SemanticDiffEngine
     {
         return node switch
         {
-            TypedNode typed => new CreateNodeOperation(
+            ControlNode control => new CreateNodeOperation(
                 node.NodeId,
-                NodeCreationKind.Typed,
-                typed.Kind,
+                NodeCreationKind.Control,
+                control.Kind,
                 ElementName: null,
                 parentId,
                 index),
-            ElementNode element => new CreateNodeOperation(
+            WebNode web => new CreateNodeOperation(
                 node.NodeId,
-                NodeCreationKind.Element,
-                TypedKind: null,
-                element.ElementName,
+                NodeCreationKind.Web,
+                ControlKind: null,
+                web.ElementName,
                 parentId,
                 index),
             _ => throw new InvalidOperationException($"Unsupported node type '{node.GetType().Name}'.")

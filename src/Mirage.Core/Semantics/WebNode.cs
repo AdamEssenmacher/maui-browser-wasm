@@ -2,9 +2,9 @@ using System.Collections.ObjectModel;
 
 namespace Mirage.Core.Semantics;
 
-public sealed class ElementNode : VisualNodeBase
+public sealed class WebNode : VisualNodeBase
 {
-    public ElementNode(
+    public WebNode(
         string nodeId,
         string elementName,
         IReadOnlyDictionary<string, string?>? attributes = null,
@@ -51,7 +51,7 @@ public sealed class ElementNode : VisualNodeBase
 
     public IReadOnlyDictionary<string, string?> Slots { get; }
 
-    public override PlatformNodeType NodeType => PlatformNodeType.Element;
+    public override PlatformNodeType NodeType => PlatformNodeType.Web;
 
     private static IReadOnlyDictionary<string, string?> NormalizeAttributes(IReadOnlyDictionary<string, string?>? source)
     {

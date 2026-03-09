@@ -240,7 +240,7 @@ internal static class MirageCommonViewProjection
             return false;
         }
 
-        var parentKind = platformHandler.MiragePlatformView.Parent?.TypedKind;
+        var parentKind = platformHandler.MiragePlatformView.Parent?.ControlKind;
         if (parentKind is null)
         {
             return false;
@@ -355,9 +355,9 @@ internal static class MirageCommonViewProjection
 
     private static bool TryGetPlatformHandler(IElementHandler handler, out IMiragePlatformHandler platformHandler)
     {
-        if (handler is IMiragePlatformHandler typed)
+        if (handler is IMiragePlatformHandler miragePlatformHandler)
         {
-            platformHandler = typed;
+            platformHandler = miragePlatformHandler;
             return true;
         }
 

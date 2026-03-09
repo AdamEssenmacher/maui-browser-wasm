@@ -170,16 +170,16 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Startup APIs were intentionally broken and renamed to platform-oriented names: `UseMirageBrowserPlatform`, `UseMirageComponentProvider<T>`, and `MirageBrowserAppHost.RunAsync`.
 
 ## 2026-03-08 (Mirage Hybrid Platform Tree Cutover)
-- Replaced the typed-only semantic model with a hybrid platform tree (`TypedNode` + `ElementNode`) backed by shared node/visual foundations and stable node-id identity.
+- Replaced the typed-only semantic model with a hybrid platform tree (`ControlNode` + `WebNode`) backed by shared node/visual foundations and stable node-id identity.
 - Added `MirageValue` as a typed property value model (`Null`, `String`, `Bool`, `Number`, `Json`) while intentionally keeping attributes/styles string-based in this cutover.
-- Broke provider contracts to dual realization paths (`ResolveTyped`, `ResolveElement`) and locked the rule that generic element realization must preserve requested element identity.
+- Broke provider contracts to dual realization paths (`ResolveControl`, `ResolveWebNode`) and locked the rule that generic element realization must preserve requested element identity.
 - Extended diff/patch contracts to mixed typed/generic trees with deterministic operation ordering and explicit support for generic attributes/classes in addition to property/style/event updates.
-- Kept built-in Mirage handlers on typed-node output only, and added a minimal third-party extensibility proof via a custom handler emitting a `vendor-pill` `ElementNode` in `Showcase.Fast`.
+- Kept built-in Mirage handlers on typed-node output only, and added a minimal third-party extensibility proof via a custom handler emitting a `vendor-pill` `WebNode` in `Showcase.Fast`.
 
 ## 2026-03-08 (Early-lock Architecture Guardrails)
-- Locked built-in typed-node purity as a hard invariant: Mirage-owned built-in handlers must emit typed nodes; `ElementNode` remains the extensibility path for third-party/custom/BYO web components.
+- Locked built-in typed-node purity as a hard invariant: Mirage-owned built-in handlers must emit typed nodes; `WebNode` remains the extensibility path for third-party/custom/BYO web components.
 - Formalized shared visual contract scope so `VisualNodeBase` carries only cross-cutting concerns (automation id, visibility, opacity, margin, layout metadata, common mutation channels), while attributes/classes/slots stay element-specific and richer MAUI style semantics remain deferred.
-- Tightened generic element contract wording and tests: `ResolveElement(...)` is capability/validation-oriented and must preserve requested element identity through provider/runtime realization.
+- Tightened generic element contract wording and tests: `ResolveWebNode(...)` is capability/validation-oriented and must preserve requested element identity through provider/runtime realization.
 - Added explicit architectural policy for generic event payloads: default name-only payloads, opt-in input-value payloads, structured generic payload extraction deferred pending typed payload contract.
 - Constrained `MirageValue.Json`: only object/array shapes are valid, deep clone and structural equality are guaranteed, and usage is intended for structured payloads rather than high-frequency churn.
 - Added provider conformance test layer and Mirage.Web provider-neutral boundary guard tests to prevent drift before introducing additional providers.
@@ -197,7 +197,7 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added natural layout alignment projection only where supported by layout semantics: stack cross-axis alignment and grid cell self-alignment metadata; no global speculative alignment engine was introduced.
 - Promoted layout scope to typed `Grid` alongside hardened stack paths: `MirageLayoutHandler` now realizes vertical/horizontal stacks and grid deterministically, including spacing/gap behavior, child-order stability, and attach/detach/reorder safety.
 - Grid v1 policy is locked to deterministic CSS Grid translation (`Auto -> auto`, `Star -> fr` with non-positive star normalized to `1fr`, `Absolute -> px`) plus row/column placement, span mapping, and row/column spacing (`row-gap`, `column-gap`).
-- Updated FAST typed mappings to include `ComponentKind.Grid` while keeping `Mirage.Web` provider-neutral and preserving typed-node built-in invariants (`ElementNode` remains extensibility path only).
+- Updated FAST typed mappings to include `ComponentKind.Grid` while keeping `Mirage.Web` provider-neutral and preserving typed-node built-in invariants (`WebNode` remains extensibility path only).
 - Extended `Showcase.Fast` with stack/grid/background proof sections and expanded integration/E2E coverage for idempotent projection, layout correctness, visible DOM-backed rendering, and explicit no-canvas guarantees.
 
 ## 2026-03-08 (Mirage Styling-First Wave: MAUI-Primary with CSS Escape Hatch)
@@ -220,7 +220,13 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
 ## 2026-03-09 (Fluent-First Provider Cutover)
 - Switched the active reference provider from `Mirage.Provider.Fast` to `Mirage.Provider.Fluent` and renamed public sample harnesses to `Counter.Fluent` and `Showcase.Fluent` so the default Mirage story is Fluent-first.
-- Typed phase-1 mapping stays architecture-neutral in core contracts while provider realization now targets Fluent elements (`fluent-button`, `fluent-text-field`) and keeps generic `ElementNode` identity passthrough unchanged.
+- Typed phase-1 mapping stays architecture-neutral in core contracts while provider realization now targets Fluent elements (`fluent-button`, `fluent-text-field`) and keeps generic `WebNode` identity passthrough unchanged.
 - Public messaging and docs now position Mirage as a provider-based runtime that adapts complete web component libraries, with Fluent UI Web Components as the first polished reference provider.
 - FAST remains acknowledged as a lower-level foundation for Fluent, but it is no longer the primary public-facing provider identity in active solution/docs/tests.
 - This cutover intentionally does not expand `ComponentKind` or rewrite Mirage core/runtime contracts; additional typed control breadth remains a follow-up wave.
+
+## 2026-03-09 (ControlNode / WebNode Architectural Alignment Cutover)
+- Renamed Mirage’s hybrid platform-tree categories and contracts from typed/element vocabulary to role-based `ControlNode`/`WebNode` terminology (`ResolveControl`, `ResolveWebNode`, `SupportsControlNodes`, `SupportsWebNodes`) to align with handler-centered MAUI platform realization semantics.
+- Kept behavior intact while tightening architecture language: MAUI framework/logical semantics stay MAUI-side, handlers remain the mapping boundary, and Mirage models platform realization through control/web node trees.
+- Updated runtime diagnostics and DOM markers to `control`/`web` node-type values and retained web-node element-identity preservation as a hard provider/runtime invariant.
+- Added regression coverage preventing stale pre-cutover terminology in active source/docs and preserving built-in control-node purity vs web-node extensibility.

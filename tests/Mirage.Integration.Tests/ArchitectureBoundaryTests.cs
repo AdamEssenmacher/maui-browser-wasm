@@ -38,7 +38,7 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
-    public void BuiltInHandlers_DoNotUseGenericElementFactory()
+    public void BuiltInHandlers_DoNotUseWebNodeFactory()
     {
         var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");
         Assert.True(Directory.Exists(handlersPath), $"Handlers path was not found: {handlersPath}");
@@ -59,7 +59,64 @@ public sealed class ArchitectureBoundaryTests
             var fullPath = Path.Combine(handlersPath, file);
             Assert.True(File.Exists(fullPath), $"Expected handler file not found: {fullPath}");
             var text = File.ReadAllText(fullPath);
-            Assert.DoesNotContain("CreateElement(", text, StringComparison.Ordinal);
+            Assert.DoesNotContain("CreateWeb(", text, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void ActiveMirageSurface_DoesNotUseStalePreCutoverTerminology()
+    {
+        var repositoryRoot = GetRepositoryRoot();
+        var roots = new[]
+        {
+            Path.Combine(repositoryRoot, "src"),
+            Path.Combine(repositoryRoot, "tests"),
+            Path.Combine(repositoryRoot, "samples"),
+            Path.Combine(repositoryRoot, "docs")
+        };
+
+        var rootMarkdown = Directory.GetFiles(repositoryRoot, "*.md", SearchOption.TopDirectoryOnly);
+
+        var files = roots
+            .Where(Directory.Exists)
+            .SelectMany(root => Directory.GetFiles(root, "*.*", SearchOption.AllDirectories))
+            .Concat(rootMarkdown)
+            .Where(path =>
+                path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)
+                || path.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+                || path.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase))
+            .Where(path =>
+                !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                && !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .Where(path => !path.EndsWith($"{Path.DirectorySeparatorChar}docs{Path.DirectorySeparatorChar}DECISIONS.md", StringComparison.Ordinal))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.NotEmpty(files);
+
+        var forbiddenMarkers = new[]
+        {
+            "Typed" + "Node",
+            "Element" + "Node",
+            "TypedComponent" + "Descriptor",
+            "ElementComponent" + "Descriptor",
+            "Resolve" + "Typed",
+            "Resolve" + "Element",
+            "Supports" + "Type" + "dNodes",
+            "Supports" + "Element" + "Nodes",
+            "PlatformNodeType." + "Type" + "d",
+            "PlatformNodeType." + "Element",
+            "NodeCreationKind." + "Type" + "d",
+            "NodeCreationKind." + "Element"
+        };
+
+        foreach (var file in files)
+        {
+            var text = File.ReadAllText(file);
+            foreach (var marker in forbiddenMarkers)
+            {
+                Assert.DoesNotContain(marker, text, StringComparison.Ordinal);
+            }
         }
     }
 

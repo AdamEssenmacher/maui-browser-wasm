@@ -52,7 +52,7 @@ internal static class ShowcaseBacklogCatalog
         new("refresh-view", "Collection", "RefreshView", ShowcaseBacklogStatus.Started, "Refresh command/state and pull-threshold flow are implemented."),
         new("swipe-view", "Interaction", "SwipeView", ShowcaseBacklogStatus.NotStarted, "Handler is not implemented."),
         new("web-view", "Interaction", "WebView", ShowcaseBacklogStatus.NotStarted, "Handler is not implemented."),
-        new("element", "Shared", "Element", ShowcaseBacklogStatus.Complete, "Generic ElementNode realization path is implemented."),
+        new("element", "Shared", "Element", ShowcaseBacklogStatus.Complete, "Generic WebNode realization path is implemented."),
         new("visual-element", "Shared", "VisualElement", ShowcaseBacklogStatus.Started, "Common visual mapping substrate is partially implemented."),
         new("iview", "Shared", "IView", ShowcaseBacklogStatus.Started, "Common IView mapping path is implemented incrementally."),
         new("layout", "Shared", "Layout", ShowcaseBacklogStatus.Started, "Shared layout infrastructure is implemented for core layout kinds."),

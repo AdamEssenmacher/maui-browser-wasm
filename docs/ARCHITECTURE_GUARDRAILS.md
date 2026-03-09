@@ -2,19 +2,19 @@
 
 This document locks architectural boundaries before Mirage expands beyond the current built-in Phase-1 surface.
 
-## 1. Built-in typed-node purity (hard invariant)
+## 1. Built-in control-node purity (hard invariant)
 
-- Mirage-owned built-in handlers must emit `TypedNode`.
-- `ElementNode` is for extensibility only:
+- Mirage-owned built-in handlers must emit `ControlNode`.
+- `WebNode` is for extensibility only:
   - third-party controls
   - custom controls
   - arbitrary DOM/Web Components
   - BYO-component scenarios
-- Built-ins must not silently fall back to `ElementNode` without explicit architectural approval.
+- Built-ins must not silently fall back to `WebNode` without explicit architectural approval.
 
 ## 2. Shared visual/layout contract scope
 
-`VisualNodeBase` is limited to cross-cutting concerns valid for both typed and generic nodes:
+`VisualNodeBase` is limited to cross-cutting concerns valid for both control and web nodes:
 
 - stable `NodeId`
 - `Children`
@@ -29,7 +29,7 @@ Classification:
 
 - Shared visual concern:
   - `AutomationId`, visibility, opacity, margin, layout metadata
-- Generic-node-only concern:
+- Web-node-only concern:
   - arbitrary `Attributes`
   - `Classes`
   - `Slots`
@@ -39,9 +39,9 @@ Classification:
   - universal padding semantics across all nodes
   - control-specific semantic behavior in shared base
 
-## 3. Generic `ElementNode` contract
+## 3. Generic `WebNode` contract
 
-`ElementNode` is an intentional web realization node:
+`WebNode` is an intentional web realization node:
 
 - create this actual DOM/custom element by name
 - apply explicit attributes/properties/classes/styles/events
@@ -49,7 +49,7 @@ Classification:
 
 Provider rule:
 
-- `ResolveElement(...)` is validation/capability-oriented.
+- `ResolveWebNode(...)` is validation/capability-oriented.
 - Providers must not reinterpret element identity (for example, remapping `vendor-widget` to another element name).
 
 ## 4. Provider capability contract expectations
@@ -58,10 +58,10 @@ Capabilities are treated as structured contract, not free-form metadata only.
 
 Current required capability dimensions:
 
-- `SupportsTypedNodes`
-- `SupportsElementNodes`
+- `SupportsControlNodes`
+- `SupportsWebNodes`
 
-Future typed capability dimensions should remain explicit (not ad-hoc string parsing):
+Future capability dimensions should remain explicit (not ad-hoc string parsing):
 
 - advanced input/property semantics
 - overlay/dialog hosting
@@ -80,7 +80,7 @@ Policy:
 
 - Default to name-only.
 - Use input-value payload only when explicitly mapped and needed.
-- Structured generic event payload extraction is deferred until a typed payload contract is introduced.
+- Structured web-node event payload extraction is deferred until a typed payload contract is introduced.
 
 ## 6. `MirageValue.Json` usage constraints
 

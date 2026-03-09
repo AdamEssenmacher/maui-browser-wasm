@@ -6,7 +6,7 @@ public interface IMirageComponentProvider
 {
     ProviderCapabilities Capabilities { get; }
 
-    TypedComponentDescriptor ResolveTyped(ComponentKind kind);
+    ControlComponentDescriptor ResolveControl(ComponentKind kind);
 
-    ElementComponentDescriptor ResolveElement(string elementName);
+    WebComponentDescriptor ResolveWebNode(string elementName);
 }

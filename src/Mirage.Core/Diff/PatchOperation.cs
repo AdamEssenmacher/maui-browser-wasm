@@ -6,14 +6,14 @@ public abstract record PatchOperation(string NodeId);
 
 public enum NodeCreationKind
 {
-    Typed,
-    Element
+    Control,
+    Web
 }
 
 public sealed record CreateNodeOperation(
     string NodeId,
     NodeCreationKind CreationKind,
-    ComponentKind? TypedKind,
+    ComponentKind? ControlKind,
     string? ElementName,
     string? ParentId,
     int Index) : PatchOperation(NodeId);

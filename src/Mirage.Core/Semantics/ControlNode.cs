@@ -1,8 +1,8 @@
 namespace Mirage.Core.Semantics;
 
-public sealed class TypedNode : VisualNodeBase
+public sealed class ControlNode : VisualNodeBase
 {
-    public TypedNode(
+    public ControlNode(
         string nodeId,
         ComponentKind kind,
         IReadOnlyDictionary<string, MirageValue>? properties = null,
@@ -31,5 +31,5 @@ public sealed class TypedNode : VisualNodeBase
 
     public ComponentKind Kind { get; }
 
-    public override PlatformNodeType NodeType => PlatformNodeType.Typed;
+    public override PlatformNodeType NodeType => PlatformNodeType.Control;
 }

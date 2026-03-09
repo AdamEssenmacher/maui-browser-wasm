@@ -12,18 +12,18 @@ public sealed class SemanticDiffEngineTests
     [Fact]
     public void Diff_InitialTree_EmitsCreateThenMutationsDeterministically()
     {
-        NodeBase root = new TypedNode(
+        NodeBase root = new ControlNode(
             nodeId: "root-1",
             kind: ComponentKind.Root,
             children:
             [
-                new TypedNode(
+                new ControlNode(
                     nodeId: "label-1",
                     kind: ComponentKind.Label,
                     properties: new Dictionary<string, MirageValue> { ["Text"] = MirageValue.String("Hello") },
                     styles: new Dictionary<string, string?> { ["fontWeight"] = "700" },
                     events: ["click"]),
-                new ElementNode(
+                new WebNode(
                     nodeId: "probe-1",
                     elementName: "vendor-pill",
                     properties: new Dictionary<string, MirageValue> { ["open"] = MirageValue.Bool(true) },
@@ -50,21 +50,21 @@ public sealed class SemanticDiffEngineTests
     [Fact]
     public void Diff_RemovedSubtree_DetachesAndRemovesChildrenBeforeParent()
     {
-        NodeBase previous = new TypedNode(
+        NodeBase previous = new ControlNode(
             "root-1",
             ComponentKind.Root,
             children:
             [
-                new TypedNode(
+                new ControlNode(
                     "container-1",
                     ComponentKind.ContentContainer,
                     children:
                     [
-                        new TypedNode("label-1", ComponentKind.Label, events: ["click"])
+                        new ControlNode("label-1", ComponentKind.Label, events: ["click"])
                     ])
             ]);
 
-        NodeBase next = new TypedNode("root-1", ComponentKind.Root);
+        NodeBase next = new ControlNode("root-1", ComponentKind.Root);
 
         var operations = _diff.Diff(previous, next);
         var removeOps = operations.OfType<RemoveNodeOperation>().ToArray();
@@ -77,14 +77,14 @@ public sealed class SemanticDiffEngineTests
     [Fact]
     public void Diff_MixedTree_ProducesDeterministicOrder()
     {
-        NodeBase previous = new TypedNode("root-1", ComponentKind.Root);
-        NodeBase next = new TypedNode(
+        NodeBase previous = new ControlNode("root-1", ComponentKind.Root);
+        NodeBase next = new ControlNode(
             "root-1",
             ComponentKind.Root,
             children:
             [
-                new TypedNode("button-1", ComponentKind.Button, properties: new Dictionary<string, MirageValue> { ["Text"] = "Go" }, events: ["click"]),
-                new ElementNode(
+                new ControlNode("button-1", ComponentKind.Button, properties: new Dictionary<string, MirageValue> { ["Text"] = "Go" }, events: ["click"]),
+                new WebNode(
                     "widget-1",
                     "vendor-widget",
                     properties: new Dictionary<string, MirageValue>
@@ -106,14 +106,14 @@ public sealed class SemanticDiffEngineTests
     [Fact]
     public void Diff_ThrowsWhenNodeTypeChangesForStableId()
     {
-        NodeBase previous = new TypedNode(
+        NodeBase previous = new ControlNode(
             "root-1",
             ComponentKind.Root,
-            children: [new TypedNode("same-id", ComponentKind.Label)]);
-        NodeBase next = new TypedNode(
+            children: [new ControlNode("same-id", ComponentKind.Label)]);
+        NodeBase next = new ControlNode(
             "root-1",
             ComponentKind.Root,
-            children: [new ElementNode("same-id", "vendor-label")]);
+            children: [new WebNode("same-id", "vendor-label")]);
 
         var exception = Assert.Throws<InvalidOperationException>(() => _diff.Diff(previous, next));
         Assert.Contains("changed node type", exception.Message, StringComparison.OrdinalIgnoreCase);
@@ -122,8 +122,8 @@ public sealed class SemanticDiffEngineTests
     [Fact]
     public void VisualVisibility_HiddenAndCollapsedMapToDistinctStyles()
     {
-        var hidden = new TypedNode("label-hidden", ComponentKind.Label, visibility: MirageVisibility.Hidden);
-        var collapsed = new TypedNode("label-collapsed", ComponentKind.Label, visibility: MirageVisibility.Collapsed);
+        var hidden = new ControlNode("label-hidden", ComponentKind.Label, visibility: MirageVisibility.Hidden);
+        var collapsed = new ControlNode("label-collapsed", ComponentKind.Label, visibility: MirageVisibility.Collapsed);
 
         Assert.True(hidden.Styles.TryGetValue("visibility", out var hiddenVisibility));
         Assert.Equal("hidden", hiddenVisibility);

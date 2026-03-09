@@ -16,7 +16,7 @@ internal sealed class ArchitectureBenchmarkRunner
         Console.WriteLine($"Timestamp (UTC): {DateTime.UtcNow:O}");
         Console.WriteLine();
 
-        RunScenario("Mixed typed/generic tree churn", iterations: 1000, index =>
+        RunScenario("Mixed control/web tree churn", iterations: 1000, index =>
         {
             var previous = BuildMixedTree(index);
             var next = BuildMixedTree(index + 1);
@@ -25,12 +25,12 @@ internal sealed class ArchitectureBenchmarkRunner
 
         RunScenario("Frequent property churn", iterations: 5000, index =>
         {
-            var previous = new TypedNode(
+            var previous = new ControlNode(
                 "root",
                 ComponentKind.Root,
                 children:
                 [
-                    new TypedNode(
+                    new ControlNode(
                         "label",
                         ComponentKind.Label,
                         properties: new Dictionary<string, MirageValue>
@@ -39,12 +39,12 @@ internal sealed class ArchitectureBenchmarkRunner
                         })
                 ]);
 
-            var next = new TypedNode(
+            var next = new ControlNode(
                 "root",
                 ComponentKind.Root,
                 children:
                 [
-                    new TypedNode(
+                    new ControlNode(
                         "label",
                         ComponentKind.Label,
                         properties: new Dictionary<string, MirageValue>
@@ -60,23 +60,23 @@ internal sealed class ArchitectureBenchmarkRunner
         {
             var withClick = (index % 2) == 0;
 
-            var previous = new TypedNode(
+            var previous = new ControlNode(
                 "root",
                 ComponentKind.Root,
                 children:
                 [
-                    new ElementNode(
+                    new WebNode(
                         "widget",
                         "vendor-widget",
                         events: withClick ? ["click"] : [])
                 ]);
 
-            var next = new TypedNode(
+            var next = new ControlNode(
                 "root",
                 ComponentKind.Root,
                 children:
                 [
-                    new ElementNode(
+                    new WebNode(
                         "widget",
                         "vendor-widget",
                         events: withClick ? [] : ["click"])
@@ -87,12 +87,12 @@ internal sealed class ArchitectureBenchmarkRunner
 
         RunScenario("JSON property updates", iterations: 1500, index =>
         {
-            var previous = new TypedNode(
+            var previous = new ControlNode(
                 "root",
                 ComponentKind.Root,
                 children:
                 [
-                    new ElementNode(
+                    new WebNode(
                         "chart",
                         "vendor-chart",
                         properties: new Dictionary<string, MirageValue>
@@ -101,12 +101,12 @@ internal sealed class ArchitectureBenchmarkRunner
                         })
                 ]);
 
-            var next = new TypedNode(
+            var next = new ControlNode(
                 "root",
                 ComponentKind.Root,
                 children:
                 [
-                    new ElementNode(
+                    new WebNode(
                         "chart",
                         "vendor-chart",
                         properties: new Dictionary<string, MirageValue>
@@ -126,12 +126,12 @@ internal sealed class ArchitectureBenchmarkRunner
         });
     }
 
-    private static TypedNode BuildMixedTree(int version)
+    private static ControlNode BuildMixedTree(int version)
     {
         var rows = new List<NodeBase>(80);
         for (var i = 0; i < 40; i++)
         {
-            rows.Add(new TypedNode(
+            rows.Add(new ControlNode(
                 $"label-{i}",
                 ComponentKind.Label,
                 properties: new Dictionary<string, MirageValue>
@@ -143,7 +143,7 @@ internal sealed class ArchitectureBenchmarkRunner
                     ["fontWeight"] = (i + version) % 2 == 0 ? "600" : "500"
                 }));
 
-            rows.Add(new ElementNode(
+            rows.Add(new WebNode(
                 $"vendor-{i}",
                 "vendor-pill",
                 properties: new Dictionary<string, MirageValue>
@@ -159,17 +159,17 @@ internal sealed class ArchitectureBenchmarkRunner
                 events: ["click"]));
         }
 
-        return new TypedNode(
+        return new ControlNode(
             "root",
             ComponentKind.Root,
             children:
             [
-                new TypedNode(
+                new ControlNode(
                     "content",
                     ComponentKind.ContentContainer,
                     children:
                     [
-                        new TypedNode(
+                        new ControlNode(
                             "stack",
                             ComponentKind.VerticalStack,
                             children: rows)
@@ -177,12 +177,12 @@ internal sealed class ArchitectureBenchmarkRunner
             ]);
     }
 
-    private static TypedNode BuildElementHeavyTree(int version, int elementCount)
+    private static ControlNode BuildElementHeavyTree(int version, int elementCount)
     {
         var elements = new List<NodeBase>(elementCount);
         for (var i = 0; i < elementCount; i++)
         {
-            elements.Add(new ElementNode(
+            elements.Add(new WebNode(
                 $"custom-{i}",
                 "x-vendor-item",
                 properties: new Dictionary<string, MirageValue>
@@ -203,17 +203,17 @@ internal sealed class ArchitectureBenchmarkRunner
                 }));
         }
 
-        return new TypedNode(
+        return new ControlNode(
             "root",
             ComponentKind.Root,
             children:
             [
-                new TypedNode(
+                new ControlNode(
                     "content",
                     ComponentKind.ContentContainer,
                     children:
                     [
-                        new ElementNode(
+                        new WebNode(
                             "vendor-list",
                             "vendor-list",
                             children: elements)

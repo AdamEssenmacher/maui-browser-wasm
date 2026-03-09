@@ -26,7 +26,7 @@ public sealed class ProviderValidationTests
 
         foreach (var kind in Enum.GetValues<ComponentKind>())
         {
-            var descriptor = provider.ResolveTyped(kind);
+            var descriptor = provider.ResolveControl(kind);
             Assert.Equal(kind, descriptor.Kind);
             Assert.False(string.IsNullOrWhiteSpace(descriptor.ElementTagName));
         }
@@ -36,7 +36,7 @@ public sealed class ProviderValidationTests
     public void FluentEntryDescriptor_ExposesInputMappingMetadata()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();
-        var descriptor = provider.ResolveTyped(ComponentKind.Entry);
+        var descriptor = provider.ResolveControl(ComponentKind.Entry);
 
         Assert.Equal("fluent-text-field", descriptor.ElementTagName);
         Assert.True(descriptor.PropertyMappings.ContainsKey("Text"));
@@ -48,7 +48,7 @@ public sealed class ProviderValidationTests
     public void FluentButtonDescriptor_MapsToFluentWebComponent()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();
-        var descriptor = provider.ResolveTyped(ComponentKind.Button);
+        var descriptor = provider.ResolveControl(ComponentKind.Button);
 
         Assert.Equal("fluent-button", descriptor.ElementTagName);
         Assert.True(descriptor.EventMappings.ContainsKey("click"));
@@ -58,7 +58,7 @@ public sealed class ProviderValidationTests
     public void FluentProvider_ResolvesHorizontalStackSemanticKind()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();
-        var descriptor = provider.ResolveTyped(ComponentKind.HorizontalStack);
+        var descriptor = provider.ResolveControl(ComponentKind.HorizontalStack);
 
         Assert.Equal(ComponentKind.HorizontalStack, descriptor.Kind);
         Assert.Equal("div", descriptor.ElementTagName);
@@ -68,7 +68,7 @@ public sealed class ProviderValidationTests
     public void FluentProvider_ResolvesGridSemanticKind()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();
-        var descriptor = provider.ResolveTyped(ComponentKind.Grid);
+        var descriptor = provider.ResolveControl(ComponentKind.Grid);
 
         Assert.Equal(ComponentKind.Grid, descriptor.Kind);
         Assert.Equal("div", descriptor.ElementTagName);
@@ -89,16 +89,16 @@ public sealed class ProviderValidationTests
 
         foreach (var kind in layoutKinds)
         {
-            var descriptor = provider.ResolveTyped(kind);
+            var descriptor = provider.ResolveControl(kind);
             Assert.True(descriptor.PropertyMappings.ContainsKey("AutomationId"));
         }
     }
 
     [Fact]
-    public void FluentProvider_ResolvesGenericElementWithoutReinterpretingIdentity()
+    public void FluentProvider_ResolvesWebNodeWithoutReinterpretingIdentity()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();
-        var descriptor = provider.ResolveElement("vendor-widget");
+        var descriptor = provider.ResolveWebNode("vendor-widget");
 
         Assert.Equal("vendor-widget", descriptor.ElementName);
         Assert.True(descriptor.SupportsProperties);
@@ -106,30 +106,30 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
-    public void ProviderWithoutGenericCapability_FailsDeterministically()
+    public void ProviderWithoutWebNodeCapability_FailsDeterministically()
     {
-        IMirageComponentProvider provider = new TypedOnlyProvider();
+        IMirageComponentProvider provider = new ControlOnlyProvider();
 
-        var exception = Assert.Throws<InvalidOperationException>(() => provider.ResolveElement("vendor-widget"));
-        Assert.Contains("generic", exception.Message, StringComparison.OrdinalIgnoreCase);
+        var exception = Assert.Throws<InvalidOperationException>(() => provider.ResolveWebNode("vendor-widget"));
+        Assert.Contains("web", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
-    private sealed class TypedOnlyProvider : IMirageComponentProvider
+    private sealed class ControlOnlyProvider : IMirageComponentProvider
     {
         public ProviderCapabilities Capabilities { get; } = new(
-            supportsTypedNodes: true,
-            supportsElementNodes: false,
+            supportsControlNodes: true,
+            supportsWebNodes: false,
             features: new ProviderFeatureSet(eventPayloadSupport: ProviderEventPayloadSupport.NameOnly));
 
-        public TypedComponentDescriptor ResolveTyped(ComponentKind kind)
+        public ControlComponentDescriptor ResolveControl(ComponentKind kind)
         {
-            return new TypedComponentDescriptor(kind, "div");
+            return new ControlComponentDescriptor(kind, "div");
         }
 
-        public ElementComponentDescriptor ResolveElement(string elementName)
+        public WebComponentDescriptor ResolveWebNode(string elementName)
         {
             _ = elementName;
-            throw new InvalidOperationException("Provider does not support generic element nodes.");
+            throw new InvalidOperationException("Provider does not support web nodes.");
         }
     }
 }

@@ -11,13 +11,13 @@ public sealed class MiragePlatformView
     private readonly HashSet<string> _classes = new(StringComparer.Ordinal);
     private readonly List<MiragePlatformView> _children = [];
 
-    private readonly ComponentKind? _typedKind;
+    private readonly ComponentKind? _controlKind;
     private readonly string? _elementName;
 
     public MiragePlatformView(ComponentKind kind)
     {
-        _typedKind = kind;
-        NodeType = PlatformNodeType.Typed;
+        _controlKind = kind;
+        NodeType = PlatformNodeType.Control;
     }
 
     private MiragePlatformView(string elementName)
@@ -25,12 +25,12 @@ public sealed class MiragePlatformView
         ArgumentException.ThrowIfNullOrWhiteSpace(elementName);
 
         _elementName = elementName;
-        NodeType = PlatformNodeType.Element;
+        NodeType = PlatformNodeType.Web;
     }
 
     public PlatformNodeType NodeType { get; }
 
-    public ComponentKind? TypedKind => _typedKind;
+    public ComponentKind? ControlKind => _controlKind;
 
     public string? ElementName => _elementName;
 
@@ -50,9 +50,9 @@ public sealed class MiragePlatformView
 
     public MiragePlatformView? Parent { get; private set; }
 
-    public static MiragePlatformView CreateTyped(ComponentKind kind) => new(kind);
+    public static MiragePlatformView CreateControl(ComponentKind kind) => new(kind);
 
-    public static MiragePlatformView CreateElement(string elementName) => new(elementName);
+    public static MiragePlatformView CreateWeb(string elementName) => new(elementName);
 
     public void AssignNodeId(string nodeId)
     {
@@ -145,7 +145,7 @@ public sealed class MiragePlatformView
 
     public void SetAttribute(string name, string? value)
     {
-        if (NodeType != PlatformNodeType.Element || string.IsNullOrWhiteSpace(name))
+        if (NodeType != PlatformNodeType.Web || string.IsNullOrWhiteSpace(name))
         {
             return;
         }
@@ -161,7 +161,7 @@ public sealed class MiragePlatformView
 
     public void AddClass(string className)
     {
-        if (NodeType != PlatformNodeType.Element || string.IsNullOrWhiteSpace(className))
+        if (NodeType != PlatformNodeType.Web || string.IsNullOrWhiteSpace(className))
         {
             return;
         }
@@ -171,7 +171,7 @@ public sealed class MiragePlatformView
 
     public void RemoveClass(string className)
     {
-        if (NodeType != PlatformNodeType.Element || string.IsNullOrWhiteSpace(className))
+        if (NodeType != PlatformNodeType.Web || string.IsNullOrWhiteSpace(className))
         {
             return;
         }
@@ -238,16 +238,16 @@ public sealed class MiragePlatformView
 
         return NodeType switch
         {
-            PlatformNodeType.Typed => new TypedNode(
+            PlatformNodeType.Control => new ControlNode(
                 NodeId,
-                _typedKind ?? throw new InvalidOperationException("Typed platform node is missing ComponentKind."),
+                _controlKind ?? throw new InvalidOperationException("Control platform node is missing ComponentKind."),
                 properties: _properties,
                 styles: _styles,
                 events: _events,
                 children: childNodes),
-            PlatformNodeType.Element => new ElementNode(
+            PlatformNodeType.Web => new WebNode(
                 NodeId,
-                _elementName ?? throw new InvalidOperationException("Element platform node is missing ElementName."),
+                _elementName ?? throw new InvalidOperationException("Web platform node is missing ElementName."),
                 attributes: _attributes,
                 properties: _properties,
                 classes: _classes,
