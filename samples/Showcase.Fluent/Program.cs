@@ -1,8 +1,11 @@
 using Mirage.Maui.Hosting;
 using Mirage.Provider.Fluent;
+using Mirage.Web.Runtime;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Hosting;
+using Showcase.Shared.App;
 using Showcase.Fluent.App;
 
 public static class Program
@@ -23,6 +26,7 @@ public static class Program
         {
             handlers.AddHandler(typeof(ShowcaseVendorWidget), typeof(ShowcaseVendorWidgetHandler));
         });
+        builder.Services.AddSingleton<IShowcaseSectionNavigator, MirageShowcaseSectionNavigator>();
         builder.UseMirageComponentProvider<FluentMirageComponentProvider>();
 
         var app = builder.Build();
@@ -32,19 +36,37 @@ public static class Program
     }
 }
 
+internal sealed class MirageShowcaseSectionNavigator(IMiragePageNavigator pageNavigator) : IShowcaseSectionNavigator
+{
+    public bool ScrollToSection(string sectionId, bool smooth = true)
+    {
+        return pageNavigator.ScrollToAutomationId(sectionId, smooth);
+    }
+}
+
 internal sealed class ShowcaseApp : Application
 {
-    private readonly Mirage.Web.Runtime.IMiragePageNavigator _pageNavigator;
-
-    public ShowcaseApp(Mirage.Web.Runtime.IMiragePageNavigator pageNavigator)
+    public ShowcaseApp()
     {
-        _pageNavigator = pageNavigator;
         Resources ??= new ResourceDictionary();
         Resources.MergedDictionaries.Add(new ShowcaseStyles());
     }
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        return new Window(new ShowcaseHeroPage(_pageNavigator));
+        _ = activationState;
+        return new Window(new ShowcaseHeroPage(CreateMirageGenericWidget));
+    }
+
+    private static View CreateMirageGenericWidget(EventHandler onClicked)
+    {
+        var widget = new ShowcaseVendorWidget
+        {
+            AutomationId = "showcase-generic-widget"
+        };
+
+        widget.SetBinding(ShowcaseVendorWidget.TextProperty, static (ShowcaseState state) => state.GenericWidgetText);
+        widget.Clicked += onClicked;
+        return widget;
     }
 }

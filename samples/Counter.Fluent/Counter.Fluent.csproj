@@ -24,10 +24,18 @@
     <ProjectReference Include="..\..\src\Mirage.Provider.Fluent\Mirage.Provider.Fluent.csproj" />
     <ProjectReference Include="..\..\src\Mirage.Web\Mirage.Web.csproj" />
     <ProjectReference Include="..\..\src\Mirage.Core\Mirage.Core.csproj" />
+    <ProjectReference Include="..\Counter.Shared\Counter.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <MauiXaml Update="App\**\*.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <MirageHotReloadXaml Include="..\Counter.Shared\App\**\*.xaml">
+      <HotReloadAssemblyName>Counter.Shared</HotReloadAssemblyName>
+      <HotReloadRelativePath>App/$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\', '/'))</HotReloadRelativePath>
+    </MirageHotReloadXaml>
   </ItemGroup>
 
   <ItemGroup>
@@ -37,11 +45,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="wwwroot\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
-    <WasmExtraFilesToDeploy Include="wwwroot\**\*.*">
+    <WasmExtraFilesToDeploy Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*">
       <TargetPath>%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
     </WasmExtraFilesToDeploy>
   </ItemGroup>
