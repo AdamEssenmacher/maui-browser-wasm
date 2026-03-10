@@ -1,14 +1,19 @@
 <Project>
   <PropertyGroup>
+    <MirageBrowserHostApp>false</MirageBrowserHostApp>
+    <MirageBrowserHostApp Condition="'$(MirageBrowserApp)' == 'true' and '$(TargetFramework)' == 'net10.0-browser' and '$(OutputType)' == 'Exe'">true</MirageBrowserHostApp>
     <MirageBrowserHotReloadEnabled>false</MirageBrowserHotReloadEnabled>
-    <MirageBrowserHotReloadEnabled Condition="'$(MirageBrowserApp)' == 'true' and '$(TargetFramework)' == 'net10.0-browser' and '$(OutputType)' == 'Exe' and ('$(DOTNET_WATCH)' == '1' or '$(DotNetWatchBuild)' == 'true' or '$(MirageBrowserHotReloadAlwaysOn)' == 'true')">true</MirageBrowserHotReloadEnabled>
+    <MirageBrowserHotReloadEnabled Condition="'$(MirageBrowserHostApp)' == 'true' and ('$(DOTNET_WATCH)' == '1' or '$(DotNetWatchBuild)' == 'true' or '$(MirageBrowserHotReloadAlwaysOn)' == 'true')">true</MirageBrowserHotReloadEnabled>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MirageBrowserHostApp)' == 'true'">
+    <MirageDomSourcePath>$(MSBuildThisFileDirectory)src/Mirage.Web/wwwroot/mirage-dom.js</MirageDomSourcePath>
+    <MirageDomDestinationPath>$(MSBuildProjectDirectory)/wwwroot/_framework/mirage-dom.js</MirageDomDestinationPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MirageBrowserHotReloadEnabled)' == 'true'">
     <MirageHotReloadGeneratedDir>$(IntermediateOutputPath)Mirage.HotReload/</MirageHotReloadGeneratedDir>
     <MirageHotReloadMetadataFile>$(MirageHotReloadGeneratedDir)MirageHotReload.MetadataUpdateHandler.g.cs</MirageHotReloadMetadataFile>
-    <MirageDomSourcePath>$(MSBuildThisFileDirectory)src/Mirage.Web/wwwroot/mirage-dom.js</MirageDomSourcePath>
-    <MirageDomDestinationPath>$(MSBuildProjectDirectory)/wwwroot/_framework/mirage-dom.js</MirageDomDestinationPath>
     <DefaultItemExcludes>$(DefaultItemExcludes);$(MSBuildProjectDirectory)/wwwroot/_hotreload/**</DefaultItemExcludes>
   </PropertyGroup>
 
@@ -102,7 +107,7 @@
 
   <Target Name="MirageSyncDomModuleForBrowserApps"
           BeforeTargets="PrepareForBuild"
-          Condition="'$(MirageBrowserHotReloadEnabled)' == 'true' and Exists('$(MirageDomSourcePath)')">
+          Condition="'$(MirageBrowserHostApp)' == 'true' and Exists('$(MirageDomSourcePath)')">
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(MirageDomDestinationPath)'))" />
     <Copy SourceFiles="$(MirageDomSourcePath)"
           DestinationFiles="$(MirageDomDestinationPath)"
