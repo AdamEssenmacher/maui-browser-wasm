@@ -20,12 +20,12 @@
   <ItemGroup Condition="'$(MirageBrowserHotReloadEnabled)' == 'true'">
     <_MirageHotReloadLocalDocument Include="@(MauiXaml)">
       <HotReloadAssemblyName>$(AssemblyName)</HotReloadAssemblyName>
-      <HotReloadRelativePath>$([System.String]::Copy('%(Identity)').Replace('\', '/').Trim().TrimStart('/'))</HotReloadRelativePath>
+      <HotReloadRelativePath>$([System.String]::Copy('%(Identity)').Replace('\\', '/').Trim().TrimStart('/'))</HotReloadRelativePath>
     </_MirageHotReloadLocalDocument>
 
     <_MirageHotReloadExternalDocument Include="@(MirageHotReloadXaml)">
       <HotReloadAssemblyName>$([System.String]::Copy('%(HotReloadAssemblyName)').Trim())</HotReloadAssemblyName>
-      <HotReloadRelativePath>$([System.String]::Copy('%(HotReloadRelativePath)').Replace('\', '/').Trim().TrimStart('/'))</HotReloadRelativePath>
+      <HotReloadRelativePath>$([System.String]::Copy('%(HotReloadRelativePath)').Replace('\\', '/').Trim().TrimStart('/'))</HotReloadRelativePath>
     </_MirageHotReloadExternalDocument>
 
     <_MirageMissingHotReloadAssembly Include="@(_MirageHotReloadExternalDocument->WithMetadataValue('HotReloadAssemblyName', ''))" />
@@ -33,7 +33,7 @@
 
     <_MirageHotReloadDocument Include="@(_MirageHotReloadLocalDocument)">
       <HotReloadAssemblyName>$([System.String]::Copy('%(HotReloadAssemblyName)').Trim())</HotReloadAssemblyName>
-      <HotReloadRelativePath>$([System.String]::Copy('%(HotReloadRelativePath)').Replace('\', '/').Trim().TrimStart('/'))</HotReloadRelativePath>
+      <HotReloadRelativePath>$([System.String]::Copy('%(HotReloadRelativePath)').Replace('\\', '/').Trim().TrimStart('/'))</HotReloadRelativePath>
       <StaticWebAssetPath>_hotreload/%(HotReloadAssemblyName)/%(HotReloadRelativePath)</StaticWebAssetPath>
       <MirrorPath>$(MSBuildProjectDirectory)/wwwroot/%(StaticWebAssetPath)</MirrorPath>
       <MirrorDir>$([System.IO.Path]::GetDirectoryName('%(MirrorPath)'))</MirrorDir>
@@ -41,7 +41,7 @@
 
     <_MirageHotReloadDocument Include="@(_MirageHotReloadExternalDocument)">
       <HotReloadAssemblyName>$([System.String]::Copy('%(HotReloadAssemblyName)').Trim())</HotReloadAssemblyName>
-      <HotReloadRelativePath>$([System.String]::Copy('%(HotReloadRelativePath)').Replace('\', '/').Trim().TrimStart('/'))</HotReloadRelativePath>
+      <HotReloadRelativePath>$([System.String]::Copy('%(HotReloadRelativePath)').Replace('\\', '/').Trim().TrimStart('/'))</HotReloadRelativePath>
       <StaticWebAssetPath>_hotreload/%(HotReloadAssemblyName)/%(HotReloadRelativePath)</StaticWebAssetPath>
       <MirrorPath>$(MSBuildProjectDirectory)/wwwroot/%(StaticWebAssetPath)</MirrorPath>
       <MirrorDir>$([System.IO.Path]::GetDirectoryName('%(MirrorPath)'))</MirrorDir>
