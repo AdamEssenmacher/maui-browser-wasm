@@ -40,14 +40,24 @@ Built-in handlers stay inside this control set. Third-party/custom handlers can 
   - `MirageBrowserAppHost.RunAsync(...)`
 - `src/Mirage.Provider.Fluent`
   - Fluent UI Web Components provider implementation for phase 1
+- `samples/Counter.Shared`
+  - Host-agnostic shared counter UI/state (`CounterPage`, XAML, and bindings)
 - `samples/Counter.Fluent`
-  - Minimal reference app proving label/entry/button/layout loop
+  - Mirage browser host for the shared counter app (`Counter.Shared`)
+- `samples/Counter.Maui`
+  - Native MAUI host for the shared counter app (`Counter.Shared`)
+- `samples/Showcase.Shared`
+  - Host-agnostic shared showcase UI/state/resources (`ShowcaseHeroPage`, styles, backlog catalog)
 - `samples/Showcase.Fluent`
-  - Public-facing Mirage hero demo proving real DOM + Fluent UI Web Components rendering
+  - Mirage browser host for the shared showcase app (`Showcase.Shared`)
+  - Preserves Mirage-specific WebNode proof (`vendor-pill`) via host-only widget injection seam
+  - Registers optional shared section-navigation adapter (`IShowcaseSectionNavigator`) backed by Mirage browser page navigation
   - Includes focused foundations/layout labs for `Label`, core `IView` mapping, stack behavior, grid placement/spans, and surface rendering
   - Includes an exhaustive `Layout Lab` matrix validating sizing, constraints, positioning, and nested container behavior across `ContentView`, stacks, and `Grid`
   - Uses explicit `ScrollView` hosting for long-page scrolling; `ContentPage` remains non-scrollable by default
   - Demonstrates MAUI ResourceDictionary-first styling with CSS retained only as a targeted browser/provider escape hatch
+- `samples/Showcase.Maui`
+  - Native MAUI host for the shared showcase app (`Showcase.Shared`)
 - `tests/Mirage.Core.Tests`
   - Diff correctness + determinism
 - `tests/Mirage.Integration.Tests`
@@ -77,6 +87,13 @@ dotnet run --project samples/Counter.Fluent/Counter.Fluent.csproj
 dotnet run --project samples/Showcase.Fluent/Showcase.Fluent.csproj
 ```
 
+Native MAUI hosts are intentionally **outside** `Mirage.sln`/CI but are runnable directly:
+
+```bash
+dotnet build samples/Counter.Maui/Counter.Maui.csproj
+dotnet build samples/Showcase.Maui/Showcase.Maui.csproj
+```
+
 ## Run tests
 
 ```bash
@@ -99,9 +116,11 @@ If missing, startup fails with:
 - MAUI framework/logical semantics remain MAUI-side; Mirage models platform realization only.
 - `VisualNodeBase` is a shared platform-side visual/layout projection layer, not a duplicate MAUI framework model.
 - Provider-specific mappings (Fluent, UI5, custom) live only in provider projects.
+- Dependency direction for samples is locked: `*.Fluent -> *.Shared` and `*.Maui -> *.Shared`.
 - Fluent UI Web Components are built on FAST foundations, but Mirage’s public reference-provider story is Fluent-first.
 - Providers must support control-node and web-node realization for full Mirage behavior.
 - Mirage preserves MAUI’s explicit scrolling model: `ContentPage` is non-scrollable by default and scrolling is introduced explicitly with `ScrollView`.
+- Shared sample projects (`Counter.Shared`, `Showcase.Shared`) are included in `Mirage.sln`; native MAUI host projects are not.
 - The old `Maui.Browser*` showcase/parity stack is not part of the active solution wiring.
 - Architecture benchmark harness: `tools/benchmarks/Mirage.ArchitectureBenchmarks`.
 - Current rendering wave focus is correctness-first (shared visual projection, stack/grid determinism, and DOM-backed surface rendering) before richer control breadth.

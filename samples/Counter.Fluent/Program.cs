@@ -1,4 +1,4 @@
-using Counter.Fluent.App;
+using Counter.Shared.App;
 using Mirage.Maui.Hosting;
 using Mirage.Provider.Fluent;
 using Microsoft.Maui.Controls;

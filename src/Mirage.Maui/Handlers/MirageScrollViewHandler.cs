@@ -153,7 +153,7 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
 
     public static void MapRequestScrollTo(MirageScrollViewHandler handler, IScrollView scrollView, object? args)
     {
-        if (!TryResolveScrollRequest(args, out var horizontalOffset, out var verticalOffset))
+        if (!TryResolveScrollRequest(scrollView, args, out var horizontalOffset, out var verticalOffset))
         {
             return;
         }
@@ -182,7 +182,11 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
         }
     }
 
-    private static bool TryResolveScrollRequest(object? args, out double horizontalOffset, out double verticalOffset)
+    private static bool TryResolveScrollRequest(
+        IScrollView scrollView,
+        object? args,
+        out double horizontalOffset,
+        out double verticalOffset)
     {
         switch (args)
         {
@@ -191,6 +195,15 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
                 verticalOffset = request.VerticalOffset;
                 return true;
             case ScrollToRequestedEventArgs requestedEventArgs:
+                if (requestedEventArgs.Mode == ScrollToMode.Element
+                    && requestedEventArgs.Element is Element targetElement)
+                {
+                    if (TryComputeTargetOffsets(scrollView, targetElement, out horizontalOffset, out verticalOffset))
+                    {
+                        return true;
+                    }
+                }
+
                 horizontalOffset = requestedEventArgs.ScrollX;
                 verticalOffset = requestedEventArgs.ScrollY;
                 return true;
@@ -199,6 +212,55 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
                 verticalOffset = 0;
                 return false;
         }
+    }
+
+    private static bool TryComputeTargetOffsets(IScrollView scrollView, Element targetElement, out double horizontalOffset, out double verticalOffset)
+    {
+        horizontalOffset = 0;
+        verticalOffset = 0;
+
+        if (ResolvePresentedContent(scrollView) is not Element contentRoot)
+        {
+            return false;
+        }
+
+        var offsetX = 0d;
+        var offsetY = 0d;
+        Element? current = targetElement;
+        while (current is not null && !ReferenceEquals(current, contentRoot))
+        {
+            if (current is VisualElement visualElement)
+            {
+                if (!double.IsFinite(visualElement.X) || !double.IsFinite(visualElement.Y))
+                {
+                    return false;
+                }
+
+                offsetX += visualElement.X;
+                offsetY += visualElement.Y;
+            }
+
+            current = current.Parent;
+        }
+
+        if (!ReferenceEquals(current, contentRoot) || !double.IsFinite(offsetX) || !double.IsFinite(offsetY))
+        {
+            return false;
+        }
+
+        // In current browser-hosted paths, MAUI may surface element-mode requests before meaningful
+        // arranged offsets are reflected in target X/Y, yielding a false "0,0" location for non-root
+        // section targets. Return false so caller can avoid applying this offset.
+        if (!ReferenceEquals(targetElement, contentRoot)
+            && Math.Abs(offsetX) < 0.5
+            && Math.Abs(offsetY) < 0.5)
+        {
+            return false;
+        }
+
+        horizontalOffset = Math.Max(0, offsetX);
+        verticalOffset = Math.Max(0, offsetY);
+        return true;
     }
 
     private static double NormalizeOffset(double value)

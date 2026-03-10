@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Text;
 using Microsoft.Playwright;
 using Xunit;
 
@@ -73,6 +75,8 @@ public sealed class CounterFluentE2ETests : IClassFixture<BrowserHostFixture>
         }
 
         var page = await context.NewPageAsync();
+        var diagnostics = new ConcurrentQueue<string>();
+        AttachDiagnostics(page, diagnostics);
         await page.GotoAsync(_fixture.HttpAppUrl.ToString(), new PageGotoOptions
         {
             WaitUntil = WaitUntilState.DOMContentLoaded
@@ -85,12 +89,43 @@ public sealed class CounterFluentE2ETests : IClassFixture<BrowserHostFixture>
         catch (TimeoutException timeoutException)
         {
             var bodyText = await page.TextContentAsync("body");
+            var hostLogs = _fixture.GetHostLogsSnapshot();
+            var diagnosticsSnapshot = RenderDiagnostics(diagnostics);
             throw new TimeoutException(
-                $"{timeoutException.Message}\nBody text snapshot: {bodyText}",
+                $"{timeoutException.Message}\nBody text snapshot: {bodyText}\nHost logs:\n{hostLogs}\nPage diagnostics:\n{diagnosticsSnapshot}",
                 timeoutException);
         }
 
         return page;
+    }
+
+    private static void AttachDiagnostics(IPage page, ConcurrentQueue<string> diagnostics)
+    {
+        page.Console += (_, message) =>
+        {
+            diagnostics.Enqueue($"[console:{message.Type}] {message.Text}");
+        };
+
+        page.PageError += (_, message) =>
+        {
+            diagnostics.Enqueue($"[pageerror] {message}");
+        };
+
+        page.RequestFailed += (_, request) =>
+        {
+            diagnostics.Enqueue($"[requestfailed] {request.Method} {request.Url} ({request.Failure ?? "unknown"})");
+        };
+    }
+
+    private static string RenderDiagnostics(ConcurrentQueue<string> diagnostics)
+    {
+        var sb = new StringBuilder();
+        foreach (var line in diagnostics.TakeLast(80))
+        {
+            sb.AppendLine(line);
+        }
+
+        return sb.ToString();
     }
 
     private static async Task<double> ReadElementWidthAsync(IPage page, string selector)

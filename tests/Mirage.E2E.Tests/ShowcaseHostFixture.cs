@@ -68,6 +68,11 @@ public sealed class ShowcaseHostFixture : IAsyncLifetime
         });
     }
 
+    public string GetHostLogsSnapshot()
+    {
+        return RenderHostLogs();
+    }
+
     private async Task<Uri> StartSampleHostAsync()
     {
         var repoRoot = FindRepoRoot();

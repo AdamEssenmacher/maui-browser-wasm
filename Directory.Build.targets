@@ -1,14 +1,19 @@
 <Project>
   <PropertyGroup>
+    <MirageBrowserHostApp>false</MirageBrowserHostApp>
+    <MirageBrowserHostApp Condition="'$(MirageBrowserApp)' == 'true' and '$(TargetFramework)' == 'net10.0-browser' and '$(OutputType)' == 'Exe'">true</MirageBrowserHostApp>
     <MirageBrowserHotReloadEnabled>false</MirageBrowserHotReloadEnabled>
-    <MirageBrowserHotReloadEnabled Condition="'$(MirageBrowserApp)' == 'true' and '$(TargetFramework)' == 'net10.0-browser' and '$(OutputType)' == 'Exe' and ('$(DOTNET_WATCH)' == '1' or '$(DotNetWatchBuild)' == 'true' or '$(MirageBrowserHotReloadAlwaysOn)' == 'true')">true</MirageBrowserHotReloadEnabled>
+    <MirageBrowserHotReloadEnabled Condition="'$(MirageBrowserHostApp)' == 'true' and ('$(DOTNET_WATCH)' == '1' or '$(DotNetWatchBuild)' == 'true' or '$(MirageBrowserHotReloadAlwaysOn)' == 'true')">true</MirageBrowserHotReloadEnabled>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(MirageBrowserHostApp)' == 'true'">
+    <MirageDomSourcePath>$(MSBuildThisFileDirectory)src/Mirage.Web/wwwroot/mirage-dom.js</MirageDomSourcePath>
+    <MirageDomDestinationPath>$(MSBuildProjectDirectory)/wwwroot/_framework/mirage-dom.js</MirageDomDestinationPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MirageBrowserHotReloadEnabled)' == 'true'">
     <MirageHotReloadGeneratedDir>$(IntermediateOutputPath)Mirage.HotReload/</MirageHotReloadGeneratedDir>
     <MirageHotReloadMetadataFile>$(MirageHotReloadGeneratedDir)MirageHotReload.MetadataUpdateHandler.g.cs</MirageHotReloadMetadataFile>
-    <MirageDomSourcePath>$(MSBuildThisFileDirectory)src/Mirage.Web/wwwroot/mirage-dom.js</MirageDomSourcePath>
-    <MirageDomDestinationPath>$(MSBuildProjectDirectory)/wwwroot/_framework/mirage-dom.js</MirageDomDestinationPath>
     <DefaultItemExcludes>$(DefaultItemExcludes);$(MSBuildProjectDirectory)/wwwroot/_hotreload/**</DefaultItemExcludes>
   </PropertyGroup>
 
@@ -18,26 +23,72 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MirageBrowserHotReloadEnabled)' == 'true'">
-    <Watch Include="@(MauiXaml)">
-      <StaticWebAssetPath>_hotreload/$(AssemblyName)/$([System.String]::Copy('%(Identity)').Replace('\\', '/'))</StaticWebAssetPath>
+    <_MirageHotReloadLocalDocument Include="@(MauiXaml)">
+      <HotReloadAssemblyName>$(AssemblyName)</HotReloadAssemblyName>
+      <HotReloadRelativePath>$([System.String]::Copy('%(Identity)').Replace('\\', '/').Trim().TrimStart('/'))</HotReloadRelativePath>
+    </_MirageHotReloadLocalDocument>
+
+    <_MirageHotReloadExternalDocument Include="@(MirageHotReloadXaml)">
+      <HotReloadAssemblyName>$([System.String]::Copy('%(HotReloadAssemblyName)').Trim())</HotReloadAssemblyName>
+      <HotReloadRelativePath>$([System.String]::Copy('%(HotReloadRelativePath)').Replace('\\', '/').Trim().TrimStart('/'))</HotReloadRelativePath>
+    </_MirageHotReloadExternalDocument>
+
+    <_MirageMissingHotReloadAssembly Include="@(_MirageHotReloadExternalDocument->WithMetadataValue('HotReloadAssemblyName', ''))" />
+    <_MirageMissingHotReloadRelativePath Include="@(_MirageHotReloadExternalDocument->WithMetadataValue('HotReloadRelativePath', ''))" />
+
+    <_MirageHotReloadDocument Include="@(_MirageHotReloadLocalDocument)">
+      <HotReloadAssemblyName>$([System.String]::Copy('%(HotReloadAssemblyName)').Trim())</HotReloadAssemblyName>
+      <HotReloadRelativePath>$([System.String]::Copy('%(HotReloadRelativePath)').Replace('\\', '/').Trim().TrimStart('/'))</HotReloadRelativePath>
+      <StaticWebAssetPath>_hotreload/%(HotReloadAssemblyName)/%(HotReloadRelativePath)</StaticWebAssetPath>
+      <MirrorPath>$(MSBuildProjectDirectory)/wwwroot/%(StaticWebAssetPath)</MirrorPath>
+      <MirrorDir>$([System.IO.Path]::GetDirectoryName('%(MirrorPath)'))</MirrorDir>
+    </_MirageHotReloadDocument>
+
+    <_MirageHotReloadDocument Include="@(_MirageHotReloadExternalDocument)">
+      <HotReloadAssemblyName>$([System.String]::Copy('%(HotReloadAssemblyName)').Trim())</HotReloadAssemblyName>
+      <HotReloadRelativePath>$([System.String]::Copy('%(HotReloadRelativePath)').Replace('\\', '/').Trim().TrimStart('/'))</HotReloadRelativePath>
+      <StaticWebAssetPath>_hotreload/%(HotReloadAssemblyName)/%(HotReloadRelativePath)</StaticWebAssetPath>
+      <MirrorPath>$(MSBuildProjectDirectory)/wwwroot/%(StaticWebAssetPath)</MirrorPath>
+      <MirrorDir>$([System.IO.Path]::GetDirectoryName('%(MirrorPath)'))</MirrorDir>
+    </_MirageHotReloadDocument>
+
+    <_MirageHotReloadPathKey Include="@(_MirageHotReloadDocument->'%(StaticWebAssetPath)')" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(MirageBrowserHotReloadEnabled)' == 'true'">
+    <Watch Include="@(_MirageHotReloadDocument)">
+      <StaticWebAssetPath>%(StaticWebAssetPath)</StaticWebAssetPath>
     </Watch>
-    <Content Include="@(MauiXaml)">
-      <Link>wwwroot/_hotreload/$(AssemblyName)/$([System.String]::Copy('%(Identity)').Replace('\\', '/'))</Link>
+    <Content Include="@(_MirageHotReloadDocument)">
+      <Link>wwwroot/%(StaticWebAssetPath)</Link>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </Content>
     <Compile Include="$(MirageHotReloadMetadataFile)" AutoGen="true" Visible="false" />
-    <_MirageHotReloadMirror Include="@(MauiXaml)">
-      <MirrorPath>$(MSBuildProjectDirectory)/wwwroot/_hotreload/$(AssemblyName)/$([System.String]::Copy('%(Identity)').Replace('\\', '/'))</MirrorPath>
-      <MirrorDir>$([System.IO.Path]::GetDirectoryName('%(MirrorPath)'))</MirrorDir>
+    <_MirageHotReloadMirror Include="@(_MirageHotReloadDocument)">
+      <MirrorPath>%(MirrorPath)</MirrorPath>
+      <MirrorDir>%(MirrorDir)</MirrorDir>
     </_MirageHotReloadMirror>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(MirageBrowserHotReloadEnabled)' == 'true'">
-    <WasmExtraFilesToDeploy Include="@(MauiXaml)">
-      <TargetPath>_hotreload/$(AssemblyName)/$([System.String]::Copy('%(Identity)').Replace('\\', '/'))</TargetPath>
+    <WasmExtraFilesToDeploy Include="@(_MirageHotReloadDocument)">
+      <TargetPath>%(StaticWebAssetPath)</TargetPath>
     </WasmExtraFilesToDeploy>
   </ItemGroup>
+
+  <Target Name="MirageValidateHotReloadXamlMappings"
+          BeforeTargets="PrepareForBuild"
+          Condition="'$(MirageBrowserHotReloadEnabled)' == 'true'">
+    <Error Condition="'@(_MirageMissingHotReloadAssembly)' != ''"
+           Text="MirageHotReloadXaml item '%(_MirageMissingHotReloadAssembly.Identity)' is missing required metadata 'HotReloadAssemblyName'." />
+    <Error Condition="'@(_MirageMissingHotReloadRelativePath)' != ''"
+           Text="MirageHotReloadXaml item '%(_MirageMissingHotReloadRelativePath.Identity)' is missing required metadata 'HotReloadRelativePath'." />
+
+    <RemoveDuplicates Inputs="@(_MirageHotReloadPathKey)">
+      <Output TaskParameter="Filtered" ItemName="_MirageUniqueHotReloadPathKey" />
+    </RemoveDuplicates>
+
+    <Error Condition="'@(_MirageHotReloadPathKey)' != '' and '@(_MirageHotReloadPathKey-&gt;Count())' != '@(_MirageUniqueHotReloadPathKey-&gt;Count())'"
+           Text="Duplicate Mirage hot-reload mappings detected. Ensure each file maps to a unique '/_hotreload/{Assembly}/{RelativePath}' path. Current mappings: @(_MirageHotReloadPathKey, '; ')." />
+  </Target>
 
   <Target Name="MirageGenerateHotReloadMetadataHandler"
           BeforeTargets="CoreCompile"
@@ -56,7 +107,7 @@
 
   <Target Name="MirageSyncDomModuleForBrowserApps"
           BeforeTargets="PrepareForBuild"
-          Condition="'$(MirageBrowserHotReloadEnabled)' == 'true' and Exists('$(MirageDomSourcePath)')">
+          Condition="'$(MirageBrowserHostApp)' == 'true' and Exists('$(MirageDomSourcePath)')">
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(MirageDomDestinationPath)'))" />
     <Copy SourceFiles="$(MirageDomSourcePath)"
           DestinationFiles="$(MirageDomDestinationPath)"
