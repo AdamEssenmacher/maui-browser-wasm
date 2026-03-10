@@ -34,7 +34,7 @@
   <ItemGroup>
     <MirageHotReloadXaml Include="..\Counter.Shared\App\**\*.xaml">
       <HotReloadAssemblyName>Counter.Shared</HotReloadAssemblyName>
-      <HotReloadRelativePath>App/$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\', '/'))</HotReloadRelativePath>
+      <HotReloadRelativePath>App/$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\\', '/'))</HotReloadRelativePath>
     </MirageHotReloadXaml>
   </ItemGroup>
 
