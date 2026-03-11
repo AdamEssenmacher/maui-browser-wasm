@@ -88,6 +88,7 @@ internal sealed class MirageNavigationStartupResolver : IMirageNavigationStartup
             && string.Equals(currentPath, match.Path, StringComparison.OrdinalIgnoreCase))
         {
             parameterBinder.Bind(currentPage, MergeParameters(match));
+            browserHistory.Replace(match.Path);
             return;
         }
 

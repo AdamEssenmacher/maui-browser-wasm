@@ -430,6 +430,12 @@ internal sealed class DefaultRouteParameterBinder : IRouteParameterBinder
         var nullableUnderlyingType = Nullable.GetUnderlyingType(targetType);
         var effectiveType = nullableUnderlyingType ?? targetType;
 
+        if (nullableUnderlyingType is not null
+            && string.IsNullOrWhiteSpace(rawValue))
+        {
+            return null;
+        }
+
         try
         {
             if (effectiveType == typeof(string))

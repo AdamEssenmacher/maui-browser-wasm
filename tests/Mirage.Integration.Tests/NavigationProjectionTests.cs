@@ -107,6 +107,32 @@ public sealed class NavigationProjectionTests
     }
 
     [Fact]
+    public void RouteParameterBinder_MapsEmptyNullableValuesToNull()
+    {
+        var binder = new DefaultRouteParameterBinder();
+        var page = new NullableBindingProbePage
+        {
+            OptionalCount = 9,
+            OptionalEnabled = true,
+            OptionalGuid = Guid.NewGuid(),
+            OptionalMode = BindingProbeMode.Advanced
+        };
+
+        binder.Bind(page, new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["OptionalCount"] = "",
+            ["OptionalEnabled"] = "",
+            ["OptionalGuid"] = "",
+            ["OptionalMode"] = ""
+        });
+
+        Assert.Null(page.OptionalCount);
+        Assert.Null(page.OptionalEnabled);
+        Assert.Null(page.OptionalGuid);
+        Assert.Null(page.OptionalMode);
+    }
+
+    [Fact]
     public async Task StartupResolver_UnknownRoute_UsesFallbackAndReplace()
     {
         var history = new BrowserHistoryProbe("/missing");
@@ -126,6 +152,29 @@ public sealed class NavigationProjectionTests
 
         var navigationPage = Assert.IsType<NavigationPage>(window.Page);
         Assert.Same(originalNavigationPage, navigationPage);
+        Assert.IsType<TestHomePage>(ResolveCurrentPage(navigationPage));
+        Assert.Equal("/", history.CurrentLocation);
+        Assert.Contains("replace:/", history.Writes);
+    }
+
+    [Fact]
+    public async Task StartupResolver_UnknownRoute_WhenCurrentPageAlreadyMatchesFallback_ReplacesUrl()
+    {
+        var history = new BrowserHistoryProbe("/missing");
+        var configuration = BuildConfiguration(builder =>
+        {
+            builder.Map<TestHomePage>("/");
+            builder.Map<TestSettingsPage>("/settings");
+            builder.SetFallback<TestHomePage>();
+        });
+
+        var services = CreateNavigationServices(configuration, history);
+        var resolver = new MirageNavigationStartupResolver();
+        var window = new Window(new NavigationPage(new TestHomePage()));
+
+        await resolver.ApplyInitialRouteAsync(window, services);
+
+        var navigationPage = Assert.IsType<NavigationPage>(window.Page);
         Assert.IsType<TestHomePage>(ResolveCurrentPage(navigationPage));
         Assert.Equal("/", history.CurrentLocation);
         Assert.Contains("replace:/", history.Writes);
@@ -384,6 +433,17 @@ public sealed class NavigationProjectionTests
         public BindingProbeMode Mode { get; set; }
 
         public int? OptionalCount { get; set; }
+    }
+
+    private sealed class NullableBindingProbePage : ContentPage
+    {
+        public int? OptionalCount { get; set; }
+
+        public bool? OptionalEnabled { get; set; }
+
+        public Guid? OptionalGuid { get; set; }
+
+        public BindingProbeMode? OptionalMode { get; set; }
     }
 
     private enum BindingProbeMode
