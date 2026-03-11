@@ -244,7 +244,8 @@ public sealed class ArchitectureBoundaryTests
 
         var text = File.ReadAllText(handlerPath);
         Assert.Contains("SafeApplyBrowserPopStateAsync", text, StringComparison.Ordinal);
-        Assert.Contains("dispatcher.Dispatch(() => _ = SafeApplyBrowserPopStateAsync(location))", text, StringComparison.Ordinal);
+        Assert.Contains("dispatcher.Dispatch(() => _ = SafeApplyBrowserPopStateAsync())", text, StringComparison.Ordinal);
+        Assert.Contains("_pendingPopStateLocation = location;", text, StringComparison.Ordinal);
         Assert.Contains("catch (Exception ex)", text, StringComparison.Ordinal);
     }
 

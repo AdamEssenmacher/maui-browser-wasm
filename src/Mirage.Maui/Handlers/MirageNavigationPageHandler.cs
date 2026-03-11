@@ -36,7 +36,9 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
     private double _lastArrangedWidth;
     private double _lastArrangedHeight;
     private bool _historyWriteSuppressed;
-    private bool _handlingBrowserPopState;
+    private readonly object _popStateSync = new();
+    private bool _isPopStatePumpRunning;
+    private string? _pendingPopStateLocation;
     private int _popStateSubscriptionId;
     private string? _lastProjectedPath;
 
@@ -74,6 +76,11 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         _currentStackCount = 0;
         _currentPage = null;
         _lastProjectedPath = null;
+        lock (_popStateSync)
+        {
+            _isPopStatePumpRunning = false;
+            _pendingPopStateLocation = null;
+        }
 
         platformView.ClearChildren();
         base.DisconnectHandler(platformView);
@@ -191,31 +198,62 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
 
     private async void OnBrowserPopState(string location)
     {
-        if (_handlingBrowserPopState)
+        if (string.IsNullOrWhiteSpace(location))
+        {
+            return;
+        }
+
+        var shouldStartPump = false;
+        lock (_popStateSync)
+        {
+            _pendingPopStateLocation = location;
+            if (!_isPopStatePumpRunning)
+            {
+                _isPopStatePumpRunning = true;
+                shouldStartPump = true;
+            }
+        }
+
+        if (!shouldStartPump)
         {
             return;
         }
 
         if (GetDispatcher() is { } dispatcher && dispatcher.IsDispatchRequired)
         {
-            if (dispatcher.Dispatch(() => _ = SafeApplyBrowserPopStateAsync(location)))
+            if (dispatcher.Dispatch(() => _ = SafeApplyBrowserPopStateAsync()))
             {
                 return;
             }
         }
 
-        await SafeApplyBrowserPopStateAsync(location);
+        await SafeApplyBrowserPopStateAsync();
     }
 
-    private async Task SafeApplyBrowserPopStateAsync(string location)
+    private async Task SafeApplyBrowserPopStateAsync()
     {
-        try
+        while (true)
         {
-            await ApplyBrowserPopStateAsync(location);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"[Mirage.Navigation] Failed to process browser popstate '{location}': {ex}");
+            var nextLocation = default(string);
+            lock (_popStateSync)
+            {
+                nextLocation = _pendingPopStateLocation;
+                _pendingPopStateLocation = null;
+                if (nextLocation is null)
+                {
+                    _isPopStatePumpRunning = false;
+                    return;
+                }
+            }
+
+            try
+            {
+                await ApplyBrowserPopStateAsync(nextLocation);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[Mirage.Navigation] Failed to process browser popstate '{nextLocation}': {ex}");
+            }
         }
     }
 
@@ -259,7 +297,6 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
             targetMatch = redirectedMatch;
         }
 
-        _handlingBrowserPopState = true;
         _historyWriteSuppressed = true;
 
         try
@@ -294,7 +331,6 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         finally
         {
             _historyWriteSuppressed = false;
-            _handlingBrowserPopState = false;
         }
 
         ProjectCurrentRoute(MirageNavigationTrigger.BrowserPopState);

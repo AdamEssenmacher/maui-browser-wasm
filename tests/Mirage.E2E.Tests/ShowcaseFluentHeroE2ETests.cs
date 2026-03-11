@@ -541,6 +541,28 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     }
 
     [Fact]
+    public async Task NavigationLab_RapidBrowserBack_DoesNotDropPendingPopState()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        var page = await OpenAsync(context);
+
+        await page.EvaluateAsync(
+            "() => document.querySelector('[data-automation-id=\"showcase-open-navigation-lab\"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))");
+        await page.WaitForFunctionAsync("() => window.location.pathname === '/navigation-lab'");
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-navigation-lab']");
+
+        await page.Locator("[data-automation-id='navigation-lab-push-project-101']").ClickAsync();
+        await page.WaitForFunctionAsync("() => window.location.pathname === '/projects/101'");
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-project']");
+
+        await page.Locator("[data-automation-id='showcase-project-push-next']").ClickAsync();
+        await page.WaitForFunctionAsync("() => window.location.pathname === '/projects/102'");
+
+        await page.EvaluateAsync("() => { history.back(); history.back(); }");
+        await page.WaitForFunctionAsync("() => window.location.pathname === '/navigation-lab'");
+    }
+
+    [Fact]
     public async Task LayoutLab_ContentViewScenarios_ShowCenteredAndStretchBehavior()
     {
         await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);

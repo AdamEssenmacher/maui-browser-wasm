@@ -1,3 +1,4 @@
+using Mirage.Core.Diagnostics;
 using Mirage.Web.Runtime;
 using Microsoft.Maui.Dispatching;
 
@@ -16,6 +17,7 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
     private bool _renderPending;
     private int _renderBatchDepth;
     private bool _renderRequestedDuringBatch;
+    private long _pendingRenderSequence;
 
     public MirageRenderCoordinator(IDispatcher dispatcher)
     {
@@ -43,6 +45,7 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         _renderPending = false;
         _renderBatchDepth = 0;
         _renderRequestedDuringBatch = false;
+        _pendingRenderSequence = 0;
         _eventTargetsByNodeId.Clear();
         _registeredNodes.Clear();
     }
@@ -107,6 +110,9 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         }
 
         _renderPending = true;
+        _pendingRenderSequence = MirageDiagnostics.IsEnabled
+            ? MirageDiagnostics.NextRenderSequence()
+            : 0;
         _ = _dispatcher.Dispatch(RenderPending);
     }
 
@@ -157,6 +163,8 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
     private void RenderPending()
     {
         _renderPending = false;
+        var renderSequence = _pendingRenderSequence;
+        _pendingRenderSequence = 0;
 
         if (_runtime is null || _root is null)
         {
@@ -164,6 +172,10 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         }
 
         _runtime.Render(_root.ToNode());
+        if (renderSequence > 0)
+        {
+            MirageDiagnostics.MarkRenderCompleted(renderSequence, MirageDiagnostics.GetTimestamp());
+        }
     }
 
     private void EndRenderBatch()
