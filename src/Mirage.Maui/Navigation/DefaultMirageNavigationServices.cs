@@ -35,17 +35,68 @@ internal sealed class DefaultRouteRegistry : IRouteRegistry
             return true;
         }
 
-        foreach (var entry in _byPageType)
+        MirageRouteDefinition? bestRoute = null;
+        var bestDistance = int.MaxValue;
+
+        foreach (var candidate in Routes)
         {
-            if (entry.Key.IsAssignableFrom(pageType))
+            var distance = GetAssignableDistance(pageType, candidate.PageType);
+            if (distance < 0)
             {
-                route = entry.Value;
-                return true;
+                continue;
             }
+
+            if (distance > bestDistance)
+            {
+                continue;
+            }
+
+            if (distance < bestDistance
+                || bestRoute is null
+                || candidate.Order < bestRoute.Order)
+            {
+                bestDistance = distance;
+                bestRoute = candidate;
+            }
+        }
+
+        if (bestRoute is not null)
+        {
+            route = bestRoute;
+            return true;
         }
 
         route = null!;
         return false;
+    }
+
+    private static int GetAssignableDistance(Type runtimeType, Type mappedType)
+    {
+        if (!mappedType.IsAssignableFrom(runtimeType))
+        {
+            return -1;
+        }
+
+        if (runtimeType == mappedType)
+        {
+            return 0;
+        }
+
+        var distance = 0;
+        var current = runtimeType;
+        while (current is not null)
+        {
+            if (current == mappedType)
+            {
+                return distance;
+            }
+
+            distance++;
+            current = current.BaseType;
+        }
+
+        // Should be unreachable for Page inheritance, but keep deterministic ordering fallback.
+        return int.MaxValue / 2;
     }
 }
 

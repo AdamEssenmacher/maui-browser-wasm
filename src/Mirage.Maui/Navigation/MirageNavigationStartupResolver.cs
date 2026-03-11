@@ -1,4 +1,5 @@
 using Mirage.Web.Runtime;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls;
 
 namespace Mirage.Maui.Navigation;
@@ -26,6 +27,7 @@ internal sealed class MirageNavigationStartupResolver : IMirageNavigationStartup
         var routeSerializer = services.GetService(typeof(IRouteSerializer)) as IRouteSerializer;
         var pageActivator = services.GetService(typeof(IPageActivator)) as IPageActivator;
         var parameterBinder = services.GetService(typeof(IRouteParameterBinder)) as IRouteParameterBinder;
+        var guards = services.GetServices<INavigationGuard>().ToArray();
 
         if (browserHistory is null
             || routeRegistry is null
@@ -37,8 +39,22 @@ internal sealed class MirageNavigationStartupResolver : IMirageNavigationStartup
         }
 
         var location = browserHistory.GetCurrentLocation();
-        if (!routeParser.TryParse(location, routeRegistry, out var match))
+        if (!TryResolveTargetMatch(location, routeRegistry, routeParser, out var match))
         {
+            return;
+        }
+
+        var currentPage = ResolveCurrentPage(navigationPage);
+        var currentRoute = ResolveCurrentRoute(currentPage, routeRegistry, routeParser, routeSerializer);
+        var guardDecision = await EvaluateGuardsAsync(guards, currentPage, currentRoute, match);
+        if (guardDecision.Action == NavigationGuardAction.Cancel)
+        {
+            if (currentRoute is not null)
+            {
+                browserHistory.Replace(currentRoute.Path);
+                return;
+            }
+
             if (routeRegistry.FallbackRoute is null)
             {
                 return;
@@ -50,7 +66,22 @@ internal sealed class MirageNavigationStartupResolver : IMirageNavigationStartup
             return;
         }
 
-        var currentPage = ResolveCurrentPage(navigationPage);
+        if (guardDecision.Action == NavigationGuardAction.Redirect)
+        {
+            if (string.IsNullOrWhiteSpace(guardDecision.RedirectPath)
+                || !TryResolveTargetMatch(guardDecision.RedirectPath, routeRegistry, routeParser, out var redirected))
+            {
+                if (currentRoute is not null)
+                {
+                    browserHistory.Replace(currentRoute.Path);
+                }
+
+                return;
+            }
+
+            match = redirected;
+        }
+
         if (currentPage is not null
             && routeSerializer is not null
             && routeSerializer.TrySerialize(currentPage, routeRegistry, out var currentPath)
@@ -74,6 +105,84 @@ internal sealed class MirageNavigationStartupResolver : IMirageNavigationStartup
 
         await navigationPage.PushAsync(activatedPage, animated: false);
         browserHistory.Replace(match.Path);
+    }
+
+    private static bool TryResolveTargetMatch(
+        string location,
+        IRouteRegistry routeRegistry,
+        IRouteParser routeParser,
+        out MirageRouteMatch match)
+    {
+        if (routeParser.TryParse(location, routeRegistry, out match))
+        {
+            return true;
+        }
+
+        var fallbackRoute = routeRegistry.FallbackRoute;
+        if (fallbackRoute is null)
+        {
+            match = null!;
+            return false;
+        }
+
+        if (routeParser.TryParse(fallbackRoute.NormalizedTemplate, routeRegistry, out var fallbackMatch))
+        {
+            match = fallbackMatch;
+            return true;
+        }
+
+        match = new MirageRouteMatch(
+            fallbackRoute,
+            fallbackRoute.NormalizedTemplate,
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+        return true;
+    }
+
+    private static MirageRouteMatch? ResolveCurrentRoute(
+        Page? currentPage,
+        IRouteRegistry routeRegistry,
+        IRouteParser routeParser,
+        IRouteSerializer? routeSerializer)
+    {
+        if (currentPage is null
+            || routeSerializer is null
+            || !routeSerializer.TrySerialize(currentPage, routeRegistry, out var currentPath)
+            || !routeParser.TryParse(currentPath, routeRegistry, out var currentMatch))
+        {
+            return null;
+        }
+
+        return currentMatch;
+    }
+
+    private static async ValueTask<NavigationGuardDecision> EvaluateGuardsAsync(
+        IReadOnlyList<INavigationGuard> guards,
+        Page? currentPage,
+        MirageRouteMatch? currentRoute,
+        MirageRouteMatch targetRoute)
+    {
+        if (guards.Count == 0)
+        {
+            return NavigationGuardDecision.Allow();
+        }
+
+        var context = new MirageNavigationGuardContext(
+            MirageNavigationTrigger.Startup,
+            currentPage,
+            currentRoute,
+            targetRoute);
+
+        foreach (var guard in guards)
+        {
+            var decision = await guard.EvaluateAsync(context);
+            if (decision.Action != NavigationGuardAction.Allow)
+            {
+                return decision;
+            }
+        }
+
+        return NavigationGuardDecision.Allow();
     }
 
     private static IReadOnlyDictionary<string, string> MergeParameters(MirageRouteMatch routeMatch)

@@ -63,6 +63,25 @@ public sealed class NavigationProjectionTests
     }
 
     [Fact]
+    public void RouteRegistry_PrefersMostSpecificAssignableType()
+    {
+        var configuration = BuildConfiguration(builder =>
+        {
+            builder.Map<TestHomePage>("/");
+            builder.Map<TestProjectBasePage>("/projects/base");
+            builder.Map<TestDerivedProjectPage>("/projects/derived");
+            builder.SetFallback<TestHomePage>();
+        });
+
+        var routeRegistry = new DefaultRouteRegistry(configuration);
+        var resolved = routeRegistry.TryGetRoute(typeof(TestDerivedProjectProxyPage), out var route);
+
+        Assert.True(resolved);
+        Assert.Equal(typeof(TestDerivedProjectPage), route.PageType);
+        Assert.Equal("/projects/derived", route.NormalizedTemplate);
+    }
+
+    [Fact]
     public void RouteParameterBinder_BindsSupportedPrimitiveVariants()
     {
         var binder = new DefaultRouteParameterBinder();
@@ -160,6 +179,29 @@ public sealed class NavigationProjectionTests
     }
 
     [Fact]
+    public async Task StartupResolver_DeepLink_GuardCancel_PreventsActivationAndRestoresCurrentRoute()
+    {
+        var history = new BrowserHistoryProbe("/projects/55?mode=details");
+        var configuration = BuildConfiguration(builder =>
+        {
+            builder.Map<TestHomePage>("/");
+            builder.Map<TestProjectPage>("/projects/{projectId}");
+            builder.SetFallback<TestHomePage>();
+        });
+
+        var services = CreateNavigationServices(configuration, history, new CancelProjectsGuard());
+        var resolver = new MirageNavigationStartupResolver();
+        var window = new Window(new NavigationPage(new TestHomePage()));
+
+        await resolver.ApplyInitialRouteAsync(window, services);
+
+        var navigationPage = Assert.IsType<NavigationPage>(window.Page);
+        Assert.IsType<TestHomePage>(ResolveCurrentPage(navigationPage));
+        Assert.Equal("/", history.CurrentLocation);
+        Assert.Contains("replace:/", history.Writes);
+    }
+
+    [Fact]
     public void NavigationHistoryPolicy_MapsTriggersToDeterministicWriteModes()
     {
         var configuration = BuildConfiguration(builder =>
@@ -209,7 +251,8 @@ public sealed class NavigationProjectionTests
 
     private static ServiceProvider CreateNavigationServices(
         MirageNavigationConfiguration configuration,
-        BrowserHistoryProbe history)
+        BrowserHistoryProbe history,
+        params INavigationGuard[] guards)
     {
         var services = new ServiceCollection();
         services.AddSingleton(configuration);
@@ -220,7 +263,17 @@ public sealed class NavigationProjectionTests
         services.AddSingleton<IRouteParameterBinder, DefaultRouteParameterBinder>();
         services.AddSingleton<INavigationHistoryPolicy, DefaultNavigationHistoryPolicy>();
         services.AddSingleton<INavigationTitlePolicy, DefaultNavigationTitlePolicy>();
-        services.AddSingleton<INavigationGuard, AllowAllNavigationGuard>();
+        if (guards.Length == 0)
+        {
+            services.AddSingleton<INavigationGuard, AllowAllNavigationGuard>();
+        }
+        else
+        {
+            foreach (var guard in guards)
+            {
+                services.AddSingleton<INavigationGuard>(guard);
+            }
+        }
         services.AddSingleton<IMirageBrowserHistory>(history);
 
         return services.BuildServiceProvider();
@@ -306,6 +359,18 @@ public sealed class NavigationProjectionTests
         public string? Mode { get; set; }
     }
 
+    private class TestProjectBasePage : ContentPage
+    {
+    }
+
+    private class TestDerivedProjectPage : TestProjectBasePage
+    {
+    }
+
+    private sealed class TestDerivedProjectProxyPage : TestDerivedProjectPage
+    {
+    }
+
     private sealed class BindingProbePage : ContentPage
     {
         public int ProbeId { get; set; }
@@ -325,5 +390,19 @@ public sealed class NavigationProjectionTests
     {
         Basic,
         Advanced
+    }
+
+    private sealed class CancelProjectsGuard : INavigationGuard
+    {
+        public ValueTask<NavigationGuardDecision> EvaluateAsync(MirageNavigationGuardContext context, CancellationToken cancellationToken = default)
+        {
+            _ = cancellationToken;
+            if (context.TargetRoute.Route.PageType == typeof(TestProjectPage))
+            {
+                return ValueTask.FromResult(NavigationGuardDecision.Cancel());
+            }
+
+            return ValueTask.FromResult(NavigationGuardDecision.Allow());
+        }
     }
 }
