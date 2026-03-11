@@ -1,3 +1,4 @@
+using Mirage.Core.Diagnostics;
 using Mirage.Core.Semantics;
 using Microsoft.Maui;
 using Microsoft.Maui.Handlers;
@@ -8,6 +9,7 @@ namespace Mirage.Maui.Handlers;
 public abstract class MirageViewHandler<TVirtualView> : ViewHandler<TVirtualView, MiragePlatformView>, IMiragePlatformHandler
     where TVirtualView : class, IView
 {
+    private static readonly IDisposable NoopRenderBatchScope = new NoopDisposable();
     private readonly Func<MiragePlatformView> _platformViewFactory;
 
     protected MirageViewHandler(
@@ -68,6 +70,11 @@ public abstract class MirageViewHandler<TVirtualView> : ViewHandler<TVirtualView
         Coordinator?.RequestRender();
     }
 
+    protected IDisposable BeginRenderBatch()
+    {
+        return Coordinator?.BeginRenderBatch() ?? NoopRenderBatchScope;
+    }
+
     protected bool TryGetChild(IView view, out IElementHandler childHandler, out MiragePlatformView childPlatformView)
     {
         if (MauiContext is null)
@@ -77,7 +84,17 @@ public abstract class MirageViewHandler<TVirtualView> : ViewHandler<TVirtualView
             return false;
         }
 
+        var diagnosticsEnabled = MirageDiagnostics.IsEnabled;
+        var startTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
         childHandler = view.ToHandler(MauiContext);
+        if (diagnosticsEnabled)
+        {
+            var elapsedMs = MirageDiagnostics.GetElapsedMilliseconds(startTimestamp, MirageDiagnostics.GetTimestamp());
+            MirageDiagnostics.Log(
+                "handler.child",
+                $"parentHandler={GetType().Name} view={view.GetType().Name} handler={childHandler.GetType().Name} toHandlerMs={elapsedMs:0.###}");
+        }
+
         if (childHandler.PlatformView is MiragePlatformView miragePlatformView)
         {
             childPlatformView = miragePlatformView;
@@ -87,5 +104,12 @@ public abstract class MirageViewHandler<TVirtualView> : ViewHandler<TVirtualView
         childHandler = null!;
         childPlatformView = null!;
         return false;
+    }
+
+    private sealed class NoopDisposable : IDisposable
+    {
+        public void Dispose()
+        {
+        }
     }
 }

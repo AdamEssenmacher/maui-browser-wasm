@@ -50,6 +50,7 @@ public sealed class ArchitectureBoundaryTests
             "MirageLabelHandler.cs",
             "MirageContentViewHandler.cs",
             "MirageContentPageHandler.cs",
+            "MirageNavigationPageHandler.cs",
             "MirageLayoutHandler.cs",
             "MirageWindowHandler.cs"
         };
@@ -209,6 +210,55 @@ public sealed class ArchitectureBoundaryTests
         var text = File.ReadAllText(hostingPath);
         Assert.Contains("typeof(ScrollView)", text, StringComparison.Ordinal);
         Assert.Contains("typeof(MirageScrollViewHandler)", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BrowserPlatform_RegistersNavigationPageHandler()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var text = File.ReadAllText(hostingPath);
+        Assert.Contains("typeof(NavigationPage)", text, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageNavigationPageHandler)", text, StringComparison.Ordinal);
+        Assert.Contains("UseMirageNavigation(", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NavigationProjection_DoesNotOverrideConfiguredHistoryPolicy()
+    {
+        var handlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageNavigationPageHandler.cs");
+        Assert.True(File.Exists(handlerPath), $"Expected handler file not found: {handlerPath}");
+
+        var text = File.ReadAllText(handlerPath);
+        Assert.DoesNotContain("writeMode == MirageHistoryWriteMode.Replace", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("writeMode = MirageHistoryWriteMode.Push", text, StringComparison.Ordinal);
+        Assert.Contains("DefaultRouteParser.ParseLocation(browserHistory.GetCurrentLocation())", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void NavigationProjection_PopStatePath_UsesSafeDispatchAndExceptionGuard()
+    {
+        var handlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageNavigationPageHandler.cs");
+        Assert.True(File.Exists(handlerPath), $"Expected handler file not found: {handlerPath}");
+
+        var text = File.ReadAllText(handlerPath);
+        Assert.Contains("SafeApplyBrowserPopStateAsync", text, StringComparison.Ordinal);
+        Assert.Contains("dispatcher.Dispatch(() => _ = SafeApplyBrowserPopStateAsync())", text, StringComparison.Ordinal);
+        Assert.Contains("_pendingPopStateLocation = location;", text, StringComparison.Ordinal);
+        Assert.Contains("catch (Exception ex)", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BrowserAppHost_InvokesNavigationStartupResolverBeforeHandlerRealization()
+    {
+        var appHostPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageBrowserAppHost.cs");
+        Assert.True(File.Exists(appHostPath), $"Expected browser app host file not found: {appHostPath}");
+
+        var text = File.ReadAllText(appHostPath);
+        Assert.Contains("IMirageNavigationStartupResolver", text, StringComparison.Ordinal);
+        Assert.Contains("ApplyInitialRouteAsync(window, mauiApp.Services)", text, StringComparison.Ordinal);
+        Assert.Contains("IsEnabledForAssembly", text, StringComparison.Ordinal);
     }
 
     [Fact]

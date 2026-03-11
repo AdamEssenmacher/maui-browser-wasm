@@ -1,4 +1,5 @@
 using Mirage.Core.Diff;
+using Mirage.Core.Diagnostics;
 using Mirage.Core.Providers;
 using Mirage.Core.Semantics;
 using Mirage.Web.Dom;
@@ -38,13 +39,29 @@ public sealed class MirageRuntime : IMirageRuntime
     {
         ArgumentNullException.ThrowIfNull(nextRoot);
 
+        var diagnosticsEnabled = MirageDiagnostics.IsEnabled;
+        var renderStartTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
+        var diffStartTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
         var operations = _diffEngine.Diff(_currentRoot, nextRoot);
+        var diffEndTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
+        var applyStartTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
         foreach (var operation in operations)
         {
             Apply(operation);
         }
+        var applyEndTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
 
         _currentRoot = nextRoot;
+
+        if (diagnosticsEnabled)
+        {
+            var totalMs = MirageDiagnostics.GetElapsedMilliseconds(renderStartTimestamp, MirageDiagnostics.GetTimestamp());
+            var diffMs = MirageDiagnostics.GetElapsedMilliseconds(diffStartTimestamp, diffEndTimestamp);
+            var applyMs = MirageDiagnostics.GetElapsedMilliseconds(applyStartTimestamp, applyEndTimestamp);
+            MirageDiagnostics.Log(
+                "runtime.render",
+                $"root={nextRoot.NodeId} operations={operations.Count} diffMs={diffMs:0.###} applyMs={applyMs:0.###} totalMs={totalMs:0.###}");
+        }
     }
 
     public void SetViewport(double width, double height)

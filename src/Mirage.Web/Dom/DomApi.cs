@@ -109,8 +109,35 @@ internal static partial class DomApi
     [JSImport("scrollToAutomationId", Module)]
     internal static partial bool ScrollToAutomationId(nint rootElement, string automationId, bool smooth);
 
+    [JSImport("getLocationPathAndQueryAndHash", Module)]
+    internal static partial string GetLocationPathAndQueryAndHash();
+
+    [JSImport("pushHistoryState", Module)]
+    internal static partial void PushHistoryState(string path);
+
+    [JSImport("replaceHistoryState", Module)]
+    internal static partial void ReplaceHistoryState(string path);
+
+    [JSImport("getDocumentTitle", Module)]
+    internal static partial string GetDocumentTitle();
+
+    [JSImport("setDocumentTitle", Module)]
+    internal static partial void SetDocumentTitle(string? title);
+
+    [JSImport("subscribePopState", Module)]
+    internal static partial int SubscribePopState([JSMarshalAs<JSType.Function>] Action callback);
+
+    [JSImport("unsubscribePopState", Module)]
+    internal static partial void UnsubscribePopState(int subscriptionId);
+
+    [JSImport("isDiagnosticsEnabled", Module)]
+    internal static partial bool IsDiagnosticsEnabled();
+
     [JSImport("fetchText", Module)]
     internal static partial Task<string?> FetchTextAsync(string path);
+
+    [JSImport("fetchTextWithStatusJson", Module)]
+    internal static partial Task<string?> FetchTextWithStatusJsonAsync(string path);
 
     [JSImport("installHotReloadHintBridge", Module)]
     internal static partial void InstallHotReloadHintBridge();

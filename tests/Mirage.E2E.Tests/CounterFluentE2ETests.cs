@@ -7,6 +7,8 @@ namespace Mirage.E2E.Tests;
 
 public sealed class CounterFluentE2ETests : IClassFixture<BrowserHostFixture>
 {
+    private static readonly string? s_diagnosticsLogFile = Environment.GetEnvironmentVariable("MIRAGE_DIAGNOSTICS_LOG_FILE");
+    private static readonly object s_diagnosticsLogSync = new();
     private readonly BrowserHostFixture _fixture;
 
     public CounterFluentE2ETests(BrowserHostFixture fixture)
@@ -104,6 +106,7 @@ public sealed class CounterFluentE2ETests : IClassFixture<BrowserHostFixture>
         page.Console += (_, message) =>
         {
             diagnostics.Enqueue($"[console:{message.Type}] {message.Text}");
+            AppendDiagnosticsLine(message.Text);
         };
 
         page.PageError += (_, message) =>
@@ -126,6 +129,28 @@ public sealed class CounterFluentE2ETests : IClassFixture<BrowserHostFixture>
         }
 
         return sb.ToString();
+    }
+
+    private static void AppendDiagnosticsLine(string? line)
+    {
+        if (string.IsNullOrWhiteSpace(line)
+            || string.IsNullOrWhiteSpace(s_diagnosticsLogFile)
+            || !line.Contains("[Mirage.Diagnostics]", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        try
+        {
+            lock (s_diagnosticsLogSync)
+            {
+                File.AppendAllText(s_diagnosticsLogFile, line + Environment.NewLine);
+            }
+        }
+        catch
+        {
+            // Diagnostics file output is best-effort and must never fail the test.
+        }
     }
 
     private static async Task<double> ReadElementWidthAsync(IPage page, string selector)

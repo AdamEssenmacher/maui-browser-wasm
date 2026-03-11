@@ -1,3 +1,4 @@
+using Mirage.Core.Diagnostics;
 using Mirage.Core.Semantics;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
@@ -290,6 +291,8 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
 
     private void SetContent(IView? content)
     {
+        using var renderBatch = BeginRenderBatch();
+
         if (_currentContentHandler is not null && !ReferenceEquals(_currentContent, content))
         {
             DisconnectCurrentContent();
@@ -303,7 +306,17 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
             return;
         }
 
+        var diagnosticsEnabled = MirageDiagnostics.IsEnabled;
+        var toHandlerStartTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
         var contentHandler = content.ToHandler(MauiContext);
+        if (diagnosticsEnabled)
+        {
+            var elapsedMs = MirageDiagnostics.GetElapsedMilliseconds(toHandlerStartTimestamp, MirageDiagnostics.GetTimestamp());
+            MirageDiagnostics.Log(
+                "handler.content",
+                $"handler={GetType().Name} content={content.GetType().Name} childHandler={contentHandler.GetType().Name} toHandlerMs={elapsedMs:0.###}");
+        }
+
         if (contentHandler.PlatformView is not MiragePlatformView contentPlatformView)
         {
             throw new InvalidOperationException("MirageScrollViewHandler requires child handlers to expose MiragePlatformView.");

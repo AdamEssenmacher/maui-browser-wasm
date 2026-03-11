@@ -22,6 +22,14 @@ public static class Program
         var builder = MauiApp.CreateBuilder();
         builder.UseMauiApp<ShowcaseApp>();
         builder.UseMirageBrowserPlatform();
+        builder.UseMirageNavigation(routes =>
+        {
+            routes.Map<ShowcaseHeroPage>("/");
+            routes.Map<ShowcaseNavigationLabPage>("/navigation-lab");
+            routes.Map<ShowcaseProjectPage>("/projects/{projectId}");
+            routes.SetFallback<ShowcaseHeroPage>();
+            routes.SetDefaultTitle("Mirage Showcase");
+        });
         builder.ConfigureMauiHandlers(handlers =>
         {
             handlers.AddHandler(typeof(ShowcaseVendorWidget), typeof(ShowcaseVendorWidgetHandler));
@@ -55,7 +63,10 @@ internal sealed class ShowcaseApp : Application
     protected override Window CreateWindow(IActivationState? activationState)
     {
         _ = activationState;
-        return new Window(new ShowcaseHeroPage(CreateMirageGenericWidget));
+        return new Window(new NavigationPage(new ShowcaseHeroPage(CreateMirageGenericWidget))
+        {
+            AutomationId = "showcase-navigation-root"
+        });
     }
 
     private static View CreateMirageGenericWidget(EventHandler onClicked)

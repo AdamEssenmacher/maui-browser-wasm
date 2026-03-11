@@ -376,6 +376,28 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void RenderCoordinator_BatchesRenderRequests_DuringScope()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var root = MiragePlatformView.CreateControl(ComponentKind.Root);
+        coordinator.Register(root, eventTarget: null);
+        coordinator.SetRoot(root);
+        var baselineRenderCount = runtime.RenderCount;
+
+        using (coordinator.BeginRenderBatch())
+        {
+            coordinator.RequestRender();
+            coordinator.RequestRender();
+            coordinator.RequestRender();
+        }
+
+        Assert.Equal(baselineRenderCount + 1, runtime.RenderCount);
+    }
+
+    [Fact]
     public void RenderCoordinator_ScrollBridge_RoutesToRuntimeDeterministically()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
@@ -499,6 +521,8 @@ public sealed class HandlerRuntimeIntegrationTests
 
         public NodeBase? LastRendered { get; private set; }
 
+        public int RenderCount { get; private set; }
+
         public IMirageEventSink? Sink { get; private set; }
 
         public void SetEventSink(IMirageEventSink? eventSink)
@@ -509,6 +533,7 @@ public sealed class HandlerRuntimeIntegrationTests
         public void Render(NodeBase nextRoot)
         {
             LastRendered = nextRoot;
+            RenderCount++;
         }
 
         public void SetViewport(double width, double height)

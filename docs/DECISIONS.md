@@ -258,6 +258,13 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added hybrid detection hooks in `mirage-dom.js`/`main.mjs`: websocket hint sniffing for low-latency scans plus polling fallback for correctness when hints are absent or partial.
 - Added integration tests for repeated `x:Name` XAML reapply and `ResourceDictionary` clear+reload semantics, and converted `Counter.Fluent` page authoring to XAML as the minimal app-level hot-reload harness.
 - XAML apply target discovery now includes the resolved primary host window in addition to `Application.Windows` so hot reload still applies when MAUI does not populate the application window collection in browser-hosted startup paths.
+
+## 2026-03-10 (Navigation Extensibility Wave: NavigationPage-First Browser Projection)
+- Navigation was locked to a `NavigationPage`-first model: MAUI stack operations (`PushAsync`, `PopAsync`, `PopToRootAsync`) remain source of truth while Mirage projects current-page state into browser URL/history/title.
+- Added extensibility seams via `UseMirageNavigation(...)` and DI policies (`IRouteRegistry`, parser/serializer, page activator, parameter binder, guard, history policy, title policy) so apps control route shape/policy without replacing core stack semantics.
+- Added provider-neutral browser history interop (`location`, `pushState`, `replaceState`, `popstate`, title) and startup deep-link bootstrap (`MirageBrowserAppHost`) to restore the current visible page route on initial load/refresh.
+- `Showcase.Fluent` now dogfoods route projection with mapped routes (`/`, `/navigation-lab`, `/projects/{id}`) while preserving independent in-page section navigation (`IShowcaseSectionNavigator`) for hero section scrolling.
+- Non-goals remain explicit: no Shell/tabs/flyout stack, no router-first replacement of MAUI semantics, and no provider-specific navigation behavior.
 - Browser host startup now initializes the Mirage XAML hot-reload service unconditionally for browser `Application` hosts instead of gating on `DOTNET_WATCH`, because that environment variable is not reliably visible inside the WebAssembly runtime.
 - Browser builds now create deterministic hot-reload mirror files under `wwwroot/_hotreload/{AssemblyName}/{relative-xaml-path}` before static-asset resolution, and attempt hard-link creation from `App/*.xaml` to keep source edits immediately visible at `/_hotreload/...` without host restart.
 - To prevent duplicate static-web-asset collisions, generated mirror paths are excluded from default content discovery and only the explicit `MauiXaml`-backed hot-reload mappings participate in endpoint generation.

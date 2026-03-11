@@ -1,4 +1,5 @@
 using Mirage.Core.Semantics;
+using System.Text.Json;
 
 namespace Mirage.Web.Dom;
 
@@ -111,13 +112,85 @@ public sealed class DomElement
         return DomApi.ScrollToAutomationId(Handle, automationId, smooth);
     }
 
+    public static string GetLocationPathAndQueryAndHash() => DomApi.GetLocationPathAndQueryAndHash();
+
+    public static void PushHistoryState(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        DomApi.PushHistoryState(path);
+    }
+
+    public static void ReplaceHistoryState(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        DomApi.ReplaceHistoryState(path);
+    }
+
+    public static string GetDocumentTitle() => DomApi.GetDocumentTitle();
+
+    public static void SetDocumentTitle(string? title) => DomApi.SetDocumentTitle(title);
+
+    public static int SubscribePopState(Action callback)
+    {
+        ArgumentNullException.ThrowIfNull(callback);
+        return DomApi.SubscribePopState(callback);
+    }
+
+    public static void UnsubscribePopState(int subscriptionId) => DomApi.UnsubscribePopState(subscriptionId);
+
+    public static bool IsDiagnosticsEnabled() => DomApi.IsDiagnosticsEnabled();
+
     public static Task<string?> FetchTextAsync(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         return DomApi.FetchTextAsync(path);
     }
 
+    public static async Task<FetchTextResult> FetchTextWithStatusAsync(string path)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        var json = await DomApi.FetchTextWithStatusJsonAsync(path);
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return FetchTextResult.Failure(0);
+        }
+
+        try
+        {
+            var payload = JsonSerializer.Deserialize<FetchTextPayload>(json);
+            if (payload is null)
+            {
+                return FetchTextResult.Failure(0);
+            }
+
+            return payload.Ok
+                ? FetchTextResult.Success(payload.Status, payload.Text)
+                : FetchTextResult.Failure(payload.Status);
+        }
+        catch
+        {
+            return FetchTextResult.Failure(0);
+        }
+    }
+
     public static void InstallHotReloadHintBridge() => DomApi.InstallHotReloadHintBridge();
 
     public static string DrainHotReloadHintsJson() => DomApi.DrainHotReloadHintsJson();
+
+    public readonly record struct FetchTextResult(bool IsSuccess, int StatusCode, string? Text)
+    {
+        public static FetchTextResult Success(int statusCode, string? text) => new(true, statusCode, text);
+
+        public static FetchTextResult Failure(int statusCode) => new(false, statusCode, null);
+    }
+
+    private sealed class FetchTextPayload
+    {
+        public bool Ok { get; set; }
+
+        public int Status { get; set; }
+
+        public string? Text { get; set; }
+    }
 }

@@ -7,6 +7,8 @@ namespace Mirage.E2E.Tests;
 
 public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixture>
 {
+    private static readonly string? s_diagnosticsLogFile = Environment.GetEnvironmentVariable("MIRAGE_DIAGNOSTICS_LOG_FILE");
+    private static readonly object s_diagnosticsLogSync = new();
     private readonly ShowcaseHostFixture _fixture;
 
     public ShowcaseFluentHeroE2ETests(ShowcaseHostFixture fixture)
@@ -452,6 +454,115 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     }
 
     [Fact]
+    public async Task NavigationLab_DeepLink_OpensCorrectPage()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        var page = await OpenAsync(
+            context,
+            path: "/navigation-lab",
+            waitForSelector: "[data-automation-id='showcase-page-navigation-lab']");
+
+        var routeLabel = await page.Locator("[data-automation-id='showcase-navigation-lab-route']").InnerTextAsync();
+        var pathname = await page.EvaluateAsync<string>("() => window.location.pathname");
+
+        Assert.Contains("/navigation-lab", routeLabel, StringComparison.Ordinal);
+        Assert.Equal("/navigation-lab", pathname);
+    }
+
+    [Fact]
+    public async Task NavigationLab_Refresh_PreservesCurrentVisiblePage()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        var page = await OpenAsync(
+            context,
+            path: "/projects/77?mode=details",
+            waitForSelector: "[data-automation-id='showcase-page-project']");
+
+        var beforePath = await page.EvaluateAsync<string>("() => window.location.pathname");
+        Assert.Equal("/projects/77", beforePath);
+
+        await page.ReloadAsync(new PageReloadOptions
+        {
+            WaitUntil = WaitUntilState.DOMContentLoaded
+        });
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-project']");
+
+        var pathname = await page.EvaluateAsync<string>("() => window.location.pathname");
+        Assert.Equal("/projects/77", pathname);
+    }
+
+    [Fact]
+    public async Task NavigationLab_BrowserBackForward_SynchronizesVisiblePage()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        var page = await OpenAsync(context);
+        var historyLengthBeforeOpen = await page.EvaluateAsync<int>("() => window.history.length");
+
+        await page.EvaluateAsync(
+            "() => document.querySelector('[data-automation-id=\"showcase-open-navigation-lab\"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))");
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-navigation-lab']");
+        var labPath = await page.EvaluateAsync<string>("() => window.location.pathname");
+        Assert.Equal("/navigation-lab", labPath);
+        var historyLengthAfterOpen = await page.EvaluateAsync<int>("() => window.history.length");
+        Assert.True(historyLengthAfterOpen > historyLengthBeforeOpen, $"Expected pushState on navigation open. Before={historyLengthBeforeOpen}, After={historyLengthAfterOpen}");
+        var historyLengthBeforeBack = await page.EvaluateAsync<int>("() => window.history.length");
+
+        await page.GoBackAsync();
+        await page.WaitForTimeoutAsync(500);
+        var homePath = await page.EvaluateAsync<string>("() => window.location.pathname");
+        Assert.Equal("/", homePath);
+        var historyLengthAfterBack = await page.EvaluateAsync<int>("() => window.history.length");
+        Assert.True(historyLengthAfterBack >= historyLengthBeforeBack - 1);
+
+        await page.GoForwardAsync();
+        await page.WaitForFunctionAsync("() => window.location.pathname === '/navigation-lab'");
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-navigation-lab']");
+        var forwardPath = await page.EvaluateAsync<string>("() => window.location.pathname");
+        Assert.Equal("/navigation-lab", forwardPath);
+    }
+
+    [Fact]
+    public async Task NavigationLab_MauiNavigation_UpdatesUrlWithoutFullReload()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        var page = await OpenAsync(context);
+
+        var navigationEntriesBefore = await page.EvaluateAsync<int>(
+            "(() => performance.getEntriesByType('navigation').length)");
+
+        await page.EvaluateAsync(
+            "() => document.querySelector('[data-automation-id=\"showcase-open-navigation-lab\"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))");
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-navigation-lab']");
+        await page.WaitForFunctionAsync("() => window.location.pathname === '/navigation-lab'");
+
+        var navigationEntriesAfter = await page.EvaluateAsync<int>(
+            "(() => performance.getEntriesByType('navigation').length)");
+        Assert.Equal(navigationEntriesBefore, navigationEntriesAfter);
+    }
+
+    [Fact]
+    public async Task NavigationLab_RapidBrowserBack_DoesNotDropPendingPopState()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        var page = await OpenAsync(context);
+
+        await page.EvaluateAsync(
+            "() => document.querySelector('[data-automation-id=\"showcase-open-navigation-lab\"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))");
+        await page.WaitForFunctionAsync("() => window.location.pathname === '/navigation-lab'");
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-navigation-lab']");
+
+        await page.Locator("[data-automation-id='navigation-lab-push-project-101']").ClickAsync();
+        await page.WaitForFunctionAsync("() => window.location.pathname === '/projects/101'");
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-project']");
+
+        await page.Locator("[data-automation-id='showcase-project-push-next']").ClickAsync();
+        await page.WaitForFunctionAsync("() => window.location.pathname === '/projects/102'");
+
+        await page.EvaluateAsync("() => { history.back(); history.back(); }");
+        await page.WaitForFunctionAsync("() => window.location.pathname === '/navigation-lab'");
+    }
+
+    [Fact]
     public async Task LayoutLab_ContentViewScenarios_ShowCenteredAndStretchBehavior()
     {
         await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
@@ -635,7 +746,10 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         Assert.True(autoPrimaryTop >= autoParentTop, $"Expected auto nested child to be positioned within parent bounds. ParentTop={autoParentTop}, ChildTop={autoPrimaryTop}");
     }
 
-    private async Task<IPage> OpenAsync(IBrowserContext context)
+    private async Task<IPage> OpenAsync(
+        IBrowserContext context,
+        string? path = null,
+        string waitForSelector = "[data-automation-id='hero-headline']")
     {
         if (_fixture.HttpAppUrl is null)
         {
@@ -645,14 +759,18 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         var page = await context.NewPageAsync();
         var diagnostics = new ConcurrentQueue<string>();
         AttachDiagnostics(page, diagnostics);
-        await page.GotoAsync(_fixture.HttpAppUrl.ToString(), new PageGotoOptions
+        var targetUrl = path is null
+            ? _fixture.HttpAppUrl.ToString()
+            : new Uri(_fixture.HttpAppUrl, path).ToString();
+
+        await page.GotoAsync(targetUrl, new PageGotoOptions
         {
             WaitUntil = WaitUntilState.DOMContentLoaded
         });
 
         try
         {
-            await page.WaitForSelectorAsync("[data-automation-id='hero-headline']");
+            await page.WaitForSelectorAsync(waitForSelector);
         }
         catch (TimeoutException timeoutException)
         {
@@ -672,6 +790,7 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         page.Console += (_, message) =>
         {
             diagnostics.Enqueue($"[console:{message.Type}] {message.Text}");
+            AppendDiagnosticsLine(message.Text);
         };
 
         page.PageError += (_, message) =>
@@ -694,6 +813,28 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         }
 
         return sb.ToString();
+    }
+
+    private static void AppendDiagnosticsLine(string? line)
+    {
+        if (string.IsNullOrWhiteSpace(line)
+            || string.IsNullOrWhiteSpace(s_diagnosticsLogFile)
+            || !line.Contains("[Mirage.Diagnostics]", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        try
+        {
+            lock (s_diagnosticsLogSync)
+            {
+                File.AppendAllText(s_diagnosticsLogFile, line + Environment.NewLine);
+            }
+        }
+        catch
+        {
+            // Diagnostics file output is best-effort and must never fail the test.
+        }
     }
 
     private static async Task<double> ReadTopAsync(IPage page, string selector)

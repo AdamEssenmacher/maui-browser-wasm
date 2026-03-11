@@ -1,5 +1,6 @@
 using Mirage.Core.Providers;
 using Mirage.Maui.Handlers;
+using Mirage.Maui.Navigation;
 using Mirage.Web.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -19,6 +20,7 @@ public static class MirageHostingExtensions
         builder.ConfigureMauiHandlers(handlers =>
         {
             handlers.AddHandler(typeof(Window), typeof(MirageWindowHandler));
+            handlers.AddHandler(typeof(NavigationPage), typeof(MirageNavigationPageHandler));
             handlers.AddHandler(typeof(ContentPage), typeof(MirageContentPageHandler));
             handlers.AddHandler(typeof(ContentView), typeof(MirageContentViewHandler));
             handlers.AddHandler(typeof(ScrollView), typeof(MirageScrollViewHandler));
@@ -35,7 +37,23 @@ public static class MirageHostingExtensions
         builder.Services.TryAddSingleton<IMirageRenderCoordinator, MirageRenderCoordinator>();
         builder.Services.TryAddSingleton<BrowserPageNavigator>();
         builder.Services.TryAddSingleton<IMiragePageNavigator>(sp => sp.GetRequiredService<BrowserPageNavigator>());
+        builder.Services.TryAddSingleton<IMirageBrowserHistory, BrowserHistoryService>();
+        EnsureNavigationServices(builder.Services);
 
+        return builder;
+    }
+
+    public static MauiAppBuilder UseMirageNavigation(this MauiAppBuilder builder, Action<MirageNavigationBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var navigationBuilder = new MirageNavigationBuilder();
+        configure(navigationBuilder);
+        var configuration = navigationBuilder.Build();
+
+        builder.Services.Replace(ServiceDescriptor.Singleton(configuration));
+        EnsureNavigationServices(builder.Services);
         return builder;
     }
 
@@ -44,5 +62,19 @@ public static class MirageHostingExtensions
     {
         builder.Services.AddSingleton<IMirageComponentProvider, TProvider>();
         return builder;
+    }
+
+    private static void EnsureNavigationServices(IServiceCollection services)
+    {
+        services.TryAddSingleton(MirageNavigationConfiguration.Empty);
+        services.TryAddSingleton<IRouteRegistry, DefaultRouteRegistry>();
+        services.TryAddSingleton<IRouteParser, DefaultRouteParser>();
+        services.TryAddSingleton<IRouteSerializer, DefaultRouteSerializer>();
+        services.TryAddSingleton<IPageActivator, DefaultPageActivator>();
+        services.TryAddSingleton<IRouteParameterBinder, DefaultRouteParameterBinder>();
+        services.TryAddSingleton<INavigationHistoryPolicy, DefaultNavigationHistoryPolicy>();
+        services.TryAddSingleton<INavigationTitlePolicy, DefaultNavigationTitlePolicy>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<INavigationGuard, AllowAllNavigationGuard>());
+        services.TryAddSingleton<IMirageNavigationStartupResolver, MirageNavigationStartupResolver>();
     }
 }

@@ -52,6 +52,7 @@ Built-in handlers stay inside this control set. Third-party/custom handlers can 
   - Mirage browser host for the shared showcase app (`Showcase.Shared`)
   - Preserves Mirage-specific WebNode proof (`vendor-pill`) via host-only widget injection seam
   - Registers optional shared section-navigation adapter (`IShowcaseSectionNavigator`) backed by Mirage browser page navigation
+  - Registers `UseMirageNavigation(...)` route projection (`/`, `/navigation-lab`, `/projects/{id}`) while keeping `NavigationPage` stack semantics as source of truth
   - Includes focused foundations/layout labs for `Label`, core `IView` mapping, stack behavior, grid placement/spans, and surface rendering
   - Includes an exhaustive `Layout Lab` matrix validating sizing, constraints, positioning, and nested container behavior across `ContentView`, stacks, and `Grid`
   - Uses explicit `ScrollView` hosting for long-page scrolling; `ContentPage` remains non-scrollable by default
@@ -116,6 +117,7 @@ If missing, startup fails with:
 - MAUI framework/logical semantics remain MAUI-side; Mirage models platform realization only.
 - `VisualNodeBase` is a shared platform-side visual/layout projection layer, not a duplicate MAUI framework model.
 - Provider-specific mappings (Fluent, UI5, custom) live only in provider projects.
+- Navigation is `NavigationPage`-first: MAUI stack changes are the source of truth and Mirage projects them into browser URL/history through `UseMirageNavigation(...)`.
 - Dependency direction for samples is locked: `*.Fluent -> *.Shared` and `*.Maui -> *.Shared`.
 - Fluent UI Web Components are built on FAST foundations, but Mirage’s public reference-provider story is Fluent-first.
 - Providers must support control-node and web-node realization for full Mirage behavior.

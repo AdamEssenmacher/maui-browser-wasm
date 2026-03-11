@@ -142,21 +142,80 @@ export function drainHotReloadHintsJson() {
   return JSON.stringify(drained);
 }
 
+function parseBooleanFlag(value) {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  switch (value.trim().toLowerCase()) {
+    case "1":
+    case "true":
+    case "yes":
+    case "on":
+      return true;
+    default:
+      return false;
+  }
+}
+
+export function isDiagnosticsEnabled() {
+  if (typeof window === "undefined" || !window.location) {
+    return false;
+  }
+
+  try {
+    const query = new URLSearchParams(window.location.search ?? "");
+    return parseBooleanFlag(query.get("mirageDiagnostics"));
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchText(path) {
-  if (typeof path !== "string" || path.length === 0) {
+  const result = await fetchTextWithStatus(path);
+  if (!result || typeof result !== "object") {
     return null;
+  }
+
+  return result.ok ? result.text : null;
+}
+
+export async function fetchTextWithStatus(path) {
+  if (typeof path !== "string" || path.length === 0) {
+    return {
+      ok: false,
+      status: 0,
+      text: null
+    };
   }
 
   try {
     const response = await fetch(path, { cache: "no-store" });
     if (!response.ok) {
-      return null;
+      return {
+        ok: false,
+        status: response.status,
+        text: null
+      };
     }
 
-    return await response.text();
+    return {
+      ok: true,
+      status: response.status,
+      text: await response.text()
+    };
   } catch {
-    return null;
+    return {
+      ok: false,
+      status: 0,
+      text: null
+    };
   }
+}
+
+export async function fetchTextWithStatusJson(path) {
+  const result = await fetchTextWithStatus(path);
+  return JSON.stringify(result);
 }
 
 function toHandle(element) {
@@ -485,4 +544,91 @@ export function scrollToAutomationId(rootHandle, automationId, smooth) {
   });
 
   return true;
+}
+
+function normalizeHistoryPath(path) {
+  if (typeof path !== "string" || path.trim().length === 0) {
+    return "/";
+  }
+
+  let normalized = path.trim();
+  try {
+    if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
+      const url = new URL(normalized);
+      normalized = `${url.pathname || "/"}${url.search || ""}${url.hash || ""}`;
+    }
+  } catch {
+    // Keep user-provided path when URL parsing fails.
+  }
+
+  if (!normalized.startsWith("/")) {
+    normalized = `/${normalized}`;
+  }
+
+  return normalized;
+}
+
+export function getLocationPathAndQueryAndHash() {
+  if (typeof window === "undefined" || !window.location) {
+    return "/";
+  }
+
+  return `${window.location.pathname || "/"}${window.location.search || ""}${window.location.hash || ""}`;
+}
+
+export function pushHistoryState(path) {
+  if (typeof window === "undefined" || !window.history) {
+    return;
+  }
+
+  window.history.pushState(null, "", normalizeHistoryPath(path));
+}
+
+export function replaceHistoryState(path) {
+  if (typeof window === "undefined" || !window.history) {
+    return;
+  }
+
+  window.history.replaceState(null, "", normalizeHistoryPath(path));
+}
+
+export function getDocumentTitle() {
+  if (typeof document === "undefined") {
+    return "";
+  }
+
+  return document.title || "";
+}
+
+export function setDocumentTitle(title) {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  document.title = title ?? "";
+}
+
+const popStateSubscriptions = new Map();
+let nextPopStateSubscriptionId = 1;
+
+export function subscribePopState(callback) {
+  if (typeof window === "undefined" || typeof callback !== "function") {
+    return 0;
+  }
+
+  const listener = () => callback();
+  const subscriptionId = nextPopStateSubscriptionId++;
+  popStateSubscriptions.set(subscriptionId, listener);
+  window.addEventListener("popstate", listener);
+  return subscriptionId;
+}
+
+export function unsubscribePopState(subscriptionId) {
+  const listener = popStateSubscriptions.get(subscriptionId);
+  if (!listener || typeof window === "undefined") {
+    return;
+  }
+
+  window.removeEventListener("popstate", listener);
+  popStateSubscriptions.delete(subscriptionId);
 }

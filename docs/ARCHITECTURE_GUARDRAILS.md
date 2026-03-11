@@ -119,3 +119,11 @@ Policy:
 - `ContentPage` is non-scrollable by default.
 - Scrolling must be introduced with `ScrollView` (or future dedicated scrolling controls).
 - Browser document/page scrolling must not be used as an implicit substitute for missing `ScrollView`.
+
+## 10. Navigation projection policy
+
+- `NavigationPage` stack semantics are the source of truth.
+- Browser URL/history is a synchronized projection layer, not a second router source of truth.
+- Route mapping, URL parse/serialize, page activation, guard, history policy, and title policy are extension seams configured through `UseMirageNavigation(...)`.
+- Mirage continues to own stack semantics, history plumbing, and runtime handler coordination.
+- Non-goals in this wave: Shell, tabs/flyout navigation, and router-first replacement of MAUI navigation.

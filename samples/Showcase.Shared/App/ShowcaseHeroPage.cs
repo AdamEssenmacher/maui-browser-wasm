@@ -22,6 +22,7 @@ public partial class ShowcaseHeroPage : ContentPage
         _genericWidgetFactory = genericWidgetFactory;
         _state = new ShowcaseState();
         BindingContext = _state;
+        Title = "Mirage Showcase";
         LoadXamlFromResource();
         BuildBacklogTable();
         BuildGenericWidget();
@@ -94,6 +95,23 @@ public partial class ShowcaseHeroPage : ContentPage
         _ = sender;
         _ = e;
         await ScrollToSectionAsync("layout-lab");
+    }
+
+    private async void OnOpenNavigationLabPageClicked(object? sender, EventArgs e)
+    {
+        _ = sender;
+        _ = e;
+        await Navigation.PushAsync(new ShowcaseNavigationLabPage(), animated: false);
+    }
+
+    private async void OnOpenProjectRoutePageClicked(object? sender, EventArgs e)
+    {
+        _ = sender;
+        _ = e;
+        await Navigation.PushAsync(new ShowcaseProjectPage
+        {
+            ProjectId = "42"
+        }, animated: false);
     }
 
     private void LoadXamlFromResource()
