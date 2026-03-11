@@ -1,3 +1,4 @@
+using Mirage.Core.Diagnostics;
 using Mirage.Core.Semantics;
 
 namespace Mirage.Maui.Handlers;
@@ -225,6 +226,22 @@ public sealed class MiragePlatformView
 
     public NodeBase ToNode()
     {
+        if (MirageDiagnostics.IsEnabled && Parent is null)
+        {
+            var startTimestamp = MirageDiagnostics.GetTimestamp();
+            var node = ToNodeCore();
+            var elapsedMs = MirageDiagnostics.GetElapsedMilliseconds(startTimestamp, MirageDiagnostics.GetTimestamp());
+            MirageDiagnostics.Log(
+                "node.to-node",
+                $"rootNodeId={NodeId} subtreeNodeCount={CountSubtreeNodes()} elapsedMs={elapsedMs:0.###}");
+            return node;
+        }
+
+        return ToNodeCore();
+    }
+
+    private NodeBase ToNodeCore()
+    {
         if (string.IsNullOrWhiteSpace(NodeId))
         {
             throw new InvalidOperationException("Cannot create semantic node for platform view without assigned node id.");
@@ -233,7 +250,7 @@ public sealed class MiragePlatformView
         var childNodes = new List<NodeBase>(_children.Count);
         foreach (var child in _children)
         {
-            childNodes.Add(child.ToNode());
+            childNodes.Add(child.ToNodeCore());
         }
 
         return NodeType switch
@@ -256,5 +273,16 @@ public sealed class MiragePlatformView
                 children: childNodes),
             _ => throw new InvalidOperationException($"Unsupported platform node type '{NodeType}'.")
         };
+    }
+
+    private int CountSubtreeNodes()
+    {
+        var count = 1;
+        foreach (var child in _children)
+        {
+            count += child.CountSubtreeNodes();
+        }
+
+        return count;
     }
 }

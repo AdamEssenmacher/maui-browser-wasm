@@ -168,6 +168,36 @@
         </VerticalStackLayout>
 
         <VerticalStackLayout
+            AutomationId="showcase-navigation-lab-preview"
+            Style="{StaticResource ShowcaseSectionCardStyle}"
+            Spacing="8">
+            <Label
+                AutomationId="showcase-navigation-lab-preview-title"
+                Style="{StaticResource ShowcaseSectionTitleLabelStyle}"
+                Text="Navigation Projection Lab" />
+            <Label
+                AutomationId="showcase-navigation-lab-preview-body"
+                Style="{StaticResource ShowcaseBodyLabelStyle}"
+                Text="NavigationPage remains the source of truth. Mirage projects stack changes into browser URLs and history." />
+            <Label
+                AutomationId="showcase-navigation-lab-preview-routes"
+                Style="{StaticResource ShowcaseLayoutLabConfigLabelStyle}"
+                Text="Routes: /, /navigation-lab, /projects/{id}" />
+            <HorizontalStackLayout Spacing="10">
+                <Button
+                    AutomationId="showcase-open-navigation-lab"
+                    Clicked="OnOpenNavigationLabPageClicked"
+                    Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                    Text="Open Navigation Lab" />
+                <Button
+                    AutomationId="showcase-open-project-route"
+                    Clicked="OnOpenProjectRoutePageClicked"
+                    Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                    Text="Open /projects/42" />
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+
+        <VerticalStackLayout
             x:Name="DemoSection"
             AutomationId="demo"
             Style="{StaticResource ShowcaseSectionCardStyle}"

@@ -19,7 +19,7 @@ internal static class ShowcaseBacklogCatalog
     public static IReadOnlyList<ShowcaseBacklogRow> Rows { get; } =
     [
         new("window", "Host", "Window", ShowcaseBacklogStatus.Complete, "Primary MAUI window lifecycle is mapped."),
-        new("navigation-page", "Host", "NavigationPage", ShowcaseBacklogStatus.Started, "Single-stack browser navigation flow is implemented."),
+        new("navigation-page", "Host", "NavigationPage", ShowcaseBacklogStatus.Started, "Single-stack navigation with route/history projection, deep-link bootstrap, and browser back/forward sync is implemented."),
         new("content-page", "Host", "ContentPage", ShowcaseBacklogStatus.Complete, "Content page hosting is implemented."),
         new("content-view", "Container", "ContentView", ShowcaseBacklogStatus.Complete, "Single-child content hosting is implemented."),
         new("scroll-view", "Container", "ScrollView", ShowcaseBacklogStatus.Started, "Explicit scroll-container behavior with orientation, scrollbar visibility, and command scrolling is implemented."),

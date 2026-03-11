@@ -8,11 +8,14 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
     private readonly IDispatcher _dispatcher;
     private readonly Dictionary<string, IMirageRuntimeEventTarget> _eventTargetsByNodeId = new(StringComparer.Ordinal);
     private readonly HashSet<MiragePlatformView> _registeredNodes = new(ReferenceEqualityComparer.Instance);
+    private readonly object _batchSync = new();
     private int _nextNodeId = 1;
 
     private IMirageRuntime? _runtime;
     private MiragePlatformView? _root;
     private bool _renderPending;
+    private int _renderBatchDepth;
+    private bool _renderRequestedDuringBatch;
 
     public MirageRenderCoordinator(IDispatcher dispatcher)
     {
@@ -38,6 +41,8 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         _runtime = null;
         _root = null;
         _renderPending = false;
+        _renderBatchDepth = 0;
+        _renderRequestedDuringBatch = false;
         _eventTargetsByNodeId.Clear();
         _registeredNodes.Clear();
     }
@@ -82,13 +87,37 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
 
     public void RequestRender()
     {
-        if (_runtime is null || _root is null || _renderPending)
+        if (_runtime is null || _root is null)
+        {
+            return;
+        }
+
+        lock (_batchSync)
+        {
+            if (_renderBatchDepth > 0)
+            {
+                _renderRequestedDuringBatch = true;
+                return;
+            }
+        }
+
+        if (_renderPending)
         {
             return;
         }
 
         _renderPending = true;
         _ = _dispatcher.Dispatch(RenderPending);
+    }
+
+    public IDisposable BeginRenderBatch()
+    {
+        lock (_batchSync)
+        {
+            _renderBatchDepth++;
+        }
+
+        return new RenderBatchScope(this);
     }
 
     public bool TryGetNodeScrollPosition(string nodeId, out double left, out double top)
@@ -135,5 +164,45 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         }
 
         _runtime.Render(_root.ToNode());
+    }
+
+    private void EndRenderBatch()
+    {
+        var shouldFlushRender = false;
+        lock (_batchSync)
+        {
+            if (_renderBatchDepth == 0)
+            {
+                return;
+            }
+
+            _renderBatchDepth--;
+            if (_renderBatchDepth == 0 && _renderRequestedDuringBatch)
+            {
+                _renderRequestedDuringBatch = false;
+                shouldFlushRender = true;
+            }
+        }
+
+        if (shouldFlushRender)
+        {
+            RequestRender();
+        }
+    }
+
+    private sealed class RenderBatchScope : IDisposable
+    {
+        private MirageRenderCoordinator? _owner;
+
+        public RenderBatchScope(MirageRenderCoordinator owner)
+        {
+            _owner = owner;
+        }
+
+        public void Dispose()
+        {
+            var owner = Interlocked.Exchange(ref _owner, null);
+            owner?.EndRenderBatch();
+        }
     }
 }

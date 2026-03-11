@@ -19,11 +19,17 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageViewHandler.cs" Link="Handlers\MirageViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentPageHandler.cs" Link="Handlers\MirageContentPageHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentViewHandler.cs" Link="Handlers\MirageContentViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageNavigationPageHandler.cs" Link="Handlers\MirageNavigationPageHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageScrollViewHandler.cs" Link="Handlers\MirageScrollViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageViewMapper.cs" Link="Handlers\MirageViewMapper.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Hosting\BrowserDispatcher.cs" Link="Hosting\BrowserDispatcher.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Navigation\MirageNavigationContracts.cs" Link="Navigation\MirageNavigationContracts.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Navigation\MirageNavigationBuilder.cs" Link="Navigation\MirageNavigationBuilder.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Navigation\DefaultMirageNavigationServices.cs" Link="Navigation\DefaultMirageNavigationServices.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Navigation\MirageNavigationStartupResolver.cs" Link="Navigation\MirageNavigationStartupResolver.cs" />
     <Compile Include="..\..\src\Mirage.Maui\HotReload\MirageXamlHotReloadApplicator.cs" Link="HotReload\MirageXamlHotReloadApplicator.cs" />
     <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageEventSink.cs" Link="Runtime\IMirageEventSink.cs" />
+    <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageBrowserHistory.cs" Link="Runtime\IMirageBrowserHistory.cs" />
     <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageRuntime.cs" Link="Runtime\IMirageRuntime.cs" />
   </ItemGroup>
 

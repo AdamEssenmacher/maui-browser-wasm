@@ -166,6 +166,8 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
 
     private void RebuildChildren()
     {
+        using var renderBatch = BeginRenderBatch();
+
         var kind = ResolveComponentKind(VirtualView);
         var currentChildren = VirtualView.ToArray();
         var currentSet = new HashSet<IView>(currentChildren, ReferenceEqualityComparer.Instance);

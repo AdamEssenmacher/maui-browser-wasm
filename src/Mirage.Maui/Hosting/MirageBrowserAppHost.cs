@@ -1,6 +1,8 @@
 using Mirage.Core.Providers;
+using Mirage.Core.Diagnostics;
 using Mirage.Maui.HotReload;
 using Mirage.Maui.Handlers;
+using Mirage.Maui.Navigation;
 using Mirage.Web.Dom;
 using Mirage.Web.Runtime;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +32,7 @@ public static class MirageBrowserAppHost
         ArgumentException.ThrowIfNullOrWhiteSpace(rootElementId);
 
         await DomElement.EnsureInteropReadyAsync();
+        MirageDiagnostics.EnableIf(DomElement.IsDiagnosticsEnabled());
 
         var provider = MirageProviderValidation.GetRequiredProvider(mauiApp.Services);
         var rootDomElement = DomElement.RootById(rootElementId);
@@ -47,6 +50,10 @@ public static class MirageBrowserAppHost
 
         var application = mauiApp.Services.GetRequiredService<IApplication>();
         var window = ResolvePrimaryWindow(application);
+        if (mauiApp.Services.GetService<IMirageNavigationStartupResolver>() is { } startupResolver)
+        {
+            await startupResolver.ApplyInitialRouteAsync(window, mauiApp.Services);
+        }
 
         var mauiContext = new MauiContext(mauiApp.Services);
         var windowHandler = window.ToHandler(mauiContext);
@@ -128,8 +135,40 @@ public static class MirageBrowserAppHost
             return;
         }
 
+        if (!IsHotReloadEnabled())
+        {
+            MirageDiagnostics.Log("hotreload", "disabled via MIRAGE_HOT_RELOAD");
+            return;
+        }
+
+        if (!MirageHotReloadMetadataUpdateHandler.IsEnabledForAssembly(s_controlsApplication.GetType().Assembly))
+        {
+            return;
+        }
+
         s_hotReloadService = new MirageXamlHotReloadService(s_controlsApplication, s_primaryWindow, s_dispatcher, s_renderCoordinator);
         s_hotReloadService.Start();
+    }
+
+    private static bool IsHotReloadEnabled()
+    {
+        var raw = Environment.GetEnvironmentVariable("MIRAGE_HOT_RELOAD");
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return true;
+        }
+
+        return raw.Trim() switch
+        {
+            "0" => false,
+            "false" => false,
+            "FALSE" => false,
+            "no" => false,
+            "NO" => false,
+            "off" => false,
+            "OFF" => false,
+            _ => true
+        };
     }
 
     private static Window ResolvePrimaryWindow(IApplication application)

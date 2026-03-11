@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Showcase.Shared.App.ShowcaseNavigationLabPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    AutomationId="showcase-page-navigation-lab"
+    Title="Navigation Lab">
+    <ScrollView
+        AutomationId="showcase-navigation-lab-scroll-root"
+        Orientation="Vertical">
+        <VerticalStackLayout
+            AutomationId="showcase-navigation-lab-root"
+            HorizontalOptions="Center"
+            MaximumWidthRequest="980"
+            Style="{StaticResource ShowcasePageRootStackStyle}">
+            <VerticalStackLayout
+                AutomationId="showcase-navigation-lab-card"
+                Style="{StaticResource ShowcaseSectionCardStyle}"
+                Spacing="10">
+                <Label
+                    AutomationId="showcase-navigation-lab-title"
+                    Style="{StaticResource ShowcaseSectionTitleLabelStyle}"
+                    Text="Navigation Lab" />
+                <Label
+                    AutomationId="showcase-navigation-lab-summary"
+                    Style="{StaticResource ShowcaseBodyLabelStyle}"
+                    Text="This page proves NavigationPage-first browser routing. Push/pop changes update URL/history while MAUI stack semantics remain the source of truth." />
+                <Label
+                    AutomationId="showcase-navigation-lab-route"
+                    Style="{StaticResource ShowcaseLayoutLabConfigLabelStyle}"
+                    Text="Route: /navigation-lab" />
+
+                <HorizontalStackLayout Spacing="10">
+                    <Button
+                        AutomationId="navigation-lab-push-project-101"
+                        Clicked="OnPushProject101Clicked"
+                        Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                        Text="Push Project 101" />
+                    <Button
+                        AutomationId="navigation-lab-push-project-202"
+                        Clicked="OnPushProject202Clicked"
+                        Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                        Text="Push Project 202" />
+                    <Button
+                        AutomationId="navigation-lab-pop"
+                        Clicked="OnPopClicked"
+                        Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                        Text="Pop" />
+                    <Button
+                        AutomationId="navigation-lab-pop-to-root"
+                        Clicked="OnPopToRootClicked"
+                        Style="{StaticResource ShowcaseLabActionButtonStyle}"
+                        Text="Pop To Root" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout
+                AutomationId="showcase-navigation-lab-notes"
+                Style="{StaticResource ShowcaseSectionCardStyle}"
+                Spacing="6">
+                <Label
+                    AutomationId="showcase-navigation-lab-note-title"
+                    Style="{StaticResource ShowcaseSubsectionTitleLabelStyle}"
+                    Text="Expected Behavior" />
+                <Label
+                    AutomationId="showcase-navigation-lab-note-stack"
+                    Style="{StaticResource ShowcaseBodyLabelStyle}"
+                    Text="PushAsync/PopAsync drive the MAUI NavigationPage stack first." />
+                <Label
+                    AutomationId="showcase-navigation-lab-note-projection"
+                    Style="{StaticResource ShowcaseBodyLabelStyle}"
+                    Text="Mirage projects the visible page into browser URL/history and synchronizes browser back/forward back into stack changes." />
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

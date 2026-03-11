@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Mirage.Core.Diagnostics;
 using Mirage.Maui.Handlers;
 using Mirage.Web.Dom;
 using Microsoft.Maui.Controls;
@@ -16,6 +17,7 @@ internal sealed class MirageXamlHotReloadService : IDisposable
 
     private static readonly TimeSpan HintPollInterval = TimeSpan.FromMilliseconds(250);
     private static readonly TimeSpan FullScanInterval = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan FetchDiagnosticsWindow = TimeSpan.FromMinutes(1);
     private static readonly PropertyInfo? LogicalChildrenProperty = typeof(Element).GetProperty(
         "LogicalChildren",
         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -31,6 +33,11 @@ internal sealed class MirageXamlHotReloadService : IDisposable
     private CancellationTokenSource? _cancellationSource;
     private DateTime _nextFullScanUtc;
     private int _scanRequested;
+    private DateTime _fetchDiagnosticsWindowStartUtc = DateTime.UtcNow;
+    private int _fetchAttemptCount;
+    private int _fetchSuccessCount;
+    private int _fetchNotFoundCount;
+    private int _fetchFailureCount;
 
     public MirageXamlHotReloadService(
         Application application,
@@ -54,6 +61,7 @@ internal sealed class MirageXamlHotReloadService : IDisposable
         DomElement.InstallHotReloadHintBridge();
 
         _nextFullScanUtc = DateTime.UtcNow;
+        _fetchDiagnosticsWindowStartUtc = DateTime.UtcNow;
         _cancellationSource = new CancellationTokenSource();
         _ = RunLoopAsync(_cancellationSource.Token);
     }
@@ -70,6 +78,7 @@ internal sealed class MirageXamlHotReloadService : IDisposable
 
         cancellationSource.Cancel();
         cancellationSource.Dispose();
+        FlushFetchDiagnosticsWindow(force: true);
     }
 
     public void Dispose() => Stop();
@@ -461,7 +470,7 @@ internal sealed class MirageXamlHotReloadService : IDisposable
         }
     }
 
-    private static async Task<string?> FetchDocumentTextAsync(
+    private async Task<string?> FetchDocumentTextAsync(
         TrackedXamlDocument document,
         IReadOnlyList<string> hints)
     {
@@ -473,10 +482,11 @@ internal sealed class MirageXamlHotReloadService : IDisposable
                 continue;
             }
 
-            var hintedText = await DomElement.FetchTextAsync(hintPath);
-            if (!string.IsNullOrWhiteSpace(hintedText))
+            var hintedResult = await DomElement.FetchTextWithStatusAsync(hintPath);
+            RecordFetchOutcome(hintPath, hintedResult);
+            if (!string.IsNullOrWhiteSpace(hintedResult.Text))
             {
-                return hintedText;
+                return hintedResult.Text;
             }
         }
 
@@ -485,7 +495,9 @@ internal sealed class MirageXamlHotReloadService : IDisposable
             return null;
         }
 
-        return await DomElement.FetchTextAsync(document.HotReloadPath);
+        var directResult = await DomElement.FetchTextWithStatusAsync(document.HotReloadPath);
+        RecordFetchOutcome(document.HotReloadPath, directResult);
+        return directResult.Text;
     }
 
     private static IEnumerable<string> ResolveHintFetchPaths(
@@ -684,4 +696,57 @@ internal sealed class MirageXamlHotReloadService : IDisposable
     private sealed record LiveTreeSnapshot(
         IReadOnlyList<Element> Elements,
         IReadOnlyList<ResourceDictionary> ResourceDictionaries);
+
+    private void RecordFetchOutcome(string path, DomElement.FetchTextResult result)
+    {
+        if (!MirageDiagnostics.IsEnabled)
+        {
+            return;
+        }
+
+        _fetchAttemptCount++;
+        if (result.IsSuccess)
+        {
+            _fetchSuccessCount++;
+        }
+        else if (result.StatusCode == 404)
+        {
+            _fetchNotFoundCount++;
+        }
+        else
+        {
+            _fetchFailureCount++;
+        }
+
+        FlushFetchDiagnosticsWindow(force: false, lastPath: path);
+    }
+
+    private void FlushFetchDiagnosticsWindow(bool force, string? lastPath = null)
+    {
+        if (!MirageDiagnostics.IsEnabled)
+        {
+            return;
+        }
+
+        if (!force && DateTime.UtcNow - _fetchDiagnosticsWindowStartUtc < FetchDiagnosticsWindow)
+        {
+            return;
+        }
+
+        if (_fetchAttemptCount == 0)
+        {
+            _fetchDiagnosticsWindowStartUtc = DateTime.UtcNow;
+            return;
+        }
+
+        MirageDiagnostics.Log(
+            "hotreload.fetch",
+            $"windowStartUtc={_fetchDiagnosticsWindowStartUtc:O} attempts={_fetchAttemptCount} success={_fetchSuccessCount} notFound404={_fetchNotFoundCount} failures={_fetchFailureCount} lastPath={(lastPath ?? "<none>")}");
+
+        _fetchDiagnosticsWindowStartUtc = DateTime.UtcNow;
+        _fetchAttemptCount = 0;
+        _fetchSuccessCount = 0;
+        _fetchNotFoundCount = 0;
+        _fetchFailureCount = 0;
+    }
 }

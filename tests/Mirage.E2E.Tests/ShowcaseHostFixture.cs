@@ -8,6 +8,10 @@ namespace Mirage.E2E.Tests;
 
 public sealed class ShowcaseHostFixture : IAsyncLifetime
 {
+    private static readonly bool s_echoDiagnostics = ParseFlag("MIRAGE_DIAGNOSTICS");
+    private static readonly bool s_enableDiagnosticsQuery = ParseFlag("MIRAGE_DIAGNOSTICS");
+    private static readonly string? s_diagnosticsLogFile = Environment.GetEnvironmentVariable("MIRAGE_DIAGNOSTICS_LOG_FILE");
+    private static readonly object s_diagnosticsLogSync = new();
     private readonly ConcurrentQueue<string> _hostLogs = new();
     private Process? _sampleProcess;
 
@@ -121,7 +125,8 @@ public sealed class ShowcaseHostFixture : IAsyncLifetime
         using var _ = timeout.Token.Register(() =>
             urlSource.TrySetException(new TimeoutException($"Timed out waiting for Showcase.Fluent URL.\n{RenderHostLogs()}")));
 
-        return await urlSource.Task;
+        var appUrl = await urlSource.Task;
+        return MaybeAppendDiagnosticsQuery(appUrl);
     }
 
     private void ProcessHostLine(string? line, TaskCompletionSource<Uri> urlSource)
@@ -132,6 +137,11 @@ public sealed class ShowcaseHostFixture : IAsyncLifetime
         }
 
         _hostLogs.Enqueue(line);
+        if (s_echoDiagnostics && line.Contains("[Mirage.Diagnostics]", StringComparison.Ordinal))
+        {
+            Console.WriteLine(line);
+        }
+        WriteDiagnosticsLogLine(line);
 
         const string appUrlPrefix = "App url:";
         if (!line.StartsWith(appUrlPrefix, StringComparison.OrdinalIgnoreCase))
@@ -173,5 +183,76 @@ public sealed class ShowcaseHostFixture : IAsyncLifetime
         }
 
         return sb.ToString();
+    }
+
+    private static Uri MaybeAppendDiagnosticsQuery(Uri uri)
+    {
+        if (!s_enableDiagnosticsQuery)
+        {
+            return uri;
+        }
+
+        var builder = new UriBuilder(uri);
+        var query = builder.Query;
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            builder.Query = "mirageDiagnostics=1";
+            return builder.Uri;
+        }
+
+        if (!query.StartsWith("?", StringComparison.Ordinal))
+        {
+            query = "?" + query;
+        }
+
+        if (query.Contains("mirageDiagnostics=", StringComparison.OrdinalIgnoreCase))
+        {
+            return uri;
+        }
+
+        builder.Query = $"{query.TrimStart('?')}&mirageDiagnostics=1";
+        return builder.Uri;
+    }
+
+    private static bool ParseFlag(string variableName)
+    {
+        var raw = Environment.GetEnvironmentVariable(variableName);
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return false;
+        }
+
+        return raw.Trim() switch
+        {
+            "1" => true,
+            "true" => true,
+            "TRUE" => true,
+            "yes" => true,
+            "YES" => true,
+            "on" => true,
+            "ON" => true,
+            _ => false
+        };
+    }
+
+    private static void WriteDiagnosticsLogLine(string line)
+    {
+        if (string.IsNullOrWhiteSpace(s_diagnosticsLogFile)
+            || !line.Contains("[Mirage.Diagnostics]", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        try
+        {
+            lock (s_diagnosticsLogSync)
+            {
+                File.AppendAllText(s_diagnosticsLogFile, line + Environment.NewLine);
+            }
+        }
+        catch
+        {
+            // Diagnostics file output is best-effort and must not disrupt test execution.
+        }
     }
 }

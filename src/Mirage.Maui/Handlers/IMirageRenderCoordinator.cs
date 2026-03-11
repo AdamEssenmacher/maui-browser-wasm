@@ -16,6 +16,8 @@ public interface IMirageRenderCoordinator : IMirageEventSink
 
     void RequestRender();
 
+    IDisposable BeginRenderBatch();
+
     bool TryGetNodeScrollPosition(string nodeId, out double left, out double top);
 
     bool TrySetNodeScrollPosition(string nodeId, double left, double top, out double actualLeft, out double actualTop);
