@@ -305,17 +305,7 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
             var existingIndex = FindRouteInStack(stack, targetMatch.Path, routeRegistry, routeSerializer);
             if (existingIndex >= 0)
             {
-                if (existingIndex == 0)
-                {
-                    await VirtualView.PopToRootAsync(animated: false);
-                }
-                else
-                {
-                    while (ResolveNavigationStack(VirtualView).Count - 1 > existingIndex)
-                    {
-                        await VirtualView.PopAsync(animated: false);
-                    }
-                }
+                TrimStackToIndex(stack, existingIndex);
             }
             else
             {
@@ -323,6 +313,8 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
                 parameterBinder.Bind(page, MergeParameters(targetMatch));
                 await VirtualView.PushAsync(page, animated: false);
             }
+
+            await WaitForTopRouteAsync(targetMatch.Path, routeRegistry, routeSerializer);
 
             // Re-sync handler state from the MAUI navigation stack even if specific stack events
             // are delayed or coalesced by the platform navigation pipeline.
@@ -333,7 +325,13 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
             _historyWriteSuppressed = false;
         }
 
-        ProjectCurrentRoute(MirageNavigationTrigger.BrowserPopState);
+        var topRouteMatchesTarget = TryGetTopRoutePath(routeRegistry, routeSerializer, out var topRoutePath)
+            && string.Equals(topRoutePath, targetMatch.Path, StringComparison.OrdinalIgnoreCase);
+        if (topRouteMatchesTarget)
+        {
+            ProjectCurrentRoute(MirageNavigationTrigger.BrowserPopState);
+            return;
+        }
     }
 
     private void ApplyNavigationStack(IReadOnlyList<Page> requestedStack, MirageNavigationTrigger trigger)
@@ -633,6 +631,53 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         }
 
         return -1;
+    }
+
+    private void TrimStackToIndex(IReadOnlyList<Page> stack, int targetTopIndex)
+    {
+        var navigation = VirtualView.Navigation;
+        if (navigation is null)
+        {
+            return;
+        }
+
+        for (var index = stack.Count - 1; index > targetTopIndex; index--)
+        {
+            navigation.RemovePage(stack[index]);
+        }
+    }
+
+    private async Task WaitForTopRouteAsync(string targetPath, IRouteRegistry routeRegistry, IRouteSerializer routeSerializer)
+    {
+        const int pollIntervalMs = 10;
+        const int maxWaitMs = 500;
+
+        var waitedMs = 0;
+        while (waitedMs < maxWaitMs)
+        {
+            if (TryGetTopRoutePath(routeRegistry, routeSerializer, out var currentPath)
+                && string.Equals(currentPath, targetPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            await Task.Delay(pollIntervalMs);
+            waitedMs += pollIntervalMs;
+        }
+    }
+
+    private bool TryGetTopRoutePath(IRouteRegistry routeRegistry, IRouteSerializer routeSerializer, out string path)
+    {
+        var stack = ResolveNavigationStack(VirtualView);
+        if (stack.Count > 0
+            && routeSerializer.TrySerialize(stack[^1], routeRegistry, out var currentPath))
+        {
+            path = currentPath;
+            return true;
+        }
+
+        path = string.Empty;
+        return false;
     }
 
     private static IReadOnlyDictionary<string, string> MergeParameters(MirageRouteMatch routeMatch)

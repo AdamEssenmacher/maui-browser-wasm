@@ -511,6 +511,7 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         await page.WaitForTimeoutAsync(500);
         var homePath = await page.EvaluateAsync<string>("() => window.location.pathname");
         Assert.Equal("/", homePath);
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-open-navigation-lab']");
         var historyLengthAfterBack = await page.EvaluateAsync<int>("() => window.history.length");
         Assert.True(historyLengthAfterBack >= historyLengthBeforeBack - 1);
 
