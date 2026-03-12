@@ -142,10 +142,7 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         _pendingRenderSequence = MirageDiagnostics.IsEnabled
             ? MirageDiagnostics.NextRenderSequence()
             : 0;
-        if (!_dispatcher.DispatchDelayed(RenderDispatchDelay, RenderPending))
-        {
-            _ = _dispatcher.Dispatch(RenderPending);
-        }
+        ScheduleRenderPending();
     }
 
     public IDisposable BeginRenderBatch()
@@ -300,6 +297,14 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         if (shouldFlushRender)
         {
             RequestRender();
+        }
+    }
+
+    private void ScheduleRenderPending()
+    {
+        if (!_dispatcher.DispatchDelayed(RenderDispatchDelay, RenderPending))
+        {
+            RenderPending();
         }
     }
 

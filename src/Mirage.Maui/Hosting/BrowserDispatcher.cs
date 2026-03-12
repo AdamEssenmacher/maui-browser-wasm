@@ -11,18 +11,44 @@ internal sealed class BrowserDispatcherProvider : IDispatcherProvider
 
 internal sealed class BrowserDispatcher : IDispatcher
 {
-    public bool IsDispatchRequired => false;
+    private readonly SynchronizationContext? _synchronizationContext = SynchronizationContext.Current;
+
+    public bool IsDispatchRequired =>
+        _synchronizationContext is not null
+        && !ReferenceEquals(SynchronizationContext.Current, _synchronizationContext);
 
     public bool Dispatch(Action action)
     {
         ArgumentNullException.ThrowIfNull(action);
-        action();
+
+        if (_synchronizationContext is null || ReferenceEquals(SynchronizationContext.Current, _synchronizationContext))
+        {
+            action();
+            return true;
+        }
+
+        _synchronizationContext.Post(static state => ((Action)state!).Invoke(), action);
         return true;
     }
 
     public bool DispatchDelayed(TimeSpan delay, Action action)
     {
         ArgumentNullException.ThrowIfNull(action);
+
+        if (delay <= TimeSpan.Zero)
+        {
+            return Dispatch(action);
+        }
+
+        if (_synchronizationContext is not null)
+        {
+            _ = Task.Delay(delay).ContinueWith(
+                _ => _synchronizationContext.Post(static state => ((Action)state!).Invoke(), action),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+            return true;
+        }
 
         _ = Task.Delay(delay).ContinueWith(
             _ => Dispatch(action),
