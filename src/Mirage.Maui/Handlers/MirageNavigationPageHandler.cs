@@ -338,8 +338,6 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
 
     private void ApplyNavigationStack(IReadOnlyList<Page> requestedStack, MirageNavigationTrigger trigger)
     {
-        using var renderBatch = BeginRenderBatch();
-
         var diagnosticsEnabled = MirageDiagnostics.IsEnabled;
         var startTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
         var stepStartTimestamp = startTimestamp;
