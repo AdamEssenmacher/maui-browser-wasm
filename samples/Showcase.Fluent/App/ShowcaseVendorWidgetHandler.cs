@@ -120,7 +120,7 @@ public sealed class ShowcaseVendorWidgetHandler : MirageViewHandler<ShowcaseVend
     private static string ToPx(double value)
     {
         var normalized = double.IsFinite(value) ? Math.Max(0, value) : 0;
-        return $"{normalized:0.###}px";
+        return $"{normalized.ToString("0.###", CultureInfo.InvariantCulture)}px";
     }
 
     private static string ToCssThickness(Thickness thickness)

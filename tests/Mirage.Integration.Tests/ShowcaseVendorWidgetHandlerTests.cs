@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
@@ -74,6 +75,40 @@ public sealed class ShowcaseVendorWidgetHandlerTests
         var revisionAfter = handler.PlatformView.LocalRevision;
 
         Assert.Equal(revisionBefore, revisionAfter);
+    }
+
+    [Fact]
+    public void VendorWidgetHandler_UsesInvariantCultureForCssLengths()
+    {
+        var originalCulture = CultureInfo.CurrentCulture;
+        var originalUiCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            var de = CultureInfo.GetCultureInfo("de-DE");
+            CultureInfo.CurrentCulture = de;
+            CultureInfo.CurrentUICulture = de;
+
+            var handler = CreateHandler();
+            var widget = new ShowcaseVendorWidget
+            {
+                Text = "Invariant",
+                ChipPadding = new Thickness(1.5, 2.25, 3.75, 4.5),
+                ChipCornerRadius = 8.5,
+                ChipBorderWidth = 1.5,
+                ChipBorderColor = Color.FromArgb("#FF1E40AF")
+            };
+
+            ((IElementHandler)handler).SetVirtualView(widget);
+
+            Assert.Equal("2.25px 3.75px 4.5px 1.5px", handler.PlatformView.GetStyleValue("padding"));
+            Assert.Equal("8.5px", handler.PlatformView.GetStyleValue("borderRadius"));
+            Assert.StartsWith("1.5px solid ", handler.PlatformView.GetStyleValue("border"), StringComparison.Ordinal);
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = originalCulture;
+            CultureInfo.CurrentUICulture = originalUiCulture;
+        }
     }
 
     private static ShowcaseVendorWidgetHandler CreateHandler()
