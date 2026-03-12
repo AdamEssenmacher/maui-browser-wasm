@@ -5,12 +5,10 @@ namespace Showcase.Shared.App;
 
 public partial class ShowcaseHeroPage : ContentPage
 {
-    private const string BacklogTableHostName = "BacklogTableHost";
     private const string GenericWidgetHostName = "GenericWidgetHost";
     private const string ShowcaseScrollRootName = "ShowcaseScrollRoot";
     private const string ShowcaseScrollRootAutomationId = "showcase-scroll-root";
     private const string DemoSectionName = "DemoSection";
-    private const string ArchitectureSectionName = "ArchitectureSection";
     private const string ProvidersSectionName = "ProvidersSection";
     private const string LayoutLabSectionName = "LayoutLabSection";
 
@@ -24,7 +22,6 @@ public partial class ShowcaseHeroPage : ContentPage
         BindingContext = _state;
         Title = "Mirage Showcase";
         LoadXamlFromResource();
-        BuildBacklogTable();
         BuildGenericWidget();
     }
 
@@ -33,13 +30,6 @@ public partial class ShowcaseHeroPage : ContentPage
         _ = sender;
         _ = e;
         await ScrollToSectionAsync("demo");
-    }
-
-    private async void OnArchitectureCtaClicked(object? sender, EventArgs e)
-    {
-        _ = sender;
-        _ = e;
-        await ScrollToSectionAsync("architecture");
     }
 
     private async void OnLayoutLabScrollToTopClicked(object? sender, EventArgs e)
@@ -217,9 +207,6 @@ public partial class ShowcaseHeroPage : ContentPage
             "demo" => DemoSection
                 ?? this.FindByName<VisualElement>(DemoSectionName)
                 ?? FindVisualByAutomationId("demo"),
-            "architecture" => ArchitectureSection
-                ?? this.FindByName<VisualElement>(ArchitectureSectionName)
-                ?? FindVisualByAutomationId("architecture"),
             "providers" => ProvidersSection
                 ?? this.FindByName<VisualElement>(ProvidersSectionName)
                 ?? FindVisualByAutomationId("providers"),
@@ -324,154 +311,6 @@ public partial class ShowcaseHeroPage : ContentPage
         button.SetBinding(Button.TextProperty, nameof(ShowcaseState.GenericWidgetText));
         button.Clicked += OnGenericWidgetClicked;
         return button;
-    }
-
-    private void BuildBacklogTable()
-    {
-        var backlogTableHost = BacklogTableHost ?? this.FindByName<ScrollView>(BacklogTableHostName);
-        if (backlogTableHost is null)
-        {
-            return;
-        }
-
-        var table = new Grid
-        {
-            AutomationId = "showcase-backlog-table",
-            Style = ResolveStyle("ShowcaseBacklogTableStyle"),
-            ColumnDefinitions =
-            {
-                new ColumnDefinition { Width = new GridLength(1.7, GridUnitType.Star) },
-                new ColumnDefinition { Width = new GridLength(1.2, GridUnitType.Star) },
-                new ColumnDefinition { Width = new GridLength(1.9, GridUnitType.Star) },
-                new ColumnDefinition { Width = new GridLength(3.2, GridUnitType.Star) }
-            }
-        };
-
-        table.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        AddHeaderCell(table, row: 0, column: 0, "maui-type", "MAUI Type");
-        AddHeaderCell(table, row: 0, column: 1, "category", "Category");
-        AddHeaderCell(table, row: 0, column: 2, "status", "Status");
-        AddHeaderCell(table, row: 0, column: 3, "notes", "Notes");
-
-        var rowIndex = 1;
-        foreach (var row in ShowcaseBacklogCatalog.Rows)
-        {
-            table.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            AddRowMarker(table, row, rowIndex);
-            AddDataCell(table, rowIndex, 0, $"{row.Key}-maui-type", row.MauiType);
-            AddDataCell(table, rowIndex, 1, $"{row.Key}-category", row.Category);
-            AddStatusCell(table, rowIndex, row.Key, row.Status);
-            AddDataCell(table, rowIndex, 3, $"{row.Key}-notes", row.Notes);
-            rowIndex++;
-        }
-
-        backlogTableHost.Content = table;
-    }
-
-    private void AddHeaderCell(Grid table, int row, int column, string key, string text)
-    {
-        var label = new Label
-        {
-            AutomationId = $"showcase-backlog-cell-header-{key}",
-            Text = text,
-            Style = ResolveStyle("ShowcaseBacklogHeaderLabelStyle")
-        };
-
-        var cell = new ContentView
-        {
-            Style = ResolveStyle("ShowcaseBacklogHeaderCellStyle"),
-            Content = label
-        };
-
-        Grid.SetRow(cell, row);
-        Grid.SetColumn(cell, column);
-        table.Children.Add(cell);
-    }
-
-    private void AddStatusCell(Grid table, int row, string key, ShowcaseBacklogStatus status)
-    {
-        var button = new Button
-        {
-            AutomationId = $"showcase-backlog-cell-{key}-status-{ToStatusSlug(status)}",
-            Text = ToStatusLabel(status),
-            Style = ResolveStatusStyle(status)
-        };
-
-        var cell = new ContentView
-        {
-            Style = ResolveStyle("ShowcaseBacklogDataCellStyle"),
-            Content = button
-        };
-
-        Grid.SetRow(cell, row);
-        Grid.SetColumn(cell, 2);
-        table.Children.Add(cell);
-    }
-
-    private static void AddRowMarker(Grid table, ShowcaseBacklogRow row, int rowIndex)
-    {
-        var marker = new ContentView
-        {
-            AutomationId = $"showcase-backlog-row-{row.Key}",
-            InputTransparent = true
-        };
-
-        Grid.SetRow(marker, rowIndex);
-        Grid.SetColumn(marker, 0);
-        Grid.SetColumnSpan(marker, 4);
-        table.Children.Add(marker);
-    }
-
-    private void AddDataCell(Grid table, int row, int column, string key, string text)
-    {
-        var label = new Label
-        {
-            AutomationId = $"showcase-backlog-cell-{key}",
-            Text = text,
-            Style = ResolveStyle("ShowcaseBacklogDataLabelStyle")
-        };
-
-        var cell = new ContentView
-        {
-            Style = ResolveStyle("ShowcaseBacklogDataCellStyle"),
-            Content = label
-        };
-
-        Grid.SetRow(cell, row);
-        Grid.SetColumn(cell, column);
-        table.Children.Add(cell);
-    }
-
-    private static string ToStatusLabel(ShowcaseBacklogStatus status)
-    {
-        return status switch
-        {
-            ShowcaseBacklogStatus.Complete => "Fully Implemented (Complete)",
-            ShowcaseBacklogStatus.Started => "Partially Implemented (Started)",
-            _ => "Not Implemented (Not Started)"
-        };
-    }
-
-    private static string ToStatusSlug(ShowcaseBacklogStatus status)
-    {
-        return status switch
-        {
-            ShowcaseBacklogStatus.Complete => "complete",
-            ShowcaseBacklogStatus.Started => "started",
-            _ => "not-started"
-        };
-    }
-
-    private Style? ResolveStatusStyle(ShowcaseBacklogStatus status)
-    {
-        var styleKey = status switch
-        {
-            ShowcaseBacklogStatus.Complete => "ShowcaseBacklogStatusCompleteButtonStyle",
-            ShowcaseBacklogStatus.Started => "ShowcaseBacklogStatusStartedButtonStyle",
-            _ => "ShowcaseBacklogStatusNotStartedButtonStyle"
-        };
-
-        return ResolveStyle(styleKey);
     }
 
     private Style? ResolveStyle(string styleKey)

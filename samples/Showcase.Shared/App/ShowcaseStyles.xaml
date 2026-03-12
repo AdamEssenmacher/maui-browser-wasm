@@ -13,9 +13,6 @@
     <Color x:Key="ShowcaseActionBackgroundColor">#CCFBF1</Color>
     <Color x:Key="ShowcaseActionBorderColor">#730B7285</Color>
     <Color x:Key="ShowcaseEntryBackgroundColor">#FFFFFF</Color>
-    <Color x:Key="ShowcaseBacklogLineColor">#260F172A</Color>
-    <Color x:Key="ShowcaseBacklogHeaderBackgroundColor">#F1F5F9</Color>
-    <Color x:Key="ShowcaseBacklogCellBackgroundColor">#F8FAFC</Color>
 
     <Style x:Key="ShowcaseRootPageStyle" TargetType="ContentPage">
         <Setter Property="Background">
@@ -41,29 +38,6 @@
     <Style x:Key="ShowcaseSectionCardContentStyle" TargetType="ContentView">
         <Setter Property="BackgroundColor" Value="{StaticResource ShowcaseCardBackgroundColor}" />
         <Setter Property="Padding" Value="22" />
-    </Style>
-
-    <Style x:Key="ShowcaseBacklogHostScrollStyle" TargetType="ScrollView">
-        <Setter Property="BackgroundColor" Value="{StaticResource ShowcaseCardBackgroundColor}" />
-        <Setter Property="HorizontalScrollBarVisibility" Value="Always" />
-        <Setter Property="VerticalScrollBarVisibility" Value="Never" />
-    </Style>
-
-    <Style x:Key="ShowcaseBacklogTableStyle" TargetType="Grid">
-        <Setter Property="ColumnSpacing" Value="0" />
-        <Setter Property="RowSpacing" Value="1" />
-        <Setter Property="BackgroundColor" Value="{StaticResource ShowcaseBacklogLineColor}" />
-        <Setter Property="MinimumWidthRequest" Value="980" />
-    </Style>
-
-    <Style x:Key="ShowcaseBacklogHeaderCellStyle" TargetType="ContentView">
-        <Setter Property="BackgroundColor" Value="{StaticResource ShowcaseBacklogHeaderBackgroundColor}" />
-        <Setter Property="Padding" Value="12,10" />
-    </Style>
-
-    <Style x:Key="ShowcaseBacklogDataCellStyle" TargetType="ContentView">
-        <Setter Property="BackgroundColor" Value="{StaticResource ShowcaseBacklogCellBackgroundColor}" />
-        <Setter Property="Padding" Value="12,10" />
     </Style>
 
     <Style x:Key="ShowcaseFeatureCardStyle" TargetType="VerticalStackLayout">
@@ -141,20 +115,6 @@
         <Setter Property="TextColor" Value="{StaticResource ShowcaseMutedColor}" />
     </Style>
 
-    <Style x:Key="ShowcaseBacklogHeaderLabelStyle" TargetType="Label">
-        <Setter Property="FontFamily" Value="Space Grotesk" />
-        <Setter Property="FontSize" Value="12" />
-        <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="CharacterSpacing" Value="1.2" />
-        <Setter Property="TextTransform" Value="Uppercase" />
-        <Setter Property="TextColor" Value="{StaticResource ShowcaseInkColor}" />
-    </Style>
-
-    <Style x:Key="ShowcaseBacklogDataLabelStyle" TargetType="Label">
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="TextColor" Value="#102A43" />
-    </Style>
-
     <Style x:Key="ShowcaseSectionTitleLabelStyle" TargetType="Label">
         <Setter Property="FontFamily" Value="Space Grotesk" />
         <Setter Property="FontSize" Value="26" />
@@ -195,18 +155,18 @@
         <Setter Property="FontSize" Value="14" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="TextColor" Value="{StaticResource ShowcaseInkColor}" />
-        <Setter Property="BackgroundColor" Value="{StaticResource ShowcaseActionBackgroundColor}" />
-        <Setter Property="BorderColor" Value="{StaticResource ShowcaseActionBorderColor}" />
-        <Setter Property="BorderWidth" Value="1" />
-        <Setter Property="CornerRadius" Value="12" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BorderColor" Value="Transparent" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="CornerRadius" Value="0" />
         <Setter Property="MinimumHeightRequest" Value="42" />
     </Style>
 
     <Style x:Key="ShowcaseLabActionButtonStyle" TargetType="Button">
-        <Setter Property="BackgroundColor" Value="#DBEAFE" />
-        <Setter Property="BorderColor" Value="#6B7280" />
-        <Setter Property="BorderWidth" Value="1" />
-        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="BorderColor" Value="Transparent" />
+        <Setter Property="BorderWidth" Value="0" />
+        <Setter Property="CornerRadius" Value="0" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="MinimumHeightRequest" Value="38" />
     </Style>
@@ -224,43 +184,6 @@
         <Setter Property="FontSize" Value="13" />
         <Setter Property="CharacterSpacing" Value="0.8" />
         <Setter Property="TextTransform" Value="Uppercase" />
-    </Style>
-
-    <Style x:Key="ShowcaseBacklogStatusChipButtonStyle" TargetType="Button">
-        <Setter Property="FontFamily" Value="IBM Plex Sans" />
-        <Setter Property="FontSize" Value="12" />
-        <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="CornerRadius" Value="999" />
-        <Setter Property="BorderWidth" Value="1" />
-        <Setter Property="MinimumHeightRequest" Value="0" />
-        <Setter Property="HeightRequest" Value="30" />
-    </Style>
-
-    <Style
-        x:Key="ShowcaseBacklogStatusCompleteButtonStyle"
-        BasedOn="{StaticResource ShowcaseBacklogStatusChipButtonStyle}"
-        TargetType="Button">
-        <Setter Property="TextColor" Value="#166534" />
-        <Setter Property="BackgroundColor" Value="#D9DCFCE7" />
-        <Setter Property="BorderColor" Value="#73226043" />
-    </Style>
-
-    <Style
-        x:Key="ShowcaseBacklogStatusStartedButtonStyle"
-        BasedOn="{StaticResource ShowcaseBacklogStatusChipButtonStyle}"
-        TargetType="Button">
-        <Setter Property="TextColor" Value="#0F766E" />
-        <Setter Property="BackgroundColor" Value="#D9CCFBF1" />
-        <Setter Property="BorderColor" Value="#730F766E" />
-    </Style>
-
-    <Style
-        x:Key="ShowcaseBacklogStatusNotStartedButtonStyle"
-        BasedOn="{StaticResource ShowcaseBacklogStatusChipButtonStyle}"
-        TargetType="Button">
-        <Setter Property="TextColor" Value="#7C2D12" />
-        <Setter Property="BackgroundColor" Value="#D9FED7AA" />
-        <Setter Property="BorderColor" Value="#737C2D12" />
     </Style>
 
 </ResourceDictionary>

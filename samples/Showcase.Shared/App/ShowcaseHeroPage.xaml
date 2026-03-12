@@ -47,59 +47,6 @@
                 </VerticalStackLayout>
 
         <VerticalStackLayout
-            x:Name="ArchitectureSection"
-            AutomationId="architecture"
-            Style="{StaticResource ShowcaseSectionCardStyle}"
-            Spacing="8">
-            <Label
-                AutomationId="architecture-title"
-                Style="{StaticResource ShowcaseSectionTitleLabelStyle}"
-                Text="Architecture Snapshot" />
-            <Label
-                AutomationId="architecture-pipeline"
-                Style="{StaticResource ShowcasePipelineLabelStyle}"
-                Text="MAUI&#10;  ↓&#10;Mirage semantic runtime&#10;  ↓&#10;Component provider (Fluent, UI5, custom, ...)&#10;  ↓&#10;DOM + Web Components" />
-            <Label
-                AutomationId="architecture-body"
-                Style="{StaticResource ShowcaseBodyLabelStyle}"
-                Text="Mirage preserves the MAUI programming model while producing real web UI that works naturally with the browser platform." />
-        </VerticalStackLayout>
-
-        <VerticalStackLayout
-            AutomationId="hero-why-matters"
-            Style="{StaticResource ShowcaseSectionCardStyle}"
-            Spacing="6">
-            <Label
-                AutomationId="hero-why-title"
-                Style="{StaticResource ShowcaseSectionTitleLabelStyle}"
-                Text="Why This Matters" />
-            <Label
-                AutomationId="hero-why-body"
-                Style="{StaticResource ShowcaseBodyLabelStyle}"
-                Text="Mirage apps behave like real web applications because they are." />
-            <Label
-                AutomationId="hero-why-bullet-devtools"
-                Style="{StaticResource ShowcaseBulletLabelStyle}"
-                Text="• Inspect the UI in browser DevTools" />
-            <Label
-                AutomationId="hero-why-bullet-css"
-                Style="{StaticResource ShowcaseBulletLabelStyle}"
-                Text="• Style components with CSS" />
-            <Label
-                AutomationId="hero-why-bullet-components"
-                Style="{StaticResource ShowcaseBulletLabelStyle}"
-                Text="• Use Web Components" />
-            <Label
-                AutomationId="hero-why-bullet-platform"
-                Style="{StaticResource ShowcaseBulletLabelStyle}"
-                Text="• Integrate naturally with the web platform" />
-            <Label
-                AutomationId="hero-why-contrast"
-                Style="{StaticResource ShowcaseBodyLabelStyle}"
-                Text="Unlike canvas-based cross-platform renderers, Mirage produces inspectable DOM structure instead of drawing pixels to a graphics surface." />
-        </VerticalStackLayout>
-
-        <VerticalStackLayout
             AutomationId="hero-cta"
             Style="{StaticResource ShowcaseSectionCardStyle}"
             Spacing="8">
@@ -111,18 +58,10 @@
                     Clicked="OnDemoCtaClicked"
                     Text="Try the Live Demo" />
                 <Button
-                    AutomationId="hero-cta-architecture"
-                    Clicked="OnArchitectureCtaClicked"
-                    Text="Explore the Architecture" />
-                <Button
                     AutomationId="hero-cta-command-layout-lab"
                     Clicked="OnCommandScrollToLayoutLabClicked"
                     Text="Open Layout Lab" />
             </HorizontalStackLayout>
-            <Label
-                AutomationId="hero-cta-github-placeholder"
-                Style="{StaticResource ShowcaseMutedSmallLabelStyle}"
-                Text="View on GitHub" />
         </VerticalStackLayout>
 
         <VerticalStackLayout
@@ -202,162 +141,6 @@
             <Label
                 AutomationId="showcase-generic-widget-count"
                 Text="{Binding GenericWidgetClicksText}" />
-
-            <VerticalStackLayout
-                AutomationId="showcase-foundations-lab"
-                Style="{StaticResource ShowcaseFeatureCardStyle}"
-                Spacing="8">
-                <Label
-                    AutomationId="showcase-foundations-lab-title"
-                    Style="{StaticResource ShowcaseSubsectionTitleLabelStyle}"
-                    Text="Foundations Lab (Label + IView Core + VerticalStack)" />
-                <Label
-                    Style="{StaticResource ShowcaseBodyLabelStyle}"
-                    Text="Label live update" />
-                <Entry
-                    AutomationId="foundations-label-input"
-                    Placeholder="Type to update label"
-                    Text="{Binding FoundationsLabelInput, Mode=TwoWay}" />
-                <Label
-                    AutomationId="foundations-label-output"
-                    Text="{Binding FoundationsLabelOutput}" />
-
-                <Button
-                    AutomationId="foundations-visibility-toggle"
-                    Command="{Binding ToggleFoundationsVisibilityCommand}"
-                    Style="{StaticResource ShowcaseLabActionButtonStyle}"
-                    Text="{Binding FoundationsVisibilityButtonText}" />
-                <Label
-                    AutomationId="foundations-visibility-target"
-                    IsVisible="{Binding FoundationsVisibilityTargetVisible}"
-                    Style="{StaticResource ShowcaseBodyLabelStyle}"
-                    Text="Visibility target: this label should hide and show." />
-
-                <Button
-                    AutomationId="foundations-margin-toggle"
-                    Command="{Binding ToggleFoundationsMarginCommand}"
-                    Style="{StaticResource ShowcaseLabActionButtonStyle}"
-                    Text="{Binding FoundationsMarginButtonText}" />
-                <Label
-                    AutomationId="foundations-margin-target"
-                    Margin="{Binding FoundationsMarginTargetMargin}"
-                    Style="{StaticResource ShowcaseBodyLabelStyle}"
-                    Text="Margin target: toggle to verify deterministic margin formatting." />
-
-                <Button
-                    AutomationId="foundations-stack-spacing-toggle"
-                    Command="{Binding ToggleFoundationsStackSpacingCommand}"
-                    Style="{StaticResource ShowcaseLabActionButtonStyle}"
-                    Text="{Binding FoundationsStackSpacingButtonText}" />
-                <VerticalStackLayout
-                    AutomationId="foundations-stack-probe"
-                    Spacing="{Binding FoundationsStackSpacing}">
-                    <Label
-                        AutomationId="foundations-stack-probe-a"
-                        Text="Stack probe A" />
-                    <Label
-                        AutomationId="foundations-stack-probe-b"
-                        Text="Stack probe B" />
-                    <Label
-                        AutomationId="foundations-stack-probe-c"
-                        Text="Stack probe C" />
-                </VerticalStackLayout>
-
-                <Button
-                    AutomationId="foundations-horizontal-spacing-toggle"
-                    Command="{Binding ToggleFoundationsHorizontalStackSpacingCommand}"
-                    Style="{StaticResource ShowcaseLabActionButtonStyle}"
-                    Text="{Binding FoundationsHorizontalStackSpacingButtonText}" />
-                <HorizontalStackLayout
-                    AutomationId="foundations-horizontal-stack-probe"
-                    Spacing="{Binding FoundationsHorizontalStackSpacing}">
-                    <Label
-                        AutomationId="foundations-horizontal-probe-a"
-                        Text="Horizontal A" />
-                    <Label
-                        AutomationId="foundations-horizontal-probe-b"
-                        Text="Horizontal B" />
-                    <Label
-                        AutomationId="foundations-horizontal-probe-c"
-                        Text="Horizontal C" />
-                </HorizontalStackLayout>
-
-                <Button
-                    AutomationId="foundations-grid-spacing-toggle"
-                    Command="{Binding ToggleFoundationsGridSpacingCommand}"
-                    Style="{StaticResource ShowcaseLabActionButtonStyle}"
-                    Text="{Binding FoundationsGridSpacingButtonText}" />
-                <Grid
-                    AutomationId="foundations-grid-probe"
-                    ColumnDefinitions="Auto,*,2*"
-                    ColumnSpacing="{Binding FoundationsGridColumnSpacing}"
-                    RowDefinitions="Auto,Auto"
-                    RowSpacing="{Binding FoundationsGridRowSpacing}">
-                    <Label
-                        AutomationId="foundations-grid-cell-r0c0"
-                        Grid.Column="0"
-                        Grid.Row="0"
-                        Text="r0c0" />
-                    <Label
-                        AutomationId="foundations-grid-cell-r0c1"
-                        Grid.Column="1"
-                        Grid.Row="0"
-                        Text="r0c1" />
-                    <Label
-                        AutomationId="foundations-grid-cell-r0c2"
-                        Grid.Column="2"
-                        Grid.Row="0"
-                        Text="r0c2" />
-                    <Label
-                        AutomationId="foundations-grid-cell-span"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="2"
-                        Grid.Row="1"
-                        HorizontalOptions="Center"
-                        Text="span center" />
-                    <Label
-                        AutomationId="foundations-grid-cell-r1c2"
-                        Grid.Column="2"
-                        Grid.Row="1"
-                        HorizontalOptions="End"
-                        Text="r1c2 end" />
-                </Grid>
-
-                <ContentView
-                    AutomationId="foundations-bg-solid"
-                    BackgroundColor="#DBEAFE"
-                    HeightRequest="68"
-                    Padding="10">
-                    <Label Text="Solid background surface" />
-                </ContentView>
-
-                <ContentView
-                    AutomationId="foundations-bg-linear"
-                    HeightRequest="68"
-                    Padding="10">
-                    <ContentView.Background>
-                        <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
-                            <GradientStop Color="#BFDBFE" Offset="0.0" />
-                            <GradientStop Color="#DDD6FE" Offset="1.0" />
-                        </LinearGradientBrush>
-                    </ContentView.Background>
-                    <Label Text="Linear gradient background surface" />
-                </ContentView>
-
-                <ContentView
-                    AutomationId="foundations-size-target"
-                    BackgroundColor="#E2E8F0"
-                    HeightRequest="52"
-                    MaximumWidthRequest="260"
-                    MinimumWidthRequest="160"
-                    Padding="8"
-                    WidthRequest="220">
-                    <Label
-                        AutomationId="foundations-opacity-target"
-                        Opacity="0.58"
-                        Text="Opacity + size request probe" />
-                </ContentView>
-            </VerticalStackLayout>
         </VerticalStackLayout>
 
         <ContentView
@@ -420,25 +203,6 @@
                     Text="MAUI UI, rendered as real web UI." />
             </VerticalStackLayout>
         </ContentView>
-
-        <VerticalStackLayout
-            AutomationId="showcase-backlog"
-            Style="{StaticResource ShowcaseSectionCardStyle}"
-            Spacing="8">
-            <Label
-                AutomationId="showcase-backlog-title"
-                Style="{StaticResource ShowcaseSectionTitleLabelStyle}"
-                Text="Control / Handler Backlog" />
-            <Label
-                AutomationId="showcase-backlog-subtitle"
-                Style="{StaticResource ShowcaseBodyLabelStyle}"
-                Text="Current Mirage implementation status across MAUI controls/layouts and shared abstractions." />
-            <ScrollView
-                x:Name="BacklogTableHost"
-                AutomationId="showcase-backlog-table-host"
-                Orientation="Horizontal"
-                Style="{StaticResource ShowcaseBacklogHostScrollStyle}" />
-        </VerticalStackLayout>
 
         <VerticalStackLayout
             x:Name="LayoutLabSection"
@@ -1415,11 +1179,6 @@
                 Text="The UI you see here is rendered by Mirage." />
         </VerticalStackLayout>
 
-            <Label
-                AutomationId="hero-scroll-cue"
-                Margin="0,14,0,10"
-                Style="{StaticResource ShowcaseScrollCueLabelStyle}"
-                Text="↓ How Mirage Works" />
         </VerticalStackLayout>
         </ScrollView>
     </Grid>
