@@ -356,7 +356,7 @@ public partial class ShowcaseHeroPage : ContentPage
 
     private void BuildBacklogTable()
     {
-        var backlogTableHost = BacklogTableHost ?? this.FindByName<ContentView>(BacklogTableHostName);
+        var backlogTableHost = BacklogTableHost ?? this.FindByName<ScrollView>(BacklogTableHostName);
         if (backlogTableHost is null)
         {
             return;
@@ -365,8 +365,7 @@ public partial class ShowcaseHeroPage : ContentPage
         var table = new Grid
         {
             AutomationId = "showcase-backlog-table",
-            ColumnSpacing = 0,
-            RowSpacing = 0,
+            Style = ResolveStyle("ShowcaseBacklogTableStyle"),
             ColumnDefinitions =
             {
                 new ColumnDefinition { Width = new GridLength(1.7, GridUnitType.Star) },
@@ -397,17 +396,24 @@ public partial class ShowcaseHeroPage : ContentPage
         backlogTableHost.Content = table;
     }
 
-    private static void AddHeaderCell(Grid table, int row, int column, string key, string text)
+    private void AddHeaderCell(Grid table, int row, int column, string key, string text)
     {
         var label = new Label
         {
             AutomationId = $"showcase-backlog-cell-header-{key}",
-            Text = text
+            Text = text,
+            Style = ResolveStyle("ShowcaseBacklogHeaderLabelStyle")
         };
 
-        Grid.SetRow(label, row);
-        Grid.SetColumn(label, column);
-        table.Children.Add(label);
+        var cell = new ContentView
+        {
+            Style = ResolveStyle("ShowcaseBacklogHeaderCellStyle"),
+            Content = label
+        };
+
+        Grid.SetRow(cell, row);
+        Grid.SetColumn(cell, column);
+        table.Children.Add(cell);
     }
 
     private void AddStatusCell(Grid table, int row, string key, ShowcaseBacklogStatus status)
@@ -419,9 +425,15 @@ public partial class ShowcaseHeroPage : ContentPage
             Style = ResolveStatusStyle(status)
         };
 
-        Grid.SetRow(button, row);
-        Grid.SetColumn(button, 2);
-        table.Children.Add(button);
+        var cell = new ContentView
+        {
+            Style = ResolveStyle("ShowcaseBacklogDataCellStyle"),
+            Content = button
+        };
+
+        Grid.SetRow(cell, row);
+        Grid.SetColumn(cell, 2);
+        table.Children.Add(cell);
     }
 
     private static void AddRowMarker(Grid table, ShowcaseBacklogRow row, int rowIndex)
@@ -438,17 +450,24 @@ public partial class ShowcaseHeroPage : ContentPage
         table.Children.Add(marker);
     }
 
-    private static void AddDataCell(Grid table, int row, int column, string key, string text)
+    private void AddDataCell(Grid table, int row, int column, string key, string text)
     {
         var label = new Label
         {
             AutomationId = $"showcase-backlog-cell-{key}",
-            Text = text
+            Text = text,
+            Style = ResolveStyle("ShowcaseBacklogDataLabelStyle")
         };
 
-        Grid.SetRow(label, row);
-        Grid.SetColumn(label, column);
-        table.Children.Add(label);
+        var cell = new ContentView
+        {
+            Style = ResolveStyle("ShowcaseBacklogDataCellStyle"),
+            Content = label
+        };
+
+        Grid.SetRow(cell, row);
+        Grid.SetColumn(cell, column);
+        table.Children.Add(cell);
     }
 
     private static string ToStatusLabel(ShowcaseBacklogStatus status)

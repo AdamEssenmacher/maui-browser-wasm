@@ -271,6 +271,23 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     }
 
     [Fact]
+    public async Task GenericWebNode_ProjectsMauiConfiguredStyles()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenAsync(context);
+
+        var borderRadius = await ReadCssPropertyAsync(page, "[data-automation-id='showcase-generic-widget']", "border-radius");
+        var borderStyle = await ReadCssPropertyAsync(page, "[data-automation-id='showcase-generic-widget']", "border-top-style");
+        var backgroundColor = await ReadCssPropertyAsync(page, "[data-automation-id='showcase-generic-widget']", "background-color");
+        var textColor = await ReadCssPropertyAsync(page, "[data-automation-id='showcase-generic-widget']", "color");
+
+        Assert.Equal("solid", borderStyle);
+        Assert.True(borderRadius.EndsWith("px", StringComparison.Ordinal), $"Expected px border radius, got '{borderRadius}'.");
+        Assert.NotEqual("rgba(0, 0, 0, 0)", backgroundColor);
+        Assert.Contains("0, 59, 92", textColor, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task BuiltInHeroControlsRemainControlNodes()
     {
         await using var context = await _fixture.NewContextAsync();
@@ -297,6 +314,20 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         await page.WaitForSelectorAsync("[data-automation-id='showcase-backlog-table']");
         var display = await ReadCssPropertyAsync(page, "[data-automation-id='showcase-backlog-table']", "display");
         Assert.Equal("grid", display);
+    }
+
+    [Fact]
+    public async Task BacklogTable_HostProvidesHorizontalScrollOnNarrowViewport()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 760, height: 900);
+        var page = await OpenAsync(context);
+
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-backlog-table-host']");
+        var overflowX = await ReadCssPropertyAsync(page, "[data-automation-id='showcase-backlog-table-host']", "overflow-x");
+        var metrics = await ReadFullScrollGeometryAsync(page, "[data-automation-id='showcase-backlog-table-host']");
+
+        Assert.True(overflowX is "auto" or "scroll");
+        Assert.True(metrics.ScrollWidth > metrics.ClientWidth + 20, $"Expected horizontal overflow in backlog host. ScrollWidth={metrics.ScrollWidth}, ClientWidth={metrics.ClientWidth}");
     }
 
     [Fact]
@@ -935,6 +966,28 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
             values.Length > 0 ? values[0] : double.NaN,
             values.Length > 1 ? values[1] : double.NaN,
             values.Length > 2 ? values[2] : double.NaN);
+    }
+
+    private static async Task<(double ScrollTop, double ScrollHeight, double ClientHeight, double ScrollLeft, double ScrollWidth, double ClientWidth)> ReadFullScrollGeometryAsync(IPage page, string selector)
+    {
+        var values = await page.EvaluateAsync<double[]>(
+            @"(selector) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return [Number.NaN, Number.NaN, Number.NaN, Number.NaN, Number.NaN, Number.NaN];
+                }
+
+                return [element.scrollTop, element.scrollHeight, element.clientHeight, element.scrollLeft, element.scrollWidth, element.clientWidth];
+            }",
+            selector);
+
+        return (
+            values.Length > 0 ? values[0] : double.NaN,
+            values.Length > 1 ? values[1] : double.NaN,
+            values.Length > 2 ? values[2] : double.NaN,
+            values.Length > 3 ? values[3] : double.NaN,
+            values.Length > 4 ? values[4] : double.NaN,
+            values.Length > 5 ? values[5] : double.NaN);
     }
 
     private static async Task<(double DocumentScrollHeight, double DocumentClientHeight, double BodyScrollHeight, double BodyClientHeight)> ReadDocumentScrollGeometryAsync(IPage page)

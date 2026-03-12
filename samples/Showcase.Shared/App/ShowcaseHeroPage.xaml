@@ -3,7 +3,8 @@
     x:Class="Showcase.Shared.App.ShowcaseHeroPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    AutomationId="showcase-root">
+    AutomationId="showcase-root"
+    Style="{StaticResource ShowcaseRootPageStyle}">
 
     <Grid
         AutomationId="showcase-page-grid"
@@ -475,9 +476,11 @@
                 AutomationId="showcase-backlog-subtitle"
                 Style="{StaticResource ShowcaseBodyLabelStyle}"
                 Text="Current Mirage implementation status across MAUI controls/layouts and shared abstractions." />
-            <ContentView
+            <ScrollView
                 x:Name="BacklogTableHost"
-                AutomationId="showcase-backlog-table-host" />
+                AutomationId="showcase-backlog-table-host"
+                Orientation="Horizontal"
+                Style="{StaticResource ShowcaseBacklogHostScrollStyle}" />
         </VerticalStackLayout>
 
         <VerticalStackLayout

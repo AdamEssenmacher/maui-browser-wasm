@@ -56,7 +56,7 @@ Built-in handlers stay inside this control set. Third-party/custom handlers can 
   - Includes focused foundations/layout labs for `Label`, core `IView` mapping, stack behavior, grid placement/spans, and surface rendering
   - Includes an exhaustive `Layout Lab` matrix validating sizing, constraints, positioning, and nested container behavior across `ContentView`, stacks, and `Grid`
   - Uses explicit `ScrollView` hosting for long-page scrolling; `ContentPage` remains non-scrollable by default
-  - Demonstrates MAUI ResourceDictionary-first styling with CSS retained only as a targeted browser/provider escape hatch
+  - Demonstrates MAUI ResourceDictionary-first styling with near-zero host CSS (`index.html` reduced to app-shell sizing reset only)
 - `samples/Showcase.Maui`
   - Native MAUI host for the shared showcase app (`Showcase.Shared`)
 - `tests/Mirage.Core.Tests`
