@@ -492,6 +492,46 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public async Task RenderCoordinator_ScopedMaterialization_PreservesSiblingReuse_AfterNoOpPass()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var root = MiragePlatformView.CreateControl(ComponentKind.Root);
+        root.AssignNodeId("root");
+        var first = MiragePlatformView.CreateControl(ComponentKind.Label);
+        first.AssignNodeId("first");
+        first.SetProperty("Text", "First");
+        var second = MiragePlatformView.CreateControl(ComponentKind.Label);
+        second.AssignNodeId("second");
+        second.SetProperty("Text", "Second");
+        root.AddChild(first);
+        root.AddChild(second);
+
+        coordinator.Register(root, eventTarget: null);
+        coordinator.Register(first, eventTarget: null);
+        coordinator.Register(second, eventTarget: null);
+        coordinator.SetRoot(root);
+        await WaitUntilAsync(() => runtime.RenderCount >= 1);
+
+        var initialRoot = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var initialSecond = Assert.IsType<ControlNode>(initialRoot.Children[1]);
+
+        // First no-op pass uses scoped reuse and should not drop descendant cache state.
+        coordinator.RequestRender();
+        await WaitUntilAsync(() => runtime.RenderCount >= 2);
+
+        first.SetProperty("Text", "First Updated");
+        coordinator.RequestRender();
+        await WaitUntilAsync(() => runtime.RenderCount >= 3);
+
+        var rerenderedRoot = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var rerenderedSecond = Assert.IsType<ControlNode>(rerenderedRoot.Children[1]);
+        Assert.True(ReferenceEquals(initialSecond, rerenderedSecond));
+    }
+
+    [Fact]
     public void RenderCoordinator_ScrollBridge_RoutesToRuntimeDeterministically()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());

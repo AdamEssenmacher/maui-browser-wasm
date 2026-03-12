@@ -321,6 +321,7 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         {
             nextSnapshot[platformView.NodeId] = snapshot;
             reusedNodeCount++;
+            CarryReusedSubtreeSnapshots(platformView, snapshot.Node, nextSnapshot, ref reusedNodeCount);
             return snapshot.Node;
         }
 
@@ -358,6 +359,40 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         }
 
         return true;
+    }
+
+    private static void CarryReusedSubtreeSnapshots(
+        MiragePlatformView platformView,
+        NodeBase node,
+        IDictionary<string, NodeSnapshot> nextSnapshot,
+        ref int reusedNodeCount)
+    {
+        var childViews = platformView.Children;
+        var childNodes = node.Children;
+        if (childViews.Count != childNodes.Count)
+        {
+            return;
+        }
+
+        for (var index = 0; index < childViews.Count; index++)
+        {
+            var childView = childViews[index];
+            var childNode = childNodes[index];
+            if (!string.Equals(childView.NodeId, childNode.NodeId, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            nextSnapshot[childView.NodeId] = new NodeSnapshot(
+                childNode,
+                childView.NodeType,
+                childView.ControlKind,
+                childView.ElementName,
+                childView.SubtreeRevision,
+                childView.SubtreeStructureRevision);
+            reusedNodeCount++;
+            CarryReusedSubtreeSnapshots(childView, childNode, nextSnapshot, ref reusedNodeCount);
+        }
     }
 
     private sealed class RenderBatchScope : IDisposable

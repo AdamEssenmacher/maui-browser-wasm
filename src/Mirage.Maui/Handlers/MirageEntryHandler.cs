@@ -188,6 +188,10 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
 
         PlatformView.SetProperty("Text", valueToApply);
 
+        var scheduledRenderSequenceBeforeSet = diagnosticsEnabled
+            ? MirageDiagnostics.GetLastRenderScheduledSequence()
+            : 0;
+
         _isApplyingRuntimeInput = true;
         try
         {
@@ -208,7 +212,21 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
 
         if (diagnosticsEnabled)
         {
-            _ = TrackRenderCompletionForInputAsync(eventId, baselineRenderSequence, inputReceivedTimestamp);
+            var scheduledRenderSequenceAfterSet = MirageDiagnostics.GetLastRenderScheduledSequence();
+            if (scheduledRenderSequenceAfterSet > scheduledRenderSequenceBeforeSet)
+            {
+                _ = TrackRenderCompletionForInputAsync(
+                    eventId,
+                    baselineRenderSequence,
+                    scheduledRenderSequenceAfterSet,
+                    inputReceivedTimestamp);
+            }
+            else
+            {
+                MirageDiagnostics.Log(
+                    "entry.input",
+                    $"eventId={eventId} phase=render-tracking-skipped reason=no-new-render-request scheduledBefore={scheduledRenderSequenceBeforeSet} scheduledAfter={scheduledRenderSequenceAfterSet}");
+            }
         }
     }
 
@@ -217,7 +235,11 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
         return MauiContext?.Services.GetService<IDispatcher>();
     }
 
-    private static async Task TrackRenderCompletionForInputAsync(int inputEventId, long baselineRenderSequence, long inputReceivedTimestamp)
+    private static async Task TrackRenderCompletionForInputAsync(
+        int inputEventId,
+        long baselineRenderSequence,
+        long expectedRenderSequence,
+        long inputReceivedTimestamp)
     {
         const int pollIntervalMs = 10;
         const int maxWaitMs = 5000;
@@ -226,13 +248,13 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
         while (waitedMs < maxWaitMs)
         {
             var completedSequence = MirageDiagnostics.GetLastRenderCompletedSequence();
-            if (completedSequence > baselineRenderSequence)
+            if (completedSequence >= expectedRenderSequence)
             {
                 var completedTimestamp = MirageDiagnostics.GetLastRenderCompletedTimestamp();
                 var latencyMs = MirageDiagnostics.GetElapsedMilliseconds(inputReceivedTimestamp, completedTimestamp);
                 MirageDiagnostics.Log(
                     "entry.input",
-                    $"eventId={inputEventId} phase=render-complete renderSequence={completedSequence} endToEndMs={latencyMs:0.###}");
+                    $"eventId={inputEventId} phase=render-complete renderSequence={completedSequence} expectedRenderSequence={expectedRenderSequence} endToEndMs={latencyMs:0.###}");
                 return;
             }
 
@@ -242,6 +264,6 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
 
         MirageDiagnostics.Log(
             "entry.input",
-            $"eventId={inputEventId} phase=render-timeout baselineRenderSequence={baselineRenderSequence} waitedMs={maxWaitMs}");
+            $"eventId={inputEventId} phase=render-timeout baselineRenderSequence={baselineRenderSequence} expectedRenderSequence={expectedRenderSequence} waitedMs={maxWaitMs}");
     }
 }

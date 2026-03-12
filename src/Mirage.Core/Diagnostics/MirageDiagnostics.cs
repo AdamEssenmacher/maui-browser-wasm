@@ -43,6 +43,11 @@ public static class MirageDiagnostics
         return Interlocked.Increment(ref s_nextRenderSequence);
     }
 
+    public static long GetLastRenderScheduledSequence()
+    {
+        return Interlocked.Read(ref s_nextRenderSequence);
+    }
+
     public static void MarkRenderCompleted(long sequence, long completedTimestamp)
     {
         Interlocked.Exchange(ref s_lastRenderCompletedSequence, sequence);
