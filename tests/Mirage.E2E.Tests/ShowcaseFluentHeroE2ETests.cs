@@ -65,6 +65,16 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     }
 
     [Fact]
+    public async Task HeaderNav_IsNotRendered()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenAsync(context);
+
+        Assert.Equal(0, await page.Locator("[data-automation-id='showcase-top-nav']").CountAsync());
+        Assert.Equal(0, await page.Locator("[data-automation-id^='showcase-nav-']").CountAsync());
+    }
+
+    [Fact]
     public async Task LiveDemoWidgetBindsInputAndCommand()
     {
         await using var context = await _fixture.NewContextAsync();
@@ -211,19 +221,13 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     }
 
     [Fact]
-    public async Task NavAndCtaButtonsSmoothScrollToSections()
+    public async Task CtaButtonsSmoothScrollToSections()
     {
         await using var context = await _fixture.NewContextAsync(width: 1180, height: 760);
         var page = await OpenAsync(context);
 
-        await page.WaitForSelectorAsync("[data-automation-id='providers']");
         await page.WaitForSelectorAsync("[data-automation-id='architecture']");
         await page.WaitForSelectorAsync("[data-automation-id='demo']");
-
-        await page.Locator("[data-automation-id='showcase-nav-providers']").ClickAsync();
-        await page.WaitForTimeoutAsync(700);
-        var providersTop = await ReadTopAsync(page, "[data-automation-id='providers']");
-        Assert.True(providersTop < 320, $"Expected providers section near top after nav scroll, got {providersTop}.");
 
         await page.Locator("[data-automation-id='hero-cta-architecture']").ClickAsync();
         await page.WaitForTimeoutAsync(700);
@@ -377,7 +381,7 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
         var page = await OpenAsync(context);
 
-        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
+        await page.Locator("[data-automation-id='hero-cta-command-layout-lab']").ClickAsync();
         await page.WaitForTimeoutAsync(700);
         var sectionTop = await ReadTopAsync(page, "[data-automation-id='layout-lab']");
         Assert.True(sectionTop < 320, $"Expected layout-lab section near top after nav click, got {sectionTop}.");
@@ -439,13 +443,13 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     }
 
     [Fact]
-    public async Task Showcase_NavScroll_UsesExplicitScrollSurface()
+    public async Task Showcase_CtaScroll_UsesExplicitScrollSurface()
     {
         await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
         var page = await OpenAsync(context);
 
         await SetElementScrollTopAsync(page, "[data-automation-id='showcase-scroll-root']", 0);
-        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
+        await page.Locator("[data-automation-id='hero-cta-command-layout-lab']").ClickAsync();
         await page.WaitForFunctionAsync(
             @"() => {
                 const root = document.querySelector('[data-automation-id=""showcase-scroll-root""]');
@@ -599,7 +603,7 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
         var page = await OpenAsync(context);
 
-        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
+        await page.Locator("[data-automation-id='hero-cta-command-layout-lab']").ClickAsync();
         await page.WaitForTimeoutAsync(700);
 
         var parentLeft = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-content-view-fixed-centered']", "left");
@@ -633,7 +637,7 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
         var page = await OpenAsync(context);
 
-        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
+        await page.Locator("[data-automation-id='hero-cta-command-layout-lab']").ClickAsync();
         await page.WaitForTimeoutAsync(700);
 
         var minHeight = await ReadCssPropertyAsync(page, "[data-automation-id='layout-lab-child-content-view-explicit-size-request-primary']", "min-height");
@@ -666,7 +670,7 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
         var page = await OpenAsync(context);
 
-        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
+        await page.Locator("[data-automation-id='hero-cta-command-layout-lab']").ClickAsync();
         await page.WaitForTimeoutAsync(700);
 
         var stackGap = await ReadTopDeltaAsync(
@@ -690,7 +694,7 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
         var page = await OpenAsync(context);
 
-        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
+        await page.Locator("[data-automation-id='hero-cta-command-layout-lab']").ClickAsync();
         await page.WaitForTimeoutAsync(700);
 
         var overflowHostLeft = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-horizontal-stack-constrained-width-overflow']", "left");
@@ -737,7 +741,7 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
         var page = await OpenAsync(context);
 
-        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
+        await page.Locator("[data-automation-id='hero-cta-command-layout-lab']").ClickAsync();
         await page.WaitForTimeoutAsync(700);
 
         var r0c0Left = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-child-grid-placement-rows-columns-primary']", "left");
@@ -761,7 +765,7 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         await using var context = await _fixture.NewContextAsync(width: 1400, height: 960);
         var page = await OpenAsync(context);
 
-        await page.Locator("[data-automation-id='showcase-nav-layout-lab']").ClickAsync();
+        await page.Locator("[data-automation-id='hero-cta-command-layout-lab']").ClickAsync();
         await page.WaitForTimeoutAsync(700);
 
         var boundedParentWidth = await ReadRectValueAsync(page, "[data-automation-id='layout-lab-parent-nested-fixed-nested-in-bounded']", "width");

@@ -28,27 +28,6 @@ public partial class ShowcaseHeroPage : ContentPage
         BuildGenericWidget();
     }
 
-    private async void OnDemoNavClicked(object? sender, EventArgs e)
-    {
-        _ = sender;
-        _ = e;
-        await ScrollToSectionAsync("demo");
-    }
-
-    private async void OnArchitectureNavClicked(object? sender, EventArgs e)
-    {
-        _ = sender;
-        _ = e;
-        await ScrollToSectionAsync("architecture");
-    }
-
-    private async void OnProvidersNavClicked(object? sender, EventArgs e)
-    {
-        _ = sender;
-        _ = e;
-        await ScrollToSectionAsync("providers");
-    }
-
     private async void OnDemoCtaClicked(object? sender, EventArgs e)
     {
         _ = sender;
@@ -61,13 +40,6 @@ public partial class ShowcaseHeroPage : ContentPage
         _ = sender;
         _ = e;
         await ScrollToSectionAsync("architecture");
-    }
-
-    private async void OnLayoutLabNavClicked(object? sender, EventArgs e)
-    {
-        _ = sender;
-        _ = e;
-        await ScrollToSectionAsync("layout-lab");
     }
 
     private async void OnLayoutLabScrollToTopClicked(object? sender, EventArgs e)

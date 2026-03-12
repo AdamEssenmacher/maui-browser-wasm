@@ -33,12 +33,6 @@
         <Setter Property="Spacing" Value="20" />
     </Style>
 
-    <Style x:Key="ShowcaseTopNavStyle" TargetType="HorizontalStackLayout">
-        <Setter Property="Spacing" Value="8" />
-        <Setter Property="Padding" Value="10,10,10,10" />
-        <Setter Property="BackgroundColor" Value="#CCF8FAFC" />
-    </Style>
-
     <Style x:Key="ShowcaseSectionCardStyle" TargetType="VerticalStackLayout">
         <Setter Property="BackgroundColor" Value="{StaticResource ShowcaseCardBackgroundColor}" />
         <Setter Property="Padding" Value="22" />
@@ -118,20 +112,6 @@
         <Setter Property="FontSize" Value="13" />
         <Setter Property="FontAttributes" Value="Bold" />
         <Setter Property="TextColor" Value="#0B7285" />
-    </Style>
-
-    <Style x:Key="ShowcaseNavBrandLabelStyle" TargetType="Label">
-        <Setter Property="FontFamily" Value="Space Grotesk" />
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="FontAttributes" Value="Bold" />
-        <Setter Property="CharacterSpacing" Value="1.2" />
-        <Setter Property="TextColor" Value="{StaticResource ShowcaseInkColor}" />
-        <Setter Property="TextTransform" Value="Uppercase" />
-    </Style>
-
-    <Style x:Key="ShowcaseNavDividerLabelStyle" TargetType="Label">
-        <Setter Property="TextColor" Value="{StaticResource ShowcaseInkColor}" />
-        <Setter Property="FontSize" Value="15" />
     </Style>
 
     <Style x:Key="ShowcaseMutedSmallLabelStyle" TargetType="Label">
@@ -220,15 +200,6 @@
         <Setter Property="BorderWidth" Value="1" />
         <Setter Property="CornerRadius" Value="12" />
         <Setter Property="MinimumHeightRequest" Value="42" />
-    </Style>
-
-    <Style x:Key="ShowcaseNavButtonStyle" TargetType="Button">
-        <Setter Property="BackgroundColor" Value="Transparent" />
-        <Setter Property="BorderWidth" Value="0" />
-        <Setter Property="TextColor" Value="{StaticResource ShowcaseStrongColor}" />
-        <Setter Property="FontSize" Value="13" />
-        <Setter Property="FontAttributes" Value="None" />
-        <Setter Property="MinimumHeightRequest" Value="0" />
     </Style>
 
     <Style x:Key="ShowcaseLabActionButtonStyle" TargetType="Button">
