@@ -318,3 +318,8 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - `ShowcaseVendorWidget` no longer hardcodes visual CSS in handler connect paths; it now exposes MAUI-facing bindable style properties (padding/corner/border/background/text color) that map through handler mappers into web realization styles.
 - Counter sample styling now uses shared MAUI `ResourceDictionary` (`CounterStyles`) for page surface, typography, entry, and button visuals, replacing prior Fluent-element CSS overrides.
 - Policy lock for active samples: MAUI style/layout is primary; host CSS is limited to app-shell bootstrap concerns only.
+
+## 2026-03-12 (Showcase De-duplication: Layout Probes Consolidated in Layout Lab)
+- Removed the `Foundations Lab` subsection from the `Live Mirage Demo` so layout/visual correctness probes are not duplicated across surfaces.
+- `Live Mirage Demo` now stays focused on core interaction proof (entry binding, command click flow, and generic `WebNode` interactivity), while `Layout Lab` remains the single correctness surface for sizing/constraints/positioning and related visual probes.
+- Removed Foundations-specific state/commands from `ShowcaseState` and replaced Foundations E2E coverage with an explicit absence guard (`showcase-foundations-lab` and `foundations-*` selectors not rendered).

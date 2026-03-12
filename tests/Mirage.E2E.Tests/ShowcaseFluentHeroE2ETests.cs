@@ -23,12 +23,8 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         var page = await OpenAsync(context);
 
         var headline = await page.Locator("[data-automation-id='hero-headline']").InnerTextAsync();
-        var pipeline = await page.Locator("[data-automation-id='architecture-pipeline']").InnerTextAsync();
-        var contrast = await page.Locator("[data-automation-id='hero-why-contrast']").InnerTextAsync();
         var runtimeBadge = await page.Locator("[data-automation-id='showcase-runtime-badge']").InnerTextAsync();
-        var scrollCue = await page.Locator("[data-automation-id='hero-scroll-cue']").InnerTextAsync();
         var hasDemoSectionId = await page.Locator("[data-automation-id='demo']").CountAsync();
-        var hasArchitectureSectionId = await page.Locator("[data-automation-id='architecture']").CountAsync();
         var hasProvidersSectionId = await page.Locator("[data-automation-id='providers']").CountAsync();
         var automationIds = await page.EvaluateAsync<string[]>(
             @"() => Array.from(document.querySelectorAll('[data-automation-id]'))
@@ -36,12 +32,8 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
                 .filter((id) => id.length > 0)");
 
         Assert.Contains("real DOM UI", headline, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("DOM + Web Components", pipeline, StringComparison.Ordinal);
-        Assert.Contains("canvas-based", contrast, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("fluent provider", runtimeBadge, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("How Mirage Works", scrollCue, StringComparison.OrdinalIgnoreCase);
         Assert.True(hasDemoSectionId > 0, $"Expected demo section id. IDs: {string.Join(',', automationIds)}");
-        Assert.True(hasArchitectureSectionId > 0, $"Expected architecture section id. IDs: {string.Join(',', automationIds)}");
         Assert.True(hasProvidersSectionId > 0, $"Expected providers section id. IDs: {string.Join(',', automationIds)}");
     }
 
@@ -54,14 +46,16 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         var heroBackground = await ReadCssPropertyAsync(page, "[data-automation-id='hero']", "background-color");
         var headlineColor = await ReadCssPropertyAsync(page, "[data-automation-id='hero-headline']", "color");
         var subheadlineColor = await ReadCssPropertyAsync(page, "[data-automation-id='hero-subheadline']", "color");
+        var ctaBackground = await ReadCssPropertyAsync(page, "[data-automation-id='hero-cta-demo']", "background-color");
         var ctaBorderRadius = await ReadCssPropertyAsync(page, "[data-automation-id='hero-cta-demo']", "border-radius");
         var ctaBorderWidth = await ReadCssPropertyAsync(page, "[data-automation-id='hero-cta-demo']", "border-top-width");
 
         Assert.NotEqual("rgba(0, 0, 0, 0)", heroBackground);
         Assert.Contains("15, 23, 42", headlineColor, StringComparison.Ordinal);
         Assert.Contains("51, 65, 85", subheadlineColor, StringComparison.Ordinal);
-        Assert.Equal("12px", ctaBorderRadius);
-        Assert.Equal("1px", ctaBorderWidth);
+        Assert.Equal("rgba(0, 0, 0, 0)", ctaBackground);
+        Assert.Equal("0px", ctaBorderRadius);
+        Assert.Equal("0px", ctaBorderWidth);
     }
 
     [Fact]
@@ -72,6 +66,39 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
 
         Assert.Equal(0, await page.Locator("[data-automation-id='showcase-top-nav']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id^='showcase-nav-']").CountAsync());
+    }
+
+    [Fact]
+    public async Task BacklogSection_IsNotRendered()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenAsync(context);
+
+        Assert.Equal(0, await page.Locator("[data-automation-id='showcase-backlog']").CountAsync());
+        Assert.Equal(0, await page.Locator("[data-automation-id='showcase-backlog-table']").CountAsync());
+        Assert.Equal(0, await page.Locator("[data-automation-id='showcase-backlog-table-host']").CountAsync());
+    }
+
+    [Fact]
+    public async Task FoundationsSection_IsNotRendered()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenAsync(context);
+
+        Assert.Equal(0, await page.Locator("[data-automation-id='showcase-foundations-lab']").CountAsync());
+        Assert.Equal(0, await page.Locator("[data-automation-id^='foundations-']").CountAsync());
+    }
+
+    [Fact]
+    public async Task WhyMattersAndGithubPlaceholder_AreNotRendered()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenAsync(context);
+
+        Assert.Equal(0, await page.Locator("[data-automation-id='hero-why-matters']").CountAsync());
+        Assert.Equal(0, await page.Locator("[data-automation-id='hero-why-contrast']").CountAsync());
+        Assert.Equal(0, await page.Locator("[data-automation-id='hero-cta-github-placeholder']").CountAsync());
+        Assert.Equal(0, await page.Locator("[data-automation-id='hero-scroll-cue']").CountAsync());
     }
 
     [Fact]
@@ -92,147 +119,18 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     }
 
     [Fact]
-    public async Task FoundationsLab_LabelInputUpdatesBoundOutput()
-    {
-        await using var context = await _fixture.NewContextAsync();
-        var page = await OpenAsync(context);
-
-        await SetFluentTextFieldValueAsync(page, "[data-automation-id='foundations-label-input']", "Foundations state");
-        await page.WaitForTimeoutAsync(120);
-        var text = await page.Locator("[data-automation-id='foundations-label-output']").InnerTextAsync();
-        Assert.Contains("Foundations state", text, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task FoundationsLab_VisibilityToggleSwitchesDisplay()
-    {
-        await using var context = await _fixture.NewContextAsync();
-        var page = await OpenAsync(context);
-
-        await page.Locator("[data-automation-id='foundations-visibility-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(120);
-        var hiddenDisplay = await ReadCssPropertyAsync(page, "[data-automation-id='foundations-visibility-target']", "display");
-        Assert.Equal("none", hiddenDisplay);
-
-        await page.Locator("[data-automation-id='foundations-visibility-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(120);
-        var shownDisplay = await ReadCssPropertyAsync(page, "[data-automation-id='foundations-visibility-target']", "display");
-        Assert.NotEqual("none", shownDisplay);
-    }
-
-    [Fact]
-    public async Task FoundationsLab_MarginToggleChangesComputedMargins()
-    {
-        await using var context = await _fixture.NewContextAsync();
-        var page = await OpenAsync(context);
-
-        var initialTop = await ReadCssPropertyAsync(page, "[data-automation-id='foundations-margin-target']", "margin-top");
-        var initialBottom = await ReadCssPropertyAsync(page, "[data-automation-id='foundations-margin-target']", "margin-bottom");
-
-        await page.Locator("[data-automation-id='foundations-margin-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(120);
-
-        var toggledTop = await ReadCssPropertyAsync(page, "[data-automation-id='foundations-margin-target']", "margin-top");
-        var toggledBottom = await ReadCssPropertyAsync(page, "[data-automation-id='foundations-margin-target']", "margin-bottom");
-
-        Assert.NotEqual(initialTop, toggledTop);
-        Assert.NotEqual(initialBottom, toggledBottom);
-        Assert.EndsWith("px", toggledTop, StringComparison.Ordinal);
-        Assert.EndsWith("px", toggledBottom, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task FoundationsLab_VerticalStackSpacingToggleChangesGeometry()
-    {
-        await using var context = await _fixture.NewContextAsync(width: 1180, height: 800);
-        var page = await OpenAsync(context);
-
-        var initialGap = await ReadTopDeltaAsync(
-            page,
-            "[data-automation-id='foundations-stack-probe-a']",
-            "[data-automation-id='foundations-stack-probe-b']");
-
-        await page.Locator("[data-automation-id='foundations-stack-spacing-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(150);
-
-        var toggledGap = await ReadTopDeltaAsync(
-            page,
-            "[data-automation-id='foundations-stack-probe-a']",
-            "[data-automation-id='foundations-stack-probe-b']");
-
-        Assert.True(toggledGap > initialGap, $"Expected spacing gap to grow. Initial={initialGap}, Toggled={toggledGap}");
-    }
-
-    [Fact]
-    public async Task FoundationsLab_HorizontalStackSpacingToggleChangesGeometry()
-    {
-        await using var context = await _fixture.NewContextAsync(width: 1180, height: 800);
-        var page = await OpenAsync(context);
-
-        var initialGap = await ReadLeftDeltaAsync(
-            page,
-            "[data-automation-id='foundations-horizontal-probe-a']",
-            "[data-automation-id='foundations-horizontal-probe-b']");
-
-        await page.Locator("[data-automation-id='foundations-horizontal-spacing-toggle']").ClickAsync();
-        await page.WaitForTimeoutAsync(150);
-
-        var toggledGap = await ReadLeftDeltaAsync(
-            page,
-            "[data-automation-id='foundations-horizontal-probe-a']",
-            "[data-automation-id='foundations-horizontal-probe-b']");
-
-        Assert.True(toggledGap > initialGap, $"Expected horizontal spacing to grow. Initial={initialGap}, Toggled={toggledGap}");
-    }
-
-    [Fact]
-    public async Task FoundationsLab_GridPlacementAndSpanAreRendered()
-    {
-        await using var context = await _fixture.NewContextAsync(width: 1180, height: 800);
-        var page = await OpenAsync(context);
-
-        var r0c0Left = await ReadRectValueAsync(page, "[data-automation-id='foundations-grid-cell-r0c0']", "left");
-        var r0c1Left = await ReadRectValueAsync(page, "[data-automation-id='foundations-grid-cell-r0c1']", "left");
-        var r1c2Top = await ReadRectValueAsync(page, "[data-automation-id='foundations-grid-cell-r1c2']", "top");
-        var r0c2Top = await ReadRectValueAsync(page, "[data-automation-id='foundations-grid-cell-r0c2']", "top");
-        var spanWidth = await ReadRectValueAsync(page, "[data-automation-id='foundations-grid-cell-span']", "width");
-        var c0Width = await ReadRectValueAsync(page, "[data-automation-id='foundations-grid-cell-r0c0']", "width");
-
-        Assert.True(r0c1Left > r0c0Left, "Expected r0c1 to be positioned to the right of r0c0.");
-        Assert.True(r1c2Top > r0c2Top, "Expected second-row cell to be below first-row cell.");
-        Assert.True(spanWidth > c0Width, "Expected span cell width to exceed single-column cell width.");
-    }
-
-    [Fact]
-    public async Task FoundationsLab_BackgroundAndVisualSizingAreApplied()
-    {
-        await using var context = await _fixture.NewContextAsync(width: 1180, height: 800);
-        var page = await OpenAsync(context);
-
-        var solidBg = await ReadCssPropertyAsync(page, "[data-automation-id='foundations-bg-solid']", "background-color");
-        var linearBgImage = await ReadCssPropertyAsync(page, "[data-automation-id='foundations-bg-linear']", "background-image");
-        var opacity = await ReadCssPropertyAsync(page, "[data-automation-id='foundations-opacity-target']", "opacity");
-        var sizeTargetWidth = await ReadRectValueAsync(page, "[data-automation-id='foundations-size-target']", "width");
-
-        Assert.NotEqual("rgba(0, 0, 0, 0)", solidBg);
-        Assert.NotEqual("none", linearBgImage);
-        Assert.Equal("0.58", opacity);
-        Assert.InRange(sizeTargetWidth, 160, 260);
-    }
-
-    [Fact]
-    public async Task CtaButtonsSmoothScrollToSections()
+    public async Task CtaButtonsSmoothScrollToDemoAndLayoutLab()
     {
         await using var context = await _fixture.NewContextAsync(width: 1180, height: 760);
         var page = await OpenAsync(context);
 
-        await page.WaitForSelectorAsync("[data-automation-id='architecture']");
         await page.WaitForSelectorAsync("[data-automation-id='demo']");
+        await page.WaitForSelectorAsync("[data-automation-id='layout-lab']");
 
-        await page.Locator("[data-automation-id='hero-cta-architecture']").ClickAsync();
+        await page.Locator("[data-automation-id='hero-cta-command-layout-lab']").ClickAsync();
         await page.WaitForTimeoutAsync(700);
-        var architectureTop = await ReadTopAsync(page, "[data-automation-id='architecture']");
-        Assert.True(architectureTop < 320, $"Expected architecture section near top after CTA scroll, got {architectureTop}.");
+        var layoutLabTop = await ReadTopAsync(page, "[data-automation-id='layout-lab']");
+        Assert.True(layoutLabTop < 320, $"Expected layout lab section near top after CTA scroll, got {layoutLabTop}.");
 
         await page.Locator("[data-automation-id='hero-cta-demo']").ClickAsync();
         await page.WaitForTimeoutAsync(700);
@@ -306,73 +204,6 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         Assert.Equal("control", entryNodeType);
         Assert.Equal("control", labelNodeType);
         Assert.Equal("control", containerNodeType);
-    }
-
-    [Fact]
-    public async Task BacklogTable_RendersGridStructure()
-    {
-        await using var context = await _fixture.NewContextAsync();
-        var page = await OpenAsync(context);
-
-        await page.WaitForSelectorAsync("[data-automation-id='showcase-backlog-table-host']");
-        await page.WaitForSelectorAsync("[data-automation-id='showcase-backlog-table']");
-        var display = await ReadCssPropertyAsync(page, "[data-automation-id='showcase-backlog-table']", "display");
-        Assert.Equal("grid", display);
-    }
-
-    [Fact]
-    public async Task BacklogTable_HostProvidesHorizontalScrollOnNarrowViewport()
-    {
-        await using var context = await _fixture.NewContextAsync(width: 760, height: 900);
-        var page = await OpenAsync(context);
-
-        await page.WaitForSelectorAsync("[data-automation-id='showcase-backlog-table-host']");
-        var overflowX = await ReadCssPropertyAsync(page, "[data-automation-id='showcase-backlog-table-host']", "overflow-x");
-        var metrics = await ReadFullScrollGeometryAsync(page, "[data-automation-id='showcase-backlog-table-host']");
-
-        Assert.True(overflowX is "auto" or "scroll");
-        Assert.True(metrics.ScrollWidth > metrics.ClientWidth + 20, $"Expected horizontal overflow in backlog host. ScrollWidth={metrics.ScrollWidth}, ClientWidth={metrics.ClientWidth}");
-    }
-
-    [Fact]
-    public async Task BacklogTable_ContainsExpectedRows()
-    {
-        await using var context = await _fixture.NewContextAsync();
-        var page = await OpenAsync(context);
-
-        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-label']").CountAsync() > 0);
-        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-content-view']").CountAsync() > 0);
-        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-check-box']").CountAsync() > 0);
-        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-grid']").CountAsync() > 0);
-        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-horizontal-stack-layout']").CountAsync() > 0);
-        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-web-view']").CountAsync() > 0);
-        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-element']").CountAsync() > 0);
-        Assert.True(await page.Locator("[data-automation-id='showcase-backlog-row-image-element']").CountAsync() > 0);
-    }
-
-    [Fact]
-    public async Task BacklogTable_StatusLabelsMatchPolicy()
-    {
-        await using var context = await _fixture.NewContextAsync();
-        var page = await OpenAsync(context);
-
-        var complete = await page.Locator("[data-automation-id='showcase-backlog-cell-button-status-complete']").InnerTextAsync();
-        var started = await page.Locator("[data-automation-id='showcase-backlog-cell-label-status-started']").InnerTextAsync();
-        var notStarted = await page.Locator("[data-automation-id='showcase-backlog-cell-web-view-status-not-started']").InnerTextAsync();
-
-        Assert.Equal("Fully Implemented (Complete)", complete);
-        Assert.Equal("Partially Implemented (Started)", started);
-        Assert.Equal("Not Implemented (Not Started)", notStarted);
-    }
-
-    [Fact]
-    public async Task BacklogTable_HasMinimumRowCount()
-    {
-        await using var context = await _fixture.NewContextAsync();
-        var page = await OpenAsync(context);
-
-        var rows = await page.Locator("[data-automation-id^='showcase-backlog-row-']").CountAsync();
-        Assert.Equal(40, rows);
     }
 
     [Fact]
@@ -971,28 +802,6 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
             values.Length > 0 ? values[0] : double.NaN,
             values.Length > 1 ? values[1] : double.NaN,
             values.Length > 2 ? values[2] : double.NaN);
-    }
-
-    private static async Task<(double ScrollTop, double ScrollHeight, double ClientHeight, double ScrollLeft, double ScrollWidth, double ClientWidth)> ReadFullScrollGeometryAsync(IPage page, string selector)
-    {
-        var values = await page.EvaluateAsync<double[]>(
-            @"(selector) => {
-                const element = document.querySelector(selector);
-                if (!element) {
-                    return [Number.NaN, Number.NaN, Number.NaN, Number.NaN, Number.NaN, Number.NaN];
-                }
-
-                return [element.scrollTop, element.scrollHeight, element.clientHeight, element.scrollLeft, element.scrollWidth, element.clientWidth];
-            }",
-            selector);
-
-        return (
-            values.Length > 0 ? values[0] : double.NaN,
-            values.Length > 1 ? values[1] : double.NaN,
-            values.Length > 2 ? values[2] : double.NaN,
-            values.Length > 3 ? values[3] : double.NaN,
-            values.Length > 4 ? values[4] : double.NaN,
-            values.Length > 5 ? values[5] : double.NaN);
     }
 
     private static async Task<(double DocumentScrollHeight, double DocumentClientHeight, double BodyScrollHeight, double BodyClientHeight)> ReadDocumentScrollGeometryAsync(IPage page)
