@@ -304,29 +304,11 @@ public partial class ShowcaseHeroPage : ContentPage
         var button = new Button
         {
             AutomationId = "showcase-generic-widget",
-            HorizontalOptions = LayoutOptions.Start,
-            Style = ResolveStyle("ShowcaseLabActionButtonStyle")
+            HorizontalOptions = LayoutOptions.Start
         };
 
         button.SetBinding(Button.TextProperty, nameof(ShowcaseState.GenericWidgetText));
         button.Clicked += OnGenericWidgetClicked;
         return button;
-    }
-
-    private Style? ResolveStyle(string styleKey)
-    {
-        if (Resources.TryGetValue(styleKey, out var pageStyle)
-            && pageStyle is Style typedPageStyle)
-        {
-            return typedPageStyle;
-        }
-
-        if (Application.Current?.Resources.TryGetValue(styleKey, out var appStyle) == true
-            && appStyle is Style typedAppStyle)
-        {
-            return typedAppStyle;
-        }
-
-        return null;
     }
 }

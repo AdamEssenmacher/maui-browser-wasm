@@ -50,11 +50,11 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         var ctaBorderRadius = await ReadCssPropertyAsync(page, "[data-automation-id='hero-cta-demo']", "border-radius");
         var ctaBorderWidth = await ReadCssPropertyAsync(page, "[data-automation-id='hero-cta-demo']", "border-top-width");
 
-        Assert.NotEqual("rgba(0, 0, 0, 0)", heroBackground);
-        Assert.Contains("15, 23, 42", headlineColor, StringComparison.Ordinal);
-        Assert.Contains("51, 65, 85", subheadlineColor, StringComparison.Ordinal);
-        Assert.Equal("rgba(0, 0, 0, 0)", ctaBackground);
-        Assert.Equal("0px", ctaBorderRadius);
+        Assert.Equal("rgba(0, 0, 0, 0)", heroBackground);
+        Assert.Contains("0, 0, 0", headlineColor, StringComparison.Ordinal);
+        Assert.Contains("0, 0, 0", subheadlineColor, StringComparison.Ordinal);
+        Assert.Contains("81, 43, 212", ctaBackground, StringComparison.Ordinal);
+        Assert.Equal("8px", ctaBorderRadius);
         Assert.Equal("0px", ctaBorderWidth);
     }
 
