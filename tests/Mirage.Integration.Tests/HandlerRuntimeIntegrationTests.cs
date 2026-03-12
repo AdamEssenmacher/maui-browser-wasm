@@ -645,6 +645,71 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public async Task BrowserDispatcher_DispatchDelayed_CapturesSynchronizationContextAtDispatchTime()
+    {
+        var originalContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(null);
+
+        try
+        {
+            var dispatcher = new BrowserDispatcher();
+            var queuedContext = new QueuedSynchronizationContext();
+            var executedCount = 0;
+
+            SynchronizationContext.SetSynchronizationContext(queuedContext);
+            Assert.True(dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(1), () => executedCount++));
+
+            SynchronizationContext.SetSynchronizationContext(null);
+            await Task.Delay(30);
+
+            Assert.Equal(0, executedCount);
+            Assert.Equal(1, queuedContext.PendingCount);
+
+            SynchronizationContext.SetSynchronizationContext(queuedContext);
+            queuedContext.FlushAll();
+
+            Assert.Equal(1, executedCount);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(originalContext);
+        }
+    }
+
+    [Fact]
+    public async Task BrowserDispatcher_Dispatch_UsesCapturedSynchronizationContextFromPriorDispatch()
+    {
+        var originalContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(null);
+
+        try
+        {
+            var dispatcher = new BrowserDispatcher();
+            var queuedContext = new QueuedSynchronizationContext();
+            var executedCount = 0;
+
+            SynchronizationContext.SetSynchronizationContext(queuedContext);
+            Assert.True(dispatcher.Dispatch(() => executedCount++));
+            Assert.Equal(1, executedCount);
+
+            SynchronizationContext.SetSynchronizationContext(null);
+            await Task.Run(() => dispatcher.Dispatch(() => executedCount++));
+
+            Assert.Equal(1, executedCount);
+            Assert.Equal(1, queuedContext.PendingCount);
+
+            SynchronizationContext.SetSynchronizationContext(queuedContext);
+            queuedContext.FlushAll();
+
+            Assert.Equal(2, executedCount);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(originalContext);
+        }
+    }
+
+    [Fact]
     public void PlatformView_ChildOrderRemainsDeterministicAcrossMutations()
     {
         var root = MiragePlatformView.CreateControl(ComponentKind.VerticalStack);
@@ -785,6 +850,49 @@ public sealed class HandlerRuntimeIntegrationTests
             {
                 var action = _pending.Dequeue();
                 action();
+            }
+        }
+    }
+
+    private sealed class QueuedSynchronizationContext : SynchronizationContext
+    {
+        private readonly Queue<(SendOrPostCallback Callback, object? State)> _pending = new();
+
+        public int PendingCount
+        {
+            get
+            {
+                lock (_pending)
+                {
+                    return _pending.Count;
+                }
+            }
+        }
+
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            lock (_pending)
+            {
+                _pending.Enqueue((d, state));
+            }
+        }
+
+        public void FlushAll()
+        {
+            while (true)
+            {
+                (SendOrPostCallback Callback, object? State) workItem;
+                lock (_pending)
+                {
+                    if (_pending.Count == 0)
+                    {
+                        break;
+                    }
+
+                    workItem = _pending.Dequeue();
+                }
+
+                workItem.Callback(workItem.State);
             }
         }
     }

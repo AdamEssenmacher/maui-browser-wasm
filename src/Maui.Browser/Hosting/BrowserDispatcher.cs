@@ -11,23 +11,42 @@ internal sealed class BrowserDispatcherProvider : IDispatcherProvider
 
 internal sealed class BrowserDispatcher : IDispatcher
 {
-    private readonly SynchronizationContext? _synchronizationContext = SynchronizationContext.Current;
+    private SynchronizationContext? _dispatchContext;
 
-    public bool IsDispatchRequired =>
-        _synchronizationContext is not null
-        && !ReferenceEquals(SynchronizationContext.Current, _synchronizationContext);
+    private SynchronizationContext? ResolveDispatchContext()
+    {
+        var currentContext = SynchronizationContext.Current;
+        if (currentContext is not null)
+        {
+            var existingContext = Interlocked.CompareExchange(ref _dispatchContext, currentContext, comparand: null);
+            return existingContext ?? currentContext;
+        }
+
+        return Volatile.Read(ref _dispatchContext);
+    }
+
+    public bool IsDispatchRequired
+    {
+        get
+        {
+            var dispatchContext = ResolveDispatchContext();
+            return dispatchContext is not null
+                && !ReferenceEquals(SynchronizationContext.Current, dispatchContext);
+        }
+    }
 
     public bool Dispatch(Action action)
     {
         ArgumentNullException.ThrowIfNull(action);
 
-        if (_synchronizationContext is null || ReferenceEquals(SynchronizationContext.Current, _synchronizationContext))
+        var dispatchContext = ResolveDispatchContext();
+        if (dispatchContext is null || ReferenceEquals(SynchronizationContext.Current, dispatchContext))
         {
             action();
             return true;
         }
 
-        _synchronizationContext.Post(static state => ((Action)state!).Invoke(), action);
+        dispatchContext.Post(static state => ((Action)state!).Invoke(), action);
         return true;
     }
 
@@ -40,10 +59,11 @@ internal sealed class BrowserDispatcher : IDispatcher
             return Dispatch(action);
         }
 
-        if (_synchronizationContext is not null)
+        var dispatchContext = ResolveDispatchContext();
+        if (dispatchContext is not null)
         {
             _ = Task.Delay(delay).ContinueWith(
-                _ => _synchronizationContext.Post(static state => ((Action)state!).Invoke(), action),
+                _ => dispatchContext.Post(static state => ((Action)state!).Invoke(), action),
                 CancellationToken.None,
                 TaskContinuationOptions.ExecuteSynchronously,
                 TaskScheduler.Default);
