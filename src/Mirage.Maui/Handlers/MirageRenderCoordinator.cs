@@ -193,6 +193,7 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
     {
         if (_renderInProgress)
         {
+            _renderPending = false;
             _renderRequestedDuringRender = true;
             Interlocked.Increment(ref _coalescedRenderRequestCount);
             return;

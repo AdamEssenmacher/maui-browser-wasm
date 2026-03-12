@@ -9,6 +9,8 @@ namespace Mirage.Maui.Handlers;
 
 internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRuntimeEventTarget
 {
+    private static readonly TimeSpan InputFlushDelay = TimeSpan.FromMilliseconds(1);
+
     public static IPropertyMapper<IEntry, MirageEntryHandler> Mapper =
         new PropertyMapper<IEntry, MirageEntryHandler>(MirageViewMapper.CommonViewMapper)
         {
@@ -135,7 +137,7 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
             return;
         }
 
-        if (!dispatcher.DispatchDelayed(TimeSpan.Zero, FlushPendingInput))
+        if (!dispatcher.DispatchDelayed(InputFlushDelay, FlushPendingInput))
         {
             if (!dispatcher.Dispatch(FlushPendingInput))
             {

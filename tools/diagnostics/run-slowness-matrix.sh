@@ -4,8 +4,12 @@ set -euo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/../.." && pwd)"
 
-if ! command -v rg >/dev/null 2>&1; then
-  echo "ripgrep (rg) is required." >&2
+if command -v rg >/dev/null 2>&1; then
+  search_tool="rg"
+elif command -v grep >/dev/null 2>&1; then
+  search_tool="grep"
+else
+  echo "grep or ripgrep is required." >&2
   exit 1
 fi
 
@@ -52,7 +56,7 @@ append_metric() {
     return
   fi
 
-  rg "${pattern}" "${source_file}" | sed -E "${extract_expr}" >> "${output_file}" || true
+  search_lines "${pattern}" "${source_file}" | sed -E "${extract_expr}" >> "${output_file}" || true
 }
 
 compute_stats() {
@@ -101,13 +105,13 @@ extract_test_seconds() {
   local test_log="$1"
 
   local raw
-  raw="$(rg "Duration: [0-9]+(\.[0-9]+)? s" "${test_log}" | tail -n 1 || true)"
+  raw="$(search_lines "Duration: [0-9]+(\\.[0-9]+)? s" "${test_log}" | tail -n 1 || true)"
   if [[ -n "${raw}" ]]; then
     echo "${raw}" | sed -E 's/.*Duration: ([0-9]+(\.[0-9]+)?) s.*/\1/'
     return
   fi
 
-  raw="$(rg "\[[0-9]+(\.[0-9]+)? s\]" "${test_log}" | tail -n 1 || true)"
+  raw="$(search_lines "\\[[0-9]+(\\.[0-9]+)? s\\]" "${test_log}" | tail -n 1 || true)"
   if [[ -z "${raw}" ]]; then
     echo ""
     return
@@ -135,6 +139,18 @@ json_number_or_null() {
   else
     echo "${value}"
   fi
+}
+
+search_lines() {
+  local pattern="$1"
+  local source_file="$2"
+
+  if [[ "${search_tool}" == "rg" ]]; then
+    rg "${pattern}" "${source_file}" || true
+    return
+  fi
+
+  grep -E "${pattern}" "${source_file}" || true
 }
 
 run_mode() {
