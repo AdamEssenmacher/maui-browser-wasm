@@ -5,6 +5,7 @@ using Mirage.Web.Runtime;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Shapes;
+using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 using Microsoft.Extensions.DependencyInjection;
@@ -295,7 +296,7 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void RenderCoordinator_RendersTypedSemanticSnapshotAndRoutesEvents()
+    public async Task RenderCoordinator_RendersTypedSemanticSnapshotAndRoutesEvents()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
         var runtime = new RuntimeProbe();
@@ -313,6 +314,7 @@ public sealed class HandlerRuntimeIntegrationTests
         coordinator.Register(root, eventTarget: null);
         coordinator.Register(button, target);
         coordinator.SetRoot(root);
+        await WaitUntilAsync(() => runtime.LastRendered is not null);
 
         Assert.NotNull(runtime.LastRendered);
         var rootNode = Assert.IsType<ControlNode>(runtime.LastRendered);
@@ -327,7 +329,7 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void RenderCoordinator_RendersGenericWebNode_AndRoutesEventsByNodeId()
+    public async Task RenderCoordinator_RendersGenericWebNode_AndRoutesEventsByNodeId()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
         var runtime = new RuntimeProbe();
@@ -346,6 +348,7 @@ public sealed class HandlerRuntimeIntegrationTests
         coordinator.Register(root, eventTarget: null);
         coordinator.Register(vendor, eventTarget: target);
         coordinator.SetRoot(root);
+        await WaitUntilAsync(() => runtime.LastRendered is not null);
 
         var rootNode = Assert.IsType<ControlNode>(runtime.LastRendered);
         var child = Assert.Single(rootNode.Children);
@@ -376,7 +379,7 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void RenderCoordinator_BatchesRenderRequests_DuringScope()
+    public async Task RenderCoordinator_BatchesRenderRequests_DuringScope()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
         var runtime = new RuntimeProbe();
@@ -385,6 +388,7 @@ public sealed class HandlerRuntimeIntegrationTests
         var root = MiragePlatformView.CreateControl(ComponentKind.Root);
         coordinator.Register(root, eventTarget: null);
         coordinator.SetRoot(root);
+        await WaitUntilAsync(() => runtime.RenderCount >= 1);
         var baselineRenderCount = runtime.RenderCount;
 
         using (coordinator.BeginRenderBatch())
@@ -394,7 +398,137 @@ public sealed class HandlerRuntimeIntegrationTests
             coordinator.RequestRender();
         }
 
+        await WaitUntilAsync(() => runtime.RenderCount >= baselineRenderCount + 1);
+        await Task.Delay(30);
         Assert.Equal(baselineRenderCount + 1, runtime.RenderCount);
+    }
+
+    [Fact]
+    public async Task RenderCoordinator_CoalescesBurstRequests_WithoutManualBatchScope()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var root = MiragePlatformView.CreateControl(ComponentKind.Root);
+        coordinator.Register(root, eventTarget: null);
+        coordinator.SetRoot(root);
+        await WaitUntilAsync(() => runtime.RenderCount >= 1);
+
+        var baselineRenderCount = runtime.RenderCount;
+        coordinator.RequestRender();
+        coordinator.RequestRender();
+        coordinator.RequestRender();
+
+        await WaitUntilAsync(() => runtime.RenderCount >= baselineRenderCount + 1);
+        await Task.Delay(30);
+        Assert.Equal(baselineRenderCount + 1, runtime.RenderCount);
+    }
+
+    [Fact]
+    public async Task RenderCoordinator_ReentrantInvalidation_SchedulesSingleFollowUpPass()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        var reentrantRequestCount = 0;
+        runtime.RenderCallback = () =>
+        {
+            if (Interlocked.Increment(ref reentrantRequestCount) == 1)
+            {
+                coordinator.RequestRender();
+                coordinator.RequestRender();
+                coordinator.RequestRender();
+            }
+        };
+        coordinator.AttachRuntime(runtime);
+
+        var root = MiragePlatformView.CreateControl(ComponentKind.Root);
+        coordinator.Register(root, eventTarget: null);
+        coordinator.SetRoot(root);
+
+        await WaitUntilAsync(() => runtime.RenderCount >= 2);
+        await Task.Delay(30);
+        Assert.Equal(2, runtime.RenderCount);
+    }
+
+    [Fact]
+    public async Task RenderCoordinator_ScopedMaterialization_ReusesUnchangedSiblingNodes()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var root = MiragePlatformView.CreateControl(ComponentKind.Root);
+        root.AssignNodeId("root");
+        var first = MiragePlatformView.CreateControl(ComponentKind.Label);
+        first.AssignNodeId("first");
+        first.SetProperty("Text", "Before");
+        var second = MiragePlatformView.CreateControl(ComponentKind.Label);
+        second.AssignNodeId("second");
+        second.SetProperty("Text", "Stable");
+        root.AddChild(first);
+        root.AddChild(second);
+
+        coordinator.Register(root, eventTarget: null);
+        coordinator.Register(first, eventTarget: null);
+        coordinator.Register(second, eventTarget: null);
+        coordinator.SetRoot(root);
+        await WaitUntilAsync(() => runtime.RenderCount >= 1);
+
+        var initialRoot = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var initialFirst = Assert.IsType<ControlNode>(initialRoot.Children[0]);
+        var initialSecond = Assert.IsType<ControlNode>(initialRoot.Children[1]);
+
+        first.SetProperty("Text", "After");
+        coordinator.RequestRender();
+        await WaitUntilAsync(() => runtime.RenderCount >= 2);
+
+        var rerenderedRoot = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var rerenderedFirst = Assert.IsType<ControlNode>(rerenderedRoot.Children[0]);
+        var rerenderedSecond = Assert.IsType<ControlNode>(rerenderedRoot.Children[1]);
+
+        Assert.False(ReferenceEquals(initialFirst, rerenderedFirst));
+        Assert.True(ReferenceEquals(initialSecond, rerenderedSecond));
+    }
+
+    [Fact]
+    public async Task RenderCoordinator_ScopedMaterialization_PreservesSiblingReuse_AfterNoOpPass()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var root = MiragePlatformView.CreateControl(ComponentKind.Root);
+        root.AssignNodeId("root");
+        var first = MiragePlatformView.CreateControl(ComponentKind.Label);
+        first.AssignNodeId("first");
+        first.SetProperty("Text", "First");
+        var second = MiragePlatformView.CreateControl(ComponentKind.Label);
+        second.AssignNodeId("second");
+        second.SetProperty("Text", "Second");
+        root.AddChild(first);
+        root.AddChild(second);
+
+        coordinator.Register(root, eventTarget: null);
+        coordinator.Register(first, eventTarget: null);
+        coordinator.Register(second, eventTarget: null);
+        coordinator.SetRoot(root);
+        await WaitUntilAsync(() => runtime.RenderCount >= 1);
+
+        var initialRoot = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var initialSecond = Assert.IsType<ControlNode>(initialRoot.Children[1]);
+
+        // First no-op pass uses scoped reuse and should not drop descendant cache state.
+        coordinator.RequestRender();
+        await WaitUntilAsync(() => runtime.RenderCount >= 2);
+
+        first.SetProperty("Text", "First Updated");
+        coordinator.RequestRender();
+        await WaitUntilAsync(() => runtime.RenderCount >= 3);
+
+        var rerenderedRoot = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var rerenderedSecond = Assert.IsType<ControlNode>(rerenderedRoot.Children[1]);
+        Assert.True(ReferenceEquals(initialSecond, rerenderedSecond));
     }
 
     [Fact]
@@ -470,6 +604,149 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public async Task EntryHandler_RuntimeInputEvents_AreCoalescedPerDispatcherFrame()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var inputDispatcher = new QueuedDispatcher();
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .AddSingleton<IDispatcher>(inputDispatcher)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageEntryHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var entry = new Entry { Text = string.Empty };
+        ((IElementHandler)handler).SetVirtualView(entry);
+
+        coordinator.Register(handler.PlatformView, handler);
+        coordinator.SetRoot(handler.PlatformView);
+        await WaitUntilAsync(() => runtime.RenderCount >= 1);
+        var baselineRenderCount = runtime.RenderCount;
+
+        handler.OnRuntimeEvent("input", "A");
+        handler.OnRuntimeEvent("input", "AB");
+        handler.OnRuntimeEvent("input", "ABC");
+
+        Assert.Equal(string.Empty, entry.Text);
+        Assert.Equal(1, inputDispatcher.PendingCount);
+
+        inputDispatcher.FlushAll();
+        await WaitUntilAsync(() => string.Equals(entry.Text, "ABC", StringComparison.Ordinal));
+        await Task.Delay(30);
+
+        Assert.Equal("ABC", entry.Text);
+        Assert.Equal("ABC", handler.PlatformView.GetPropertyString("Text"));
+        Assert.Equal(baselineRenderCount, runtime.RenderCount);
+    }
+
+    [Fact]
+    public async Task EntryHandler_StaleBufferedRuntimeInput_DoesNotOverwriteProgrammaticTextUpdate()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var inputDispatcher = new QueuedDispatcher();
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .AddSingleton<IDispatcher>(inputDispatcher)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageEntryHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var entry = new Entry { Text = string.Empty };
+        ((IElementHandler)handler).SetVirtualView(entry);
+
+        coordinator.Register(handler.PlatformView, handler);
+        coordinator.SetRoot(handler.PlatformView);
+        await WaitUntilAsync(() => runtime.RenderCount >= 1);
+
+        handler.OnRuntimeEvent("input", "runtime-value");
+        Assert.Equal(1, inputDispatcher.PendingCount);
+
+        entry.Text = "programmatic-value";
+        MirageEntryHandler.MapText(handler, entry);
+
+        inputDispatcher.FlushAll();
+        await Task.Delay(30);
+
+        Assert.Equal("programmatic-value", entry.Text);
+        Assert.Equal("programmatic-value", handler.PlatformView.GetPropertyString("Text"));
+    }
+
+    [Fact]
+    public async Task BrowserDispatcher_DispatchDelayed_CapturesSynchronizationContextAtDispatchTime()
+    {
+        var originalContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(null);
+
+        try
+        {
+            var dispatcher = new BrowserDispatcher();
+            var queuedContext = new QueuedSynchronizationContext();
+            var executedCount = 0;
+
+            SynchronizationContext.SetSynchronizationContext(queuedContext);
+            Assert.True(dispatcher.DispatchDelayed(TimeSpan.FromMilliseconds(1), () => executedCount++));
+
+            SynchronizationContext.SetSynchronizationContext(null);
+            await Task.Delay(30);
+
+            Assert.Equal(0, executedCount);
+            Assert.Equal(1, queuedContext.PendingCount);
+
+            SynchronizationContext.SetSynchronizationContext(queuedContext);
+            queuedContext.FlushAll();
+
+            Assert.Equal(1, executedCount);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(originalContext);
+        }
+    }
+
+    [Fact]
+    public async Task BrowserDispatcher_Dispatch_UsesCapturedSynchronizationContextFromPriorDispatch()
+    {
+        var originalContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(null);
+
+        try
+        {
+            var dispatcher = new BrowserDispatcher();
+            var queuedContext = new QueuedSynchronizationContext();
+            var executedCount = 0;
+
+            SynchronizationContext.SetSynchronizationContext(queuedContext);
+            Assert.True(dispatcher.Dispatch(() => executedCount++));
+            Assert.Equal(1, executedCount);
+
+            SynchronizationContext.SetSynchronizationContext(null);
+            await Task.Run(() => dispatcher.Dispatch(() => executedCount++));
+
+            Assert.Equal(1, executedCount);
+            Assert.Equal(1, queuedContext.PendingCount);
+
+            SynchronizationContext.SetSynchronizationContext(queuedContext);
+            queuedContext.FlushAll();
+
+            Assert.Equal(2, executedCount);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(originalContext);
+        }
+    }
+
+    [Fact]
     public void PlatformView_ChildOrderRemainsDeterministicAcrossMutations()
     {
         var root = MiragePlatformView.CreateControl(ComponentKind.VerticalStack);
@@ -525,6 +802,8 @@ public sealed class HandlerRuntimeIntegrationTests
 
         public IMirageEventSink? Sink { get; private set; }
 
+        public Action? RenderCallback { get; set; }
+
         public void SetEventSink(IMirageEventSink? eventSink)
         {
             Sink = eventSink;
@@ -534,6 +813,7 @@ public sealed class HandlerRuntimeIntegrationTests
         {
             LastRendered = nextRoot;
             RenderCount++;
+            RenderCallback?.Invoke();
         }
 
         public void SetViewport(double width, double height)
@@ -575,6 +855,85 @@ public sealed class HandlerRuntimeIntegrationTests
         }
     }
 
+    private sealed class QueuedDispatcher : IDispatcher
+    {
+        private readonly Queue<Action> _pending = new();
+
+        public bool IsDispatchRequired => false;
+
+        public int PendingCount => _pending.Count;
+
+        public bool Dispatch(Action action)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            _pending.Enqueue(action);
+            return true;
+        }
+
+        public bool DispatchDelayed(TimeSpan delay, Action action)
+        {
+            _ = delay;
+            return Dispatch(action);
+        }
+
+        public IDispatcherTimer CreateTimer()
+        {
+            throw new NotSupportedException("QueuedDispatcher does not provide timers.");
+        }
+
+        public void FlushAll()
+        {
+            while (_pending.Count > 0)
+            {
+                var action = _pending.Dequeue();
+                action();
+            }
+        }
+    }
+
+    private sealed class QueuedSynchronizationContext : SynchronizationContext
+    {
+        private readonly Queue<(SendOrPostCallback Callback, object? State)> _pending = new();
+
+        public int PendingCount
+        {
+            get
+            {
+                lock (_pending)
+                {
+                    return _pending.Count;
+                }
+            }
+        }
+
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            lock (_pending)
+            {
+                _pending.Enqueue((d, state));
+            }
+        }
+
+        public void FlushAll()
+        {
+            while (true)
+            {
+                (SendOrPostCallback Callback, object? State) workItem;
+                lock (_pending)
+                {
+                    if (_pending.Count == 0)
+                    {
+                        break;
+                    }
+
+                    workItem = _pending.Dequeue();
+                }
+
+                workItem.Callback(workItem.State);
+            }
+        }
+    }
+
     private sealed class EventTargetProbe : IMirageRuntimeEventTarget
     {
         public string? LastEventName { get; private set; }
@@ -591,6 +950,20 @@ public sealed class HandlerRuntimeIntegrationTests
         public override void AppendPath(PathF path)
         {
             _ = path;
+        }
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> predicate, int timeoutMs = 2000)
+    {
+        var start = Environment.TickCount64;
+        while (!predicate())
+        {
+            if (Environment.TickCount64 - start > timeoutMs)
+            {
+                throw new TimeoutException("Timed out waiting for asynchronous condition.");
+            }
+
+            await Task.Delay(10);
         }
     }
 }

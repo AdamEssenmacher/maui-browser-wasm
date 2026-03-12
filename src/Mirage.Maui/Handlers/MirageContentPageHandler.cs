@@ -50,8 +50,6 @@ internal sealed class MirageContentPageHandler : MirageViewHandler<ContentPage>
 
     private void SetContent(View? content)
     {
-        using var renderBatch = BeginRenderBatch();
-
         if (_currentContentHandler is not null && !ReferenceEquals(_currentContent, content))
         {
             DisconnectCurrentContent();

@@ -1,12 +1,16 @@
 using Mirage.Core.Diagnostics;
 using Mirage.Core.Semantics;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Handlers;
 
 namespace Mirage.Maui.Handlers;
 
 internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRuntimeEventTarget
 {
+    private static readonly TimeSpan InputFlushDelay = TimeSpan.FromMilliseconds(1);
+
     public static IPropertyMapper<IEntry, MirageEntryHandler> Mapper =
         new PropertyMapper<IEntry, MirageEntryHandler>(MirageViewMapper.CommonViewMapper)
         {
@@ -16,6 +20,18 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
 
     private bool _isApplyingRuntimeInput;
     private int _nextInputEventId;
+    private readonly object _inputSync = new();
+    private string? _pendingInputValue;
+    private bool _inputFlushScheduled;
+    private int _pendingInputEventCount;
+    private int _pendingInputEventId;
+    private long _pendingInputReceivedTimestamp;
+    private long _pendingBaselineRenderSequence;
+    private long _pendingInputTextVersion;
+    private int _inputEventReceivedCount;
+    private int _inputFlushApplyCount;
+    private int _inputCoalescedEventCount;
+    private long _textVersion;
 
     public MirageEntryHandler()
         : base(ComponentKind.Entry, Mapper)
@@ -46,50 +62,68 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
         var baselineRenderSequence = diagnosticsEnabled ? MirageDiagnostics.GetLastRenderCompletedSequence() : 0;
 
         var value = payload ?? string.Empty;
-        if (string.Equals(VirtualView.Text, value, StringComparison.Ordinal))
+        var shouldScheduleFlush = false;
+        var queueDepth = 0;
+        var textVersion = Volatile.Read(ref _textVersion);
+        lock (_inputSync)
         {
-            return;
+            if (!_inputFlushScheduled
+                && _pendingInputEventCount == 0
+                && string.Equals(VirtualView.Text, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _pendingInputValue = value;
+            _pendingInputEventId = inputEventId;
+            _pendingInputReceivedTimestamp = inputReceivedTimestamp;
+            _pendingBaselineRenderSequence = baselineRenderSequence;
+            _pendingInputTextVersion = textVersion;
+            _pendingInputEventCount++;
+            queueDepth = _pendingInputEventCount;
+            if (_pendingInputEventCount > 1)
+            {
+                _inputCoalescedEventCount++;
+            }
+
+            if (!_inputFlushScheduled)
+            {
+                _inputFlushScheduled = true;
+                shouldScheduleFlush = true;
+            }
         }
+
+        _inputEventReceivedCount++;
 
         if (diagnosticsEnabled)
         {
             MirageDiagnostics.Log(
                 "entry.input",
-                $"eventId={inputEventId} phase=received nodeId={PlatformView.NodeId} valueLength={value.Length} baselineRenderSequence={baselineRenderSequence}");
+                $"eventId={inputEventId} phase=received nodeId={PlatformView.NodeId} valueLength={value.Length} baselineRenderSequence={baselineRenderSequence} queueDepth={queueDepth} inputEventsReceived={_inputEventReceivedCount} inputEventsCoalesced={_inputCoalescedEventCount}");
         }
 
-        _isApplyingRuntimeInput = true;
-        try
+        if (shouldScheduleFlush)
         {
-            var setStartTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
-            VirtualView.Text = value;
-            if (diagnosticsEnabled)
-            {
-                var setElapsedMs = MirageDiagnostics.GetElapsedMilliseconds(setStartTimestamp, MirageDiagnostics.GetTimestamp());
-                MirageDiagnostics.Log(
-                    "entry.input",
-                    $"eventId={inputEventId} phase=virtual-text-set setMs={setElapsedMs:0.###}");
-            }
-        }
-        finally
-        {
-            _isApplyingRuntimeInput = false;
-        }
-
-        if (diagnosticsEnabled)
-        {
-            _ = TrackRenderCompletionForInputAsync(inputEventId, baselineRenderSequence, inputReceivedTimestamp);
+            SchedulePendingInputFlush();
         }
     }
 
     public static void MapText(MirageEntryHandler handler, IEntry entry)
     {
-        if (handler._isApplyingRuntimeInput && string.Equals(entry.Text, handler.PlatformView.GetPropertyString("Text"), StringComparison.Ordinal))
+        var previousPlatformText = handler.PlatformView.GetPropertyString("Text");
+        var nextText = entry.Text;
+        if (handler._isApplyingRuntimeInput && string.Equals(nextText, previousPlatformText, StringComparison.Ordinal))
         {
             return;
         }
 
-        handler.PlatformView.SetProperty("Text", entry.Text);
+        handler.PlatformView.SetProperty("Text", nextText);
+        if (!handler._isApplyingRuntimeInput
+            && !string.Equals(previousPlatformText, nextText, StringComparison.Ordinal))
+        {
+            Interlocked.Increment(ref handler._textVersion);
+        }
+
         handler.RequestRender();
 
         if (MirageDiagnostics.IsEnabled)
@@ -106,7 +140,137 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
         handler.RequestRender();
     }
 
-    private static async Task TrackRenderCompletionForInputAsync(int inputEventId, long baselineRenderSequence, long inputReceivedTimestamp)
+    private void SchedulePendingInputFlush()
+    {
+        var dispatcher = ResolveDispatcher();
+        if (dispatcher is null)
+        {
+            FlushPendingInput();
+            return;
+        }
+
+        if (!dispatcher.DispatchDelayed(InputFlushDelay, FlushPendingInput))
+        {
+            if (!dispatcher.Dispatch(FlushPendingInput))
+            {
+                FlushPendingInput();
+            }
+        }
+    }
+
+    private void FlushPendingInput()
+    {
+        string? value;
+        var eventId = 0;
+        var eventCount = 0;
+        var inputReceivedTimestamp = 0L;
+        var baselineRenderSequence = 0L;
+        var inputTextVersion = 0L;
+        lock (_inputSync)
+        {
+            value = _pendingInputValue;
+            eventId = _pendingInputEventId;
+            eventCount = _pendingInputEventCount;
+            inputReceivedTimestamp = _pendingInputReceivedTimestamp;
+            baselineRenderSequence = _pendingBaselineRenderSequence;
+            inputTextVersion = _pendingInputTextVersion;
+            _pendingInputValue = null;
+            _pendingInputEventCount = 0;
+            _pendingInputEventId = 0;
+            _pendingInputReceivedTimestamp = 0;
+            _pendingBaselineRenderSequence = 0;
+            _pendingInputTextVersion = 0;
+            _inputFlushScheduled = false;
+        }
+
+        if (eventCount == 0)
+        {
+            return;
+        }
+
+        _inputFlushApplyCount++;
+        var diagnosticsEnabled = MirageDiagnostics.IsEnabled;
+        var valueToApply = value ?? string.Empty;
+        var currentTextVersion = Volatile.Read(ref _textVersion);
+        if (currentTextVersion != inputTextVersion
+            && !string.Equals(VirtualView.Text, valueToApply, StringComparison.Ordinal))
+        {
+            if (diagnosticsEnabled)
+            {
+                MirageDiagnostics.Log(
+                    "entry.input",
+                    $"eventId={eventId} phase=flush-skip-stale eventCount={eventCount} staleTextVersion={inputTextVersion} currentTextVersion={currentTextVersion} inputFlushApplies={_inputFlushApplyCount} inputEventsCoalesced={_inputCoalescedEventCount}");
+            }
+
+            return;
+        }
+
+        if (string.Equals(VirtualView.Text, valueToApply, StringComparison.Ordinal))
+        {
+            if (diagnosticsEnabled)
+            {
+                MirageDiagnostics.Log(
+                    "entry.input",
+                    $"eventId={eventId} phase=flush-skip eventCount={eventCount} inputFlushApplies={_inputFlushApplyCount} inputEventsCoalesced={_inputCoalescedEventCount}");
+            }
+
+            return;
+        }
+
+        PlatformView.SetProperty("Text", valueToApply);
+
+        var scheduledRenderSequenceBeforeSet = diagnosticsEnabled
+            ? MirageDiagnostics.GetLastRenderScheduledSequence()
+            : 0;
+
+        _isApplyingRuntimeInput = true;
+        try
+        {
+            var setStartTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
+            VirtualView.Text = valueToApply;
+            if (diagnosticsEnabled)
+            {
+                var setElapsedMs = MirageDiagnostics.GetElapsedMilliseconds(setStartTimestamp, MirageDiagnostics.GetTimestamp());
+                MirageDiagnostics.Log(
+                    "entry.input",
+                    $"eventId={eventId} phase=virtual-text-set setMs={setElapsedMs:0.###} eventCount={eventCount} inputFlushApplies={_inputFlushApplyCount} inputEventsCoalesced={_inputCoalescedEventCount}");
+            }
+        }
+        finally
+        {
+            _isApplyingRuntimeInput = false;
+        }
+
+        if (diagnosticsEnabled)
+        {
+            var scheduledRenderSequenceAfterSet = MirageDiagnostics.GetLastRenderScheduledSequence();
+            if (scheduledRenderSequenceAfterSet > scheduledRenderSequenceBeforeSet)
+            {
+                _ = TrackRenderCompletionForInputAsync(
+                    eventId,
+                    baselineRenderSequence,
+                    scheduledRenderSequenceAfterSet,
+                    inputReceivedTimestamp);
+            }
+            else
+            {
+                MirageDiagnostics.Log(
+                    "entry.input",
+                    $"eventId={eventId} phase=render-tracking-skipped reason=no-new-render-request scheduledBefore={scheduledRenderSequenceBeforeSet} scheduledAfter={scheduledRenderSequenceAfterSet}");
+            }
+        }
+    }
+
+    private IDispatcher? ResolveDispatcher()
+    {
+        return MauiContext?.Services.GetService<IDispatcher>();
+    }
+
+    private static async Task TrackRenderCompletionForInputAsync(
+        int inputEventId,
+        long baselineRenderSequence,
+        long expectedRenderSequence,
+        long inputReceivedTimestamp)
     {
         const int pollIntervalMs = 10;
         const int maxWaitMs = 5000;
@@ -115,13 +279,13 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
         while (waitedMs < maxWaitMs)
         {
             var completedSequence = MirageDiagnostics.GetLastRenderCompletedSequence();
-            if (completedSequence > baselineRenderSequence)
+            if (completedSequence >= expectedRenderSequence)
             {
                 var completedTimestamp = MirageDiagnostics.GetLastRenderCompletedTimestamp();
                 var latencyMs = MirageDiagnostics.GetElapsedMilliseconds(inputReceivedTimestamp, completedTimestamp);
                 MirageDiagnostics.Log(
                     "entry.input",
-                    $"eventId={inputEventId} phase=render-complete renderSequence={completedSequence} endToEndMs={latencyMs:0.###}");
+                    $"eventId={inputEventId} phase=render-complete renderSequence={completedSequence} expectedRenderSequence={expectedRenderSequence} endToEndMs={latencyMs:0.###}");
                 return;
             }
 
@@ -131,6 +295,6 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
 
         MirageDiagnostics.Log(
             "entry.input",
-            $"eventId={inputEventId} phase=render-timeout baselineRenderSequence={baselineRenderSequence} waitedMs={maxWaitMs}");
+            $"eventId={inputEventId} phase=render-timeout baselineRenderSequence={baselineRenderSequence} expectedRenderSequence={expectedRenderSequence} waitedMs={maxWaitMs}");
     }
 }

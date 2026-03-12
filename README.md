@@ -103,6 +103,20 @@ dotnet test tests/Mirage.Integration.Tests/Mirage.Integration.Tests.csproj
 dotnet test tests/Mirage.E2E.Tests/Mirage.E2E.Tests.csproj
 ```
 
+## Performance diagnostics and budgets
+
+Render coalescing/scoped-materialization/input-latency diagnostics are built into Mirage when `MIRAGE_DIAGNOSTICS=1`.
+
+Run the slowness matrix locally with balanced perf budgets:
+
+```bash
+MIRAGE_MATRIX_RUNS=1 \
+MIRAGE_PERF_BUDGET_FILE=tools/diagnostics/perf-budgets-balanced.cfg \
+tools/diagnostics/run-slowness-matrix.sh
+```
+
+The matrix writes machine-readable summaries under a timestamped output directory and exits non-zero when the configured hot-reload-off budget profile fails.
+
 ## Runtime invariant
 
 Mirage startup requires `IMirageComponentProvider` registration.

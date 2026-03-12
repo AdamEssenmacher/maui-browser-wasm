@@ -14,11 +14,18 @@ public sealed class MiragePlatformView
 
     private readonly ComponentKind? _controlKind;
     private readonly string? _elementName;
+    private static long s_nextRevision;
+
+    private long _localRevision;
+    private long _localStructureRevision;
+    private long _subtreeRevision;
+    private long _subtreeStructureRevision;
 
     public MiragePlatformView(ComponentKind kind)
     {
         _controlKind = kind;
         NodeType = PlatformNodeType.Control;
+        InitializeRevisionTracking();
     }
 
     private MiragePlatformView(string elementName)
@@ -27,6 +34,7 @@ public sealed class MiragePlatformView
 
         _elementName = elementName;
         NodeType = PlatformNodeType.Web;
+        InitializeRevisionTracking();
     }
 
     public PlatformNodeType NodeType { get; }
@@ -50,6 +58,14 @@ public sealed class MiragePlatformView
     public IReadOnlyCollection<string> Classes => _classes;
 
     public MiragePlatformView? Parent { get; private set; }
+
+    internal long LocalRevision => _localRevision;
+
+    internal long LocalStructureRevision => _localStructureRevision;
+
+    internal long SubtreeRevision => _subtreeRevision;
+
+    internal long SubtreeStructureRevision => _subtreeStructureRevision;
 
     public static MiragePlatformView CreateControl(ComponentKind kind) => new(kind);
 
@@ -81,11 +97,20 @@ public sealed class MiragePlatformView
 
         if (value is null || value.Value.Kind == MirageValueKind.Null)
         {
-            _properties.Remove(name);
+            if (_properties.Remove(name))
+            {
+                MarkMutation(structural: false);
+            }
+            return;
+        }
+
+        if (_properties.TryGetValue(name, out var current) && current.Equals(value.Value))
+        {
             return;
         }
 
         _properties[name] = value.Value;
+        MarkMutation(structural: false);
     }
 
     public string? GetPropertyString(string name)
@@ -121,11 +146,20 @@ public sealed class MiragePlatformView
 
         if (value is null)
         {
-            _styles.Remove(name);
+            if (_styles.Remove(name))
+            {
+                MarkMutation(structural: false);
+            }
+            return;
+        }
+
+        if (_styles.TryGetValue(name, out var current) && string.Equals(current, value, StringComparison.Ordinal))
+        {
             return;
         }
 
         _styles[name] = value;
+        MarkMutation(structural: false);
     }
 
     public void SetEvent(string eventName, bool enabled)
@@ -137,11 +171,17 @@ public sealed class MiragePlatformView
 
         if (enabled)
         {
-            _events.Add(eventName);
+            if (_events.Add(eventName))
+            {
+                MarkMutation(structural: false);
+            }
             return;
         }
 
-        _events.Remove(eventName);
+        if (_events.Remove(eventName))
+        {
+            MarkMutation(structural: false);
+        }
     }
 
     public void SetAttribute(string name, string? value)
@@ -153,11 +193,20 @@ public sealed class MiragePlatformView
 
         if (value is null)
         {
-            _attributes.Remove(name);
+            if (_attributes.Remove(name))
+            {
+                MarkMutation(structural: false);
+            }
+            return;
+        }
+
+        if (_attributes.TryGetValue(name, out var current) && string.Equals(current, value, StringComparison.Ordinal))
+        {
             return;
         }
 
         _attributes[name] = value;
+        MarkMutation(structural: false);
     }
 
     public void AddClass(string className)
@@ -167,7 +216,10 @@ public sealed class MiragePlatformView
             return;
         }
 
-        _classes.Add(className);
+        if (_classes.Add(className))
+        {
+            MarkMutation(structural: false);
+        }
     }
 
     public void RemoveClass(string className)
@@ -177,17 +229,26 @@ public sealed class MiragePlatformView
             return;
         }
 
-        _classes.Remove(className);
+        if (_classes.Remove(className))
+        {
+            MarkMutation(structural: false);
+        }
     }
 
     public void ClearChildren()
     {
+        if (_children.Count == 0)
+        {
+            return;
+        }
+
         foreach (var child in _children)
         {
             child.Parent = null;
         }
 
         _children.Clear();
+        MarkMutation(structural: true);
     }
 
     public void AddChild(MiragePlatformView child)
@@ -212,6 +273,7 @@ public sealed class MiragePlatformView
         var normalizedIndex = Math.Clamp(index, 0, _children.Count);
         _children.Insert(normalizedIndex, child);
         child.Parent = this;
+        MarkMutation(structural: true);
     }
 
     public void RemoveChild(MiragePlatformView child)
@@ -221,6 +283,7 @@ public sealed class MiragePlatformView
         if (_children.Remove(child))
         {
             child.Parent = null;
+            MarkMutation(structural: true);
         }
     }
 
@@ -240,17 +303,11 @@ public sealed class MiragePlatformView
         return ToNodeCore();
     }
 
-    private NodeBase ToNodeCore()
+    internal NodeBase CreateNode(IReadOnlyList<NodeBase> childNodes)
     {
         if (string.IsNullOrWhiteSpace(NodeId))
         {
             throw new InvalidOperationException("Cannot create semantic node for platform view without assigned node id.");
-        }
-
-        var childNodes = new List<NodeBase>(_children.Count);
-        foreach (var child in _children)
-        {
-            childNodes.Add(child.ToNodeCore());
         }
 
         return NodeType switch
@@ -275,6 +332,17 @@ public sealed class MiragePlatformView
         };
     }
 
+    private NodeBase ToNodeCore()
+    {
+        var childNodes = new List<NodeBase>(_children.Count);
+        foreach (var child in _children)
+        {
+            childNodes.Add(child.ToNodeCore());
+        }
+
+        return CreateNode(childNodes);
+    }
+
     private int CountSubtreeNodes()
     {
         var count = 1;
@@ -284,5 +352,55 @@ public sealed class MiragePlatformView
         }
 
         return count;
+    }
+
+    private static long NextRevision()
+    {
+        return Interlocked.Increment(ref s_nextRevision);
+    }
+
+    private void InitializeRevisionTracking()
+    {
+        var revision = NextRevision();
+        _localRevision = revision;
+        _localStructureRevision = revision;
+        _subtreeRevision = revision;
+        _subtreeStructureRevision = revision;
+    }
+
+    private void MarkMutation(bool structural)
+    {
+        var revision = NextRevision();
+        _localRevision = revision;
+        _subtreeRevision = revision;
+
+        if (structural)
+        {
+            _localStructureRevision = revision;
+            _subtreeStructureRevision = revision;
+        }
+
+        Parent?.PropagateSubtreeRevision(revision, structural);
+    }
+
+    private void PropagateSubtreeRevision(long revision, bool structural)
+    {
+        var changed = false;
+        if (revision > _subtreeRevision)
+        {
+            _subtreeRevision = revision;
+            changed = true;
+        }
+
+        if (structural && revision > _subtreeStructureRevision)
+        {
+            _subtreeStructureRevision = revision;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            Parent?.PropagateSubtreeRevision(revision, structural);
+        }
     }
 }

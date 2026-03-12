@@ -291,8 +291,6 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
 
     private void SetContent(IView? content)
     {
-        using var renderBatch = BeginRenderBatch();
-
         if (_currentContentHandler is not null && !ReferenceEquals(_currentContent, content))
         {
             DisconnectCurrentContent();

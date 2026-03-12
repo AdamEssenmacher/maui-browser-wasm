@@ -11,18 +11,64 @@ internal sealed class BrowserDispatcherProvider : IDispatcherProvider
 
 internal sealed class BrowserDispatcher : IDispatcher
 {
-    public bool IsDispatchRequired => false;
+    private SynchronizationContext? _dispatchContext;
+
+    private SynchronizationContext? ResolveDispatchContext()
+    {
+        var currentContext = SynchronizationContext.Current;
+        if (currentContext is not null)
+        {
+            var existingContext = Interlocked.CompareExchange(ref _dispatchContext, currentContext, comparand: null);
+            return existingContext ?? currentContext;
+        }
+
+        return Volatile.Read(ref _dispatchContext);
+    }
+
+    public bool IsDispatchRequired
+    {
+        get
+        {
+            var dispatchContext = ResolveDispatchContext();
+            return dispatchContext is not null
+                && !ReferenceEquals(SynchronizationContext.Current, dispatchContext);
+        }
+    }
 
     public bool Dispatch(Action action)
     {
         ArgumentNullException.ThrowIfNull(action);
-        action();
+
+        var dispatchContext = ResolveDispatchContext();
+        if (dispatchContext is null || ReferenceEquals(SynchronizationContext.Current, dispatchContext))
+        {
+            action();
+            return true;
+        }
+
+        dispatchContext.Post(static state => ((Action)state!).Invoke(), action);
         return true;
     }
 
     public bool DispatchDelayed(TimeSpan delay, Action action)
     {
         ArgumentNullException.ThrowIfNull(action);
+
+        if (delay <= TimeSpan.Zero)
+        {
+            return Dispatch(action);
+        }
+
+        var dispatchContext = ResolveDispatchContext();
+        if (dispatchContext is not null)
+        {
+            _ = Task.Delay(delay).ContinueWith(
+                _ => dispatchContext.Post(static state => ((Action)state!).Invoke(), action),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+            return true;
+        }
 
         _ = Task.Delay(delay).ContinueWith(
             _ => Dispatch(action),

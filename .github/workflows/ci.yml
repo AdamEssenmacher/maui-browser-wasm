@@ -47,3 +47,19 @@ jobs:
 
       - name: E2E tests
         run: dotnet test tests/Mirage.E2E.Tests/Mirage.E2E.Tests.csproj --configuration Release --no-build
+
+      - name: Performance budget matrix
+        run: |
+          mkdir -p "${{ github.workspace }}/artifacts/perf-matrix"
+          MIRAGE_MATRIX_RUNS=2 \
+          MIRAGE_MATRIX_CONFIGURATION=Release \
+          MIRAGE_MATRIX_OUTPUT_DIR="${{ github.workspace }}/artifacts/perf-matrix" \
+          MIRAGE_PERF_BUDGET_FILE="tools/diagnostics/perf-budgets-balanced.cfg" \
+          tools/diagnostics/run-slowness-matrix.sh
+
+      - name: Upload performance artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mirage-perf-matrix
+          path: ${{ github.workspace }}/artifacts/perf-matrix
