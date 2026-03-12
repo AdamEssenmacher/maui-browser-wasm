@@ -10,7 +10,6 @@ public partial class App : Application
 		Resources ??= new ResourceDictionary();
 		Resources.MergedDictionaries.Add(new ShowcaseMauiTemplateColors());
 		Resources.MergedDictionaries.Add(new ShowcaseMauiTemplateStyles());
-		Resources.MergedDictionaries.Add(new ShowcaseStyles());
 	}
 
 	protected override Window CreateWindow(IActivationState? activationState)
