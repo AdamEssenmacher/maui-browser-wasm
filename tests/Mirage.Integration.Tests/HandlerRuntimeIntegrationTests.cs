@@ -645,6 +645,43 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public async Task EntryHandler_StaleBufferedRuntimeInput_DoesNotOverwriteProgrammaticTextUpdate()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var inputDispatcher = new QueuedDispatcher();
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .AddSingleton<IDispatcher>(inputDispatcher)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageEntryHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var entry = new Entry { Text = string.Empty };
+        ((IElementHandler)handler).SetVirtualView(entry);
+
+        coordinator.Register(handler.PlatformView, handler);
+        coordinator.SetRoot(handler.PlatformView);
+        await WaitUntilAsync(() => runtime.RenderCount >= 1);
+
+        handler.OnRuntimeEvent("input", "runtime-value");
+        Assert.Equal(1, inputDispatcher.PendingCount);
+
+        entry.Text = "programmatic-value";
+        MirageEntryHandler.MapText(handler, entry);
+
+        inputDispatcher.FlushAll();
+        await Task.Delay(30);
+
+        Assert.Equal("programmatic-value", entry.Text);
+        Assert.Equal("programmatic-value", handler.PlatformView.GetPropertyString("Text"));
+    }
+
+    [Fact]
     public async Task BrowserDispatcher_DispatchDelayed_CapturesSynchronizationContextAtDispatchTime()
     {
         var originalContext = SynchronizationContext.Current;

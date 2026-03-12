@@ -27,9 +27,11 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
     private int _pendingInputEventId;
     private long _pendingInputReceivedTimestamp;
     private long _pendingBaselineRenderSequence;
+    private long _pendingInputTextVersion;
     private int _inputEventReceivedCount;
     private int _inputFlushApplyCount;
     private int _inputCoalescedEventCount;
+    private long _textVersion;
 
     public MirageEntryHandler()
         : base(ComponentKind.Entry, Mapper)
@@ -62,6 +64,7 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
         var value = payload ?? string.Empty;
         var shouldScheduleFlush = false;
         var queueDepth = 0;
+        var textVersion = Volatile.Read(ref _textVersion);
         lock (_inputSync)
         {
             if (!_inputFlushScheduled
@@ -75,6 +78,7 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
             _pendingInputEventId = inputEventId;
             _pendingInputReceivedTimestamp = inputReceivedTimestamp;
             _pendingBaselineRenderSequence = baselineRenderSequence;
+            _pendingInputTextVersion = textVersion;
             _pendingInputEventCount++;
             queueDepth = _pendingInputEventCount;
             if (_pendingInputEventCount > 1)
@@ -106,12 +110,20 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
 
     public static void MapText(MirageEntryHandler handler, IEntry entry)
     {
-        if (handler._isApplyingRuntimeInput && string.Equals(entry.Text, handler.PlatformView.GetPropertyString("Text"), StringComparison.Ordinal))
+        var previousPlatformText = handler.PlatformView.GetPropertyString("Text");
+        var nextText = entry.Text;
+        if (handler._isApplyingRuntimeInput && string.Equals(nextText, previousPlatformText, StringComparison.Ordinal))
         {
             return;
         }
 
-        handler.PlatformView.SetProperty("Text", entry.Text);
+        handler.PlatformView.SetProperty("Text", nextText);
+        if (!handler._isApplyingRuntimeInput
+            && !string.Equals(previousPlatformText, nextText, StringComparison.Ordinal))
+        {
+            Interlocked.Increment(ref handler._textVersion);
+        }
+
         handler.RequestRender();
 
         if (MirageDiagnostics.IsEnabled)
@@ -153,6 +165,7 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
         var eventCount = 0;
         var inputReceivedTimestamp = 0L;
         var baselineRenderSequence = 0L;
+        var inputTextVersion = 0L;
         lock (_inputSync)
         {
             value = _pendingInputValue;
@@ -160,11 +173,13 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
             eventCount = _pendingInputEventCount;
             inputReceivedTimestamp = _pendingInputReceivedTimestamp;
             baselineRenderSequence = _pendingBaselineRenderSequence;
+            inputTextVersion = _pendingInputTextVersion;
             _pendingInputValue = null;
             _pendingInputEventCount = 0;
             _pendingInputEventId = 0;
             _pendingInputReceivedTimestamp = 0;
             _pendingBaselineRenderSequence = 0;
+            _pendingInputTextVersion = 0;
             _inputFlushScheduled = false;
         }
 
@@ -176,6 +191,20 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
         _inputFlushApplyCount++;
         var diagnosticsEnabled = MirageDiagnostics.IsEnabled;
         var valueToApply = value ?? string.Empty;
+        var currentTextVersion = Volatile.Read(ref _textVersion);
+        if (currentTextVersion != inputTextVersion
+            && !string.Equals(VirtualView.Text, valueToApply, StringComparison.Ordinal))
+        {
+            if (diagnosticsEnabled)
+            {
+                MirageDiagnostics.Log(
+                    "entry.input",
+                    $"eventId={eventId} phase=flush-skip-stale eventCount={eventCount} staleTextVersion={inputTextVersion} currentTextVersion={currentTextVersion} inputFlushApplies={_inputFlushApplyCount} inputEventsCoalesced={_inputCoalescedEventCount}");
+            }
+
+            return;
+        }
+
         if (string.Equals(VirtualView.Text, valueToApply, StringComparison.Ordinal))
         {
             if (diagnosticsEnabled)
