@@ -250,6 +250,17 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void NavigationProjection_PopStateDoesNotMutateLastProjectedPathWithoutProjection()
+    {
+        var handlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageNavigationPageHandler.cs");
+        Assert.True(File.Exists(handlerPath), $"Expected handler file not found: {handlerPath}");
+
+        var text = File.ReadAllText(handlerPath);
+        Assert.Contains("if (topRouteMatchesTarget)", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("_lastProjectedPath = targetMatch.Path;", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BrowserAppHost_InvokesNavigationStartupResolverBeforeHandlerRealization()
     {
         var appHostPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageBrowserAppHost.cs");

@@ -332,8 +332,6 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
             ProjectCurrentRoute(MirageNavigationTrigger.BrowserPopState);
             return;
         }
-
-        _lastProjectedPath = targetMatch.Path;
     }
 
     private void ApplyNavigationStack(IReadOnlyList<Page> requestedStack, MirageNavigationTrigger trigger)
