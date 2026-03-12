@@ -1,5 +1,7 @@
+using System.Globalization;
 using Mirage.Core.Semantics;
 using Mirage.Maui.Handlers;
+using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 
 namespace Showcase.Fluent.App;
@@ -9,7 +11,13 @@ public sealed class ShowcaseVendorWidgetHandler : MirageViewHandler<ShowcaseVend
     public static readonly IPropertyMapper<ShowcaseVendorWidget, ShowcaseVendorWidgetHandler> Mapper =
         new PropertyMapper<ShowcaseVendorWidget, ShowcaseVendorWidgetHandler>(MirageViewMapper.CommonViewMapper)
         {
-            [nameof(ShowcaseVendorWidget.Text)] = MapText
+            [nameof(ShowcaseVendorWidget.Text)] = MapText,
+            [nameof(ShowcaseVendorWidget.ChipPadding)] = MapChipPadding,
+            [nameof(ShowcaseVendorWidget.ChipCornerRadius)] = MapChipCornerRadius,
+            [nameof(ShowcaseVendorWidget.ChipBorderWidth)] = MapChipBorder,
+            [nameof(ShowcaseVendorWidget.ChipBorderColor)] = MapChipBorder,
+            [nameof(ShowcaseVendorWidget.ChipBackgroundColor)] = MapChipBackgroundColor,
+            [nameof(ShowcaseVendorWidget.ChipTextColor)] = MapChipTextColor
         };
 
     public ShowcaseVendorWidgetHandler()
@@ -22,25 +30,58 @@ public sealed class ShowcaseVendorWidgetHandler : MirageViewHandler<ShowcaseVend
     {
         platformView.SetAttribute("role", "button");
         platformView.SetAttribute("tabindex", "0");
-        platformView.AddClass("showcase-vendor-pill");
         platformView.SetEvent("click", enabled: true);
         platformView.SetStyle("display", "inline-flex");
         platformView.SetStyle("alignItems", "center");
-        platformView.SetStyle("padding", "6px 12px");
-        platformView.SetStyle("borderRadius", "999px");
         platformView.SetStyle("cursor", "pointer");
-        platformView.SetStyle("border", "1px solid rgba(0, 95, 128, 0.35)");
-        platformView.SetStyle("background", "rgba(0, 95, 128, 0.08)");
-        platformView.SetStyle("color", "#003b5c");
         MapText(this, VirtualView);
+        MapChipPadding(this, VirtualView);
+        MapChipCornerRadius(this, VirtualView);
+        MapChipBorder(this, VirtualView);
+        MapChipBackgroundColor(this, VirtualView);
+        MapChipTextColor(this, VirtualView);
         base.ConnectHandler(platformView);
-        RequestRender();
     }
 
     public static void MapText(ShowcaseVendorWidgetHandler handler, ShowcaseVendorWidget view)
     {
-        handler.PlatformView.SetProperty("textContent", MirageValue.String(view.Text));
-        handler.RequestRender();
+        SetPropertyIfChanged(handler, "textContent", view.Text);
+    }
+
+    public static void MapChipPadding(ShowcaseVendorWidgetHandler handler, ShowcaseVendorWidget view)
+    {
+        var padding = view.ChipPadding;
+        SetStyleIfChanged(handler, "padding", ToCssThickness(padding));
+    }
+
+    public static void MapChipCornerRadius(ShowcaseVendorWidgetHandler handler, ShowcaseVendorWidget view)
+    {
+        var value = double.IsFinite(view.ChipCornerRadius)
+            ? Math.Max(0, view.ChipCornerRadius)
+            : 0;
+        SetStyleIfChanged(handler, "borderRadius", ToPx(value));
+    }
+
+    public static void MapChipBorder(ShowcaseVendorWidgetHandler handler, ShowcaseVendorWidget view)
+    {
+        var width = double.IsFinite(view.ChipBorderWidth)
+            ? Math.Max(0, view.ChipBorderWidth)
+            : 0;
+        var color = ToCssColor(view.ChipBorderColor);
+        var borderValue = width > 0 && !string.IsNullOrWhiteSpace(color)
+            ? $"{ToPx(width)} solid {color}"
+            : null;
+        SetStyleIfChanged(handler, "border", borderValue);
+    }
+
+    public static void MapChipBackgroundColor(ShowcaseVendorWidgetHandler handler, ShowcaseVendorWidget view)
+    {
+        SetStyleIfChanged(handler, "background", ToCssColor(view.ChipBackgroundColor));
+    }
+
+    public static void MapChipTextColor(ShowcaseVendorWidgetHandler handler, ShowcaseVendorWidget view)
+    {
+        SetStyleIfChanged(handler, "color", ToCssColor(view.ChipTextColor));
     }
 
     public void OnRuntimeEvent(string eventName, string? payload)
@@ -52,5 +93,68 @@ public sealed class ShowcaseVendorWidgetHandler : MirageViewHandler<ShowcaseVend
         }
 
         VirtualView.SendClicked();
+    }
+
+    private static void SetPropertyIfChanged(ShowcaseVendorWidgetHandler handler, string propertyName, string? value)
+    {
+        if (string.Equals(handler.PlatformView.GetPropertyString(propertyName), value, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        handler.PlatformView.SetProperty(propertyName, MirageValue.String(value));
+        handler.RequestRender();
+    }
+
+    private static void SetStyleIfChanged(ShowcaseVendorWidgetHandler handler, string styleName, string? value)
+    {
+        if (string.Equals(handler.PlatformView.GetStyleValue(styleName), value, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        handler.PlatformView.SetStyle(styleName, value);
+        handler.RequestRender();
+    }
+
+    private static string ToPx(double value)
+    {
+        var normalized = double.IsFinite(value) ? Math.Max(0, value) : 0;
+        return $"{normalized.ToString("0.###", CultureInfo.InvariantCulture)}px";
+    }
+
+    private static string ToCssThickness(Thickness thickness)
+    {
+        return $"{ToPx(thickness.Top)} {ToPx(thickness.Right)} {ToPx(thickness.Bottom)} {ToPx(thickness.Left)}";
+    }
+
+    private static string? ToCssColor(Color? color)
+    {
+        if (color is null)
+        {
+            return null;
+        }
+
+        var red = ToByte(color.Red);
+        var green = ToByte(color.Green);
+        var blue = ToByte(color.Blue);
+        var alpha = Math.Clamp((double)color.Alpha, 0, 1);
+        return $"rgba({red},{green},{blue},{alpha.ToString("0.###", CultureInfo.InvariantCulture)})";
+    }
+
+    private static byte ToByte(float component)
+    {
+        var scaled = Math.Round(component * 255.0);
+        if (scaled <= 0)
+        {
+            return 0;
+        }
+
+        if (scaled >= 255)
+        {
+            return 255;
+        }
+
+        return (byte)scaled;
     }
 }

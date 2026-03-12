@@ -29,8 +29,15 @@ public static class Program
 
 internal sealed class CounterApp : Application
 {
+    public CounterApp()
+    {
+        Resources ??= new ResourceDictionary();
+        Resources.MergedDictionaries.Add(new CounterStyles());
+    }
+
     protected override Window CreateWindow(IActivationState? activationState)
     {
+        _ = activationState;
         var page = new CounterPage();
         return new Window(page);
     }

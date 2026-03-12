@@ -29,6 +29,8 @@
     <Compile Include="..\..\src\Mirage.Maui\Navigation\DefaultMirageNavigationServices.cs" Link="Navigation\DefaultMirageNavigationServices.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Navigation\MirageNavigationStartupResolver.cs" Link="Navigation\MirageNavigationStartupResolver.cs" />
     <Compile Include="..\..\src\Mirage.Maui\HotReload\MirageXamlHotReloadApplicator.cs" Link="HotReload\MirageXamlHotReloadApplicator.cs" />
+    <Compile Include="..\..\samples\Showcase.Fluent\App\ShowcaseVendorWidget.cs" Link="Samples\ShowcaseVendorWidget.cs" />
+    <Compile Include="..\..\samples\Showcase.Fluent\App\ShowcaseVendorWidgetHandler.cs" Link="Samples\ShowcaseVendorWidgetHandler.cs" />
     <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageEventSink.cs" Link="Runtime\IMirageEventSink.cs" />
     <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageBrowserHistory.cs" Link="Runtime\IMirageBrowserHistory.cs" />
     <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageRuntime.cs" Link="Runtime\IMirageRuntime.cs" />

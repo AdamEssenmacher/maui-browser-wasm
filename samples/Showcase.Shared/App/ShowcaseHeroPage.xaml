@@ -3,7 +3,8 @@
     x:Class="Showcase.Shared.App.ShowcaseHeroPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    AutomationId="showcase-root">
+    AutomationId="showcase-root"
+    Style="{StaticResource ShowcaseRootPageStyle}">
 
     <Grid
         AutomationId="showcase-page-grid"
@@ -14,79 +15,36 @@
             AutomationId="showcase-scroll-root"
             Orientation="Vertical">
             <VerticalStackLayout
-            AutomationId="hero-page-stack"
-            HorizontalOptions="Center"
-            MaximumWidthRequest="1040"
-            Style="{StaticResource ShowcasePageRootStackStyle}">
+                AutomationId="hero-page-stack"
+                HorizontalOptions="Center"
+                MaximumWidthRequest="1040"
+                Style="{StaticResource ShowcasePageRootStackStyle}">
 
-        <HorizontalStackLayout
-            AutomationId="showcase-top-nav"
-            Style="{StaticResource ShowcaseTopNavStyle}">
-            <Label
-                AutomationId="showcase-nav-brand"
-                Style="{StaticResource ShowcaseNavBrandLabelStyle}"
-                Text="Mirage" />
-            <Label Style="{StaticResource ShowcaseNavDividerLabelStyle}" Text="|" />
-            <Button
-                AutomationId="showcase-nav-demo"
-                Clicked="OnDemoNavClicked"
-                Style="{StaticResource ShowcaseNavButtonStyle}"
-                Text="Demo" />
-            <Label Style="{StaticResource ShowcaseNavDividerLabelStyle}" Text="|" />
-            <Button
-                AutomationId="showcase-nav-architecture"
-                Clicked="OnArchitectureNavClicked"
-                Style="{StaticResource ShowcaseNavButtonStyle}"
-                Text="Architecture" />
-            <Label Style="{StaticResource ShowcaseNavDividerLabelStyle}" Text="|" />
-            <Button
-                AutomationId="showcase-nav-providers"
-                Clicked="OnProvidersNavClicked"
-                Style="{StaticResource ShowcaseNavButtonStyle}"
-                Text="Providers" />
-            <Label Style="{StaticResource ShowcaseNavDividerLabelStyle}" Text="|" />
-            <Button
-                AutomationId="showcase-nav-layout-lab"
-                Clicked="OnLayoutLabNavClicked"
-                Style="{StaticResource ShowcaseNavButtonStyle}"
-                Text="Layout Lab" />
-            <Label Style="{StaticResource ShowcaseNavDividerLabelStyle}" Text="|" />
-            <Label
-                AutomationId="showcase-nav-docs-placeholder"
-                Style="{StaticResource ShowcaseMutedSmallLabelStyle}"
-                Text="Docs" />
-            <Label Style="{StaticResource ShowcaseNavDividerLabelStyle}" Text="|" />
-            <Label
-                AutomationId="showcase-nav-github-placeholder"
-                Style="{StaticResource ShowcaseMutedSmallLabelStyle}"
-                Text="GitHub" />
-        </HorizontalStackLayout>
-
-        <VerticalStackLayout
-            AutomationId="hero"
-            Style="{StaticResource ShowcaseSectionCardStyle}"
-            Spacing="10">
-            <Label
-                AutomationId="hero-kicker"
-                Style="{StaticResource ShowcaseKickerLabelStyle}"
-                Text="Mirage" />
-            <Label
-                AutomationId="hero-headline"
-                Style="{StaticResource ShowcaseHeadlineLabelStyle}"
-                Text="Run .NET MAUI apps in the browser — with real DOM UI." />
-            <Label
-                AutomationId="hero-subheadline"
-                Style="{StaticResource ShowcaseBodyLabelStyle}"
-                Text="Mirage is a semantic runtime that brings .NET MAUI to the browser by rendering your UI as actual DOM elements and Web Components using pluggable component providers." />
-            <Label
-                AutomationId="hero-description"
-                Style="{StaticResource ShowcaseBodyLabelStyle}"
-                Text="Build your UI once with MAUI and run it directly in the browser without rewriting your UI layer." />
-            <Label
-                AutomationId="hero-tagline-primary"
-                Style="{StaticResource ShowcaseTaglineLabelStyle}"
-                Text="MAUI UI, rendered as real web UI." />
-        </VerticalStackLayout>
+                <VerticalStackLayout
+                    AutomationId="hero"
+                    Style="{StaticResource ShowcaseSectionCardStyle}"
+                    Spacing="10">
+                    <Label
+                        AutomationId="hero-kicker"
+                        Style="{StaticResource ShowcaseKickerLabelStyle}"
+                        Text="Mirage" />
+                    <Label
+                        AutomationId="hero-headline"
+                        Style="{StaticResource ShowcaseHeadlineLabelStyle}"
+                        Text="Run .NET MAUI apps in the browser — with real DOM UI." />
+                    <Label
+                        AutomationId="hero-subheadline"
+                        Style="{StaticResource ShowcaseBodyLabelStyle}"
+                        Text="Mirage is a semantic runtime that brings .NET MAUI to the browser by rendering your UI as actual DOM elements and Web Components using pluggable component providers." />
+                    <Label
+                        AutomationId="hero-description"
+                        Style="{StaticResource ShowcaseBodyLabelStyle}"
+                        Text="Build your UI once with MAUI and run it directly in the browser without rewriting your UI layer." />
+                    <Label
+                        AutomationId="hero-tagline-primary"
+                        Style="{StaticResource ShowcaseTaglineLabelStyle}"
+                        Text="MAUI UI, rendered as real web UI." />
+                </VerticalStackLayout>
 
         <VerticalStackLayout
             x:Name="ArchitectureSection"
@@ -475,9 +433,11 @@
                 AutomationId="showcase-backlog-subtitle"
                 Style="{StaticResource ShowcaseBodyLabelStyle}"
                 Text="Current Mirage implementation status across MAUI controls/layouts and shared abstractions." />
-            <ContentView
+            <ScrollView
                 x:Name="BacklogTableHost"
-                AutomationId="showcase-backlog-table-host" />
+                AutomationId="showcase-backlog-table-host"
+                Orientation="Horizontal"
+                Style="{StaticResource ShowcaseBacklogHostScrollStyle}" />
         </VerticalStackLayout>
 
         <VerticalStackLayout

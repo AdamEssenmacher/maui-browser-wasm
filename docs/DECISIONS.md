@@ -311,3 +311,10 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - `MiragePlatformView` mutation paths are now deterministic set-if-changed operations with explicit structural vs non-structural revision propagation, reducing no-op churn before diff/runtime patching.
 - Added an Entry high-frequency input fast path: runtime `input` events are coalesced to one latest-wins apply per dispatcher frame, and redundant render invalidations are skipped when the platform node already matches the committed value.
 - Expanded diagnostics and perf guardrails with new render/input counters plus CI budget enforcement via `tools/diagnostics/run-slowness-matrix.sh` and `tools/diagnostics/perf-budgets-balanced.cfg` (hot-reload-off gating profile).
+
+## 2026-03-12 (Styling Cutover: MAUI-First Samples with Near-Zero Host CSS)
+- `Showcase.Fluent` and `Counter.Fluent` now keep `wwwroot/index.html` styles to shell-only host sizing/reset; sample-level visual styling is authored through MAUI resources/layout instead of automation-id CSS rules.
+- Showcase backlog rendering moved to MAUI-owned structure and styles: a horizontal `ScrollView` host with MAUI `Grid`/cell styling for header/body typography, spacing, row separators, and deterministic min-width behavior.
+- `ShowcaseVendorWidget` no longer hardcodes visual CSS in handler connect paths; it now exposes MAUI-facing bindable style properties (padding/corner/border/background/text color) that map through handler mappers into web realization styles.
+- Counter sample styling now uses shared MAUI `ResourceDictionary` (`CounterStyles`) for page surface, typography, entry, and button visuals, replacing prior Fluent-element CSS overrides.
+- Policy lock for active samples: MAUI style/layout is primary; host CSS is limited to app-shell bootstrap concerns only.

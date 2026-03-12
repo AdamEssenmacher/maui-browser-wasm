@@ -4,6 +4,7 @@ using Mirage.Web.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Hosting;
 using Showcase.Shared.App;
 using Showcase.Fluent.App;
@@ -58,6 +59,18 @@ internal sealed class ShowcaseApp : Application
     {
         Resources ??= new ResourceDictionary();
         Resources.MergedDictionaries.Add(new ShowcaseStyles());
+        Resources.Add(new Style(typeof(ShowcaseVendorWidget))
+        {
+            Setters =
+            {
+                new Setter { Property = ShowcaseVendorWidget.ChipPaddingProperty, Value = new Thickness(12, 6) },
+                new Setter { Property = ShowcaseVendorWidget.ChipCornerRadiusProperty, Value = 999d },
+                new Setter { Property = ShowcaseVendorWidget.ChipBorderWidthProperty, Value = 1d },
+                new Setter { Property = ShowcaseVendorWidget.ChipBorderColorProperty, Value = Color.FromArgb("#59005F80") },
+                new Setter { Property = ShowcaseVendorWidget.ChipBackgroundColorProperty, Value = Color.FromArgb("#14005F80") },
+                new Setter { Property = ShowcaseVendorWidget.ChipTextColorProperty, Value = Color.FromArgb("#003B5C") }
+            }
+        });
     }
 
     protected override Window CreateWindow(IActivationState? activationState)
