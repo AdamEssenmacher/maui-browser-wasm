@@ -97,10 +97,7 @@ internal sealed class MirageContentPageHandler : MirageViewHandler<ContentPage>
 
     private void DisconnectCurrentContent()
     {
-        if (_currentContentHandler is not null)
-        {
-            _currentContentHandler.DisconnectHandler();
-        }
+        MirageHandlerDisconnect.SafeDisconnect(_currentContentHandler);
 
         _currentContentHandler = null;
         _currentContent = null;

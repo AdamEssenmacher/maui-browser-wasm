@@ -396,7 +396,8 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         var labBackDisplay = await ReadCssPropertyAsync(page, "[data-automation-id='mirage-navigation-back-button']", "display");
         Assert.NotEqual("none", labBackDisplay);
 
-        await page.GoBackAsync();
+        await page.EvaluateAsync(
+            "() => (document.querySelector('[data-automation-id=\"mirage-navigation-back-button\"]'))?.click()");
         await page.WaitForFunctionAsync("() => window.location.pathname === '/'");
         await page.WaitForSelectorAsync("[data-automation-id='showcase-root']");
 

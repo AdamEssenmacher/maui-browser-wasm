@@ -41,9 +41,9 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
         base.ConnectHandler(platformView);
-        PlatformView.SetStyle("display", "block");
-        PlatformView.SetStyle("boxSizing", "border-box");
-        PlatformView.SetEvent("scroll", enabled: true);
+        platformView.SetStyle("display", "block");
+        platformView.SetStyle("boxSizing", "border-box");
+        platformView.SetEvent("scroll", enabled: true);
         SetContent(ResolvePresentedContent(VirtualView));
         ApplyScrollStyles(VirtualView);
         RequestRender();
@@ -51,8 +51,8 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
 
     protected override void DisconnectHandler(MiragePlatformView platformView)
     {
-        PlatformView.SetEvent("scroll", enabled: false);
-        DisconnectCurrentContent();
+        platformView.SetEvent("scroll", enabled: false);
+        DisconnectCurrentContent(platformView);
         base.DisconnectHandler(platformView);
     }
 
@@ -293,7 +293,7 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
     {
         if (_currentContentHandler is not null && !ReferenceEquals(_currentContent, content))
         {
-            DisconnectCurrentContent();
+            DisconnectCurrentContent(PlatformView);
         }
 
         PlatformView.ClearChildren();
@@ -331,16 +331,13 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
         RequestRender();
     }
 
-    private void DisconnectCurrentContent()
+    private void DisconnectCurrentContent(MiragePlatformView platformView)
     {
-        if (_currentContentHandler is not null)
-        {
-            _currentContentHandler.DisconnectHandler();
-        }
+        MirageHandlerDisconnect.SafeDisconnect(_currentContentHandler);
 
         _currentContentHandler = null;
         _currentContent = null;
-        PlatformView.ClearChildren();
+        platformView.ClearChildren();
         RequestRender();
     }
 

@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Mirage.Core.Diagnostics;
 using Mirage.Core.Semantics;
@@ -573,6 +574,7 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
 
         ApplyShellStyles();
         UpdateNavigationChrome();
+        EnsureRegisteredNodes();
     }
 
     private MiragePlatformView CreateShellNode(ComponentKind kind, string? automationId)
@@ -627,6 +629,26 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
 
         var localId = Interlocked.Increment(ref s_shellNodeIdCounter);
         node.AssignNodeId($"nav-shell-{localId:D4}");
+    }
+
+    private void EnsureRegisteredNodes()
+    {
+        if (Coordinator is not { } coordinator)
+        {
+            return;
+        }
+
+        foreach (var node in _shellNodes)
+        {
+            _interactiveTargets.TryGetValue(node, out var target);
+            coordinator.Register(node, target);
+        }
+
+        foreach (var node in _toolbarButtonNodes)
+        {
+            _interactiveTargets.TryGetValue(node, out var target);
+            coordinator.Register(node, target);
+        }
     }
 
     private void UnregisterShellStructure()
@@ -732,6 +754,7 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         }
 
         EnsureShellStructure();
+        EnsureRegisteredNodes();
         if (_navigationBar is null
             || _backButtonNode is null
             || _titleNode is null
@@ -773,6 +796,7 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         changed |= SetStyleIfChanged(_backButtonNode, "--foreground-on-accent-active", barForeground);
 
         changed |= RebuildToolbarNodes(barForeground, navigationBarVisible);
+        EnsureRegisteredNodes();
         return changed;
     }
 
@@ -784,7 +808,7 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         }
 
         var orderedItems = ResolveOrderedToolbarItems(_currentPage);
-        var signature = BuildToolbarSignature(orderedItems, navigationBarVisible);
+        var signature = BuildToolbarSignature(orderedItems, navigationBarVisible, barForeground);
         if (string.Equals(signature, _toolbarSignature, StringComparison.Ordinal))
         {
             return false;
@@ -862,12 +886,13 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
             .ToArray();
     }
 
-    private static string BuildToolbarSignature(ToolbarItem[] items, bool navigationBarVisible)
+    private static string BuildToolbarSignature(ToolbarItem[] items, bool navigationBarVisible, string barForeground)
     {
         var parts = new List<string>(items.Length + 2)
         {
             navigationBarVisible ? "bar:visible" : "bar:hidden",
-            $"count:{items.Length}"
+            $"count:{items.Length}",
+            $"fg:{barForeground}"
         };
 
         for (var index = 0; index < items.Length; index++)
@@ -875,7 +900,7 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
             var item = items[index];
             var isEnabled = IsToolbarItemEnabled(item);
             parts.Add(
-                $"{index}:{(int)item.Order}:{item.Priority}:{item.Text}:{isEnabled}:{item.CommandParameter}");
+                $"{index}:{RuntimeHelpers.GetHashCode(item)}:{(int)item.Order}:{item.Priority}:{item.Text}:{isEnabled}:{item.CommandParameter}");
         }
 
         return string.Join("|", parts);
@@ -906,7 +931,8 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
     {
         DispatchOnUiThreadIfRequired(() =>
         {
-            if (!_navigationBarVisible || _currentStackCount <= 1 || !VirtualView.IsEnabled)
+            var stackCount = VirtualView.Navigation.NavigationStack.Count;
+            if (stackCount <= 1)
             {
                 return;
             }
@@ -916,7 +942,27 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
                 return;
             }
 
-            _ = VirtualView.PopAsync(animated: false);
+            var popTask = VirtualView.Navigation.PopAsync(animated: false);
+            if (!MirageDiagnostics.IsEnabled || popTask.IsCompletedSuccessfully)
+            {
+                return;
+            }
+
+            _ = popTask.ContinueWith(
+                static task =>
+                {
+                    if (!task.IsFaulted)
+                    {
+                        return;
+                    }
+
+                    var message = task.Exception?.GetBaseException().ToString() ?? "<unknown>";
+                    message = message.Replace(Environment.NewLine, " | ", StringComparison.Ordinal);
+                    MirageDiagnostics.Log("nav.back", $"popTask faulted exception={message}");
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
         });
     }
 
@@ -1508,7 +1554,7 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
             return;
         }
 
-        handler.DisconnectHandler();
+        MirageHandlerDisconnect.SafeDisconnect(handler);
         _pageHandlers.Remove(page);
     }
 

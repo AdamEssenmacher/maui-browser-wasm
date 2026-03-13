@@ -99,10 +99,7 @@ internal sealed class MirageWindowHandler : ElementHandler<Window, MiragePlatfor
 
     private void DisconnectCurrentPage()
     {
-        if (_currentPageHandler is not null)
-        {
-            _currentPageHandler.DisconnectHandler();
-        }
+        MirageHandlerDisconnect.SafeDisconnect(_currentPageHandler);
 
         _currentPageHandler = null;
         _currentPage = null;

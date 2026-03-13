@@ -237,6 +237,12 @@ public static class MirageBrowserAppHost
 
     private static void InitializeBrowserThemeBridge(Application controlsApplication)
     {
+        if (s_themeSubscriptionId != 0)
+        {
+            DomElement.UnsubscribePreferredColorSchemeChanged(s_themeSubscriptionId);
+            s_themeSubscriptionId = 0;
+        }
+
         ApplyBrowserTheme(controlsApplication);
 
         s_themeSubscriptionId = DomElement.SubscribePreferredColorSchemeChanged(() =>
