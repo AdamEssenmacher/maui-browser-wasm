@@ -66,6 +66,10 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
             [ComponentKind.Button] = new(
                 ComponentKind.Button,
                 "fluent-button",
+                defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["appearance"] = "accent"
+                },
                 propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
                     ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
