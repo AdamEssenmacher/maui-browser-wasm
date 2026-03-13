@@ -975,18 +975,26 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
                 return;
             }
 
-            var command = item.Command;
-            if (command is null)
-            {
-                return;
-            }
-
-            var parameter = item.CommandParameter;
-            if (command.CanExecute(parameter))
-            {
-                command.Execute(parameter);
-            }
+            ActivateToolbarItem(item);
         });
+    }
+
+    private static void ActivateToolbarItem(ToolbarItem item)
+    {
+        // Prefer MAUI's menu-item activation path so Clicked handlers fire
+        // even when Command is not configured.
+        if (item is IMenuItemController menuItemController)
+        {
+            menuItemController.Activate();
+            return;
+        }
+
+        var command = item.Command;
+        var parameter = item.CommandParameter;
+        if (command?.CanExecute(parameter) is true)
+        {
+            command.Execute(parameter);
+        }
     }
 
     private void DispatchOnUiThreadIfRequired(Action action)

@@ -874,6 +874,7 @@ public sealed class HandlerRuntimeIntegrationTests
         var mauiContext = new MauiContext(services);
 
         var commandLog = new List<string>();
+        var clickedOnlyCount = 0;
         var primaryLowPriority = new ToolbarItem
         {
             Text = "Primary-2",
@@ -881,6 +882,13 @@ public sealed class HandlerRuntimeIntegrationTests
             Priority = 2,
             Command = new Command(() => commandLog.Add("Primary-2"))
         };
+        var clickedOnlyItem = new ToolbarItem
+        {
+            Text = "Clicked-1",
+            Order = ToolbarItemOrder.Primary,
+            Priority = 1
+        };
+        clickedOnlyItem.Clicked += (_, _) => clickedOnlyCount++;
         var primaryHighPriority = new ToolbarItem
         {
             Text = "Primary-0",
@@ -891,6 +899,7 @@ public sealed class HandlerRuntimeIntegrationTests
 
         var homePage = CreateAttachedContentPage(mauiContext, "Home");
         homePage.ToolbarItems.Add(primaryLowPriority);
+        homePage.ToolbarItems.Add(clickedOnlyItem);
         homePage.ToolbarItems.Add(primaryHighPriority);
 
         var navigationPage = new NavigationPage(homePage);
@@ -910,11 +919,14 @@ public sealed class HandlerRuntimeIntegrationTests
         var firstRender = Assert.IsType<ControlNode>(runtime.LastRendered);
         var firstToolbarNode = FindVisualByAutomationId(firstRender, "mirage-navigation-toolbar-item-1");
         var secondToolbarNode = FindVisualByAutomationId(firstRender, "mirage-navigation-toolbar-item-2");
+        var thirdToolbarNode = FindVisualByAutomationId(firstRender, "mirage-navigation-toolbar-item-3");
         Assert.NotNull(firstToolbarNode);
         Assert.NotNull(secondToolbarNode);
+        Assert.NotNull(thirdToolbarNode);
 
         Assert.Equal("Primary-0", firstToolbarNode!.Properties["Text"].GetStringOrNull());
-        Assert.Equal("Primary-2", secondToolbarNode!.Properties["Text"].GetStringOrNull());
+        Assert.Equal("Clicked-1", secondToolbarNode!.Properties["Text"].GetStringOrNull());
+        Assert.Equal("Primary-2", thirdToolbarNode!.Properties["Text"].GetStringOrNull());
 
         Assert.NotNull(runtime.Sink);
         runtime.Sink!.OnEvent(firstToolbarNode!.NodeId, "click", null);
@@ -935,6 +947,12 @@ public sealed class HandlerRuntimeIntegrationTests
         runtime.Sink!.OnEvent(disabledFirst!.NodeId, "click", null);
         await Task.Delay(30);
         Assert.Single(commandLog);
+
+        var clickedOnlyRender = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var clickedOnlyNode = FindVisualByAutomationId(clickedOnlyRender, "mirage-navigation-toolbar-item-2");
+        Assert.NotNull(clickedOnlyNode);
+        runtime.Sink!.OnEvent(clickedOnlyNode!.NodeId, "click", null);
+        await WaitUntilAsync(() => clickedOnlyCount == 1);
     }
 
     [Fact]
