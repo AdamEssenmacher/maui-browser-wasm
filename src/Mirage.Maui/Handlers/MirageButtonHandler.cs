@@ -29,8 +29,6 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         PlatformView.SetStyle("display", "inline-flex");
         PlatformView.SetStyle("alignItems", "center");
         PlatformView.SetStyle("justifyContent", "center");
-        PlatformView.SetStyle("minHeight", "40px");
-        PlatformView.SetStyle("padding", "10px 14px");
         PlatformView.SetStyle("cursor", VirtualView.IsEnabled ? "pointer" : "default");
         PlatformView.SetEvent("click", enabled: true);
         UpdateStrokeStyles(VirtualView);

@@ -22,6 +22,11 @@ public static class Program
 
         var builder = MauiApp.CreateBuilder();
         builder.UseMauiApp<ShowcaseApp>();
+        builder.ConfigureFonts(fonts =>
+        {
+            fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+            fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+        });
         builder.UseMirageBrowserPlatform();
         builder.UseMirageNavigation(routes =>
         {
