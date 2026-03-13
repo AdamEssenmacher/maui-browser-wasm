@@ -1,5 +1,7 @@
 using Mirage.Core.Semantics;
 using Microsoft.Maui;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 
 namespace Mirage.Maui.Handlers;
@@ -10,6 +12,10 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         new PropertyMapper<ITextButton, MirageButtonHandler>(MirageViewMapper.CommonViewMapper)
         {
             [nameof(ITextButton.Text)] = MapText,
+            [nameof(ITextStyle.TextColor)] = MapTextColor,
+            [nameof(IView.Background)] = MapBackground,
+            ["TextColor"] = MapTextColor,
+            ["BackgroundColor"] = MapBackground,
             [nameof(IView.IsEnabled)] = MapIsEnabled,
             [nameof(IButtonStroke.StrokeColor)] = MapStrokeColor,
             [nameof(IButtonStroke.StrokeThickness)] = MapStrokeThickness,
@@ -31,6 +37,8 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         PlatformView.SetStyle("justifyContent", "center");
         PlatformView.SetStyle("cursor", VirtualView.IsEnabled ? "pointer" : "default");
         PlatformView.SetEvent("click", enabled: true);
+        UpdateBackgroundStyles(VirtualView);
+        UpdateTextColorStyles(VirtualView);
         UpdateStrokeStyles(VirtualView);
         UpdateCornerRadius(VirtualView);
         base.ConnectHandler(platformView);
@@ -67,6 +75,26 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
     public static void MapIsEnabled(MirageButtonHandler handler, ITextButton button)
     {
         if (!handler.SetStyleIfChanged("cursor", button.IsEnabled ? "pointer" : "default"))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapBackground(MirageButtonHandler handler, ITextButton button)
+    {
+        if (!handler.UpdateBackgroundStyles(button))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapTextColor(MirageButtonHandler handler, ITextButton button)
+    {
+        if (!handler.UpdateTextColorStyles(button))
         {
             return;
         }
@@ -134,20 +162,78 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         return changed;
     }
 
+    private bool UpdateBackgroundStyles(ITextButton button)
+    {
+        // Fluent button visuals are rendered inside an internal control surface.
+        // Avoid painting the host shell; push solid background intents through Fluent tokens.
+        var changed = SetStyleIfChanged("backgroundColor", null);
+        changed |= SetStyleIfChanged("backgroundImage", null);
+        changed |= SetStyleIfChanged("backgroundSize", null);
+        changed |= SetStyleIfChanged("backgroundRepeat", null);
+        changed |= SetStyleIfChanged("backgroundPosition", null);
+
+        var backgroundColor = button.Background switch
+        {
+            SolidPaint solidPaint => MirageCommonViewProjection.ToCssColor(solidPaint.Color),
+            _ => null
+        };
+
+        if (backgroundColor is null
+            && button is VisualElement visualElement
+            && visualElement.BackgroundColor is { } backgroundColorValue)
+        {
+            backgroundColor = MirageCommonViewProjection.ToCssColor(backgroundColorValue);
+        }
+
+        changed |= SetStyleIfChanged("--accent-fill-rest", backgroundColor);
+        changed |= SetStyleIfChanged("--accent-fill-hover", backgroundColor);
+        changed |= SetStyleIfChanged("--accent-fill-active", backgroundColor);
+        changed |= SetStyleIfChanged("--neutral-fill-rest", backgroundColor);
+        changed |= SetStyleIfChanged("--neutral-fill-hover", backgroundColor);
+        changed |= SetStyleIfChanged("--neutral-fill-active", backgroundColor);
+        return changed;
+    }
+
+    private bool UpdateTextColorStyles(ITextButton button)
+    {
+        var textColor = button is ITextStyle textStyle
+            ? MirageCommonViewProjection.ToCssColor(textStyle.TextColor)
+            : null;
+
+        var changed = SetStyleIfChanged("color", textColor);
+        changed |= SetStyleIfChanged("--accent-foreground-rest", textColor);
+        changed |= SetStyleIfChanged("--accent-foreground-hover", textColor);
+        changed |= SetStyleIfChanged("--accent-foreground-active", textColor);
+        changed |= SetStyleIfChanged("--foreground-on-accent-rest", textColor);
+        changed |= SetStyleIfChanged("--foreground-on-accent-hover", textColor);
+        changed |= SetStyleIfChanged("--foreground-on-accent-active", textColor);
+        changed |= SetStyleIfChanged("--neutral-foreground-rest", textColor);
+        changed |= SetStyleIfChanged("--neutral-foreground-hover", textColor);
+        changed |= SetStyleIfChanged("--neutral-foreground-active", textColor);
+        return changed;
+    }
+
     private bool UpdateCornerRadius(ITextButton button)
     {
         if (button is not IButtonStroke strokedButton)
         {
-            return SetStyleIfChanged("borderRadius", null);
+            var cleared = SetStyleIfChanged("borderRadius", null);
+            cleared |= SetStyleIfChanged("--control-corner-radius", null);
+            return cleared;
         }
 
         var cornerRadius = strokedButton.CornerRadius;
         if (!double.IsFinite(cornerRadius) || cornerRadius < 0)
         {
-            return SetStyleIfChanged("borderRadius", null);
+            var cleared = SetStyleIfChanged("borderRadius", null);
+            cleared |= SetStyleIfChanged("--control-corner-radius", null);
+            return cleared;
         }
 
-        return SetStyleIfChanged("borderRadius", MirageViewMapper.ToPx(cornerRadius));
+        var radius = MirageViewMapper.ToPx(cornerRadius);
+        var changed = SetStyleIfChanged("borderRadius", null);
+        changed |= SetStyleIfChanged("--control-corner-radius", radius);
+        return changed;
     }
 
     private bool SetStyleIfChanged(string styleName, string? styleValue)

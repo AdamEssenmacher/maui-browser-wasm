@@ -261,6 +261,24 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void NavigationPageHandler_ProjectsNavChromeShellAndBarStyleMappings()
+    {
+        var handlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageNavigationPageHandler.cs");
+        Assert.True(File.Exists(handlerPath), $"Expected handler file not found: {handlerPath}");
+
+        var text = File.ReadAllText(handlerPath);
+        Assert.Contains("nameof(NavigationPage.BarBackgroundColor)", text, StringComparison.Ordinal);
+        Assert.Contains("nameof(NavigationPage.BarTextColor)", text, StringComparison.Ordinal);
+        Assert.Contains("NavigationPage.HasNavigationBarProperty.PropertyName", text, StringComparison.Ordinal);
+        Assert.Contains("NavigationPage.HasBackButtonProperty.PropertyName", text, StringComparison.Ordinal);
+        Assert.Contains("mirage-navigation-bar", text, StringComparison.Ordinal);
+        Assert.Contains("mirage-navigation-back-button", text, StringComparison.Ordinal);
+        Assert.Contains("mirage-navigation-title", text, StringComparison.Ordinal);
+        Assert.Contains("mirage-navigation-toolbar", text, StringComparison.Ordinal);
+        Assert.Contains("mirage-navigation-content-host", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BrowserAppHost_InvokesNavigationStartupResolverBeforeHandlerRealization()
     {
         var appHostPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageBrowserAppHost.cs");

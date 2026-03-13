@@ -43,19 +43,57 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenAsync(context);
 
+        var pageBackground = await ReadCssPropertyAsync(page, "[data-automation-id='showcase-root']", "background-color");
         var heroBackground = await ReadCssPropertyAsync(page, "[data-automation-id='hero']", "background-color");
         var headlineColor = await ReadCssPropertyAsync(page, "[data-automation-id='hero-headline']", "color");
         var subheadlineColor = await ReadCssPropertyAsync(page, "[data-automation-id='hero-subheadline']", "color");
+        var headlineFontSize = await ReadCssPropertyAsync(page, "[data-automation-id='hero-headline']", "font-size");
+        var subheadlineFontSize = await ReadCssPropertyAsync(page, "[data-automation-id='hero-subheadline']", "font-size");
         var ctaBackground = await ReadCssPropertyAsync(page, "[data-automation-id='hero-cta-demo']", "background-color");
+        var ctaAccentFill = await ReadCssPropertyAsync(page, "[data-automation-id='hero-cta-demo']", "--accent-fill-rest");
+        var ctaCornerToken = await ReadCssPropertyAsync(page, "[data-automation-id='hero-cta-demo']", "--control-corner-radius");
         var ctaBorderRadius = await ReadCssPropertyAsync(page, "[data-automation-id='hero-cta-demo']", "border-radius");
         var ctaBorderWidth = await ReadCssPropertyAsync(page, "[data-automation-id='hero-cta-demo']", "border-top-width");
 
+        Assert.NotEqual("rgba(0, 0, 0, 0)", pageBackground);
         Assert.Equal("rgba(0, 0, 0, 0)", heroBackground);
-        Assert.Contains("0, 0, 0", headlineColor, StringComparison.Ordinal);
-        Assert.Contains("0, 0, 0", subheadlineColor, StringComparison.Ordinal);
-        Assert.Contains("81, 43, 212", ctaBackground, StringComparison.Ordinal);
-        Assert.Equal("8px", ctaBorderRadius);
+        Assert.True(
+            headlineColor.Contains("25, 6, 73", StringComparison.Ordinal)
+            || headlineColor.Contains("255, 255, 255", StringComparison.Ordinal),
+            $"Expected themed Headline color, got '{headlineColor}'.");
+        Assert.True(
+            subheadlineColor.Contains("25, 6, 73", StringComparison.Ordinal)
+            || subheadlineColor.Contains("255, 255, 255", StringComparison.Ordinal),
+            $"Expected themed SubHeadline color, got '{subheadlineColor}'.");
+        Assert.Equal("32px", headlineFontSize);
+        Assert.Equal("24px", subheadlineFontSize);
+        Assert.Equal("rgba(0, 0, 0, 0)", ctaBackground);
+        Assert.Contains("81,43,212", ctaAccentFill.Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+        Assert.Equal("8px", ctaCornerToken);
+        Assert.Equal("0px", ctaBorderRadius);
         Assert.Equal("0px", ctaBorderWidth);
+    }
+
+    [Fact]
+    public async Task AppThemeBinding_TracksBrowserColorSchemeChanges()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var page = await OpenAsync(context);
+
+        await page.EmulateMediaAsync(new() { ColorScheme = ColorScheme.Light });
+        await page.WaitForTimeoutAsync(140);
+        var lightHeadlineColor = await ReadCssPropertyAsync(page, "[data-automation-id='hero-headline']", "color");
+
+        await page.EmulateMediaAsync(new() { ColorScheme = ColorScheme.Dark });
+        await page.WaitForTimeoutAsync(140);
+        var darkHeadlineColor = await ReadCssPropertyAsync(page, "[data-automation-id='hero-headline']", "color");
+
+        await page.EmulateMediaAsync(new() { ColorScheme = ColorScheme.Light });
+        await page.WaitForTimeoutAsync(140);
+        var lightHeadlineColorAfter = await ReadCssPropertyAsync(page, "[data-automation-id='hero-headline']", "color");
+
+        Assert.NotEqual(lightHeadlineColor, darkHeadlineColor);
+        Assert.Equal(lightHeadlineColor, lightHeadlineColorAfter);
     }
 
     [Fact]
@@ -333,6 +371,83 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
 
         Assert.Contains("/navigation-lab", routeLabel, StringComparison.Ordinal);
         Assert.Equal("/navigation-lab", pathname);
+    }
+
+    [Fact]
+    public async Task NavigationChrome_TitleAndBackButton_FollowNavigationStack()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        var page = await OpenAsync(context);
+
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-navigation-title']");
+        var rootTitle = await page.Locator("[data-automation-id='mirage-navigation-title']").InnerTextAsync();
+        Assert.Contains("Mirage Showcase", rootTitle, StringComparison.Ordinal);
+
+        var rootBackDisplay = await ReadCssPropertyAsync(page, "[data-automation-id='mirage-navigation-back-button']", "display");
+        Assert.Equal("none", rootBackDisplay);
+
+        await page.Locator("[data-automation-id='showcase-open-navigation-lab']").ClickAsync();
+        await page.WaitForFunctionAsync("() => window.location.pathname === '/navigation-lab'");
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-navigation-lab']");
+
+        var labTitle = await page.Locator("[data-automation-id='mirage-navigation-title']").InnerTextAsync();
+        Assert.Contains("Navigation Lab", labTitle, StringComparison.Ordinal);
+
+        var labBackDisplay = await ReadCssPropertyAsync(page, "[data-automation-id='mirage-navigation-back-button']", "display");
+        Assert.NotEqual("none", labBackDisplay);
+
+        await page.GoBackAsync();
+        await page.WaitForFunctionAsync("() => window.location.pathname === '/'");
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-root']");
+
+        var returnedTitle = await page.Locator("[data-automation-id='mirage-navigation-title']").InnerTextAsync();
+        Assert.Contains("Mirage Showcase", returnedTitle, StringComparison.Ordinal);
+        var returnedBackDisplay = await ReadCssPropertyAsync(page, "[data-automation-id='mirage-navigation-back-button']", "display");
+        Assert.Equal("none", returnedBackDisplay);
+    }
+
+    [Fact]
+    public async Task NavigationChrome_ToolbarItems_RenderDeterministically_AndNavChromeTogglesWork()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 900);
+        var page = await OpenAsync(context);
+
+        await page.Locator("[data-automation-id='showcase-open-navigation-lab']").ClickAsync();
+        await page.WaitForFunctionAsync("() => window.location.pathname === '/navigation-lab'");
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-navigation-lab']");
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-navigation-toolbar-item-1']");
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-navigation-toolbar-item-2']");
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-navigation-toolbar-item-3']");
+
+        var toolbarItemOneText = await page.Locator("[data-automation-id='mirage-navigation-toolbar-item-1']").InnerTextAsync();
+        var toolbarItemTwoText = await page.Locator("[data-automation-id='mirage-navigation-toolbar-item-2']").InnerTextAsync();
+        var toolbarItemThreeText = await page.Locator("[data-automation-id='mirage-navigation-toolbar-item-3']").InnerTextAsync();
+        Assert.Contains("Toolbar +1", toolbarItemOneText, StringComparison.Ordinal);
+        Assert.Contains("Toggle Bar", toolbarItemTwoText, StringComparison.Ordinal);
+        Assert.Contains("Toggle Back", toolbarItemThreeText, StringComparison.Ordinal);
+
+        await page.EvaluateAsync(
+            "() => document.querySelector('[data-automation-id=\"navigation-lab-toggle-nav-bar\"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))");
+        await page.WaitForFunctionAsync(
+            "() => getComputedStyle(document.querySelector('[data-automation-id=\"mirage-navigation-bar\"]')).display === 'none'");
+
+        await page.EvaluateAsync(
+            "() => document.querySelector('[data-automation-id=\"navigation-lab-toggle-nav-bar\"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))");
+        await page.WaitForFunctionAsync(
+            "() => getComputedStyle(document.querySelector('[data-automation-id=\"mirage-navigation-bar\"]')).display !== 'none'");
+
+        var backDisplayBeforeToggle = await ReadCssPropertyAsync(page, "[data-automation-id='mirage-navigation-back-button']", "display");
+        Assert.NotEqual("none", backDisplayBeforeToggle);
+
+        await page.EvaluateAsync(
+            "() => document.querySelector('[data-automation-id=\"navigation-lab-toggle-back-button\"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))");
+        await page.WaitForFunctionAsync(
+            "() => getComputedStyle(document.querySelector('[data-automation-id=\"mirage-navigation-back-button\"]')).display === 'none'");
+
+        await page.EvaluateAsync(
+            "() => document.querySelector('[data-automation-id=\"navigation-lab-bump-title\"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))");
+        await page.WaitForFunctionAsync(
+            "() => (document.querySelector('[data-automation-id=\"mirage-navigation-title\"]')?.textContent ?? '').includes('#1')");
     }
 
     [Fact]

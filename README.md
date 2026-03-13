@@ -132,6 +132,7 @@ If missing, startup fails with:
 - `VisualNodeBase` is a shared platform-side visual/layout projection layer, not a duplicate MAUI framework model.
 - Provider-specific mappings (Fluent, UI5, custom) live only in provider projects.
 - Navigation is `NavigationPage`-first: MAUI stack changes are the source of truth and Mirage projects them into browser URL/history through `UseMirageNavigation(...)`.
+- `NavigationPage` is realized as a built-in navigation shell (nav bar, back button, title slot, toolbar slot, bounded content host) on the control-node path.
 - Dependency direction for samples is locked: `*.Fluent -> *.Shared` and `*.Maui -> *.Shared`.
 - Fluent UI Web Components are built on FAST foundations, but Mirage’s public reference-provider story is Fluent-first.
 - Providers must support control-node and web-node realization for full Mirage behavior.

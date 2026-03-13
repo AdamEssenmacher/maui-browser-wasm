@@ -1,4 +1,6 @@
+using System.Collections.Specialized;
 using System.ComponentModel;
+using System.Windows.Input;
 using Mirage.Core.Diagnostics;
 using Mirage.Core.Semantics;
 using Mirage.Maui.Navigation;
@@ -14,12 +16,22 @@ namespace Mirage.Maui.Handlers;
 
 internal sealed class MirageNavigationPageHandler : MirageViewHandler<NavigationPage>, INavigationViewHandler
 {
+    private const double DefaultNavigationBarHeight = 46;
+    private const string NavigationBarAutomationId = "mirage-navigation-bar";
+    private const string NavigationBackButtonAutomationId = "mirage-navigation-back-button";
+    private const string NavigationTitleAutomationId = "mirage-navigation-title";
+    private const string NavigationToolbarAutomationId = "mirage-navigation-toolbar";
+    private const string NavigationContentHostAutomationId = "mirage-navigation-content-host";
+    private static int s_shellNodeIdCounter = 1;
+
     public static IPropertyMapper<NavigationPage, MirageNavigationPageHandler> Mapper =
         new PropertyMapper<NavigationPage, MirageNavigationPageHandler>(MirageViewMapper.CommonViewMapper)
         {
             [nameof(NavigationPage.CurrentPage)] = MapCurrentPage,
             [nameof(NavigationPage.RootPage)] = MapRootPage,
-            [nameof(Page.Title)] = MapTitle
+            [nameof(Page.Title)] = MapTitle,
+            [nameof(NavigationPage.BarBackgroundColor)] = MapBarBackgroundColor,
+            [nameof(NavigationPage.BarTextColor)] = MapBarTextColor
         };
 
     public static CommandMapper<NavigationPage, MirageNavigationPageHandler> CommandMapper =
@@ -29,18 +41,34 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         };
 
     private readonly Dictionary<Page, IElementHandler> _pageHandlers = [];
+    private readonly Dictionary<ToolbarItem, ToolbarItemSubscription> _toolbarItemSubscriptions = [];
+    private readonly List<MiragePlatformView> _shellNodes = [];
+    private readonly List<MiragePlatformView> _toolbarButtonNodes = [];
+    private readonly List<MiragePlatformView> _interactiveNodes = [];
+    private readonly Dictionary<MiragePlatformView, IMirageRuntimeEventTarget> _interactiveTargets = new(ReferenceEqualityComparer.Instance);
 
     private Page? _currentPage;
     private int _currentStackCount;
+    private string _toolbarSignature = string.Empty;
     private bool _hasArrangedFrame;
     private double _lastArrangedWidth;
     private double _lastArrangedHeight;
+    private bool _navigationBarVisible = true;
+    private INotifyCollectionChanged? _currentToolbarCollection;
     private bool _historyWriteSuppressed;
     private readonly object _popStateSync = new();
     private bool _isPopStatePumpRunning;
     private string? _pendingPopStateLocation;
     private int _popStateSubscriptionId;
     private string? _lastProjectedPath;
+
+    private MiragePlatformView? _navigationBar;
+    private MiragePlatformView? _backButtonSlot;
+    private MiragePlatformView? _titleSlot;
+    private MiragePlatformView? _toolbarSlot;
+    private MiragePlatformView? _contentHost;
+    private MiragePlatformView? _backButtonNode;
+    private MiragePlatformView? _titleNode;
 
     public MirageNavigationPageHandler()
         : base(ComponentKind.ContentContainer, Mapper, CommandMapper)
@@ -54,8 +82,9 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
 
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
-        ApplyBaseStyles();
         base.ConnectHandler(platformView);
+        ApplyBaseStyles();
+        EnsureShellStructure();
         SubscribeNavigationEvents();
         SubscribePopState();
         ApplyNavigationStack(ResolveNavigationStack(VirtualView), MirageNavigationTrigger.Startup);
@@ -65,7 +94,7 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
     {
         UnsubscribePopState();
         UnsubscribeNavigationEvents();
-        UnsubscribeCurrentPageTitle();
+        UnsubscribeCurrentPage();
 
         foreach (var page in _pageHandlers.Keys.ToArray())
         {
@@ -82,6 +111,7 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
             _pendingPopStateLocation = null;
         }
 
+        UnregisterShellStructure();
         platformView.ClearChildren();
         base.DisconnectHandler(platformView);
     }
@@ -122,7 +152,35 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
     public static void MapTitle(MirageNavigationPageHandler handler, NavigationPage navigationPage)
     {
         _ = navigationPage;
+        var visibilityChanged = handler.UpdateNavigationChrome();
+        if (visibilityChanged && handler._hasArrangedFrame)
+        {
+            handler.ArrangeCurrentPage();
+        }
         handler.ProjectCurrentRoute(MirageNavigationTrigger.Manual);
+        handler.RequestRender();
+    }
+
+    public static void MapBarBackgroundColor(MirageNavigationPageHandler handler, NavigationPage navigationPage)
+    {
+        _ = navigationPage;
+        if (!handler.UpdateNavigationChrome())
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapBarTextColor(MirageNavigationPageHandler handler, NavigationPage navigationPage)
+    {
+        _ = navigationPage;
+        if (!handler.UpdateNavigationChrome())
+        {
+            return;
+        }
+
+        handler.RequestRender();
     }
 
     public static void MapRequestNavigation(MirageNavigationPageHandler handler, NavigationPage navigationPage, object? args)
@@ -391,18 +449,21 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
 
         if (TryGetPlatformView(out var platformView))
         {
-            platformView.ClearChildren();
+            EnsureShellStructure();
+            _contentHost?.ClearChildren();
             if (currentPage is not null
                 && _pageHandlers.TryGetValue(currentPage, out var currentHandler)
                 && currentHandler.PlatformView is MiragePlatformView currentPlatformView)
             {
-                platformView.AddChild(currentPlatformView);
+                _contentHost?.AddChild(currentPlatformView);
             }
         }
         CaptureStep("mount");
 
-        SubscribeCurrentPageTitle(currentPage);
         _currentStackCount = normalizedStack.Count;
+        SubscribeCurrentPage(currentPage);
+        UpdateNavigationChrome();
+        CaptureStep("chrome");
 
         if (previousPage is not null && !ReferenceEquals(previousPage, currentPage))
         {
@@ -437,13 +498,16 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
 
     private void ArrangeCurrentPage()
     {
+        var barHeight = _navigationBarVisible ? DefaultNavigationBarHeight : 0;
+        var contentHeight = Math.Max(0, _lastArrangedHeight - barHeight);
+
         if (_currentPage is not IView currentView)
         {
             return;
         }
 
-        currentView.Measure(_lastArrangedWidth, _lastArrangedHeight);
-        currentView.Arrange(new Rect(0, 0, _lastArrangedWidth, _lastArrangedHeight));
+        currentView.Measure(_lastArrangedWidth, contentHeight);
+        currentView.Arrange(new Rect(0, 0, _lastArrangedWidth, contentHeight));
     }
 
     private void ApplyBaseStyles()
@@ -455,7 +519,7 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
 
         platformView.SetStyle("display", "grid");
         platformView.SetStyle("gridTemplateColumns", "minmax(0, 1fr)");
-        platformView.SetStyle("gridTemplateRows", "minmax(0, 1fr)");
+        platformView.SetStyle("gridTemplateRows", $"{MirageViewMapper.ToPx(DefaultNavigationBarHeight)} minmax(0, 1fr)");
         platformView.SetStyle("justifyItems", "stretch");
         platformView.SetStyle("alignItems", "stretch");
         platformView.SetStyle("width", "100%");
@@ -463,6 +527,471 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         platformView.SetStyle("overflow", "hidden");
         platformView.SetStyle("overflowY", "hidden");
         platformView.SetStyle("overflowX", "hidden");
+    }
+
+    private void EnsureShellStructure()
+    {
+        if (_navigationBar is not null
+            && _contentHost is not null
+            && _backButtonNode is not null
+            && _titleNode is not null
+            && _toolbarSlot is not null)
+        {
+            return;
+        }
+
+        if (!TryGetPlatformView(out var platformView))
+        {
+            return;
+        }
+
+        platformView.ClearChildren();
+        _shellNodes.Clear();
+        _toolbarButtonNodes.Clear();
+        _interactiveNodes.Clear();
+        _interactiveTargets.Clear();
+
+        _navigationBar = CreateShellNode(ComponentKind.ContentContainer, NavigationBarAutomationId);
+        _backButtonSlot = CreateShellNode(ComponentKind.ContentContainer, null);
+        _titleSlot = CreateShellNode(ComponentKind.ContentContainer, null);
+        _toolbarSlot = CreateShellNode(ComponentKind.HorizontalStack, NavigationToolbarAutomationId);
+        _contentHost = CreateShellNode(ComponentKind.ContentContainer, NavigationContentHostAutomationId);
+        _backButtonNode = CreateInteractiveButtonNode(
+            NavigationBackButtonAutomationId,
+            "Back",
+            OnBackButtonClicked);
+        _titleNode = CreateShellNode(ComponentKind.Label, NavigationTitleAutomationId);
+        _titleNode.SetProperty("Text", string.Empty);
+
+        _backButtonSlot.AddChild(_backButtonNode);
+        _titleSlot.AddChild(_titleNode);
+        _navigationBar.AddChild(_backButtonSlot);
+        _navigationBar.AddChild(_titleSlot);
+        _navigationBar.AddChild(_toolbarSlot);
+        platformView.AddChild(_navigationBar);
+        platformView.AddChild(_contentHost);
+
+        ApplyShellStyles();
+        UpdateNavigationChrome();
+    }
+
+    private MiragePlatformView CreateShellNode(ComponentKind kind, string? automationId)
+    {
+        var node = MiragePlatformView.CreateControl(kind);
+        if (!string.IsNullOrWhiteSpace(automationId))
+        {
+            node.SetProperty("AutomationId", automationId);
+        }
+
+        RegisterNode(node, eventTarget: null);
+        _shellNodes.Add(node);
+        return node;
+    }
+
+    private MiragePlatformView CreateInteractiveButtonNode(
+        string automationId,
+        string text,
+        Action onClick)
+    {
+        var node = MiragePlatformView.CreateControl(ComponentKind.Button);
+        node.SetProperty("AutomationId", automationId);
+        node.SetProperty("Text", text);
+        node.SetEvent("click", enabled: true);
+        var eventTarget = new ActionEventTarget((eventName, payload) =>
+        {
+            _ = payload;
+            if (string.Equals(eventName, "click", StringComparison.Ordinal))
+            {
+                onClick();
+            }
+        });
+        RegisterNode(node, eventTarget);
+        _shellNodes.Add(node);
+        _interactiveNodes.Add(node);
+        _interactiveTargets[node] = eventTarget;
+        return node;
+    }
+
+    private void RegisterNode(MiragePlatformView node, IMirageRuntimeEventTarget? eventTarget)
+    {
+        if (Coordinator is { } coordinator)
+        {
+            coordinator.Register(node, eventTarget);
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(node.NodeId))
+        {
+            return;
+        }
+
+        var localId = Interlocked.Increment(ref s_shellNodeIdCounter);
+        node.AssignNodeId($"nav-shell-{localId:D4}");
+    }
+
+    private void UnregisterShellStructure()
+    {
+        ClearToolbarNodes();
+        UnsubscribeToolbarCollection();
+
+        if (Coordinator is { } coordinator)
+        {
+            foreach (var node in _interactiveNodes)
+            {
+                coordinator.Unregister(node);
+            }
+
+            foreach (var node in _shellNodes)
+            {
+                coordinator.Unregister(node);
+            }
+        }
+
+        _interactiveNodes.Clear();
+        _interactiveTargets.Clear();
+        _shellNodes.Clear();
+        _navigationBar = null;
+        _backButtonSlot = null;
+        _titleSlot = null;
+        _toolbarSlot = null;
+        _contentHost = null;
+        _backButtonNode = null;
+        _titleNode = null;
+        _toolbarSignature = string.Empty;
+    }
+
+    private void ApplyShellStyles()
+    {
+        if (_navigationBar is null
+            || _backButtonSlot is null
+            || _titleSlot is null
+            || _toolbarSlot is null
+            || _contentHost is null
+            || _backButtonNode is null
+            || _titleNode is null)
+        {
+            return;
+        }
+
+        _navigationBar.SetStyle("display", "grid");
+        _navigationBar.SetStyle("gridTemplateColumns", "auto minmax(0, 1fr) auto");
+        _navigationBar.SetStyle("alignItems", "center");
+        _navigationBar.SetStyle("columnGap", "10px");
+        _navigationBar.SetStyle("boxSizing", "border-box");
+        _navigationBar.SetStyle("padding", "0 12px");
+        _navigationBar.SetStyle("width", "100%");
+        _navigationBar.SetStyle("height", MirageViewMapper.ToPx(DefaultNavigationBarHeight));
+        _navigationBar.SetStyle("borderBottom", "1px solid rgba(15,23,42,0.16)");
+        _navigationBar.SetStyle("overflow", "hidden");
+
+        _backButtonSlot.SetStyle("display", "grid");
+        _backButtonSlot.SetStyle("alignItems", "center");
+        _backButtonSlot.SetStyle("justifyItems", "start");
+        _backButtonSlot.SetStyle("minWidth", "72px");
+
+        _titleSlot.SetStyle("display", "grid");
+        _titleSlot.SetStyle("alignItems", "center");
+        _titleSlot.SetStyle("overflow", "hidden");
+        _titleSlot.SetStyle("minWidth", "0");
+
+        _titleNode.SetStyle("fontWeight", "600");
+        _titleNode.SetStyle("overflow", "hidden");
+        _titleNode.SetStyle("textOverflow", "ellipsis");
+        _titleNode.SetStyle("whiteSpace", "nowrap");
+        _titleNode.SetStyle("display", "block");
+
+        _toolbarSlot.SetStyle("display", "flex");
+        _toolbarSlot.SetStyle("flexDirection", "row");
+        _toolbarSlot.SetStyle("alignItems", "center");
+        _toolbarSlot.SetStyle("gap", "8px");
+        _toolbarSlot.SetStyle("justifyContent", "flex-end");
+        _toolbarSlot.SetStyle("minWidth", "0");
+
+        _backButtonNode.SetStyle("minWidth", "68px");
+        _backButtonNode.SetStyle("height", "30px");
+        _backButtonNode.SetStyle("cursor", "pointer");
+        _backButtonNode.SetStyle("whiteSpace", "nowrap");
+
+        _contentHost.SetStyle("display", "grid");
+        _contentHost.SetStyle("gridTemplateColumns", "minmax(0, 1fr)");
+        _contentHost.SetStyle("gridTemplateRows", "minmax(0, 1fr)");
+        _contentHost.SetStyle("width", "100%");
+        _contentHost.SetStyle("height", "100%");
+        _contentHost.SetStyle("minWidth", "0");
+        _contentHost.SetStyle("minHeight", "0");
+        _contentHost.SetStyle("overflow", "hidden");
+        _contentHost.SetStyle("overflowX", "hidden");
+        _contentHost.SetStyle("overflowY", "hidden");
+    }
+
+    private bool UpdateNavigationChrome()
+    {
+        if (!TryGetPlatformView(out var platformView))
+        {
+            return false;
+        }
+
+        EnsureShellStructure();
+        if (_navigationBar is null
+            || _backButtonNode is null
+            || _titleNode is null
+            || _toolbarSlot is null)
+        {
+            return false;
+        }
+
+        var changed = false;
+        var currentPage = _currentPage;
+        var navigationBarVisible = currentPage is null || NavigationPage.GetHasNavigationBar(currentPage);
+        var barRowCss = navigationBarVisible
+            ? MirageViewMapper.ToPx(DefaultNavigationBarHeight)
+            : "0px";
+        changed |= SetStyleIfChanged(platformView, "gridTemplateRows", $"{barRowCss} minmax(0, 1fr)");
+        changed |= SetStyleIfChanged(_navigationBar, "display", navigationBarVisible ? "grid" : "none");
+
+        _navigationBarVisible = navigationBarVisible;
+
+        var barBackground = MirageCommonViewProjection.ToCssColor(VirtualView.BarBackgroundColor) ?? "rgba(241,245,249,1)";
+        var barForeground = MirageCommonViewProjection.ToCssColor(VirtualView.BarTextColor) ?? "rgba(15,23,42,1)";
+
+        changed |= SetStyleIfChanged(_navigationBar, "backgroundColor", barBackground);
+        changed |= SetStyleIfChanged(_titleNode, "color", barForeground);
+
+        var title = ResolveVisibleTitle(currentPage, VirtualView);
+        changed |= SetPropertyIfChanged(_titleNode, "Text", title);
+
+        var backButtonVisible = _currentStackCount > 1
+            && navigationBarVisible
+            && (currentPage is null || NavigationPage.GetHasBackButton(currentPage));
+        changed |= SetStyleIfChanged(_backButtonNode, "display", backButtonVisible ? "inline-flex" : "none");
+        changed |= SetStyleIfChanged(_backButtonNode, "color", barForeground);
+        changed |= SetStyleIfChanged(_backButtonNode, "--accent-foreground-rest", barForeground);
+        changed |= SetStyleIfChanged(_backButtonNode, "--accent-foreground-hover", barForeground);
+        changed |= SetStyleIfChanged(_backButtonNode, "--accent-foreground-active", barForeground);
+        changed |= SetStyleIfChanged(_backButtonNode, "--foreground-on-accent-rest", barForeground);
+        changed |= SetStyleIfChanged(_backButtonNode, "--foreground-on-accent-hover", barForeground);
+        changed |= SetStyleIfChanged(_backButtonNode, "--foreground-on-accent-active", barForeground);
+
+        changed |= RebuildToolbarNodes(barForeground, navigationBarVisible);
+        return changed;
+    }
+
+    private bool RebuildToolbarNodes(string barForeground, bool navigationBarVisible)
+    {
+        if (_toolbarSlot is null)
+        {
+            return false;
+        }
+
+        var orderedItems = ResolveOrderedToolbarItems(_currentPage);
+        var signature = BuildToolbarSignature(orderedItems, navigationBarVisible);
+        if (string.Equals(signature, _toolbarSignature, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        ClearToolbarNodes();
+
+        for (var index = 0; index < orderedItems.Length; index++)
+        {
+            var item = orderedItems[index];
+            var itemEnabled = navigationBarVisible && IsToolbarItemEnabled(item);
+            var buttonNode = MiragePlatformView.CreateControl(ComponentKind.Button);
+            buttonNode.SetProperty("AutomationId", $"mirage-navigation-toolbar-item-{index + 1}");
+            buttonNode.SetProperty("Text", item.Text ?? string.Empty);
+            buttonNode.SetEvent("click", enabled: true);
+            ApplyToolbarButtonStyle(buttonNode, itemEnabled, barForeground);
+
+            var eventTarget = new ActionEventTarget((eventName, payload) =>
+            {
+                _ = payload;
+                if (string.Equals(eventName, "click", StringComparison.Ordinal))
+                {
+                    OnToolbarItemClicked(item);
+                }
+            });
+
+            RegisterNode(buttonNode, eventTarget);
+            _interactiveNodes.Add(buttonNode);
+            _interactiveTargets[buttonNode] = eventTarget;
+            _toolbarButtonNodes.Add(buttonNode);
+            _toolbarSlot.AddChild(buttonNode);
+        }
+
+        _toolbarSignature = signature;
+        return true;
+    }
+
+    private void ClearToolbarNodes()
+    {
+        if (_toolbarSlot is not null)
+        {
+            _toolbarSlot.ClearChildren();
+        }
+
+        if (Coordinator is { } coordinator)
+        {
+            foreach (var node in _toolbarButtonNodes)
+            {
+                coordinator.Unregister(node);
+            }
+        }
+
+        foreach (var node in _toolbarButtonNodes)
+        {
+            _interactiveTargets.Remove(node);
+            _interactiveNodes.Remove(node);
+        }
+
+        _toolbarButtonNodes.Clear();
+    }
+
+    private static ToolbarItem[] ResolveOrderedToolbarItems(Page? page)
+    {
+        if (page?.ToolbarItems is null || page.ToolbarItems.Count == 0)
+        {
+            return [];
+        }
+
+        return page.ToolbarItems
+            .Select((item, index) => new ToolbarSortRecord(item, index))
+            .OrderBy(static record => (int)record.Item.Order)
+            .ThenBy(static record => record.Item.Priority)
+            .ThenBy(static record => record.OriginalIndex)
+            .Select(static record => record.Item)
+            .ToArray();
+    }
+
+    private static string BuildToolbarSignature(ToolbarItem[] items, bool navigationBarVisible)
+    {
+        var parts = new List<string>(items.Length + 2)
+        {
+            navigationBarVisible ? "bar:visible" : "bar:hidden",
+            $"count:{items.Length}"
+        };
+
+        for (var index = 0; index < items.Length; index++)
+        {
+            var item = items[index];
+            var isEnabled = IsToolbarItemEnabled(item);
+            parts.Add(
+                $"{index}:{(int)item.Order}:{item.Priority}:{item.Text}:{isEnabled}:{item.CommandParameter}");
+        }
+
+        return string.Join("|", parts);
+    }
+
+    private static bool IsToolbarItemEnabled(ToolbarItem item)
+    {
+        var parameter = item.CommandParameter;
+        return item.IsEnabled && (item.Command?.CanExecute(parameter) ?? true);
+    }
+
+    private static void ApplyToolbarButtonStyle(MiragePlatformView node, bool isEnabled, string foregroundColor)
+    {
+        node.SetStyle("height", "30px");
+        node.SetStyle("whiteSpace", "nowrap");
+        node.SetStyle("cursor", isEnabled ? "pointer" : "default");
+        node.SetStyle("opacity", isEnabled ? "1" : "0.55");
+        node.SetStyle("color", foregroundColor);
+        node.SetStyle("--accent-foreground-rest", foregroundColor);
+        node.SetStyle("--accent-foreground-hover", foregroundColor);
+        node.SetStyle("--accent-foreground-active", foregroundColor);
+        node.SetStyle("--foreground-on-accent-rest", foregroundColor);
+        node.SetStyle("--foreground-on-accent-hover", foregroundColor);
+        node.SetStyle("--foreground-on-accent-active", foregroundColor);
+    }
+
+    private void OnBackButtonClicked()
+    {
+        DispatchOnUiThreadIfRequired(() =>
+        {
+            if (!_navigationBarVisible || _currentStackCount <= 1 || !VirtualView.IsEnabled)
+            {
+                return;
+            }
+
+            if (_currentPage is not null && !NavigationPage.GetHasBackButton(_currentPage))
+            {
+                return;
+            }
+
+            _ = VirtualView.PopAsync(animated: false);
+        });
+    }
+
+    private void OnToolbarItemClicked(ToolbarItem item)
+    {
+        DispatchOnUiThreadIfRequired(() =>
+        {
+            if (!_navigationBarVisible || !IsToolbarItemEnabled(item))
+            {
+                return;
+            }
+
+            var command = item.Command;
+            if (command is null)
+            {
+                return;
+            }
+
+            var parameter = item.CommandParameter;
+            if (command.CanExecute(parameter))
+            {
+                command.Execute(parameter);
+            }
+        });
+    }
+
+    private void DispatchOnUiThreadIfRequired(Action action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        var dispatcher = GetDispatcher();
+        if (dispatcher is null || !dispatcher.IsDispatchRequired)
+        {
+            action();
+            return;
+        }
+
+        if (!dispatcher.Dispatch(action))
+        {
+            action();
+        }
+    }
+
+    private static string ResolveVisibleTitle(Page? currentPage, NavigationPage navigationPage)
+    {
+        if (!string.IsNullOrWhiteSpace(currentPage?.Title))
+        {
+            return currentPage.Title;
+        }
+
+        return navigationPage.Title ?? string.Empty;
+    }
+
+    private static bool SetStyleIfChanged(MiragePlatformView node, string styleName, string? value)
+    {
+        var current = node.GetStyleValue(styleName);
+        if (string.Equals(current, value, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        node.SetStyle(styleName, value);
+        return true;
+    }
+
+    private static bool SetPropertyIfChanged(MiragePlatformView node, string propertyName, string? value)
+    {
+        var current = node.GetPropertyString(propertyName);
+        if (string.Equals(current, value, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        node.SetProperty(propertyName, value);
+        return true;
     }
 
     private void ProjectCurrentRoute(MirageNavigationTrigger trigger)
@@ -728,41 +1257,217 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         _popStateSubscriptionId = 0;
     }
 
-    private void SubscribeCurrentPageTitle(Page? page)
+    private void SubscribeCurrentPage(Page? page)
     {
         if (ReferenceEquals(_currentPage, page))
         {
             return;
         }
 
-        UnsubscribeCurrentPageTitle();
+        UnsubscribeCurrentPage();
         _currentPage = page;
 
         if (_currentPage is not null)
         {
             _currentPage.PropertyChanged += OnCurrentPagePropertyChanged;
         }
+
+        SubscribeToolbarCollection(page);
     }
 
-    private void UnsubscribeCurrentPageTitle()
+    private void UnsubscribeCurrentPage()
     {
         if (_currentPage is null)
         {
+            UnsubscribeToolbarCollection();
             return;
         }
 
         _currentPage.PropertyChanged -= OnCurrentPagePropertyChanged;
+        _currentPage = null;
+        UnsubscribeToolbarCollection();
+    }
+
+    private void SubscribeToolbarCollection(Page? page)
+    {
+        UnsubscribeToolbarCollection();
+
+        if (page?.ToolbarItems is null)
+        {
+            return;
+        }
+
+        if (page.ToolbarItems is INotifyCollectionChanged collection)
+        {
+            _currentToolbarCollection = collection;
+            _currentToolbarCollection.CollectionChanged += OnToolbarCollectionChanged;
+        }
+
+        SyncToolbarSubscriptions(page.ToolbarItems);
+    }
+
+    private void UnsubscribeToolbarCollection()
+    {
+        if (_currentToolbarCollection is not null)
+        {
+            _currentToolbarCollection.CollectionChanged -= OnToolbarCollectionChanged;
+            _currentToolbarCollection = null;
+        }
+
+        foreach (var toolbarItem in _toolbarItemSubscriptions.Keys.ToArray())
+        {
+            RemoveToolbarSubscription(toolbarItem);
+        }
+
+        _toolbarItemSubscriptions.Clear();
+        _toolbarSignature = string.Empty;
+    }
+
+    private void OnToolbarCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        _ = sender;
+        _ = e;
+        SyncToolbarSubscriptions(_currentPage?.ToolbarItems);
+        if (!UpdateNavigationChrome())
+        {
+            return;
+        }
+
+        RequestRender();
+    }
+
+    private void SyncToolbarSubscriptions(IEnumerable<ToolbarItem>? items)
+    {
+        var currentItems = items?.Where(static item => item is not null).ToArray() ?? [];
+        var currentSet = new HashSet<ToolbarItem>(currentItems);
+        foreach (var existing in _toolbarItemSubscriptions.Keys.ToArray())
+        {
+            if (!currentSet.Contains(existing))
+            {
+                RemoveToolbarSubscription(existing);
+            }
+        }
+
+        foreach (var item in currentItems)
+        {
+            if (!_toolbarItemSubscriptions.ContainsKey(item))
+            {
+                AddToolbarSubscription(item);
+            }
+            else
+            {
+                RefreshToolbarCommandSubscription(item);
+            }
+        }
+    }
+
+    private void AddToolbarSubscription(ToolbarItem item)
+    {
+        var subscription = new ToolbarItemSubscription(item);
+        subscription.PropertyChangedHandler = OnToolbarItemPropertyChanged;
+        subscription.CommandCanExecuteChangedHandler = OnToolbarItemCommandCanExecuteChanged;
+        item.PropertyChanged += subscription.PropertyChangedHandler;
+        subscription.Command = item.Command;
+        subscription.Command?.CanExecuteChanged += subscription.CommandCanExecuteChangedHandler;
+        _toolbarItemSubscriptions[item] = subscription;
+    }
+
+    private void RemoveToolbarSubscription(ToolbarItem item)
+    {
+        if (!_toolbarItemSubscriptions.TryGetValue(item, out var subscription))
+        {
+            return;
+        }
+
+        item.PropertyChanged -= subscription.PropertyChangedHandler;
+        if (subscription.Command is not null)
+        {
+            subscription.Command.CanExecuteChanged -= subscription.CommandCanExecuteChangedHandler;
+        }
+
+        _toolbarItemSubscriptions.Remove(item);
+    }
+
+    private void RefreshToolbarCommandSubscription(ToolbarItem item)
+    {
+        if (!_toolbarItemSubscriptions.TryGetValue(item, out var subscription))
+        {
+            return;
+        }
+
+        if (ReferenceEquals(subscription.Command, item.Command))
+        {
+            return;
+        }
+
+        if (subscription.Command is not null)
+        {
+            subscription.Command.CanExecuteChanged -= subscription.CommandCanExecuteChangedHandler;
+        }
+
+        subscription.Command = item.Command;
+        subscription.Command?.CanExecuteChanged += subscription.CommandCanExecuteChangedHandler;
+    }
+
+    private void OnToolbarItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not ToolbarItem toolbarItem)
+        {
+            return;
+        }
+
+        if (string.Equals(e.PropertyName, nameof(MenuItem.Command), StringComparison.Ordinal))
+        {
+            RefreshToolbarCommandSubscription(toolbarItem);
+        }
+
+        if (!UpdateNavigationChrome())
+        {
+            return;
+        }
+
+        RequestRender();
+    }
+
+    private void OnToolbarItemCommandCanExecuteChanged(object? sender, EventArgs e)
+    {
+        _ = sender;
+        _ = e;
+        if (!UpdateNavigationChrome())
+        {
+            return;
+        }
+
+        RequestRender();
     }
 
     private void OnCurrentPagePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         _ = sender;
-        if (!string.IsNullOrEmpty(e.PropertyName) && !string.Equals(e.PropertyName, nameof(Page.Title), StringComparison.Ordinal))
+        var propertyName = e.PropertyName;
+        if (!string.IsNullOrEmpty(propertyName)
+            && !string.Equals(propertyName, nameof(Page.Title), StringComparison.Ordinal)
+            && propertyName != NavigationPage.HasNavigationBarProperty.PropertyName
+            && propertyName != NavigationPage.HasBackButtonProperty.PropertyName)
         {
             return;
         }
 
-        ProjectCurrentRoute(MirageNavigationTrigger.Manual);
+        var chromeChanged = UpdateNavigationChrome();
+        if (propertyName is null || string.Equals(propertyName, nameof(Page.Title), StringComparison.Ordinal))
+        {
+            ProjectCurrentRoute(MirageNavigationTrigger.Manual);
+        }
+
+        if (chromeChanged && _hasArrangedFrame)
+        {
+            ArrangeCurrentPage();
+        }
+
+        if (chromeChanged || propertyName is null || string.Equals(propertyName, nameof(Page.Title), StringComparison.Ordinal))
+        {
+            RequestRender();
+        }
     }
 
     private static IReadOnlyList<Page> ResolveNavigationStack(NavigationPage navigationPage)
@@ -878,5 +1583,38 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         }
 
         return Math.Max(0, Math.Min(constraint, contentDimension));
+    }
+
+    private readonly record struct ToolbarSortRecord(ToolbarItem Item, int OriginalIndex);
+
+    private sealed class ActionEventTarget : IMirageRuntimeEventTarget
+    {
+        private readonly Action<string, string?> _dispatch;
+
+        public ActionEventTarget(Action<string, string?> dispatch)
+        {
+            _dispatch = dispatch ?? throw new ArgumentNullException(nameof(dispatch));
+        }
+
+        public void OnRuntimeEvent(string eventName, string? payload)
+        {
+            _dispatch(eventName, payload);
+        }
+    }
+
+    private sealed class ToolbarItemSubscription
+    {
+        public ToolbarItemSubscription(ToolbarItem item)
+        {
+            Item = item;
+        }
+
+        public ToolbarItem Item { get; }
+
+        public PropertyChangedEventHandler PropertyChangedHandler { get; set; } = default!;
+
+        public EventHandler CommandCanExecuteChangedHandler { get; set; } = default!;
+
+        public ICommand? Command { get; set; }
     }
 }

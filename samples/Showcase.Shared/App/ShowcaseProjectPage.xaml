@@ -17,6 +17,7 @@
                 Spacing="10">
                 <Label
                     AutomationId="showcase-project-title"
+                    Style="{StaticResource Headline}"
                     Text="Project Details" />
                 <Label
                     x:Name="ProjectIdLabel"
@@ -26,6 +27,14 @@
                     x:Name="ProjectRouteLabel"
                     AutomationId="showcase-project-route"
                     Text="Route: /projects/(unset)" />
+                <Label
+                    x:Name="ProjectBackStateLabel"
+                    AutomationId="showcase-project-back-state"
+                    Text="Back button allowed: True" />
+                <Label
+                    x:Name="ProjectToolbarCountLabel"
+                    AutomationId="showcase-project-toolbar-count"
+                    Text="Toolbar command count: 0" />
                 <Label
                     AutomationId="showcase-project-body"
                     Text="This page is activated from route templates. Refresh and browser navigation should preserve the visible page route." />

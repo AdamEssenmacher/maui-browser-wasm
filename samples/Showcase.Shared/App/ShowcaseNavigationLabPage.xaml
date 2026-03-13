@@ -17,6 +17,7 @@
                 Spacing="10">
                 <Label
                     AutomationId="showcase-navigation-lab-title"
+                    Style="{StaticResource Headline}"
                     Text="Navigation Lab" />
                 <Label
                     AutomationId="showcase-navigation-lab-summary"
@@ -24,6 +25,22 @@
                 <Label
                     AutomationId="showcase-navigation-lab-route"
                     Text="Route: /navigation-lab" />
+                <Label
+                    x:Name="NavigationLabTitleStateLabel"
+                    AutomationId="showcase-navigation-lab-title-state"
+                    Text="Visible title: Navigation Lab" />
+                <Label
+                    x:Name="NavigationLabBarStateLabel"
+                    AutomationId="showcase-navigation-lab-bar-state"
+                    Text="Nav bar visible: True" />
+                <Label
+                    x:Name="NavigationLabBackStateLabel"
+                    AutomationId="showcase-navigation-lab-back-state"
+                    Text="Back button allowed: True" />
+                <Label
+                    x:Name="NavigationLabToolbarCountLabel"
+                    AutomationId="showcase-navigation-lab-toolbar-count"
+                    Text="Toolbar command count: 0" />
 
                 <HorizontalStackLayout Spacing="10">
                     <Button
@@ -43,6 +60,20 @@
                         Clicked="OnPopToRootClicked"
                         Text="Pop To Root" />
                 </HorizontalStackLayout>
+                <HorizontalStackLayout Spacing="10">
+                    <Button
+                        AutomationId="navigation-lab-toggle-nav-bar"
+                        Clicked="OnToggleNavigationBarClicked"
+                        Text="Toggle Nav Bar" />
+                    <Button
+                        AutomationId="navigation-lab-toggle-back-button"
+                        Clicked="OnToggleBackButtonClicked"
+                        Text="Toggle Back Button" />
+                    <Button
+                        AutomationId="navigation-lab-bump-title"
+                        Clicked="OnBumpTitleClicked"
+                        Text="Retitle Page" />
+                </HorizontalStackLayout>
             </VerticalStackLayout>
 
             <VerticalStackLayout
@@ -50,6 +81,9 @@
                 Spacing="6">
                 <Label
                     AutomationId="showcase-navigation-lab-note-title"
+                    Style="{StaticResource SubHeadline}"
+                    HorizontalOptions="Start"
+                    HorizontalTextAlignment="Start"
                     Text="Expected Behavior" />
                 <Label
                     AutomationId="showcase-navigation-lab-note-stack"

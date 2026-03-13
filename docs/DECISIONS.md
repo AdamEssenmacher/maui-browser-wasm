@@ -263,6 +263,12 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Navigation was locked to a `NavigationPage`-first model: MAUI stack operations (`PushAsync`, `PopAsync`, `PopToRootAsync`) remain source of truth while Mirage projects current-page state into browser URL/history/title.
 - Added extensibility seams via `UseMirageNavigation(...)` and DI policies (`IRouteRegistry`, parser/serializer, page activator, parameter binder, guard, history policy, title policy) so apps control route shape/policy without replacing core stack semantics.
 - Added provider-neutral browser history interop (`location`, `pushState`, `replaceState`, `popstate`, title) and startup deep-link bootstrap (`MirageBrowserAppHost`) to restore the current visible page route on initial load/refresh.
+
+## 2026-03-13 (NavigationPage OOTB Parity: Built-in Navigation Shell)
+- `MirageNavigationPageHandler` now realizes `NavigationPage` as a built-in shell on the control-node path with explicit nav-bar and bounded content-host regions instead of a content-host-only projection.
+- Added first-wave chrome parity: visible title slot projection, stack-depth-driven back button visibility + pop behavior, deterministic inline toolbar item projection (order/priority/stable index), command invocation, and enabled-state handling.
+- Added nav-bar state projection for `HasNavigationBar`/`HasBackButton` attached properties plus `BarBackgroundColor`/`BarTextColor` styling updates through handler-owned projection.
+- Preserved existing architecture boundaries: stack/history routing model remains `NavigationPage`-first, runtime stays provider-neutral, no new provider contracts/component kinds were introduced, and page content remains bounded with explicit-scroll policy unchanged.
 - `Showcase.Fluent` now dogfoods route projection with mapped routes (`/`, `/navigation-lab`, `/projects/{id}`) while preserving independent in-page section navigation (`IShowcaseSectionNavigator`) for hero section scrolling.
 - Non-goals remain explicit: no Shell/tabs/flyout stack, no router-first replacement of MAUI semantics, and no provider-specific navigation behavior.
 - Browser host startup now initializes the Mirage XAML hot-reload service unconditionally for browser `Application` hosts instead of gating on `DOTNET_WATCH`, because that environment variable is not reliably visible inside the WebAssembly runtime.
@@ -323,3 +329,8 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Removed the `Foundations Lab` subsection from the `Live Mirage Demo` so layout/visual correctness probes are not duplicated across surfaces.
 - `Live Mirage Demo` now stays focused on core interaction proof (entry binding, command click flow, and generic `WebNode` interactivity), while `Layout Lab` remains the single correctness surface for sizing/constraints/positioning and related visual probes.
 - Removed Foundations-specific state/commands from `ShowcaseState` and replaced Foundations E2E coverage with an explicit absence guard (`showcase-foundations-lab` and `foundations-*` selectors not rendered).
+
+## 2026-03-13 (Browser Theme Bridge for AppThemeBinding)
+- Added a browser-to-MAUI theme bridge in Mirage host/runtime interop by wiring `prefers-color-scheme` read + change subscription through `mirage-dom.js` and `DomApi`/`DomElement`.
+- `MirageBrowserAppHost` now applies browser light/dark preference to `Application.UserAppTheme` at startup and on media-query changes, so MAUI `AppThemeBinding` resources resolve and update in browser-hosted apps.
+- Theme updates stay dispatcher-safe and do not introduce provider/runtime semantic changes beyond theme projection.

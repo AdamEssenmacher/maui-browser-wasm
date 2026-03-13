@@ -138,6 +138,17 @@ public sealed class DomElement
 
     public static void UnsubscribePopState(int subscriptionId) => DomApi.UnsubscribePopState(subscriptionId);
 
+    public static string GetPreferredColorScheme() => DomApi.GetPreferredColorScheme();
+
+    public static int SubscribePreferredColorSchemeChanged(Action callback)
+    {
+        ArgumentNullException.ThrowIfNull(callback);
+        return DomApi.SubscribePreferredColorSchemeChanged(callback);
+    }
+
+    public static void UnsubscribePreferredColorSchemeChanged(int subscriptionId) =>
+        DomApi.UnsubscribePreferredColorSchemeChanged(subscriptionId);
+
     public static bool IsDiagnosticsEnabled() => DomApi.IsDiagnosticsEnabled();
 
     public static Task<string?> FetchTextAsync(string path)

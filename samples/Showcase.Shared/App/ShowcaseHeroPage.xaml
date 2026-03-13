@@ -16,125 +16,154 @@
             <VerticalStackLayout
                 AutomationId="hero-page-stack"
                 HorizontalOptions="Center"
-                MaximumWidthRequest="1040">
+                MaximumWidthRequest="1040"
+                Style="{StaticResource ShowcasePageStack}">
 
-                <VerticalStackLayout
-                    AutomationId="hero"
-                    Spacing="10">
-                    <Label
-                        AutomationId="hero-kicker"
-                        Text="Mirage" />
-                    <Label
-                        AutomationId="hero-headline"
-                        Text="Run .NET MAUI apps in the browser — with real DOM UI." />
-                    <Label
-                        AutomationId="hero-subheadline"
-                        Text="Mirage is a semantic runtime that brings .NET MAUI to the browser by rendering your UI as actual DOM elements and Web Components using pluggable component providers." />
-                    <Label
-                        AutomationId="hero-description"
-                        Text="Build your UI once with MAUI and run it directly in the browser without rewriting your UI layer." />
-                    <Label
-                        AutomationId="hero-tagline-primary"
-                        Text="MAUI UI, rendered as real web UI." />
-                </VerticalStackLayout>
+                <ContentView Style="{StaticResource ShowcaseSectionCardFrame}">
+                    <VerticalStackLayout
+                        AutomationId="hero"
+                        BackgroundColor="Transparent"
+                        Style="{StaticResource ShowcaseSectionCardBody}">
+                        <Label
+                            AutomationId="hero-kicker"
+                            Text="Mirage" />
+                        <Label
+                            AutomationId="hero-headline"
+                            Style="{StaticResource Headline}"
+                            Text="Run .NET MAUI apps in the browser — with real DOM UI." />
+                        <Label
+                            AutomationId="hero-subheadline"
+                            Style="{StaticResource SubHeadline}"
+                            Text="Mirage is a semantic runtime that brings .NET MAUI to the browser by rendering your UI as actual DOM elements and Web Components using pluggable component providers." />
+                        <Label
+                            AutomationId="hero-description"
+                            Text="Build your UI once with MAUI and run it directly in the browser without rewriting your UI layer." />
+                        <Label
+                            AutomationId="hero-tagline-primary"
+                            Text="MAUI UI, rendered as real web UI." />
+                    </VerticalStackLayout>
+                </ContentView>
 
-        <VerticalStackLayout
-            AutomationId="hero-cta"
-            Spacing="8">
-            <HorizontalStackLayout
-                AutomationId="hero-cta-row"
-                Spacing="10">
-                <Button
-                    AutomationId="hero-cta-demo"
-                    Clicked="OnDemoCtaClicked"
-                    Text="Try the Live Demo" />
-                <Button
-                    AutomationId="hero-cta-command-layout-lab"
-                    Clicked="OnCommandScrollToLayoutLabClicked"
-                    Text="Open Layout Lab" />
-            </HorizontalStackLayout>
-        </VerticalStackLayout>
+                <ContentView Style="{StaticResource ShowcaseSectionCardFrame}">
+                    <VerticalStackLayout
+                        AutomationId="hero-cta"
+                        Style="{StaticResource ShowcaseSectionCardBody}">
+                        <HorizontalStackLayout
+                            AutomationId="hero-cta-row"
+                            Spacing="10">
+                            <Button
+                                AutomationId="hero-cta-demo"
+                                Clicked="OnDemoCtaClicked"
+                                Text="Try the Live Demo" />
+                            <Button
+                                AutomationId="hero-cta-command-layout-lab"
+                                Clicked="OnCommandScrollToLayoutLabClicked"
+                                Text="Open Layout Lab" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </ContentView>
 
-        <VerticalStackLayout
-            AutomationId="showcase-navigation-lab-preview"
-            Spacing="8">
-            <Label
-                AutomationId="showcase-navigation-lab-preview-title"
-                Text="Navigation Projection Lab" />
-            <Label
-                AutomationId="showcase-navigation-lab-preview-body"
-                Text="NavigationPage remains the source of truth. Mirage projects stack changes into browser URLs and history." />
-            <Label
-                AutomationId="showcase-navigation-lab-preview-routes"
-                Text="Routes: /, /navigation-lab, /projects/{id}" />
-            <HorizontalStackLayout Spacing="10">
-                <Button
-                    AutomationId="showcase-open-navigation-lab"
-                    Clicked="OnOpenNavigationLabPageClicked"
-                    Text="Open Navigation Lab" />
-                <Button
-                    AutomationId="showcase-open-project-route"
-                    Clicked="OnOpenProjectRoutePageClicked"
-                    Text="Open /projects/42" />
-            </HorizontalStackLayout>
-        </VerticalStackLayout>
+                <ContentView Style="{StaticResource ShowcaseSectionCardFrame}">
+                    <VerticalStackLayout
+                        AutomationId="showcase-navigation-lab-preview"
+                        Style="{StaticResource ShowcaseSectionCardBody}">
+                        <Label
+                            AutomationId="showcase-navigation-lab-preview-title"
+                            Style="{StaticResource SubHeadline}"
+                            HorizontalOptions="Start"
+                            HorizontalTextAlignment="Start"
+                            Text="Navigation Projection Lab" />
+                        <Label
+                            AutomationId="showcase-navigation-lab-preview-body"
+                            Text="NavigationPage remains the source of truth. Mirage projects stack changes into browser URLs and history." />
+                        <Label
+                            AutomationId="showcase-navigation-lab-preview-routes"
+                            Text="Routes: /, /navigation-lab, /projects/{id}" />
+                        <HorizontalStackLayout Spacing="10">
+                            <Button
+                                AutomationId="showcase-open-navigation-lab"
+                                Clicked="OnOpenNavigationLabPageClicked"
+                                Text="Open Navigation Lab" />
+                            <Button
+                                AutomationId="showcase-open-project-route"
+                                Clicked="OnOpenProjectRoutePageClicked"
+                                Text="Open /projects/42" />
+                        </HorizontalStackLayout>
+                    </VerticalStackLayout>
+                </ContentView>
 
-        <VerticalStackLayout
-            x:Name="DemoSection"
-            AutomationId="demo"
-            Spacing="8">
-            <Label
-                AutomationId="demo-title"
-                Text="Live Mirage Demo" />
-            <Label
-                AutomationId="showcase-demo-your-name-label"
-                Text="Your name:" />
-            <Entry
-                AutomationId="showcase-demo-entry"
-                Placeholder="Type your name"
-                Text="{Binding Name, Mode=TwoWay}" />
-            <Label
-                AutomationId="showcase-demo-greeting"
-                Text="{Binding Greeting}" />
-            <Button
-                AutomationId="showcase-demo-button"
-                Command="{Binding ClickCommand}"
-                Text="Click Me" />
-            <Label
-                AutomationId="showcase-demo-count"
-                Text="{Binding ClickCountText}" />
-            <Label
-                AutomationId="showcase-demo-powered-by"
-                Text="Powered by Mirage + Fluent UI Web Components" />
-            <Label
-                AutomationId="showcase-demo-devtools-hint"
-                Text="Open DevTools and inspect this page. The UI is rendered as real Fluent UI Web Components and DOM elements." />
-            <Label
-                AutomationId="showcase-generic-demo-title"
-                Text="Generic WebNode Demo" />
-            <ContentView
-                x:Name="GenericWidgetHost"
-                AutomationId="showcase-generic-widget-host" />
-            <Label
-                AutomationId="showcase-generic-widget-count"
-                Text="{Binding GenericWidgetClicksText}" />
-        </VerticalStackLayout>
+                <ContentView Style="{StaticResource ShowcaseSectionCardFrame}">
+                    <VerticalStackLayout
+                        x:Name="DemoSection"
+                        AutomationId="demo"
+                        Style="{StaticResource ShowcaseSectionCardBody}">
+                        <Label
+                            AutomationId="demo-title"
+                            Style="{StaticResource SubHeadline}"
+                            HorizontalOptions="Start"
+                            HorizontalTextAlignment="Start"
+                            Text="Live Mirage Demo" />
+                        <Label
+                            AutomationId="showcase-demo-your-name-label"
+                            Text="Your name:" />
+                        <Entry
+                            AutomationId="showcase-demo-entry"
+                            Placeholder="Type your name"
+                            Text="{Binding Name, Mode=TwoWay}" />
+                        <Label
+                            AutomationId="showcase-demo-greeting"
+                            Text="{Binding Greeting}" />
+                        <Button
+                            AutomationId="showcase-demo-button"
+                            Command="{Binding ClickCommand}"
+                            Text="Click Me" />
+                        <Label
+                            AutomationId="showcase-demo-count"
+                            Text="{Binding ClickCountText}" />
+                        <Label
+                            AutomationId="showcase-demo-powered-by"
+                            Text="Powered by Mirage + Fluent UI Web Components" />
+                        <Label
+                            AutomationId="showcase-demo-devtools-hint"
+                            Text="Open DevTools and inspect this page. The UI is rendered as real Fluent UI Web Components and DOM elements." />
+                        <Label
+                            AutomationId="showcase-generic-demo-title"
+                            Style="{StaticResource SubHeadline}"
+                            HorizontalOptions="Start"
+                            HorizontalTextAlignment="Start"
+                            Text="Generic WebNode Demo" />
+                        <ContentView
+                            x:Name="GenericWidgetHost"
+                            AutomationId="showcase-generic-widget-host" />
+                        <Label
+                            AutomationId="showcase-generic-widget-count"
+                            Text="{Binding GenericWidgetClicksText}" />
+                    </VerticalStackLayout>
+                </ContentView>
 
         <ContentView
             x:Name="ProvidersSection"
-            AutomationId="providers">
+            AutomationId="providers"
+            Style="{StaticResource ShowcaseSectionCardFrame}">
             <VerticalStackLayout
                 AutomationId="providers-content"
-                Spacing="12">
+                Style="{StaticResource ShowcaseSectionCardBody}">
                 <Label
                     AutomationId="providers-title"
+                    Style="{StaticResource SubHeadline}"
+                    HorizontalOptions="Start"
+                    HorizontalTextAlignment="Start"
                     Text="Feature Highlights" />
 
                 <VerticalStackLayout
                     AutomationId="showcase-feature-dom"
-                    Spacing="4">
+                    Spacing="4"
+                    StyleClass="showcase-feature-card">
                     <Label
                         AutomationId="showcase-feature-dom-title"
+                        Style="{StaticResource SubHeadline}"
+                        HorizontalOptions="Start"
+                        HorizontalTextAlignment="Start"
                         Text="Real DOM Rendering" />
                     <Label
                         AutomationId="showcase-feature-dom-body"
@@ -143,9 +172,13 @@
 
                 <VerticalStackLayout
                     AutomationId="showcase-feature-maui"
-                    Spacing="4">
+                    Spacing="4"
+                    StyleClass="showcase-feature-card">
                     <Label
                         AutomationId="showcase-feature-maui-title"
+                        Style="{StaticResource SubHeadline}"
+                        HorizontalOptions="Start"
+                        HorizontalTextAlignment="Start"
                         Text="MAUI Programming Model" />
                     <Label
                         AutomationId="showcase-feature-maui-body"
@@ -154,9 +187,13 @@
 
                 <VerticalStackLayout
                     AutomationId="showcase-feature-providers"
-                    Spacing="4">
+                    Spacing="4"
+                    StyleClass="showcase-feature-card">
                     <Label
                         AutomationId="showcase-feature-providers-title"
+                        Style="{StaticResource SubHeadline}"
+                        HorizontalOptions="Start"
+                        HorizontalTextAlignment="Start"
                         Text="Pluggable Component Providers" />
                     <Label
                         AutomationId="showcase-feature-providers-body"
@@ -169,12 +206,16 @@
             </VerticalStackLayout>
         </ContentView>
 
-        <VerticalStackLayout
-            x:Name="LayoutLabSection"
-            AutomationId="layout-lab"
-            Spacing="10">
+        <ContentView Style="{StaticResource ShowcaseSectionCardFrame}">
+            <VerticalStackLayout
+                x:Name="LayoutLabSection"
+                AutomationId="layout-lab"
+                Style="{StaticResource ShowcaseSectionCardBody}">
             <Label
                 AutomationId="layout-lab-title"
+                Style="{StaticResource SubHeadline}"
+                HorizontalOptions="Start"
+                HorizontalTextAlignment="Start"
                 Text="Layout Lab" />
             <Label
                 AutomationId="layout-lab-body"
@@ -193,6 +234,9 @@
                 Spacing="8">
                 <Label
                     AutomationId="layout-lab-group-content-view-title"
+                    Style="{StaticResource SubHeadline}"
+                    HorizontalOptions="Start"
+                    HorizontalTextAlignment="Start"
                     Text="Group A — ContentView parent scenarios" />
                 <Grid
                     AutomationId="layout-lab-matrix-content-view"
@@ -201,6 +245,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-content-view-fixed-centered"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="0">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Fixed-size parent, centered child" />
@@ -210,10 +255,12 @@
                                 Text="Expected: Child stays centered within fixed parent bounds and retains explicit requested size." />
                             <ContentView
                                 AutomationId="layout-lab-parent-content-view-fixed-centered"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="180"
                                 WidthRequest="320">
                                 <ContentView
                                     AutomationId="layout-lab-child-content-view-fixed-centered-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                     HeightRequest="56"
                                     HorizontalOptions="Center"
                                     VerticalOptions="Center"
@@ -225,6 +272,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-content-view-fixed-stretch"
                         Grid.Column="1"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="0">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Fixed-size parent, stretched child" />
@@ -234,10 +282,12 @@
                                 Text="Expected: Child stretches to the parent content surface on both axes." />
                             <ContentView
                                 AutomationId="layout-lab-parent-content-view-fixed-stretch"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="180"
                                 WidthRequest="320">
                                 <ContentView
                                     AutomationId="layout-lab-child-content-view-fixed-stretch-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                     HorizontalOptions="Fill"
                                     VerticalOptions="Fill">
                                     <Label Text="Stretch probe" />
@@ -249,6 +299,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-content-view-explicit-size-request"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="1">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Explicit Width/Height request" />
@@ -258,10 +309,12 @@
                                 Text="Expected: Explicit child width/height request is honored within parent bounds." />
                             <ContentView
                                 AutomationId="layout-lab-parent-content-view-explicit-size-request"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="180"
                                 WidthRequest="320">
                                 <Entry
                                     AutomationId="layout-lab-child-content-view-explicit-size-request-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                     HeightRequest="44"
                                     HorizontalOptions="Start"
                                     Placeholder="Sized entry probe"
@@ -273,6 +326,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-content-view-margin-interaction"
                         Grid.Column="1"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="1">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Child margin interaction" />
@@ -282,10 +336,12 @@
                                 Text="Expected: Margin offsets the child within fixed bounds while preserving child size." />
                             <ContentView
                                 AutomationId="layout-lab-parent-content-view-margin-interaction"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="180"
                                 WidthRequest="320">
                                 <Button
                                     AutomationId="layout-lab-child-content-view-margin-interaction-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                     HorizontalOptions="Start"
                                     Margin="18,12,16,10"
                                     Text="Margin probe" />
@@ -296,6 +352,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-content-view-visibility-hidden"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.ColumnSpan="2"
                         Grid.Row="2">
                         <VerticalStackLayout Spacing="6">
@@ -306,11 +363,13 @@
                                 Text="Expected: Hidden child is not rendered while visible sibling marker remains shown." />
                             <ContentView
                                 AutomationId="layout-lab-parent-content-view-visibility-hidden"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="180"
                                 WidthRequest="320">
                                 <VerticalStackLayout Spacing="8">
                                     <Label
                                         AutomationId="layout-lab-child-content-view-visibility-hidden-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         IsVisible="False"
                                         Text="Hidden child probe" />
                                     <Label Text="Visible sibling marker" />
@@ -326,6 +385,9 @@
                 Spacing="8">
                 <Label
                     AutomationId="layout-lab-group-vertical-stack-title"
+                    Style="{StaticResource SubHeadline}"
+                    HorizontalOptions="Start"
+                    HorizontalTextAlignment="Start"
                     Text="Group B — VerticalStackLayout parent scenarios" />
                 <Grid
                     AutomationId="layout-lab-matrix-vertical-stack"
@@ -334,6 +396,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-vertical-stack-multi-child-spacing"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="0">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Multiple children + spacing" />
@@ -343,14 +406,17 @@
                                 Text="Expected: Children stack top-to-bottom with consistent vertical gap." />
                             <ContentView
                                 AutomationId="layout-lab-parent-vertical-stack-multi-child-spacing"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="220"
                                 WidthRequest="320">
                                 <VerticalStackLayout Spacing="14">
                                     <Label
                                         AutomationId="layout-lab-child-vertical-stack-multi-child-spacing-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         Text="Stack item A" />
                                     <Label
                                         AutomationId="layout-lab-child-vertical-stack-multi-child-spacing-secondary"
+                                    StyleClass="showcase-layout-child-probe"
                                         Text="Stack item B" />
                                     <Label Text="Stack item C" />
                                 </VerticalStackLayout>
@@ -361,6 +427,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-vertical-stack-stretch-cross-axis"
                         Grid.Column="1"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="0">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Stretch on cross-axis" />
@@ -370,11 +437,13 @@
                                 Text="Expected: Child probes stretch horizontally across vertical stack content width." />
                             <ContentView
                                 AutomationId="layout-lab-parent-vertical-stack-stretch-cross-axis"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="220"
                                 WidthRequest="320">
                                 <VerticalStackLayout Spacing="10">
                                     <ContentView
                                         AutomationId="layout-lab-child-vertical-stack-stretch-cross-axis-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         HeightRequest="44">
                                         <Label Text="Stretch A" />
                                     </ContentView>
@@ -390,6 +459,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-vertical-stack-centered-child"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="1">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Centered child alignment" />
@@ -399,11 +469,13 @@
                                 Text="Expected: Child stays centered horizontally while preserving natural height." />
                             <ContentView
                                 AutomationId="layout-lab-parent-vertical-stack-centered-child"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="220"
                                 WidthRequest="320">
                                 <VerticalStackLayout Spacing="10">
                                     <ContentView
                                         AutomationId="layout-lab-child-vertical-stack-centered-child-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         HeightRequest="52"
                                         HorizontalOptions="Center"
                                         WidthRequest="150">
@@ -417,6 +489,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-vertical-stack-explicit-size-and-margin"
                         Grid.Column="1"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="1">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Explicit size + margin" />
@@ -426,11 +499,13 @@
                                 Text="Expected: Requested size and margin are honored in stacked flow." />
                             <ContentView
                                 AutomationId="layout-lab-parent-vertical-stack-explicit-size-and-margin"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="220"
                                 WidthRequest="320">
                                 <VerticalStackLayout Spacing="8">
                                     <ContentView
                                         AutomationId="layout-lab-child-vertical-stack-explicit-size-and-margin-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         HeightRequest="56"
                                         Margin="20,8,0,8"
                                         WidthRequest="140">
@@ -445,6 +520,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-vertical-stack-hidden-child-collapse"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.ColumnSpan="2"
                         Grid.Row="2">
                         <VerticalStackLayout Spacing="6">
@@ -455,18 +531,22 @@
                                 Text="Expected: Hidden middle child collapses and does not consume stack spacing." />
                             <ContentView
                                 AutomationId="layout-lab-parent-vertical-stack-hidden-child-collapse"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="220"
                                 WidthRequest="320">
                                 <VerticalStackLayout Spacing="14">
                                     <Label
                                         AutomationId="layout-lab-child-vertical-stack-hidden-child-collapse-first"
+                                    StyleClass="showcase-layout-child-probe"
                                         Text="Visible item A" />
                                     <Label
                                         AutomationId="layout-lab-child-vertical-stack-hidden-child-collapse-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         IsVisible="False"
                                         Text="Hidden item B" />
                                     <Label
                                         AutomationId="layout-lab-child-vertical-stack-hidden-child-collapse-third"
+                                    StyleClass="showcase-layout-child-probe"
                                         Text="Visible item C" />
                                 </VerticalStackLayout>
                             </ContentView>
@@ -480,6 +560,9 @@
                 Spacing="8">
                 <Label
                     AutomationId="layout-lab-group-horizontal-stack-title"
+                    Style="{StaticResource SubHeadline}"
+                    HorizontalOptions="Start"
+                    HorizontalTextAlignment="Start"
                     Text="Group C — HorizontalStackLayout parent scenarios" />
                 <Grid
                     AutomationId="layout-lab-matrix-horizontal-stack"
@@ -488,6 +571,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-horizontal-stack-multi-child-spacing"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="0">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Multiple children + spacing" />
@@ -497,11 +581,13 @@
                                 Text="Expected: Children flow left-to-right with consistent horizontal spacing." />
                             <ContentView
                                 AutomationId="layout-lab-parent-horizontal-stack-multi-child-spacing"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="130"
                                 WidthRequest="360">
                                 <HorizontalStackLayout Spacing="12">
                                     <ContentView
                                         AutomationId="layout-lab-child-horizontal-stack-multi-child-spacing-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         HeightRequest="66"
                                         WidthRequest="96">
                                         <Label Text="Row A" />
@@ -524,6 +610,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-horizontal-stack-constrained-width-overflow"
                         Grid.Column="1"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="0">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Constrained width overflow" />
@@ -533,6 +620,7 @@
                                 Text="Expected: Both hosts keep requested child width under tight bounds; clipped host hides overflow while unclipped host exposes it." />
                             <ContentView
                                 AutomationId="layout-lab-parent-horizontal-stack-constrained-width-overflow"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="130"
                                 WidthRequest="280">
                                 <HorizontalStackLayout
@@ -540,6 +628,7 @@
                                     Spacing="8">
                                     <ContentView
                                         AutomationId="layout-lab-child-horizontal-stack-constrained-width-overflow-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         HeightRequest="66"
                                         WidthRequest="220">
                                         <Label Text="Overflow A" />
@@ -547,6 +636,7 @@
                                     <ContentView
                                         HeightRequest="66"
                                         AutomationId="layout-lab-child-horizontal-stack-constrained-width-overflow-secondary"
+                                    StyleClass="showcase-layout-child-probe"
                                         WidthRequest="220">
                                         <Label Text="Overflow B" />
                                     </ContentView>
@@ -554,6 +644,7 @@
                             </ContentView>
                             <ContentView
                                 AutomationId="layout-lab-parent-horizontal-stack-constrained-width-overflow-clipped"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="130"
                                 WidthRequest="280">
                                 <HorizontalStackLayout
@@ -569,6 +660,7 @@
                                     </ContentView>
                                     <ContentView
                                         AutomationId="layout-lab-child-horizontal-stack-constrained-width-overflow-clipped-secondary"
+                                    StyleClass="showcase-layout-child-probe"
                                         HeightRequest="66"
                                         WidthRequest="220">
                                         <Label Text="Clip B" />
@@ -581,6 +673,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-horizontal-stack-stretch-cross-axis"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="1">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Cross-axis stretch behavior" />
@@ -590,11 +683,13 @@
                                 Text="Expected: Child probe fills available height in row-flow cross axis." />
                             <ContentView
                                 AutomationId="layout-lab-parent-horizontal-stack-stretch-cross-axis"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="150"
                                 WidthRequest="360">
                                 <HorizontalStackLayout Spacing="8">
                                     <ContentView
                                         AutomationId="layout-lab-child-horizontal-stack-stretch-cross-axis-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         VerticalOptions="Fill"
                                         WidthRequest="98">
                                         <Label Text="Stretch height" />
@@ -612,6 +707,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-horizontal-stack-centered-child"
                         Grid.Column="1"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="1">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Centered child alignment" />
@@ -621,6 +717,7 @@
                                 Text="Expected: Child remains vertically centered inside row host." />
                             <ContentView
                                 AutomationId="layout-lab-parent-horizontal-stack-centered-child"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="150"
                                 WidthRequest="360">
                                 <HorizontalStackLayout Spacing="8">
@@ -631,6 +728,7 @@
                                     </ContentView>
                                     <ContentView
                                         AutomationId="layout-lab-child-horizontal-stack-centered-child-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         HeightRequest="52"
                                         VerticalOptions="Center"
                                         WidthRequest="124">
@@ -644,6 +742,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-horizontal-stack-hidden-child-collapse"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.ColumnSpan="2"
                         Grid.Row="2">
                         <VerticalStackLayout Spacing="6">
@@ -654,12 +753,14 @@
                                 Text="Expected: Hidden middle child is removed from row flow and spacing updates accordingly." />
                             <ContentView
                                 AutomationId="layout-lab-parent-horizontal-stack-hidden-child-collapse"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="130"
                                 WidthRequest="360">
                                 <HorizontalStackLayout Spacing="14">
                                     <Label Text="Visible A" />
                                     <Label
                                         AutomationId="layout-lab-child-horizontal-stack-hidden-child-collapse-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         IsVisible="False"
                                         Text="Hidden B" />
                                     <Label Text="Visible C" />
@@ -675,6 +776,9 @@
                 Spacing="8">
                 <Label
                     AutomationId="layout-lab-group-grid-title"
+                    Style="{StaticResource SubHeadline}"
+                    HorizontalOptions="Start"
+                    HorizontalTextAlignment="Start"
                     Text="Group D — Grid parent scenarios" />
                 <Grid
                     AutomationId="layout-lab-matrix-grid"
@@ -683,6 +787,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-grid-single-cell-fixed"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="0">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Single-cell fixed grid" />
@@ -692,11 +797,13 @@
                                 Text="Expected: Child is constrained by the single fixed cell and remains centered." />
                             <ContentView
                                 AutomationId="layout-lab-parent-grid-single-cell-fixed"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="170"
                                 WidthRequest="320">
                                 <Grid ColumnDefinitions="*" RowDefinitions="*">
                                     <Button
                                         AutomationId="layout-lab-child-grid-single-cell-fixed-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         HorizontalOptions="Center"
                                         Text="Single-cell"
                                         VerticalOptions="Center" />
@@ -708,6 +815,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-grid-placement-rows-columns"
                         Grid.Column="1"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="0">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Row/column placement" />
@@ -717,21 +825,25 @@
                                 Text="Expected: Probes land in configured grid coordinates and preserve row/column ordering." />
                             <ContentView
                                 AutomationId="layout-lab-parent-grid-placement-rows-columns"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="170"
                                 WidthRequest="320">
                                 <Grid ColumnDefinitions="*,*" RowDefinitions="*,*">
                                     <Label
                                         AutomationId="layout-lab-child-grid-placement-rows-columns-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         Grid.Column="0"
                                         Grid.Row="0"
                                         Text="r0c0" />
                                     <Label
                                         AutomationId="layout-lab-child-grid-placement-rows-columns-r0c1"
+                                    StyleClass="showcase-layout-child-probe"
                                         Grid.Column="1"
                                         Grid.Row="0"
                                         Text="r0c1" />
                                     <Label
                                         AutomationId="layout-lab-child-grid-placement-rows-columns-r1c0"
+                                    StyleClass="showcase-layout-child-probe"
                                         Grid.Column="0"
                                         Grid.Row="1"
                                         Text="r1c0" />
@@ -744,6 +856,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-grid-row-column-span"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="1">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Row/column span" />
@@ -753,11 +866,13 @@
                                 Text="Expected: Spanning child consumes two columns and width exceeds single-cell peers." />
                             <ContentView
                                 AutomationId="layout-lab-parent-grid-row-column-span"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="170"
                                 WidthRequest="320">
                                 <Grid ColumnDefinitions="*,*,*" RowDefinitions="*,*">
                                     <ContentView
                                         AutomationId="layout-lab-child-grid-row-column-span-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         Grid.Column="0"
                                         Grid.ColumnSpan="2"
                                         Grid.Row="0">
@@ -765,6 +880,7 @@
                                     </ContentView>
                                     <Label
                                         AutomationId="layout-lab-child-grid-row-column-span-peer"
+                                    StyleClass="showcase-layout-child-probe"
                                         Grid.Column="2"
                                         Grid.Row="0"
                                         Text="peer" />
@@ -777,6 +893,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-grid-auto-star-absolute-tracks"
                         Grid.Column="1"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="1">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Auto / Star / Absolute tracks" />
@@ -786,11 +903,13 @@
                                 Text="Expected: Auto tracks fit content, star consumes remaining space, absolute track stays fixed." />
                             <ContentView
                                 AutomationId="layout-lab-parent-grid-auto-star-absolute-tracks"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="170"
                                 WidthRequest="320">
                                 <Grid ColumnDefinitions="Auto,*,120" RowDefinitions="Auto,*">
                                     <Label
                                         AutomationId="layout-lab-child-grid-auto-star-absolute-tracks-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         Grid.Column="0"
                                         Grid.Row="0"
                                         Text="auto" />
@@ -813,6 +932,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-grid-cell-alignment-and-visibility"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.ColumnSpan="2"
                         Grid.Row="2">
                         <VerticalStackLayout Spacing="6">
@@ -823,11 +943,13 @@
                                 Text="Expected: Primary child stays centered in its cell while hidden peer does not render." />
                             <ContentView
                                 AutomationId="layout-lab-parent-grid-cell-alignment-and-visibility"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="170"
                                 WidthRequest="320">
                                 <Grid ColumnDefinitions="*,*" RowDefinitions="*,*">
                                     <ContentView
                                         AutomationId="layout-lab-child-grid-cell-alignment-and-visibility-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         Grid.Column="0"
                                         Grid.Row="0"
                                         HeightRequest="48"
@@ -851,6 +973,9 @@
                 Spacing="8">
                 <Label
                     AutomationId="layout-lab-group-nested-title"
+                    Style="{StaticResource SubHeadline}"
+                    HorizontalOptions="Start"
+                    HorizontalTextAlignment="Start"
                     Text="Group E — Nested layout scenarios" />
                 <Grid
                     AutomationId="layout-lab-matrix-nested"
@@ -859,6 +984,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-nested-grid-in-contentview"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="0">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Grid inside ContentView" />
@@ -868,11 +994,13 @@
                                 Text="Expected: Nested grid receives bounded area from outer ContentView and lays out children by cell." />
                             <ContentView
                                 AutomationId="layout-lab-parent-nested-grid-in-contentview"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="210"
                                 WidthRequest="340">
                                 <Grid ColumnDefinitions="*,*" RowDefinitions="*,*">
                                     <ContentView
                                         AutomationId="layout-lab-child-nested-grid-in-contentview-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                         Grid.Column="0"
                                         Grid.Row="0">
                                         <Label Text="nested r0c0" />
@@ -887,6 +1015,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-nested-vertical-in-grid"
                         Grid.Column="1"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="0">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="VerticalStackLayout inside Grid" />
@@ -896,12 +1025,14 @@
                                 Text="Expected: Vertical stack receives grid-cell constraints and preserves spacing order." />
                             <ContentView
                                 AutomationId="layout-lab-parent-nested-vertical-in-grid"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="210"
                                 WidthRequest="340">
                                 <Grid ColumnDefinitions="*" RowDefinitions="*">
                                     <VerticalStackLayout Grid.Column="0" Grid.Row="0" Spacing="10">
                                         <Label
                                             AutomationId="layout-lab-child-nested-vertical-in-grid-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                             Text="nested stack A" />
                                         <Label Text="nested stack B" />
                                         <Label Text="nested stack C" />
@@ -914,6 +1045,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-nested-horizontal-in-vertical"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="1">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="HorizontalStackLayout inside VerticalStackLayout" />
@@ -923,6 +1055,7 @@
                                 Text="Expected: Inner row flow stays horizontal while outer parent stacks sections vertically." />
                             <ContentView
                                 AutomationId="layout-lab-parent-nested-horizontal-in-vertical"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="210"
                                 WidthRequest="340">
                                 <VerticalStackLayout Spacing="10">
@@ -930,6 +1063,7 @@
                                     <HorizontalStackLayout Spacing="10">
                                         <ContentView
                                             AutomationId="layout-lab-child-nested-horizontal-in-vertical-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                             HeightRequest="56"
                                             WidthRequest="98">
                                             <Label Text="inner row A" />
@@ -948,6 +1082,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-nested-fixed-nested-in-bounded"
                         Grid.Column="1"
+                        StyleClass="showcase-layout-card"
                         Grid.Row="1">
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Fixed nested parent inside bounded parent" />
@@ -957,10 +1092,12 @@
                                 Text="Expected: Fixed nested parent remains bounded and centered within outer constraints." />
                             <ContentView
                                 AutomationId="layout-lab-parent-nested-fixed-nested-in-bounded"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="180"
                                 WidthRequest="320">
                                 <ContentView
                                     AutomationId="layout-lab-child-nested-fixed-nested-in-bounded-primary"
+                                    StyleClass="showcase-layout-child-probe"
                                     HeightRequest="96"
                                     HorizontalOptions="Center"
                                     VerticalOptions="Center"
@@ -974,6 +1111,7 @@
                     <ContentView
                         AutomationId="layout-lab-card-nested-auto-nested-with-siblings"
                         Grid.Column="0"
+                        StyleClass="showcase-layout-card"
                         Grid.ColumnSpan="2"
                         Grid.Row="2">
                         <VerticalStackLayout Spacing="6">
@@ -984,14 +1122,17 @@
                                 Text="Expected: Auto-sized nested content measures naturally while sibling sections remain ordered and visible." />
                             <ContentView
                                 AutomationId="layout-lab-parent-nested-auto-nested-with-siblings"
+                                StyleClass="showcase-layout-parent-surface"
                                 HeightRequest="220"
                                 WidthRequest="340">
                                 <VerticalStackLayout Spacing="8">
                                     <Label
                                         AutomationId="layout-lab-child-nested-auto-nested-with-siblings-first"
+                                    StyleClass="showcase-layout-child-probe"
                                         Text="Sibling A" />
                                     <ContentView
-                                        AutomationId="layout-lab-child-nested-auto-nested-with-siblings-primary">
+                                        AutomationId="layout-lab-child-nested-auto-nested-with-siblings-primary"
+                                    StyleClass="showcase-layout-child-probe">
                                         <VerticalStackLayout Spacing="4">
                                             <Label Text="Auto nested block" />
                                             <Label Text="Natural height content" />
@@ -999,6 +1140,7 @@
                                     </ContentView>
                                     <Label
                                         AutomationId="layout-lab-child-nested-auto-nested-with-siblings-third"
+                                    StyleClass="showcase-layout-child-probe"
                                         Text="Sibling B" />
                                 </VerticalStackLayout>
                             </ContentView>
@@ -1006,18 +1148,21 @@
                     </ContentView>
                 </Grid>
             </VerticalStackLayout>
-        </VerticalStackLayout>
+            </VerticalStackLayout>
+        </ContentView>
 
-        <VerticalStackLayout
-            AutomationId="showcase-trust-signal"
-            Spacing="4">
-            <Label
-                AutomationId="showcase-runtime-badge"
-                Text="This page itself is running as a Mirage application using the Fluent provider." />
-            <Label
-                AutomationId="showcase-runtime-badge-detail"
-                Text="The UI you see here is rendered by Mirage." />
-        </VerticalStackLayout>
+        <ContentView Style="{StaticResource ShowcaseSectionCardFrame}">
+            <VerticalStackLayout
+                AutomationId="showcase-trust-signal"
+                Style="{StaticResource ShowcaseSectionCardBody}">
+                <Label
+                    AutomationId="showcase-runtime-badge"
+                    Text="This page itself is running as a Mirage application using the Fluent provider." />
+                <Label
+                    AutomationId="showcase-runtime-badge-detail"
+                    Text="The UI you see here is rendered by Mirage." />
+            </VerticalStackLayout>
+        </ContentView>
 
         </VerticalStackLayout>
         </ScrollView>
