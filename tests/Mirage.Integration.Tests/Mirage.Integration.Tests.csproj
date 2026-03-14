@@ -18,6 +18,8 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageRenderCoordinator.cs" Link="Handlers\MirageRenderCoordinator.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageHandlerDisconnect.cs" Link="Handlers\MirageHandlerDisconnect.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageViewHandler.cs" Link="Handlers\MirageViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageSingleContentHostHandler.cs" Link="Handlers\MirageSingleContentHostHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentViewHandlerBase.cs" Link="Handlers\MirageContentViewHandlerBase.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentPageHandler.cs" Link="Handlers\MirageContentPageHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentViewHandler.cs" Link="Handlers\MirageContentViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageButtonHandler.cs" Link="Handlers\MirageButtonHandler.cs" />

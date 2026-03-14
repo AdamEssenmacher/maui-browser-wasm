@@ -75,7 +75,7 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void CommonMapper_MapsOpacityBackgroundAndSizeRequests()
+    public void CommonMapper_MapsOpacityBackgroundAndSizeRequestConstraints()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
         var view = new Label
@@ -238,15 +238,13 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void CommonMapper_SizeRequests_DoNotClearExistingWidthUntilRequestWasApplied()
+    public void CommonMapper_SizeRequests_ProjectsAndClearsWidthRequestDeterministically()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
         var view = new Label();
 
-        handler.Node.SetStyle("width", "100%");
-
         MirageViewMapper.MapSizeRequests(handler, view);
-        Assert.Equal("100%", handler.Node.GetStyleValue("width"));
+        Assert.Null(handler.Node.GetStyleValue("width"));
 
         view.WidthRequest = 132;
         MirageViewMapper.MapSizeRequests(handler, view);
@@ -639,6 +637,34 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal(72, currentTop);
     }
 
+    [Theory]
+    [InlineData(ScrollOrientation.Vertical, false, true)]
+    [InlineData(ScrollOrientation.Horizontal, true, false)]
+    [InlineData(ScrollOrientation.Both, true, true)]
+    public void ScrollViewHandler_GetDesiredSize_UsesInfiniteConstraintOnScrollAxis(
+        ScrollOrientation orientation,
+        bool expectInfiniteWidthConstraint,
+        bool expectInfiniteHeightConstraint)
+    {
+        var probe = new MeasureProbeContentView();
+        var scrollView = new ScrollView
+        {
+            Orientation = orientation,
+            Content = probe
+        };
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        var desired = handler.GetDesiredSize(320, 180);
+
+        Assert.True(probe.MeasureCount > 0, "Expected probe content to be measured.");
+        Assert.Equal(expectInfiniteWidthConstraint, double.IsPositiveInfinity(probe.LastWidthConstraint));
+        Assert.Equal(expectInfiniteHeightConstraint, double.IsPositiveInfinity(probe.LastHeightConstraint));
+        Assert.Equal(320, desired.Width);
+        Assert.Equal(180, desired.Height);
+    }
+
     [Fact]
     public void ScrollViewHandler_RequestScrollTo_ExecutesThroughCoordinatorRuntimeBridge()
     {
@@ -769,6 +795,80 @@ public sealed class HandlerRuntimeIntegrationTests
 
         Assert.Equal("programmatic-value", entry.Text);
         Assert.Equal("programmatic-value", handler.PlatformView.GetPropertyString("Text"));
+    }
+
+    [Fact]
+    public void ContentPage_PlatformArrange_ForwardsArrangeToDirectContent()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var probe = new ArrangeProbeContentView();
+
+        var probeHandler = new MirageContentViewHandler();
+        ((IElementHandler)probeHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)probeHandler).SetVirtualView(probe);
+
+        var page = new ContentPage
+        {
+            Content = probe
+        };
+
+        var pageHandler = new MirageContentPageHandler();
+        ((IElementHandler)pageHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)pageHandler).SetVirtualView(page);
+        pageHandler.PlatformArrange(new Rect(0, 0, 360, 640));
+
+        Assert.True(probe.ArrangeCount > 0, "Expected direct ContentPage child to be arranged at least once.");
+        Assert.True(probe.LastArrangeBounds.Width > 0, $"Expected arranged width > 0. Actual={probe.LastArrangeBounds.Width}");
+        Assert.True(probe.LastArrangeBounds.Height > 0, $"Expected arranged height > 0. Actual={probe.LastArrangeBounds.Height}");
+    }
+
+    [Fact]
+    public void ContentView_PlatformArrange_ForwardsArrangeToNestedContent()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var probe = new ArrangeProbeContentView();
+
+        var probeHandler = new MirageContentViewHandler();
+        ((IElementHandler)probeHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)probeHandler).SetVirtualView(probe);
+
+        var nestedHost = new ContentView
+        {
+            Content = probe
+        };
+        var nestedHostHandler = new MirageContentViewHandler();
+        ((IElementHandler)nestedHostHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)nestedHostHandler).SetVirtualView(nestedHost);
+
+        var page = new ContentPage
+        {
+            Content = nestedHost
+        };
+
+        var pageHandler = new MirageContentPageHandler();
+        ((IElementHandler)pageHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)pageHandler).SetVirtualView(page);
+        pageHandler.PlatformArrange(new Rect(0, 0, 360, 640));
+
+        Assert.True(probe.ArrangeCount > 0, "Expected nested ContentView child to be arranged at least once.");
+        Assert.True(probe.LastArrangeBounds.Width > 0, $"Expected arranged width > 0. Actual={probe.LastArrangeBounds.Width}");
+        Assert.True(probe.LastArrangeBounds.Height > 0, $"Expected arranged height > 0. Actual={probe.LastArrangeBounds.Height}");
     }
 
     [Fact]
@@ -1272,5 +1372,36 @@ public sealed class HandlerRuntimeIntegrationTests
         }
 
         return null;
+    }
+
+    private sealed class ArrangeProbeContentView : ContentView
+    {
+        public int ArrangeCount { get; private set; }
+
+        public Rect LastArrangeBounds { get; private set; } = Rect.Zero;
+
+        protected override Size ArrangeOverride(Rect bounds)
+        {
+            ArrangeCount++;
+            LastArrangeBounds = bounds;
+            return base.ArrangeOverride(bounds);
+        }
+    }
+
+    private sealed class MeasureProbeContentView : ContentView
+    {
+        public int MeasureCount { get; private set; }
+
+        public double LastWidthConstraint { get; private set; }
+
+        public double LastHeightConstraint { get; private set; }
+
+        protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
+        {
+            MeasureCount++;
+            LastWidthConstraint = widthConstraint;
+            LastHeightConstraint = heightConstraint;
+            return new Size(640, 420);
+        }
     }
 }

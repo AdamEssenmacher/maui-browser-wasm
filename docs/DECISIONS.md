@@ -286,6 +286,16 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Detached fallback now clears any existing staged element `NameScope` before reloading XAML, preventing constructor-preloaded pages from failing hot reload with duplicate `x:Name` registrations (for example `BacklogTableHost`).
 - Element hot-reload apply now accepts the service-tracked primary host window as an explicit fallback lookup for page-swap reload, so constructor-injected pages can still reload when `Page.Window`/`Application.Windows` are not populated in browser-hosted sessions; page failure errors now prioritize page-swap root cause over the generic in-place unsupported-page message.
 
+## 2026-03-13 (Showcase Layout Lab Routed-Page Split)
+- Moved `Layout Lab` from an embedded hero section into a dedicated `ShowcaseLayoutLabPage` mapped to `/layout-lab`, while keeping the same layout probe automation IDs and scenario matrix for geometry/assertion continuity.
+- Updated hero CTA behavior from in-page section scrolling to page navigation, preserving the `demo` in-page scroll CTA and route-driven `NavigationPage` stack semantics for lab navigation.
+- Retargeted Showcase E2E coverage to the routed layout-lab page (`showcase-page-layout-lab` / `layout-lab-scroll-root`) for layout geometry checks and explicit scroll-surface assertions.
+
+## 2026-03-14 (Showcase Hero Live Demo Removal)
+- Removed the `Live Mirage Demo` card from `ShowcaseHeroPage.xaml`, including the entry/button/greeting probes and the embedded generic webnode demo host.
+- Simplified hero CTA surface to keep only page-navigation actions (`Open Layout Lab`, navigation-lab/project routing) and removed hero-side in-page demo scroll behavior.
+- Updated `ShowcaseFluentHeroE2ETests` expectations to enforce demo/generic-surface absence on hero while keeping layout-lab and navigation-shell assertions intact.
+
 ## 2026-03-09 (Hot Reload Null-PlatformView Lifecycle Hardening)
 - Hot-reload element apply now treats MAUI handler `PlatformView` getter failures (`PlatformView cannot be null here`) as a missing-platform state, so detached/page-swap fallback can run instead of failing early on the getter access itself.
 - `MirageContentPageHandler` and `MirageContentViewHandler` now tolerate pre-connect and post-disconnect mapper calls by short-circuiting child projection when no platform view is attached, while preserving the next-connect content rebuild path.

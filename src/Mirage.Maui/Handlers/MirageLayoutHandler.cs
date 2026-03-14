@@ -76,6 +76,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
 
     public override void PlatformArrange(Rect frame)
     {
+        base.PlatformArrange(frame);
         VirtualView.CrossPlatformArrange(new Rect(0, 0, frame.Width, frame.Height));
     }
 

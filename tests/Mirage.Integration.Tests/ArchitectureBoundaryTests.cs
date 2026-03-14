@@ -193,12 +193,61 @@ public sealed class ArchitectureBoundaryTests
         Assert.True(Directory.Exists(handlersPath), $"Handlers path was not found: {handlersPath}");
 
         var windowText = File.ReadAllText(Path.Combine(handlersPath, "MirageWindowHandler.cs"));
+        var contentContainerText = File.ReadAllText(Path.Combine(handlersPath, "MirageContentViewHandlerBase.cs"));
         var pageText = File.ReadAllText(Path.Combine(handlersPath, "MirageContentPageHandler.cs"));
 
         Assert.Contains("overflow\", \"hidden\"", windowText, StringComparison.Ordinal);
         Assert.DoesNotContain("overflowY\", \"auto\"", windowText, StringComparison.Ordinal);
-        Assert.Contains("overflow\", \"hidden\"", pageText, StringComparison.Ordinal);
-        Assert.DoesNotContain("overflowY\", \"auto\"", pageText, StringComparison.Ordinal);
+        Assert.Contains("overflow\", \"hidden\"", contentContainerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("overflowY\", \"auto\"", contentContainerText, StringComparison.Ordinal);
+        Assert.Contains("IsBoundedPageSurface => true", pageText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ContainerHandlers_ForwardArrangeThroughBaseAndCrossPlatformLayout()
+    {
+        var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");
+        Assert.True(Directory.Exists(handlersPath), $"Handlers path was not found: {handlersPath}");
+
+        var directContainerHandlerFiles = new[]
+        {
+            "MirageLayoutHandler.cs",
+            "MirageScrollViewHandler.cs",
+            "MirageNavigationPageHandler.cs"
+        };
+
+        foreach (var file in directContainerHandlerFiles)
+        {
+            var fullPath = Path.Combine(handlersPath, file);
+            Assert.True(File.Exists(fullPath), $"Expected handler file not found: {fullPath}");
+            var text = File.ReadAllText(fullPath);
+            Assert.Contains("base.PlatformArrange(frame);", text, StringComparison.Ordinal);
+        }
+
+        var contentContainerBasePath = Path.Combine(handlersPath, "MirageContentViewHandlerBase.cs");
+        Assert.True(File.Exists(contentContainerBasePath), $"Expected handler file not found: {contentContainerBasePath}");
+        var contentContainerBaseText = File.ReadAllText(contentContainerBasePath);
+        Assert.Contains(": MirageSingleContentHostHandler", contentContainerBaseText, StringComparison.Ordinal);
+        Assert.Contains("base.PlatformArrange(frame);", contentContainerBaseText, StringComparison.Ordinal);
+        Assert.Contains("VirtualView.CrossPlatformArrange", contentContainerBaseText, StringComparison.Ordinal);
+        Assert.Contains("NormalizeHostedContentFlowStyles", contentContainerBaseText, StringComparison.Ordinal);
+        Assert.DoesNotContain("SetStyle(\"width\", MirageViewMapper.ToPx", contentContainerBaseText, StringComparison.Ordinal);
+        Assert.DoesNotContain("SetStyle(\"height\", MirageViewMapper.ToPx", contentContainerBaseText, StringComparison.Ordinal);
+
+        var singleContentHostBasePath = Path.Combine(handlersPath, "MirageSingleContentHostHandler.cs");
+        Assert.True(File.Exists(singleContentHostBasePath), $"Expected handler file not found: {singleContentHostBasePath}");
+        var singleContentHostBaseText = File.ReadAllText(singleContentHostBasePath);
+        Assert.Contains("SetPresentedContent", singleContentHostBaseText, StringComparison.Ordinal);
+        Assert.Contains("DisconnectCurrentPresentedContent", singleContentHostBaseText, StringComparison.Ordinal);
+        Assert.Contains("NormalizeHostedContentFlowStyles", singleContentHostBaseText, StringComparison.Ordinal);
+
+        var contentViewHandlerText = File.ReadAllText(Path.Combine(handlersPath, "MirageContentViewHandler.cs"));
+        var contentPageHandlerText = File.ReadAllText(Path.Combine(handlersPath, "MirageContentPageHandler.cs"));
+        var scrollViewHandlerText = File.ReadAllText(Path.Combine(handlersPath, "MirageScrollViewHandler.cs"));
+        Assert.Contains(": MirageContentViewHandlerBase<ContentView>", contentViewHandlerText, StringComparison.Ordinal);
+        Assert.Contains(": MirageContentViewHandlerBase<ContentPage>", contentPageHandlerText, StringComparison.Ordinal);
+        Assert.Contains(": MirageSingleContentHostHandler<IScrollView>", scrollViewHandlerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("NormalizeContentPosition(", scrollViewHandlerText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -313,6 +362,7 @@ public sealed class ArchitectureBoundaryTests
         var text = File.ReadAllText(handlerPath);
         Assert.DoesNotContain("SetStyle(\"width\", \"100%\")", text, StringComparison.Ordinal);
         Assert.DoesNotContain("SetStyle(\"height\", \"100%\")", text, StringComparison.Ordinal);
+        Assert.Contains("double.PositiveInfinity", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -374,6 +424,8 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("MapCharacterSpacing", projectionText, StringComparison.Ordinal);
         Assert.Contains("MapSizeRequests", projectionText, StringComparison.Ordinal);
         Assert.Contains("MapLayoutAlignment", projectionText, StringComparison.Ordinal);
+        Assert.Contains("ApplyRequestedLength(platformHandler, \"width\"", projectionText, StringComparison.Ordinal);
+        Assert.Contains("ApplyRequestedLength(platformHandler, \"height\"", projectionText, StringComparison.Ordinal);
     }
 
     private static string GetRepositoryRoot()
