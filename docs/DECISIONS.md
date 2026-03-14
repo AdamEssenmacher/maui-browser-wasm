@@ -344,3 +344,8 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added a browser-to-MAUI theme bridge in Mirage host/runtime interop by wiring `prefers-color-scheme` read + change subscription through `mirage-dom.js` and `DomApi`/`DomElement`.
 - `MirageBrowserAppHost` now applies browser light/dark preference to `Application.UserAppTheme` at startup and on media-query changes, so MAUI `AppThemeBinding` resources resolve and update in browser-hosted apps.
 - Theme updates stay dispatcher-safe and do not introduce provider/runtime semantic changes beyond theme projection.
+
+## 2026-03-14 (Sample XAML Flow Alignment: SourceGen + InitializeComponent)
+- Sample app code-behind now follows normal MAUI conventions by calling `InitializeComponent()` directly instead of helper wrappers around `LoadFromXaml(typeof(...))`.
+- Enabled `MauiXamlInflator=SourceGen` across browser/shared sample projects (`Counter.Fluent`, `Showcase.Fluent`, `Counter.Shared`, `Showcase.Shared`, `Maui.Browser.Sample`) so Debug and Release builds use compile-time generated XAML paths.
+- Removed sample-only `IL2026` suppressions tied to runtime XAML inflation in style dictionary code-behind files.

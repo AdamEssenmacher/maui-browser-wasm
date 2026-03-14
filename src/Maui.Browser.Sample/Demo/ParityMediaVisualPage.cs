@@ -1,7 +1,6 @@
 using System.Text;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Shapes;
-using Microsoft.Maui.Controls.Xaml;
 using Microsoft.Maui.Graphics;
 
 namespace Maui.Browser.Sample.Demo;
@@ -15,7 +14,7 @@ public partial class ParityMediaVisualPage : ContentPage
 
     public ParityMediaVisualPage()
     {
-        LoadXamlFromResource();
+        InitializeComponent();
         BindingContext = _state;
         ApplyCurrentImageSource();
         ApplyCurrentAspect();
@@ -165,12 +164,5 @@ public partial class ParityMediaVisualPage : ContentPage
                 border.StrokeDashOffset = 0;
                 break;
         }
-    }
-
-    private void LoadXamlFromResource()
-    {
-#pragma warning disable IL2026
-        this.LoadFromXaml(typeof(ParityMediaVisualPage));
-#pragma warning restore IL2026
     }
 }

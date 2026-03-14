@@ -1,5 +1,4 @@
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Xaml;
 
 namespace Maui.Browser.Sample.Demo;
 
@@ -9,7 +8,7 @@ public partial class ShowcaseLayoutCollectionPage : ContentPage
 
     public ShowcaseLayoutCollectionPage()
     {
-        LoadXamlFromResource();
+        InitializeComponent();
         BindingContext = _state;
     }
 
@@ -61,12 +60,5 @@ public partial class ShowcaseLayoutCollectionPage : ContentPage
     private void OnToggleRefreshEnabledClicked(object? sender, EventArgs e)
     {
         _state.ToggleRefreshEnabled();
-    }
-
-    private void LoadXamlFromResource()
-    {
-#pragma warning disable IL2026
-        this.LoadFromXaml(typeof(ShowcaseLayoutCollectionPage));
-#pragma warning restore IL2026
     }
 }

@@ -2,7 +2,6 @@ using System.ComponentModel;
 using Maui.Browser.Dom;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Xaml;
 
 namespace Maui.Browser.Sample.Demo;
 
@@ -16,7 +15,7 @@ public partial class ParityLabelPage : ContentPage
 
     public ParityLabelPage()
     {
-        LoadXamlFromResource();
+        InitializeComponent();
         BindingContext = _state;
         _state.PropertyChanged += OnStatePropertyChanged;
         var livePreviewLabel = LivePreviewLabelElement;
@@ -60,13 +59,6 @@ public partial class ParityLabelPage : ContentPage
     {
         _state.TextTransformProbeIndex = (_state.TextTransformProbeIndex + 1) % 3;
         ApplyTextTransformProbe();
-    }
-
-    private void LoadXamlFromResource()
-    {
-#pragma warning disable IL2026
-        this.LoadFromXaml(typeof(ParityLabelPage));
-#pragma warning restore IL2026
     }
 
     private void ApplyGapProbeState()

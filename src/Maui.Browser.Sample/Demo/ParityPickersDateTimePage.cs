@@ -1,5 +1,4 @@
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Xaml;
 
 namespace Maui.Browser.Sample.Demo;
 
@@ -10,7 +9,7 @@ public partial class ParityPickersDateTimePage : ContentPage
 
     public ParityPickersDateTimePage()
     {
-        LoadXamlFromResource();
+        InitializeComponent();
         BindingContext = _state;
     }
 
@@ -33,13 +32,6 @@ public partial class ParityPickersDateTimePage : ContentPage
     {
         _state.ApplyProgrammaticUpdate();
         ReapplyStepperVisibility();
-    }
-
-    private void LoadXamlFromResource()
-    {
-#pragma warning disable IL2026
-        this.LoadFromXaml(typeof(ParityPickersDateTimePage));
-#pragma warning restore IL2026
     }
 
     private void ReapplyStepperVisibility()

@@ -1,5 +1,4 @@
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Xaml;
 
 namespace Maui.Browser.Sample.Demo;
 
@@ -10,7 +9,7 @@ public partial class ShowcaseTextInputPage : ContentPage
 
     public ShowcaseTextInputPage()
     {
-        LoadXamlFromResource();
+        InitializeComponent();
         BindingContext = _state;
     }
 
@@ -65,12 +64,5 @@ public partial class ShowcaseTextInputPage : ContentPage
 
         searchBar.IsVisible = false;
         searchBar.IsVisible = true;
-    }
-
-    private void LoadXamlFromResource()
-    {
-#pragma warning disable IL2026
-        this.LoadFromXaml(typeof(ShowcaseTextInputPage));
-#pragma warning restore IL2026
     }
 }

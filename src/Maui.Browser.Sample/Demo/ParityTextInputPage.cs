@@ -1,6 +1,5 @@
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Xaml;
 
 namespace Maui.Browser.Sample.Demo;
 
@@ -12,7 +11,7 @@ public partial class ParityTextInputPage : ContentPage
 
     public ParityTextInputPage()
     {
-        LoadXamlFromResource();
+        InitializeComponent();
         BindingContext = _state;
         ApplyLabelMode();
     }
@@ -62,13 +61,6 @@ public partial class ParityTextInputPage : ContentPage
 
         labelProbe.LineBreakMode = LineBreakMode.WordWrap;
         labelProbe.MaxLines = 3;
-    }
-
-    private void LoadXamlFromResource()
-    {
-#pragma warning disable IL2026
-        this.LoadFromXaml(typeof(ParityTextInputPage));
-#pragma warning restore IL2026
     }
 
     private void ReapplySearchBarVisibility()

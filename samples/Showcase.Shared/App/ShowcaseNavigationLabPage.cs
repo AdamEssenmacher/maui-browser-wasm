@@ -1,5 +1,4 @@
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Xaml;
 
 namespace Showcase.Shared.App;
 
@@ -12,7 +11,7 @@ public partial class ShowcaseNavigationLabPage : ContentPage
 
     public ShowcaseNavigationLabPage()
     {
-        LoadXamlFromResource();
+        InitializeComponent();
         BuildToolbarItems();
         ApplyChromeProbeState();
     }
@@ -165,12 +164,5 @@ public partial class ShowcaseNavigationLabPage : ContentPage
         {
             NavigationLabToolbarCountLabel.Text = $"Toolbar command count: {_toolbarCommandCount}";
         }
-    }
-
-    private void LoadXamlFromResource()
-    {
-#pragma warning disable IL2026
-        this.LoadFromXaml(typeof(ShowcaseNavigationLabPage));
-#pragma warning restore IL2026
     }
 }
