@@ -164,14 +164,7 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
 
     private bool UpdateBackgroundStyles(ITextButton button)
     {
-        // Fluent button visuals are rendered inside an internal control surface.
-        // Avoid painting the host shell; push solid background intents through Fluent tokens.
-        var changed = SetStyleIfChanged("backgroundColor", null);
-        changed |= SetStyleIfChanged("backgroundImage", null);
-        changed |= SetStyleIfChanged("backgroundSize", null);
-        changed |= SetStyleIfChanged("backgroundRepeat", null);
-        changed |= SetStyleIfChanged("backgroundPosition", null);
-
+        var hasExplicitBackgroundPaint = button.Background is not null;
         var backgroundColor = button.Background switch
         {
             SolidPaint solidPaint => MirageCommonViewProjection.ToCssColor(solidPaint.Color),
@@ -179,19 +172,41 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         };
 
         if (backgroundColor is null
+            && !hasExplicitBackgroundPaint
             && button is VisualElement visualElement
             && visualElement.BackgroundColor is { } backgroundColorValue)
         {
             backgroundColor = MirageCommonViewProjection.ToCssColor(backgroundColorValue);
         }
 
-        changed |= SetStyleIfChanged("--accent-fill-rest", backgroundColor);
-        changed |= SetStyleIfChanged("--accent-fill-hover", backgroundColor);
-        changed |= SetStyleIfChanged("--accent-fill-active", backgroundColor);
-        changed |= SetStyleIfChanged("--neutral-fill-rest", backgroundColor);
-        changed |= SetStyleIfChanged("--neutral-fill-hover", backgroundColor);
-        changed |= SetStyleIfChanged("--neutral-fill-active", backgroundColor);
-        return changed;
+        if (backgroundColor is null)
+        {
+            // Non-solid paints (such as gradients) should continue to project through the common view path.
+            // Clear Fluent token overrides so provider defaults remain intact when no solid color is set.
+            var projectionChanged = SetStyleIfChanged("--accent-fill-rest", null);
+            projectionChanged |= SetStyleIfChanged("--accent-fill-hover", null);
+            projectionChanged |= SetStyleIfChanged("--accent-fill-active", null);
+            projectionChanged |= SetStyleIfChanged("--neutral-fill-rest", null);
+            projectionChanged |= SetStyleIfChanged("--neutral-fill-hover", null);
+            projectionChanged |= SetStyleIfChanged("--neutral-fill-active", null);
+            projectionChanged |= MirageCommonViewProjection.MapBackground(this, button);
+            return projectionChanged;
+        }
+
+        // Fluent button visuals are rendered inside an internal control surface.
+        // Avoid painting the host shell; push solid background intents through Fluent tokens.
+        var solidChanged = SetStyleIfChanged("backgroundColor", null);
+        solidChanged |= SetStyleIfChanged("backgroundImage", null);
+        solidChanged |= SetStyleIfChanged("backgroundSize", null);
+        solidChanged |= SetStyleIfChanged("backgroundRepeat", null);
+        solidChanged |= SetStyleIfChanged("backgroundPosition", null);
+        solidChanged |= SetStyleIfChanged("--accent-fill-rest", backgroundColor);
+        solidChanged |= SetStyleIfChanged("--accent-fill-hover", backgroundColor);
+        solidChanged |= SetStyleIfChanged("--accent-fill-active", backgroundColor);
+        solidChanged |= SetStyleIfChanged("--neutral-fill-rest", backgroundColor);
+        solidChanged |= SetStyleIfChanged("--neutral-fill-hover", backgroundColor);
+        solidChanged |= SetStyleIfChanged("--neutral-fill-active", backgroundColor);
+        return solidChanged;
     }
 
     private bool UpdateTextColorStyles(ITextButton button)

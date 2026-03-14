@@ -130,7 +130,7 @@
                             HeightRequest="220"
                             ItemsSource="{Binding Items}">
                             <CollectionView.ItemTemplate>
-                                <DataTemplate>
+                                <DataTemplate x:DataType="demo:ShowcaseFeedItem">
                                     <Border
                                         AutomationId="showcase-layout-item-row"
                                         Margin="0,0,0,8"

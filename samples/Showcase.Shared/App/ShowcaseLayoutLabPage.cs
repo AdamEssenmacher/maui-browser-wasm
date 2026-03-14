@@ -1,5 +1,4 @@
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Xaml;
 
 namespace Showcase.Shared.App;
 
@@ -14,7 +13,7 @@ public partial class ShowcaseLayoutLabPage : ContentPage
     {
         _state = new ShowcaseState();
         BindingContext = _state;
-        LoadXamlFromResource();
+        InitializeComponent();
     }
 
     private async void OnLayoutLabScrollToTopClicked(object? sender, EventArgs e)
@@ -100,12 +99,5 @@ public partial class ShowcaseLayoutLabPage : ContentPage
                 }
             }
         }
-    }
-
-    private void LoadXamlFromResource()
-    {
-#pragma warning disable IL2026
-        this.LoadFromXaml(typeof(ShowcaseLayoutLabPage));
-#pragma warning restore IL2026
     }
 }

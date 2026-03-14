@@ -1,5 +1,4 @@
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Xaml;
 using Microsoft.Maui.Graphics;
 
 namespace Maui.Browser.Sample.Demo;
@@ -11,7 +10,7 @@ public partial class ShowcaseHomePage : ContentPage
 
     public ShowcaseHomePage()
     {
-        LoadXamlFromResource();
+        InitializeComponent();
         BindingContext = _state;
         _state.ApplyTheme(ShowcaseThemeManager.CurrentMode, incrementToggle: false);
         BuildControlCatalogRows();
@@ -56,13 +55,6 @@ public partial class ShowcaseHomePage : ContentPage
     private void OnTogglePrimaryEnabledClicked(object? sender, EventArgs e)
     {
         _state.TogglePrimaryActionEnabled();
-    }
-
-    private void LoadXamlFromResource()
-    {
-#pragma warning disable IL2026
-        this.LoadFromXaml(typeof(ShowcaseHomePage));
-#pragma warning restore IL2026
     }
 
     private void BuildControlCatalogRows()

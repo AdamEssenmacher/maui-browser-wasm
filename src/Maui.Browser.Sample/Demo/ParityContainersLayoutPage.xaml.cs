@@ -1,6 +1,5 @@
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Shapes;
-using Microsoft.Maui.Controls.Xaml;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Layouts;
 
@@ -17,7 +16,7 @@ public partial class ParityContainersLayoutPage : ContentPage
 
     public ParityContainersLayoutPage()
     {
-        LoadXamlFromResource();
+        InitializeComponent();
         BindingContext = _state;
 
         ApplyClipMode(ClipProbeMode.None);
@@ -351,12 +350,5 @@ public partial class ParityContainersLayoutPage : ContentPage
         }
 
         flexProbe.Handler.UpdateValue(nameof(FlexLayout.Direction));
-    }
-
-    private void LoadXamlFromResource()
-    {
-#pragma warning disable IL2026
-        this.LoadFromXaml(typeof(ParityContainersLayoutPage));
-#pragma warning restore IL2026
     }
 }

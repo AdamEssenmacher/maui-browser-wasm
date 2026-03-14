@@ -1,5 +1,4 @@
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Xaml;
 using Microsoft.Maui.Graphics;
 
 namespace Maui.Browser.Sample.Demo;
@@ -10,7 +9,7 @@ public partial class XamlDemoPage : ContentPage
 
     public XamlDemoPage()
     {
-        LoadXamlFromResource();
+        InitializeComponent();
 
         BindingContext = _state;
 
@@ -122,13 +121,6 @@ public partial class XamlDemoPage : ContentPage
 
         RunLeakStress(stressHost);
         _state.RecordStressRun();
-    }
-
-    private void LoadXamlFromResource()
-    {
-#pragma warning disable IL2026
-        this.LoadFromXaml(typeof(XamlDemoPage));
-#pragma warning restore IL2026
     }
 
     private static void RunLeakStress(VerticalStackLayout stressHost)

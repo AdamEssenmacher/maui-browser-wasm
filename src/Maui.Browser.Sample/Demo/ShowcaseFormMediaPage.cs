@@ -1,6 +1,5 @@
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Xaml;
 using Microsoft.Maui.Graphics;
 
 namespace Maui.Browser.Sample.Demo;
@@ -13,7 +12,7 @@ public partial class ShowcaseFormMediaPage : ContentPage
 
     public ShowcaseFormMediaPage()
     {
-        LoadXamlFromResource();
+        InitializeComponent();
         BindingContext = _state;
         ApplyCurrentImageSource();
         ApplyCurrentAspect();
@@ -107,12 +106,5 @@ public partial class ShowcaseFormMediaPage : ContentPage
         {
             MediaImageButtonElement.Aspect = _state.CurrentAspect;
         }
-    }
-
-    private void LoadXamlFromResource()
-    {
-#pragma warning disable IL2026
-        this.LoadFromXaml(typeof(ShowcaseFormMediaPage));
-#pragma warning restore IL2026
     }
 }

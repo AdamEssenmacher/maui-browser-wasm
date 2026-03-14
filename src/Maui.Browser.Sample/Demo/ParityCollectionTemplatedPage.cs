@@ -1,5 +1,4 @@
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Xaml;
 using Microsoft.Maui.Graphics;
 
 namespace Maui.Browser.Sample.Demo;
@@ -12,7 +11,7 @@ public partial class ParityCollectionTemplatedPage : ContentPage
 
     public ParityCollectionTemplatedPage()
     {
-        LoadXamlFromResource();
+        InitializeComponent();
         BindingContext = _state;
         ApplyHeaderFooterMode();
     }
@@ -167,12 +166,5 @@ public partial class ParityCollectionTemplatedPage : ContentPage
         }
 
         ApplyHeaderFooterMode();
-    }
-
-    private void LoadXamlFromResource()
-    {
-#pragma warning disable IL2026
-        this.LoadFromXaml(typeof(ParityCollectionTemplatedPage));
-#pragma warning restore IL2026
     }
 }

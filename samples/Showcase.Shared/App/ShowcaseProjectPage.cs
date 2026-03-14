@@ -1,5 +1,4 @@
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Controls.Xaml;
 
 namespace Showcase.Shared.App;
 
@@ -26,7 +25,7 @@ public partial class ShowcaseProjectPage : ContentPage
 
     public ShowcaseProjectPage()
     {
-        LoadXamlFromResource();
+        InitializeComponent();
         BuildToolbarItems();
         ApplyRouteDetails();
     }
@@ -110,13 +109,6 @@ public partial class ShowcaseProjectPage : ContentPage
         }
 
         return (current + 1).ToString(System.Globalization.CultureInfo.InvariantCulture);
-    }
-
-    private void LoadXamlFromResource()
-    {
-#pragma warning disable IL2026
-        this.LoadFromXaml(typeof(ShowcaseProjectPage));
-#pragma warning restore IL2026
     }
 
     private void BuildToolbarItems()

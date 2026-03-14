@@ -238,6 +238,48 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void ButtonHandler_GradientBackground_UsesCommonProjectionAndClearsFluentFillTokens()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageButtonHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var button = new Button
+        {
+            Text = "Gradient Button",
+            BackgroundColor = Color.FromArgb("#512BD4")
+        };
+
+        ((IElementHandler)handler).SetVirtualView(button);
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, "BackgroundColor");
+
+        Assert.Equal("rgba(81,43,212,1)", handler.PlatformView.GetStyleValue("--accent-fill-rest"));
+
+        button.Background = new LinearGradientBrush(
+            new GradientStopCollection
+            {
+                new(Color.FromArgb("#512BD4"), 0),
+                new(Color.FromArgb("#0EA5E9"), 1)
+            },
+            new Point(0, 0),
+            new Point(1, 1));
+
+        MirageButtonHandler.MapBackground(handler, button);
+
+        var backgroundImage = handler.PlatformView.GetStyleValue("backgroundImage");
+        Assert.NotNull(backgroundImage);
+        Assert.True(
+            backgroundImage.Contains("linear-gradient(", StringComparison.Ordinal)
+            || backgroundImage.StartsWith("url(", StringComparison.Ordinal),
+            $"Expected gradient projection background image, found '{backgroundImage}'.");
+        Assert.Equal("100% 100%", handler.PlatformView.GetStyleValue("backgroundSize"));
+        Assert.Null(handler.PlatformView.GetStyleValue("--accent-fill-rest"));
+        Assert.Null(handler.PlatformView.GetStyleValue("--neutral-fill-rest"));
+    }
+
+    [Fact]
     public void CommonMapper_SizeRequests_ProjectsAndClearsWidthRequestDeterministically()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
