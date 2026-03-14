@@ -904,8 +904,63 @@ public sealed class HandlerRuntimeIntegrationTests
 
         Assert.Equal("Home", navTitle!.Properties["Text"].GetStringOrNull());
         Assert.Equal("grid", navBar!.Styles["display"]);
+        Assert.Equal("1", navBar.Styles["gridRowStart"]);
+        Assert.Equal("2", navBar.Styles["gridRowEnd"]);
         Assert.Equal("hidden", contentHost!.Styles["overflow"]);
+        Assert.Equal("2", contentHost.Styles["gridRowStart"]);
+        Assert.Equal("3", contentHost.Styles["gridRowEnd"]);
         Assert.Equal("none", backButton!.Styles["display"]);
+
+        NavigationPage.SetHasNavigationBar(homePage, false);
+        await WaitUntilAsync(() =>
+        {
+            var root = runtime.LastRendered as ControlNode;
+            var bar = root is null ? null : FindVisualByAutomationId(root, "mirage-navigation-bar");
+            return string.Equals(bar?.Styles["display"], "none", StringComparison.Ordinal);
+        });
+
+        var hiddenRender = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var hiddenContentHost = FindVisualByAutomationId(hiddenRender, "mirage-navigation-content-host");
+        Assert.NotNull(hiddenContentHost);
+        Assert.Equal("2", hiddenContentHost!.Styles["gridRowStart"]);
+        Assert.Equal("3", hiddenContentHost.Styles["gridRowEnd"]);
+    }
+
+    [Fact]
+    public void NavigationPageHandler_GetDesiredSize_IncludesVisibleNavigationBarChrome()
+    {
+        var measurePage = new MeasureProbePage(new Size(240, 180));
+        var navigationPage = new NavigationPage(measurePage);
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var measurePageHandler = new MirageContentPageHandler();
+        ((IElementHandler)measurePageHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)measurePageHandler).SetVirtualView(measurePage);
+
+        var handler = new MirageNavigationPageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        ((IElementHandler)handler).SetVirtualView(navigationPage);
+
+        var withNavigationBar = handler.GetDesiredSize(420, 600);
+        Assert.Equal(420, measurePage.LastWidthConstraint);
+        Assert.Equal(554, measurePage.LastHeightConstraint);
+
+        NavigationPage.SetHasNavigationBar(measurePage, false);
+        var withoutNavigationBar = handler.GetDesiredSize(420, 600);
+
+        Assert.Equal(420, measurePage.LastWidthConstraint);
+        Assert.Equal(600, measurePage.LastHeightConstraint);
+        Assert.Equal(240, withoutNavigationBar.Width);
+        Assert.Equal(180, withoutNavigationBar.Height);
+        Assert.Equal(240, withNavigationBar.Width);
+        Assert.Equal(226, withNavigationBar.Height);
     }
 
     [Fact]
@@ -1402,6 +1457,27 @@ public sealed class HandlerRuntimeIntegrationTests
             LastWidthConstraint = widthConstraint;
             LastHeightConstraint = heightConstraint;
             return new Size(640, 420);
+        }
+    }
+
+    private sealed class MeasureProbePage : ContentPage
+    {
+        private readonly Size _measuredSize;
+
+        public MeasureProbePage(Size measuredSize)
+        {
+            _measuredSize = measuredSize;
+        }
+
+        public double LastWidthConstraint { get; private set; }
+
+        public double LastHeightConstraint { get; private set; }
+
+        protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
+        {
+            LastWidthConstraint = widthConstraint;
+            LastHeightConstraint = heightConstraint;
+            return _measuredSize;
         }
     }
 }

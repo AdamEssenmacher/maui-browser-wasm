@@ -125,8 +125,19 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
             return base.GetDesiredSize(widthConstraint, heightConstraint);
         }
 
-        var contentSize = currentView.Measure(widthConstraint, heightConstraint);
-        return new Size(ResolveDesiredDimension(widthConstraint, contentSize.Width), ResolveDesiredDimension(heightConstraint, contentSize.Height));
+        var navigationBarVisible = currentPage is null || NavigationPage.GetHasNavigationBar(currentPage);
+        var barHeight = navigationBarVisible ? DefaultNavigationBarHeight : 0;
+        var contentHeightConstraint = heightConstraint;
+        if (double.IsFinite(contentHeightConstraint))
+        {
+            contentHeightConstraint = Math.Max(0, contentHeightConstraint - barHeight);
+        }
+
+        var contentSize = currentView.Measure(widthConstraint, contentHeightConstraint);
+        var desiredHeight = Math.Max(0, contentSize.Height + barHeight);
+        return new Size(
+            ResolveDesiredDimension(widthConstraint, contentSize.Width),
+            ResolveDesiredDimension(heightConstraint, desiredHeight));
     }
 
     public override void PlatformArrange(Rect frame)
@@ -696,6 +707,10 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         }
 
         _navigationBar.SetStyle("display", "grid");
+        _navigationBar.SetStyle("gridColumnStart", "1");
+        _navigationBar.SetStyle("gridColumnEnd", "2");
+        _navigationBar.SetStyle("gridRowStart", "1");
+        _navigationBar.SetStyle("gridRowEnd", "2");
         _navigationBar.SetStyle("gridTemplateColumns", "auto minmax(0, 1fr) auto");
         _navigationBar.SetStyle("alignItems", "center");
         _navigationBar.SetStyle("columnGap", "10px");
@@ -735,6 +750,10 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         _backButtonNode.SetStyle("whiteSpace", "nowrap");
 
         _contentHost.SetStyle("display", "grid");
+        _contentHost.SetStyle("gridColumnStart", "1");
+        _contentHost.SetStyle("gridColumnEnd", "2");
+        _contentHost.SetStyle("gridRowStart", "2");
+        _contentHost.SetStyle("gridRowEnd", "3");
         _contentHost.SetStyle("gridTemplateColumns", "minmax(0, 1fr)");
         _contentHost.SetStyle("gridTemplateRows", "minmax(0, 1fr)");
         _contentHost.SetStyle("width", "100%");
