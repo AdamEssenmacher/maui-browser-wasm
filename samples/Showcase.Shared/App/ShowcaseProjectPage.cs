@@ -6,6 +6,8 @@ namespace Showcase.Shared.App;
 public partial class ShowcaseProjectPage : ContentPage
 {
     private string? _projectId;
+    private int _toolbarClicks;
+    private bool _backButtonVisible = true;
 
     public string? ProjectId
     {
@@ -25,12 +27,14 @@ public partial class ShowcaseProjectPage : ContentPage
     public ShowcaseProjectPage()
     {
         LoadXamlFromResource();
+        BuildToolbarItems();
         ApplyRouteDetails();
     }
 
     protected override void OnAppearing()
     {
         base.OnAppearing();
+        NavigationPage.SetHasBackButton(this, _backButtonVisible);
         ApplyRouteDetails();
     }
 
@@ -75,6 +79,7 @@ public partial class ShowcaseProjectPage : ContentPage
     {
         var projectId = string.IsNullOrWhiteSpace(ProjectId) ? "unset" : ProjectId.Trim();
         Title = $"Project {projectId}";
+        NavigationPage.SetHasBackButton(this, _backButtonVisible);
 
         if (ProjectIdLabel is not null)
         {
@@ -84,6 +89,16 @@ public partial class ShowcaseProjectPage : ContentPage
         if (ProjectRouteLabel is not null)
         {
             ProjectRouteLabel.Text = $"/projects/{projectId}";
+        }
+
+        if (ProjectBackStateLabel is not null)
+        {
+            ProjectBackStateLabel.Text = $"Back button allowed: {_backButtonVisible}";
+        }
+
+        if (ProjectToolbarCountLabel is not null)
+        {
+            ProjectToolbarCountLabel.Text = $"Toolbar command count: {_toolbarClicks}";
         }
     }
 
@@ -102,5 +117,32 @@ public partial class ShowcaseProjectPage : ContentPage
 #pragma warning disable IL2026
         this.LoadFromXaml(typeof(ShowcaseProjectPage));
 #pragma warning restore IL2026
+    }
+
+    private void BuildToolbarItems()
+    {
+        ToolbarItems.Clear();
+        ToolbarItems.Add(new ToolbarItem
+        {
+            Text = "Toolbar +1",
+            Order = ToolbarItemOrder.Primary,
+            Priority = 0,
+            Command = new Command(() =>
+            {
+                _toolbarClicks++;
+                ApplyRouteDetails();
+            })
+        });
+        ToolbarItems.Add(new ToolbarItem
+        {
+            Text = "Toggle Back",
+            Order = ToolbarItemOrder.Primary,
+            Priority = 1,
+            Command = new Command(() =>
+            {
+                _backButtonVisible = !_backButtonVisible;
+                ApplyRouteDetails();
+            })
+        });
     }
 }

@@ -21,6 +21,17 @@ This repository is an experimental skeleton for **making .NET MAUI run on WebAss
 5. **Razor is optional; do not require `.razor` files.**
    - The host should be a plain `net10.0-browser` app. You may use Blazor runtime packages if needed for hosting, but do not build a component UI layer in Blazor.
 
+## Handler parity discipline (required)
+- When creating or modifying any Mirage handler, start from the corresponding official MAUI handler implementation first.
+- Strongly prefer structural and behavioral similarity to MAUI:
+  - class/file organization
+  - mapper and command-mapper shape
+  - lifecycle flow (`ConnectHandler`, `DisconnectHandler`, measure/arrange, command dispatch)
+  - state ownership boundaries
+- Treat variance from MAUI as an exception, not a style choice.
+- Only diverge when required for browser/DOM platform realities, and keep that divergence minimal, explicit, and documented in code comments and `docs/DECISIONS.md`.
+- Do not introduce Mirage-specific handler patterns if MAUI already has a suitable pattern that can be mirrored.
+
 ## Preferred implementation strategy
 - **PlatformView type**: `DomElement` (wrapper over a DOM `nint` handle).
 - **Interop**: all JS interop goes through `DomApi` (`JSImport`).

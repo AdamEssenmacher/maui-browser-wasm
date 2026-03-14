@@ -11,64 +11,85 @@
         <VerticalStackLayout
             AutomationId="showcase-navigation-lab-root"
             HorizontalOptions="Center"
-            MaximumWidthRequest="980"
-            Style="{StaticResource ShowcasePageRootStackStyle}">
+            MaximumWidthRequest="980">
             <VerticalStackLayout
                 AutomationId="showcase-navigation-lab-card"
-                Style="{StaticResource ShowcaseSectionCardStyle}"
                 Spacing="10">
                 <Label
                     AutomationId="showcase-navigation-lab-title"
-                    Style="{StaticResource ShowcaseSectionTitleLabelStyle}"
+                    Style="{StaticResource Headline}"
                     Text="Navigation Lab" />
                 <Label
                     AutomationId="showcase-navigation-lab-summary"
-                    Style="{StaticResource ShowcaseBodyLabelStyle}"
                     Text="This page proves NavigationPage-first browser routing. Push/pop changes update URL/history while MAUI stack semantics remain the source of truth." />
                 <Label
                     AutomationId="showcase-navigation-lab-route"
-                    Style="{StaticResource ShowcaseLayoutLabConfigLabelStyle}"
                     Text="Route: /navigation-lab" />
+                <Label
+                    x:Name="NavigationLabTitleStateLabel"
+                    AutomationId="showcase-navigation-lab-title-state"
+                    Text="Visible title: Navigation Lab" />
+                <Label
+                    x:Name="NavigationLabBarStateLabel"
+                    AutomationId="showcase-navigation-lab-bar-state"
+                    Text="Nav bar visible: True" />
+                <Label
+                    x:Name="NavigationLabBackStateLabel"
+                    AutomationId="showcase-navigation-lab-back-state"
+                    Text="Back button allowed: True" />
+                <Label
+                    x:Name="NavigationLabToolbarCountLabel"
+                    AutomationId="showcase-navigation-lab-toolbar-count"
+                    Text="Toolbar command count: 0" />
 
                 <HorizontalStackLayout Spacing="10">
                     <Button
                         AutomationId="navigation-lab-push-project-101"
                         Clicked="OnPushProject101Clicked"
-                        Style="{StaticResource ShowcaseLabActionButtonStyle}"
                         Text="Push Project 101" />
                     <Button
                         AutomationId="navigation-lab-push-project-202"
                         Clicked="OnPushProject202Clicked"
-                        Style="{StaticResource ShowcaseLabActionButtonStyle}"
                         Text="Push Project 202" />
                     <Button
                         AutomationId="navigation-lab-pop"
                         Clicked="OnPopClicked"
-                        Style="{StaticResource ShowcaseLabActionButtonStyle}"
                         Text="Pop" />
                     <Button
                         AutomationId="navigation-lab-pop-to-root"
                         Clicked="OnPopToRootClicked"
-                        Style="{StaticResource ShowcaseLabActionButtonStyle}"
                         Text="Pop To Root" />
+                </HorizontalStackLayout>
+                <HorizontalStackLayout Spacing="10">
+                    <Button
+                        AutomationId="navigation-lab-toggle-nav-bar"
+                        Clicked="OnToggleNavigationBarClicked"
+                        Text="Toggle Nav Bar" />
+                    <Button
+                        AutomationId="navigation-lab-toggle-back-button"
+                        Clicked="OnToggleBackButtonClicked"
+                        Text="Toggle Back Button" />
+                    <Button
+                        AutomationId="navigation-lab-bump-title"
+                        Clicked="OnBumpTitleClicked"
+                        Text="Retitle Page" />
                 </HorizontalStackLayout>
             </VerticalStackLayout>
 
             <VerticalStackLayout
                 AutomationId="showcase-navigation-lab-notes"
-                Style="{StaticResource ShowcaseSectionCardStyle}"
                 Spacing="6">
                 <Label
                     AutomationId="showcase-navigation-lab-note-title"
-                    Style="{StaticResource ShowcaseSubsectionTitleLabelStyle}"
+                    Style="{StaticResource SubHeadline}"
+                    HorizontalOptions="Start"
+                    HorizontalTextAlignment="Start"
                     Text="Expected Behavior" />
                 <Label
                     AutomationId="showcase-navigation-lab-note-stack"
-                    Style="{StaticResource ShowcaseBodyLabelStyle}"
                     Text="PushAsync/PopAsync drive the MAUI NavigationPage stack first." />
                 <Label
                     AutomationId="showcase-navigation-lab-note-projection"
-                    Style="{StaticResource ShowcaseBodyLabelStyle}"
                     Text="Mirage projects the visible page into browser URL/history and synchronizes browser back/forward back into stack changes." />
             </VerticalStackLayout>
         </VerticalStackLayout>

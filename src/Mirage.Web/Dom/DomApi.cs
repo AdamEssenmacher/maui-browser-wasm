@@ -130,6 +130,15 @@ internal static partial class DomApi
     [JSImport("unsubscribePopState", Module)]
     internal static partial void UnsubscribePopState(int subscriptionId);
 
+    [JSImport("getPreferredColorScheme", Module)]
+    internal static partial string GetPreferredColorScheme();
+
+    [JSImport("subscribePreferredColorSchemeChanged", Module)]
+    internal static partial int SubscribePreferredColorSchemeChanged([JSMarshalAs<JSType.Function>] Action callback);
+
+    [JSImport("unsubscribePreferredColorSchemeChanged", Module)]
+    internal static partial void UnsubscribePreferredColorSchemeChanged(int subscriptionId);
+
     [JSImport("isDiagnosticsEnabled", Module)]
     internal static partial bool IsDiagnosticsEnabled();
 

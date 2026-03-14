@@ -75,7 +75,7 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void CommonMapper_MapsOpacityBackgroundAndSizeRequests()
+    public void CommonMapper_MapsOpacityBackgroundAndSizeRequestConstraints()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
         var view = new Label
@@ -133,7 +133,7 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal("22px", handler.Node.GetStyleValue("fontSize"));
         Assert.Equal("700", handler.Node.GetStyleValue("fontWeight"));
         Assert.Equal("normal", handler.Node.GetStyleValue("fontStyle"));
-        Assert.Equal("Space Grotesk", handler.Node.GetStyleValue("fontFamily"));
+        Assert.Equal("\"Space Grotesk\", sans-serif", handler.Node.GetStyleValue("fontFamily"));
         Assert.Equal("1.5px", handler.Node.GetStyleValue("letterSpacing"));
 
         var firstRenderCount = handler.RenderRequestCount;
@@ -148,15 +148,103 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void CommonMapper_SizeRequests_DoNotClearExistingWidthUntilRequestWasApplied()
+    public void CommonMapper_CompatibilityAliases_MapBackgroundColorAndFontProperties()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var label = new Label
+        {
+            BackgroundColor = Color.FromArgb("#512BD4"),
+            FontFamily = "OpenSansRegular",
+            FontSize = 19
+        };
+
+        MirageViewMapper.CommonViewMapper.UpdateProperty(handler, label, "BackgroundColor");
+        MirageViewMapper.CommonViewMapper.UpdateProperty(handler, label, "FontFamily");
+        MirageViewMapper.CommonViewMapper.UpdateProperty(handler, label, "FontSize");
+
+        Assert.Equal("rgba(81,43,212,1)", handler.Node.GetStyleValue("backgroundColor"));
+        Assert.Equal("\"OpenSansRegular\", sans-serif", handler.Node.GetStyleValue("fontFamily"));
+        Assert.Equal("19px", handler.Node.GetStyleValue("fontSize"));
+    }
+
+    [Fact]
+    public void CommonMapper_MapBackground_UsesVisualElementBackgroundColorFallback()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var page = new ContentPage
+        {
+            BackgroundColor = Colors.White
+        };
+
+        MirageViewMapper.MapBackground(handler, page);
+
+        Assert.Equal("rgba(255,255,255,1)", handler.Node.GetStyleValue("backgroundColor"));
+        Assert.Null(handler.Node.GetStyleValue("backgroundImage"));
+    }
+
+    [Fact]
+    public void CommonMapper_MapStyle_ReappliesCompatibilityAliasProperties()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var label = new Label
+        {
+            BackgroundColor = Color.FromArgb("#512BD4"),
+            TextColor = Colors.White,
+            FontFamily = "OpenSansRegular",
+            FontSize = 17
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+        MirageViewMapper.MapStyle(handler, label);
+
+        Assert.Equal("rgba(81,43,212,1)", handler.PlatformView.GetStyleValue("backgroundColor"));
+        Assert.Equal("rgba(255,255,255,1)", handler.PlatformView.GetStyleValue("color"));
+        Assert.Equal("\"OpenSansRegular\", sans-serif", handler.PlatformView.GetStyleValue("fontFamily"));
+        Assert.Equal("17px", handler.PlatformView.GetStyleValue("fontSize"));
+    }
+
+    [Fact]
+    public void ButtonHandler_CompatibilityAliases_MapBackgroundColorAndTextColorToFluentTokens()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageButtonHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var button = new Button
+        {
+            Text = "Token Button",
+            BackgroundColor = Color.FromArgb("#512BD4"),
+            TextColor = Colors.White,
+            CornerRadius = 8
+        };
+
+        ((IElementHandler)handler).SetVirtualView(button);
+
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, "BackgroundColor");
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, "TextColor");
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, "CornerRadius");
+
+        Assert.Equal("rgba(81,43,212,1)", handler.PlatformView.GetStyleValue("--accent-fill-rest"));
+        Assert.Equal("rgba(255,255,255,1)", handler.PlatformView.GetStyleValue("--foreground-on-accent-rest"));
+        Assert.Equal("8px", handler.PlatformView.GetStyleValue("--control-corner-radius"));
+        Assert.Null(handler.PlatformView.GetStyleValue("backgroundColor"));
+        Assert.Null(handler.PlatformView.GetStyleValue("borderRadius"));
+    }
+
+    [Fact]
+    public void CommonMapper_SizeRequests_ProjectsAndClearsWidthRequestDeterministically()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
         var view = new Label();
 
-        handler.Node.SetStyle("width", "100%");
-
         MirageViewMapper.MapSizeRequests(handler, view);
-        Assert.Equal("100%", handler.Node.GetStyleValue("width"));
+        Assert.Null(handler.Node.GetStyleValue("width"));
 
         view.WidthRequest = 132;
         MirageViewMapper.MapSizeRequests(handler, view);
@@ -549,6 +637,34 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal(72, currentTop);
     }
 
+    [Theory]
+    [InlineData(ScrollOrientation.Vertical, false, true)]
+    [InlineData(ScrollOrientation.Horizontal, true, false)]
+    [InlineData(ScrollOrientation.Both, true, true)]
+    public void ScrollViewHandler_GetDesiredSize_UsesInfiniteConstraintOnScrollAxis(
+        ScrollOrientation orientation,
+        bool expectInfiniteWidthConstraint,
+        bool expectInfiniteHeightConstraint)
+    {
+        var probe = new MeasureProbeContentView();
+        var scrollView = new ScrollView
+        {
+            Orientation = orientation,
+            Content = probe
+        };
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        var desired = handler.GetDesiredSize(320, 180);
+
+        Assert.True(probe.MeasureCount > 0, "Expected probe content to be measured.");
+        Assert.Equal(expectInfiniteWidthConstraint, double.IsPositiveInfinity(probe.LastWidthConstraint));
+        Assert.Equal(expectInfiniteHeightConstraint, double.IsPositiveInfinity(probe.LastHeightConstraint));
+        Assert.Equal(320, desired.Width);
+        Assert.Equal(180, desired.Height);
+    }
+
     [Fact]
     public void ScrollViewHandler_RequestScrollTo_ExecutesThroughCoordinatorRuntimeBridge()
     {
@@ -679,6 +795,319 @@ public sealed class HandlerRuntimeIntegrationTests
 
         Assert.Equal("programmatic-value", entry.Text);
         Assert.Equal("programmatic-value", handler.PlatformView.GetPropertyString("Text"));
+    }
+
+    [Fact]
+    public void ContentPage_PlatformArrange_ForwardsArrangeToDirectContent()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var probe = new ArrangeProbeContentView();
+
+        var probeHandler = new MirageContentViewHandler();
+        ((IElementHandler)probeHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)probeHandler).SetVirtualView(probe);
+
+        var page = new ContentPage
+        {
+            Content = probe
+        };
+
+        var pageHandler = new MirageContentPageHandler();
+        ((IElementHandler)pageHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)pageHandler).SetVirtualView(page);
+        pageHandler.PlatformArrange(new Rect(0, 0, 360, 640));
+
+        Assert.True(probe.ArrangeCount > 0, "Expected direct ContentPage child to be arranged at least once.");
+        Assert.True(probe.LastArrangeBounds.Width > 0, $"Expected arranged width > 0. Actual={probe.LastArrangeBounds.Width}");
+        Assert.True(probe.LastArrangeBounds.Height > 0, $"Expected arranged height > 0. Actual={probe.LastArrangeBounds.Height}");
+    }
+
+    [Fact]
+    public void ContentView_PlatformArrange_ForwardsArrangeToNestedContent()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var probe = new ArrangeProbeContentView();
+
+        var probeHandler = new MirageContentViewHandler();
+        ((IElementHandler)probeHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)probeHandler).SetVirtualView(probe);
+
+        var nestedHost = new ContentView
+        {
+            Content = probe
+        };
+        var nestedHostHandler = new MirageContentViewHandler();
+        ((IElementHandler)nestedHostHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)nestedHostHandler).SetVirtualView(nestedHost);
+
+        var page = new ContentPage
+        {
+            Content = nestedHost
+        };
+
+        var pageHandler = new MirageContentPageHandler();
+        ((IElementHandler)pageHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)pageHandler).SetVirtualView(page);
+        pageHandler.PlatformArrange(new Rect(0, 0, 360, 640));
+
+        Assert.True(probe.ArrangeCount > 0, "Expected nested ContentView child to be arranged at least once.");
+        Assert.True(probe.LastArrangeBounds.Width > 0, $"Expected arranged width > 0. Actual={probe.LastArrangeBounds.Width}");
+        Assert.True(probe.LastArrangeBounds.Height > 0, $"Expected arranged height > 0. Actual={probe.LastArrangeBounds.Height}");
+    }
+
+    [Fact]
+    public async Task NavigationPageHandler_RealizesBuiltInShellStructureAndTitleProjection()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var homePage = CreateAttachedContentPage(mauiContext, "Home");
+        var navigationPage = new NavigationPage(homePage);
+        var handler = new MirageNavigationPageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        ((IElementHandler)handler).SetVirtualView(navigationPage);
+
+        coordinator.SetRoot(handler.PlatformView);
+        await WaitUntilAsync(() => runtime.RenderCount >= 1);
+
+        var rendered = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var navBar = FindVisualByAutomationId(rendered, "mirage-navigation-bar");
+        var navTitle = FindVisualByAutomationId(rendered, "mirage-navigation-title");
+        var contentHost = FindVisualByAutomationId(rendered, "mirage-navigation-content-host");
+        var backButton = FindVisualByAutomationId(rendered, "mirage-navigation-back-button");
+        Assert.NotNull(navBar);
+        Assert.NotNull(navTitle);
+        Assert.NotNull(contentHost);
+        Assert.NotNull(backButton);
+
+        Assert.Equal("Home", navTitle!.Properties["Text"].GetStringOrNull());
+        Assert.Equal("grid", navBar!.Styles["display"]);
+        Assert.Equal("1", navBar.Styles["gridRowStart"]);
+        Assert.Equal("2", navBar.Styles["gridRowEnd"]);
+        Assert.Equal("hidden", contentHost!.Styles["overflow"]);
+        Assert.Equal("2", contentHost.Styles["gridRowStart"]);
+        Assert.Equal("3", contentHost.Styles["gridRowEnd"]);
+        Assert.Equal("none", backButton!.Styles["display"]);
+
+        NavigationPage.SetHasNavigationBar(homePage, false);
+        await WaitUntilAsync(() =>
+        {
+            var root = runtime.LastRendered as ControlNode;
+            var bar = root is null ? null : FindVisualByAutomationId(root, "mirage-navigation-bar");
+            return string.Equals(bar?.Styles["display"], "none", StringComparison.Ordinal);
+        });
+
+        var hiddenRender = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var hiddenContentHost = FindVisualByAutomationId(hiddenRender, "mirage-navigation-content-host");
+        Assert.NotNull(hiddenContentHost);
+        Assert.Equal("2", hiddenContentHost!.Styles["gridRowStart"]);
+        Assert.Equal("3", hiddenContentHost.Styles["gridRowEnd"]);
+    }
+
+    [Fact]
+    public void NavigationPageHandler_GetDesiredSize_IncludesVisibleNavigationBarChrome()
+    {
+        var measurePage = new MeasureProbePage(new Size(240, 180));
+        var navigationPage = new NavigationPage(measurePage);
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var measurePageHandler = new MirageContentPageHandler();
+        ((IElementHandler)measurePageHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)measurePageHandler).SetVirtualView(measurePage);
+
+        var handler = new MirageNavigationPageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        ((IElementHandler)handler).SetVirtualView(navigationPage);
+
+        var withNavigationBar = handler.GetDesiredSize(420, 600);
+        Assert.Equal(420, measurePage.LastWidthConstraint);
+        Assert.Equal(554, measurePage.LastHeightConstraint);
+
+        NavigationPage.SetHasNavigationBar(measurePage, false);
+        var withoutNavigationBar = handler.GetDesiredSize(420, 600);
+
+        Assert.Equal(420, measurePage.LastWidthConstraint);
+        Assert.Equal(600, measurePage.LastHeightConstraint);
+        Assert.Equal(240, withoutNavigationBar.Width);
+        Assert.Equal(180, withoutNavigationBar.Height);
+        Assert.Equal(240, withNavigationBar.Width);
+        Assert.Equal(226, withNavigationBar.Height);
+    }
+
+    [Fact]
+    public async Task NavigationPageHandler_BackButtonReflectsStackDepthAndInvokesPop()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var homePage = CreateAttachedContentPage(mauiContext, "Home");
+        var detailsPage = CreateAttachedContentPage(mauiContext, "Details");
+        var navigationPage = new NavigationPage(homePage);
+        var handler = new MirageNavigationPageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        ((IElementHandler)handler).SetVirtualView(navigationPage);
+
+        coordinator.SetRoot(handler.PlatformView);
+        await WaitUntilAsync(() => runtime.RenderCount >= 1);
+
+        var firstRender = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var firstBackNode = FindVisualByAutomationId(firstRender, "mirage-navigation-back-button");
+        Assert.NotNull(firstBackNode);
+        Assert.Equal("none", firstBackNode!.Styles["display"]);
+
+        await navigationPage.PushAsync(detailsPage, animated: false);
+        await WaitUntilAsync(() => navigationPage.Navigation.NavigationStack.Count == 2);
+        await WaitUntilAsync(() =>
+        {
+            var root = runtime.LastRendered as ControlNode;
+            var title = root is null ? null : FindVisualByAutomationId(root, "mirage-navigation-title");
+            return string.Equals(title?.Properties["Text"].GetStringOrNull(), "Details", StringComparison.Ordinal);
+        });
+
+        var pushedRender = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var pushedBackNode = FindVisualByAutomationId(pushedRender, "mirage-navigation-back-button");
+        Assert.NotNull(pushedBackNode);
+        Assert.NotEqual("none", pushedBackNode!.Styles["display"]);
+
+        Assert.NotNull(runtime.Sink);
+        runtime.Sink!.OnEvent(pushedBackNode!.NodeId, "click", null);
+
+        await WaitUntilAsync(() => navigationPage.Navigation.NavigationStack.Count == 1);
+        await WaitUntilAsync(() =>
+        {
+            var root = runtime.LastRendered as ControlNode;
+            var title = root is null ? null : FindVisualByAutomationId(root, "mirage-navigation-title");
+            return string.Equals(title?.Properties["Text"].GetStringOrNull(), "Home", StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
+    public async Task NavigationPageHandler_ToolbarItems_AreOrderedAndCommandInvocationsRespectEnabledState()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var commandLog = new List<string>();
+        var clickedOnlyCount = 0;
+        var primaryLowPriority = new ToolbarItem
+        {
+            Text = "Primary-2",
+            Order = ToolbarItemOrder.Primary,
+            Priority = 2,
+            Command = new Command(() => commandLog.Add("Primary-2"))
+        };
+        var clickedOnlyItem = new ToolbarItem
+        {
+            Text = "Clicked-1",
+            Order = ToolbarItemOrder.Primary,
+            Priority = 1
+        };
+        clickedOnlyItem.Clicked += (_, _) => clickedOnlyCount++;
+        var primaryHighPriority = new ToolbarItem
+        {
+            Text = "Primary-0",
+            Order = ToolbarItemOrder.Primary,
+            Priority = 0,
+            Command = new Command(() => commandLog.Add("Primary-0"))
+        };
+
+        var homePage = CreateAttachedContentPage(mauiContext, "Home");
+        homePage.ToolbarItems.Add(primaryLowPriority);
+        homePage.ToolbarItems.Add(clickedOnlyItem);
+        homePage.ToolbarItems.Add(primaryHighPriority);
+
+        var navigationPage = new NavigationPage(homePage);
+        var handler = new MirageNavigationPageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        ((IElementHandler)handler).SetVirtualView(navigationPage);
+
+        coordinator.SetRoot(handler.PlatformView);
+        await WaitUntilAsync(() => runtime.RenderCount >= 1);
+        await WaitUntilAsync(() =>
+        {
+            var root = runtime.LastRendered as ControlNode;
+            var first = root is null ? null : FindVisualByAutomationId(root, "mirage-navigation-toolbar-item-1");
+            return string.Equals(first?.Properties["Text"].GetStringOrNull(), "Primary-0", StringComparison.Ordinal);
+        });
+
+        var firstRender = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var firstToolbarNode = FindVisualByAutomationId(firstRender, "mirage-navigation-toolbar-item-1");
+        var secondToolbarNode = FindVisualByAutomationId(firstRender, "mirage-navigation-toolbar-item-2");
+        var thirdToolbarNode = FindVisualByAutomationId(firstRender, "mirage-navigation-toolbar-item-3");
+        Assert.NotNull(firstToolbarNode);
+        Assert.NotNull(secondToolbarNode);
+        Assert.NotNull(thirdToolbarNode);
+
+        Assert.Equal("Primary-0", firstToolbarNode!.Properties["Text"].GetStringOrNull());
+        Assert.Equal("Clicked-1", secondToolbarNode!.Properties["Text"].GetStringOrNull());
+        Assert.Equal("Primary-2", thirdToolbarNode!.Properties["Text"].GetStringOrNull());
+
+        Assert.NotNull(runtime.Sink);
+        runtime.Sink!.OnEvent(firstToolbarNode!.NodeId, "click", null);
+        await WaitUntilAsync(() => commandLog.Count == 1);
+        Assert.Equal("Primary-0", commandLog[0]);
+
+        primaryHighPriority.IsEnabled = false;
+        await WaitUntilAsync(() =>
+        {
+            var root = runtime.LastRendered as ControlNode;
+            var first = root is null ? null : FindVisualByAutomationId(root, "mirage-navigation-toolbar-item-1");
+            return string.Equals(first?.Styles["opacity"], "0.55", StringComparison.Ordinal);
+        });
+
+        var disabledRender = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var disabledFirst = FindVisualByAutomationId(disabledRender, "mirage-navigation-toolbar-item-1");
+        Assert.NotNull(disabledFirst);
+        runtime.Sink!.OnEvent(disabledFirst!.NodeId, "click", null);
+        await Task.Delay(30);
+        Assert.Single(commandLog);
+
+        var clickedOnlyRender = Assert.IsType<ControlNode>(runtime.LastRendered);
+        var clickedOnlyNode = FindVisualByAutomationId(clickedOnlyRender, "mirage-navigation-toolbar-item-2");
+        Assert.NotNull(clickedOnlyNode);
+        runtime.Sink!.OnEvent(clickedOnlyNode!.NodeId, "click", null);
+        await WaitUntilAsync(() => clickedOnlyCount == 1);
     }
 
     [Fact]
@@ -964,6 +1393,91 @@ public sealed class HandlerRuntimeIntegrationTests
             }
 
             await Task.Delay(10);
+        }
+    }
+
+    private static ContentPage CreateAttachedContentPage(IMauiContext mauiContext, string title)
+    {
+        var page = new ContentPage
+        {
+            Title = title
+        };
+
+        var handler = new MirageContentPageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        ((IElementHandler)handler).SetVirtualView(page);
+        return page;
+    }
+
+    private static VisualNodeBase? FindVisualByAutomationId(NodeBase root, string automationId)
+    {
+        if (root is VisualNodeBase visual
+            && string.Equals(visual.AutomationId, automationId, StringComparison.Ordinal))
+        {
+            return visual;
+        }
+
+        for (var index = 0; index < root.Children.Count; index++)
+        {
+            var match = FindVisualByAutomationId(root.Children[index], automationId);
+            if (match is not null)
+            {
+                return match;
+            }
+        }
+
+        return null;
+    }
+
+    private sealed class ArrangeProbeContentView : ContentView
+    {
+        public int ArrangeCount { get; private set; }
+
+        public Rect LastArrangeBounds { get; private set; } = Rect.Zero;
+
+        protected override Size ArrangeOverride(Rect bounds)
+        {
+            ArrangeCount++;
+            LastArrangeBounds = bounds;
+            return base.ArrangeOverride(bounds);
+        }
+    }
+
+    private sealed class MeasureProbeContentView : ContentView
+    {
+        public int MeasureCount { get; private set; }
+
+        public double LastWidthConstraint { get; private set; }
+
+        public double LastHeightConstraint { get; private set; }
+
+        protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
+        {
+            MeasureCount++;
+            LastWidthConstraint = widthConstraint;
+            LastHeightConstraint = heightConstraint;
+            return new Size(640, 420);
+        }
+    }
+
+    private sealed class MeasureProbePage : ContentPage
+    {
+        private readonly Size _measuredSize;
+
+        public MeasureProbePage(Size measuredSize)
+        {
+            _measuredSize = measuredSize;
+        }
+
+        public double LastWidthConstraint { get; private set; }
+
+        public double LastHeightConstraint { get; private set; }
+
+        protected override Size MeasureOverride(double widthConstraint, double heightConstraint)
+        {
+            LastWidthConstraint = widthConstraint;
+            LastHeightConstraint = heightConstraint;
+            return _measuredSize;
         }
     }
 }

@@ -11,11 +11,18 @@ public static class MirageViewMapper
         [nameof(IView.AutomationId)] = MapAutomationId,
         [nameof(IView.Margin)] = MapMargin,
         [nameof(IView.Visibility)] = MapVisibility,
+        ["IsVisible"] = MapVisibility,
+        ["Style"] = MapStyle,
         [nameof(ITextStyle.TextColor)] = MapTextColor,
         [nameof(ITextStyle.Font)] = MapFont,
+        ["FontFamily"] = MapFont,
+        ["FontSize"] = MapFont,
+        ["FontAttributes"] = MapFont,
+        ["FontAutoScalingEnabled"] = MapFont,
         [nameof(ITextStyle.CharacterSpacing)] = MapCharacterSpacing,
         [nameof(IView.Opacity)] = MapOpacity,
         [nameof(IView.Background)] = MapBackground,
+        ["BackgroundColor"] = MapBackground,
         [nameof(IView.Clip)] = MapClip,
         [nameof(VisualElement.WidthRequest)] = MapSizeRequests,
         [nameof(VisualElement.HeightRequest)] = MapSizeRequests,
@@ -149,6 +156,42 @@ public static class MirageViewMapper
         }
 
         ((IMiragePlatformHandler)handler).RequestRender();
+    }
+
+    public static void MapStyle(IViewHandler handler, IView view)
+    {
+        _ = view;
+        handler.UpdateValue(nameof(IView.Background));
+        handler.UpdateValue("BackgroundColor");
+        handler.UpdateValue(nameof(IView.Margin));
+        handler.UpdateValue(nameof(IView.Visibility));
+        handler.UpdateValue("IsVisible");
+        handler.UpdateValue(nameof(IView.Opacity));
+        handler.UpdateValue(nameof(VisualElement.WidthRequest));
+        handler.UpdateValue(nameof(VisualElement.HeightRequest));
+        handler.UpdateValue(nameof(VisualElement.MinimumWidthRequest));
+        handler.UpdateValue(nameof(VisualElement.MinimumHeightRequest));
+        handler.UpdateValue(nameof(VisualElement.MaximumWidthRequest));
+        handler.UpdateValue(nameof(VisualElement.MaximumHeightRequest));
+        handler.UpdateValue(nameof(View.HorizontalOptions));
+        handler.UpdateValue(nameof(View.VerticalOptions));
+
+        if (view is ITextStyle)
+        {
+            handler.UpdateValue(nameof(ITextStyle.TextColor));
+            handler.UpdateValue("TextColor");
+            handler.UpdateValue(nameof(ITextStyle.Font));
+            handler.UpdateValue("FontFamily");
+            handler.UpdateValue("FontSize");
+            handler.UpdateValue("FontAttributes");
+            handler.UpdateValue("FontAutoScalingEnabled");
+            handler.UpdateValue(nameof(ITextStyle.CharacterSpacing));
+        }
+
+        if (view is IPadding)
+        {
+            handler.UpdateValue("Padding");
+        }
     }
 
     public static string ToPx(double value) => MirageCommonViewProjection.ToPx(value);

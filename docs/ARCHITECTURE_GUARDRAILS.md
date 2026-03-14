@@ -124,6 +124,7 @@ Policy:
 
 - `NavigationPage` stack semantics are the source of truth.
 - Browser URL/history is a synchronized projection layer, not a second router source of truth.
+- `NavigationPage` is a built-in shell realization in Mirage (title chrome, back slot, toolbar slot, and bounded content host), not a sample-only wrapper.
 - Route mapping, URL parse/serialize, page activation, guard, history policy, and title policy are extension seams configured through `UseMirageNavigation(...)`.
 - Mirage continues to own stack semantics, history plumbing, and runtime handler coordination.
 - Non-goals in this wave: Shell, tabs/flyout navigation, and router-first replacement of MAUI navigation.

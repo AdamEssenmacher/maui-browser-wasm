@@ -1,4 +1,3 @@
-using Mirage.Core.Diagnostics;
 using Mirage.Core.Semantics;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
@@ -7,7 +6,7 @@ using Microsoft.Maui.Platform;
 
 namespace Mirage.Maui.Handlers;
 
-internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, IScrollViewHandler, IMirageRuntimeEventTarget
+internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<IScrollView>, IScrollViewHandler, IMirageRuntimeEventTarget
 {
     public static IPropertyMapper<IScrollView, MirageScrollViewHandler> Mapper =
         new PropertyMapper<IScrollView, MirageScrollViewHandler>(MirageViewMapper.CommonViewMapper)
@@ -25,9 +24,6 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
             [nameof(IScrollView.RequestScrollTo)] = MapRequestScrollTo
         };
 
-    private IView? _currentContent;
-    private IElementHandler? _currentContentHandler;
-
     public MirageScrollViewHandler()
         : base(ComponentKind.ContentContainer, Mapper, CommandMapper)
     {
@@ -41,18 +37,18 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
         base.ConnectHandler(platformView);
-        PlatformView.SetStyle("display", "block");
-        PlatformView.SetStyle("boxSizing", "border-box");
-        PlatformView.SetEvent("scroll", enabled: true);
-        SetContent(ResolvePresentedContent(VirtualView));
+        platformView.SetStyle("display", "block");
+        platformView.SetStyle("boxSizing", "border-box");
+        platformView.SetEvent("scroll", enabled: true);
+        SetPresentedContent(ResolvePresentedContent(VirtualView));
         ApplyScrollStyles(VirtualView);
         RequestRender();
     }
 
     protected override void DisconnectHandler(MiragePlatformView platformView)
     {
-        PlatformView.SetEvent("scroll", enabled: false);
-        DisconnectCurrentContent();
+        platformView.SetEvent("scroll", enabled: false);
+        DisconnectCurrentPresentedContent();
         base.DisconnectHandler(platformView);
     }
 
@@ -64,7 +60,15 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
             return base.GetDesiredSize(widthConstraint, heightConstraint);
         }
 
-        var contentSize = content.Measure(widthConstraint, heightConstraint);
+        var orientation = VirtualView.Orientation;
+        var horizontalConstraint = orientation is ScrollOrientation.Horizontal or ScrollOrientation.Both
+            ? double.PositiveInfinity
+            : widthConstraint;
+        var verticalConstraint = orientation is ScrollOrientation.Vertical or ScrollOrientation.Both
+            ? double.PositiveInfinity
+            : heightConstraint;
+
+        var contentSize = content.Measure(horizontalConstraint, verticalConstraint);
         return new Size(
             ResolveDesiredDimension(widthConstraint, contentSize.Width),
             ResolveDesiredDimension(heightConstraint, contentSize.Height));
@@ -77,7 +81,7 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
         var width = Math.Max(0, frame.Width);
         var height = Math.Max(0, frame.Height);
         if (ResolvePresentedContent(VirtualView) is not IView content
-            || _currentContentHandler?.PlatformView is not MiragePlatformView contentPlatformView)
+            || !TryGetPresentedContentPlatformView(out var contentPlatformView))
         {
             return;
         }
@@ -99,7 +103,7 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
             : height;
 
         content.Arrange(new Rect(0, 0, arrangedWidth, arrangedHeight));
-        NormalizeContentPosition(contentPlatformView, arrangedWidth, arrangedHeight);
+        NormalizeHostedContentFlowStyles(contentPlatformView);
     }
 
     public void OnRuntimeEvent(string eventName, string? payload)
@@ -128,7 +132,7 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
 
     public static void MapContent(MirageScrollViewHandler handler, IScrollView scrollView)
     {
-        handler.SetContent(ResolvePresentedContent(scrollView));
+        handler.SetPresentedContent(ResolvePresentedContent(scrollView));
     }
 
     public static void MapHorizontalScrollBarVisibility(MirageScrollViewHandler handler, IScrollView scrollView)
@@ -289,61 +293,6 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
         return scrollView is IContentView contentView ? contentView.PresentedContent : null;
     }
 
-    private void SetContent(IView? content)
-    {
-        if (_currentContentHandler is not null && !ReferenceEquals(_currentContent, content))
-        {
-            DisconnectCurrentContent();
-        }
-
-        PlatformView.ClearChildren();
-
-        if (content is null || MauiContext is null)
-        {
-            RequestRender();
-            return;
-        }
-
-        var diagnosticsEnabled = MirageDiagnostics.IsEnabled;
-        var toHandlerStartTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
-        var contentHandler = content.ToHandler(MauiContext);
-        if (diagnosticsEnabled)
-        {
-            var elapsedMs = MirageDiagnostics.GetElapsedMilliseconds(toHandlerStartTimestamp, MirageDiagnostics.GetTimestamp());
-            MirageDiagnostics.Log(
-                "handler.content",
-                $"handler={GetType().Name} content={content.GetType().Name} childHandler={contentHandler.GetType().Name} toHandlerMs={elapsedMs:0.###}");
-        }
-
-        if (contentHandler.PlatformView is not MiragePlatformView contentPlatformView)
-        {
-            throw new InvalidOperationException("MirageScrollViewHandler requires child handlers to expose MiragePlatformView.");
-        }
-
-        PlatformView.AddChild(contentPlatformView);
-        if (contentHandler is IViewHandler viewHandler && content is IView childView)
-        {
-            MirageViewMapper.MapLayoutAlignment(viewHandler, childView);
-        }
-
-        _currentContent = content;
-        _currentContentHandler = contentHandler;
-        RequestRender();
-    }
-
-    private void DisconnectCurrentContent()
-    {
-        if (_currentContentHandler is not null)
-        {
-            _currentContentHandler.DisconnectHandler();
-        }
-
-        _currentContentHandler = null;
-        _currentContent = null;
-        PlatformView.ClearChildren();
-        RequestRender();
-    }
-
     private void ApplyScrollStyles(IScrollView scrollView)
     {
         var orientation = scrollView.Orientation;
@@ -386,14 +335,4 @@ internal sealed class MirageScrollViewHandler : MirageViewHandler<IScrollView>, 
         };
     }
 
-    private static void NormalizeContentPosition(MiragePlatformView contentPlatformView, double arrangedWidth, double arrangedHeight)
-    {
-        contentPlatformView.SetStyle("position", "relative");
-        contentPlatformView.SetStyle("left", null);
-        contentPlatformView.SetStyle("top", null);
-        contentPlatformView.SetStyle("right", null);
-        contentPlatformView.SetStyle("bottom", null);
-        contentPlatformView.SetStyle("width", MirageViewMapper.ToPx(Math.Max(0, arrangedWidth)));
-        contentPlatformView.SetStyle("height", MirageViewMapper.ToPx(Math.Max(0, arrangedHeight)));
-    }
 }

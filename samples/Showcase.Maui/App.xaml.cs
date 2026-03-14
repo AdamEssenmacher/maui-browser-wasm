@@ -8,7 +8,8 @@ public partial class App : Application
 	{
 		InitializeComponent();
 		Resources ??= new ResourceDictionary();
-		Resources.MergedDictionaries.Add(new ShowcaseStyles());
+		Resources.MergedDictionaries.Add(new ShowcaseMauiTemplateColors());
+		Resources.MergedDictionaries.Add(new ShowcaseMauiTemplateStyles());
 	}
 
 	protected override Window CreateWindow(IActivationState? activationState)

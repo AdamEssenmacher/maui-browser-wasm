@@ -348,6 +348,21 @@ export function setAttr(elementHandle, name, value) {
 
 export function setStyle(elementHandle, name, value) {
   const element = fromHandle(elementHandle);
+  if (typeof name !== "string" || name.length === 0) {
+    return;
+  }
+
+  const hasExplicitCssName = name.startsWith("--") || name.includes("-");
+  if (hasExplicitCssName) {
+    if (value == null || value === "") {
+      element.style.removeProperty(name);
+      return;
+    }
+
+    element.style.setProperty(name, value);
+    return;
+  }
+
   element.style[name] = value ?? "";
 }
 
@@ -631,4 +646,64 @@ export function unsubscribePopState(subscriptionId) {
 
   window.removeEventListener("popstate", listener);
   popStateSubscriptions.delete(subscriptionId);
+}
+
+function resolvePreferredColorScheme() {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return "light";
+  }
+
+  try {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
+
+export function getPreferredColorScheme() {
+  return resolvePreferredColorScheme();
+}
+
+const preferredColorSchemeSubscriptions = new Map();
+let nextPreferredColorSchemeSubscriptionId = 1;
+
+export function subscribePreferredColorSchemeChanged(callback) {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function" || typeof callback !== "function") {
+    return 0;
+  }
+
+  let mediaQuery;
+  try {
+    mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+  } catch {
+    return 0;
+  }
+
+  const listener = () => callback();
+  const subscriptionId = nextPreferredColorSchemeSubscriptionId++;
+  preferredColorSchemeSubscriptions.set(subscriptionId, { mediaQuery, listener });
+
+  if (typeof mediaQuery.addEventListener === "function") {
+    mediaQuery.addEventListener("change", listener);
+  } else if (typeof mediaQuery.addListener === "function") {
+    mediaQuery.addListener(listener);
+  }
+
+  return subscriptionId;
+}
+
+export function unsubscribePreferredColorSchemeChanged(subscriptionId) {
+  const subscription = preferredColorSchemeSubscriptions.get(subscriptionId);
+  if (!subscription) {
+    return;
+  }
+
+  const { mediaQuery, listener } = subscription;
+  if (typeof mediaQuery.removeEventListener === "function") {
+    mediaQuery.removeEventListener("change", listener);
+  } else if (typeof mediaQuery.removeListener === "function") {
+    mediaQuery.removeListener(listener);
+  }
+
+  preferredColorSchemeSubscriptions.delete(subscriptionId);
 }

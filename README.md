@@ -50,11 +50,8 @@ Built-in handlers stay inside this control set. Third-party/custom handlers can 
   - Host-agnostic shared showcase UI/state/resources (`ShowcaseHeroPage`, styles)
 - `samples/Showcase.Fluent`
   - Mirage browser host for the shared showcase app (`Showcase.Shared`)
-  - Preserves Mirage-specific WebNode proof (`vendor-pill`) via host-only widget injection seam
-  - Registers optional shared section-navigation adapter (`IShowcaseSectionNavigator`) backed by Mirage browser page navigation
-  - Registers `UseMirageNavigation(...)` route projection (`/`, `/navigation-lab`, `/projects/{id}`) while keeping `NavigationPage` stack semantics as source of truth
-  - Includes an exhaustive `Layout Lab` validating `IView`/layout correctness for stacks, grid placement/spans, sizing, constraints, and surface rendering
-  - Includes an exhaustive `Layout Lab` matrix validating sizing, constraints, positioning, and nested container behavior across `ContentView`, stacks, and `Grid`
+  - Registers `UseMirageNavigation(...)` route projection (`/`, `/layout-lab`, `/navigation-lab`, `/projects/{id}`) while keeping `NavigationPage` stack semantics as source of truth
+  - Includes an exhaustive dedicated `Layout Lab` page validating sizing, constraints, positioning, and nested container behavior across `ContentView`, stacks, and `Grid`
   - Uses explicit `ScrollView` hosting for long-page scrolling; `ContentPage` remains non-scrollable by default
   - Demonstrates MAUI ResourceDictionary-first styling with near-zero host CSS (`index.html` reduced to app-shell sizing reset only)
 - `samples/Showcase.Maui`
@@ -132,6 +129,7 @@ If missing, startup fails with:
 - `VisualNodeBase` is a shared platform-side visual/layout projection layer, not a duplicate MAUI framework model.
 - Provider-specific mappings (Fluent, UI5, custom) live only in provider projects.
 - Navigation is `NavigationPage`-first: MAUI stack changes are the source of truth and Mirage projects them into browser URL/history through `UseMirageNavigation(...)`.
+- `NavigationPage` is realized as a built-in navigation shell (nav bar, back button, title slot, toolbar slot, bounded content host) on the control-node path.
 - Dependency direction for samples is locked: `*.Fluent -> *.Shared` and `*.Maui -> *.Shared`.
 - Fluent UI Web Components are built on FAST foundations, but Mirage’s public reference-provider story is Fluent-first.
 - Providers must support control-node and web-node realization for full Mirage behavior.

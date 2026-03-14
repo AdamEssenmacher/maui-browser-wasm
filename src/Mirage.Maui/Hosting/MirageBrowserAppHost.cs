@@ -17,6 +17,7 @@ namespace Mirage.Maui.Hosting;
 public static class MirageBrowserAppHost
 {
     private static int s_resizeSubscriptionId;
+    private static int s_themeSubscriptionId;
     private static IElementHandler? s_windowHandler;
     private static IMirageRenderCoordinator? s_renderCoordinator;
     private static IMirageRuntime? s_runtime;
@@ -72,6 +73,7 @@ public static class MirageBrowserAppHost
         {
             s_controlsApplication = controlsApplication;
             s_primaryWindow = window;
+            InitializeBrowserThemeBridge(controlsApplication);
             EnsureHotReloadServiceStarted();
         }
 
@@ -205,6 +207,12 @@ public static class MirageBrowserAppHost
             s_resizeSubscriptionId = 0;
         }
 
+        if (s_themeSubscriptionId != 0)
+        {
+            DomElement.UnsubscribePreferredColorSchemeChanged(s_themeSubscriptionId);
+            s_themeSubscriptionId = 0;
+        }
+
         s_hotReloadService?.Stop();
         s_hotReloadService = null;
 
@@ -225,6 +233,61 @@ public static class MirageBrowserAppHost
         s_primaryWindow = null;
 
         rootDomElement.ClearChildren();
+    }
+
+    private static void InitializeBrowserThemeBridge(Application controlsApplication)
+    {
+        if (s_themeSubscriptionId != 0)
+        {
+            DomElement.UnsubscribePreferredColorSchemeChanged(s_themeSubscriptionId);
+            s_themeSubscriptionId = 0;
+        }
+
+        ApplyBrowserTheme(controlsApplication);
+
+        s_themeSubscriptionId = DomElement.SubscribePreferredColorSchemeChanged(() =>
+        {
+            var dispatcher = s_dispatcher;
+            if (dispatcher is not null && dispatcher.IsDispatchRequired)
+            {
+                if (dispatcher.Dispatch(() => ApplyBrowserTheme(controlsApplication)))
+                {
+                    return;
+                }
+            }
+
+            ApplyBrowserTheme(controlsApplication);
+        });
+    }
+
+    private static void ApplyBrowserTheme(Application controlsApplication)
+    {
+        var browserTheme = ParseBrowserTheme(DomElement.GetPreferredColorScheme());
+        if (browserTheme is null || controlsApplication.UserAppTheme == browserTheme.Value)
+        {
+            return;
+        }
+
+        controlsApplication.UserAppTheme = browserTheme.Value;
+        if (MirageDiagnostics.IsEnabled)
+        {
+            MirageDiagnostics.Log("theme.bridge", $"theme={browserTheme.Value}");
+        }
+    }
+
+    private static AppTheme? ParseBrowserTheme(string? colorScheme)
+    {
+        if (string.IsNullOrWhiteSpace(colorScheme))
+        {
+            return null;
+        }
+
+        return colorScheme.Trim().ToLowerInvariant() switch
+        {
+            "light" => AppTheme.Light,
+            "dark" => AppTheme.Dark,
+            _ => null
+        };
     }
 
 }

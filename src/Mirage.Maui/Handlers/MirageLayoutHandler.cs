@@ -65,7 +65,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
 
     protected override void DisconnectHandler(MiragePlatformView platformView)
     {
-        DisconnectAllChildren();
+        DisconnectAllChildren(platformView);
         base.DisconnectHandler(platformView);
     }
 
@@ -76,6 +76,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
 
     public override void PlatformArrange(Rect frame)
     {
+        base.PlatformArrange(frame);
         VirtualView.CrossPlatformArrange(new Rect(0, 0, frame.Width, frame.Height));
     }
 
@@ -200,20 +201,19 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
     {
         if (_childHandlers.Remove(child, out var handler))
         {
-            handler.DisconnectHandler();
+            MirageHandlerDisconnect.SafeDisconnect(handler);
         }
     }
 
-    private void DisconnectAllChildren()
+    private void DisconnectAllChildren(MiragePlatformView platformView)
     {
         foreach (var handler in _childHandlers.Values.ToArray())
         {
-            handler.DisconnectHandler();
+            MirageHandlerDisconnect.SafeDisconnect(handler);
         }
 
         _childHandlers.Clear();
-        PlatformView.ClearChildren();
-        RequestRender();
+        platformView.ClearChildren();
     }
 
     private void ApplyBaseStyles()

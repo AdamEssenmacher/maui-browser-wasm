@@ -32,6 +32,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <MauiFont Include="..\Showcase.Maui\Resources\Fonts\*.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
     <MirageHotReloadXaml Include="..\Showcase.Shared\App\**\*.xaml">
       <HotReloadAssemblyName>Showcase.Shared</HotReloadAssemblyName>
       <HotReloadRelativePath>App/$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\\', '/'))</HotReloadRelativePath>

@@ -12,6 +12,19 @@ namespace Mirage.Maui.Handlers;
 internal static class MirageCommonViewProjection
 {
     private const double DefaultTextFallbackFontSize = 14;
+    private static readonly HashSet<string> GenericFontFamilies = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "serif",
+        "sans-serif",
+        "monospace",
+        "cursive",
+        "fantasy",
+        "system-ui",
+        "ui-serif",
+        "ui-sans-serif",
+        "ui-monospace",
+        "ui-rounded"
+    };
 
     private static readonly ConditionalWeakTable<MiragePlatformView, RequestedSizeState> RequestedSizeStates = new();
 
@@ -95,12 +108,13 @@ internal static class MirageCommonViewProjection
             return false;
         }
 
-        if (view.Background is null)
+        var backgroundPaint = ResolveBackgroundPaint(view);
+        if (backgroundPaint is null)
         {
             return ClearBackgroundStyles(platformHandler);
         }
 
-        if (view.Background is SolidPaint solidPaint)
+        if (backgroundPaint is SolidPaint solidPaint)
         {
             var cssColor = ToCssColor(solidPaint.Color);
             var changed = SetStyleIfChanged(platformHandler, "backgroundColor", cssColor);
@@ -111,7 +125,7 @@ internal static class MirageCommonViewProjection
             return changed;
         }
 
-        if (view.Background is LinearGradientPaint linearGradientPaint
+        if (backgroundPaint is LinearGradientPaint linearGradientPaint
             && TryBuildLinearGradient(linearGradientPaint, out var gradientCss))
         {
             var changed = SetStyleIfChanged(platformHandler, "backgroundColor", null);
@@ -187,7 +201,7 @@ internal static class MirageCommonViewProjection
         var resolvedSize = ResolveFontSize(font.Size, fallbackSize);
         var resolvedWeight = ResolveFontWeight(font.Weight);
         var resolvedStyle = ResolveFontStyle(font.Slant);
-        var resolvedFamily = string.IsNullOrWhiteSpace(font.Family) ? null : font.Family;
+        var resolvedFamily = ResolveFontFamily(font.Family);
 
         var changed = SetStyleIfChanged(platformHandler, "fontSize", ToPx(resolvedSize));
         changed |= SetStyleIfChanged(platformHandler, "fontWeight", resolvedWeight);
@@ -476,6 +490,48 @@ internal static class MirageCommonViewProjection
             FontSlant.Oblique => "oblique",
             _ => "normal"
         };
+    }
+
+    private static Paint? ResolveBackgroundPaint(IView view)
+    {
+        if (view.Background is not null)
+        {
+            return view.Background;
+        }
+
+        if (view is VisualElement visualElement
+            && visualElement.IsSet(VisualElement.BackgroundColorProperty)
+            && visualElement.BackgroundColor is { } backgroundColor)
+        {
+            return new SolidPaint(backgroundColor);
+        }
+
+        return null;
+    }
+
+    private static string? ResolveFontFamily(string? family)
+    {
+        if (string.IsNullOrWhiteSpace(family))
+        {
+            return null;
+        }
+
+        var trimmed = family.Trim();
+        if (trimmed.Length == 0)
+        {
+            return null;
+        }
+
+        if (trimmed.Contains(',', StringComparison.Ordinal) || GenericFontFamilies.Contains(trimmed))
+        {
+            return trimmed;
+        }
+
+        var quotedFamily = trimmed.StartsWith('"') || trimmed.StartsWith('\'')
+            ? trimmed
+            : $"\"{trimmed.Replace("\"", "\\\"", StringComparison.Ordinal)}\"";
+
+        return $"{quotedFamily}, sans-serif";
     }
 
     private static ClipPathProjection BuildClipPathProjection(IShape geometry)
