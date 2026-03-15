@@ -50,8 +50,9 @@ Built-in handlers stay inside this control set. Third-party/custom handlers can 
   - Host-agnostic shared showcase UI/state/resources (`ShowcaseHeroPage`, styles)
 - `samples/Showcase.Fluent`
   - Mirage browser host for the shared showcase app (`Showcase.Shared`)
-  - Registers `UseMirageNavigation(...)` route projection (`/`, `/layout-lab`, `/navigation-lab`, `/projects/{id}`) while keeping `NavigationPage` stack semantics as source of truth
+  - Registers `UseMirageNavigation(...)` route projection (`/`, `/layout-lab`, `/xaml-lab`, `/navigation-lab`, `/projects/{id}`) while keeping `NavigationPage` stack semantics as source of truth
   - Includes an exhaustive dedicated `Layout Lab` page validating sizing, constraints, positioning, and nested container behavior across `ContentView`, stacks, and `Grid`
+  - Includes a constrained `XAML Lab` page (`/xaml-lab`) with a WebNode-hosted Monaco editor and debounced fragment preview rendered through the normal Mirage MAUI handler pipeline
   - Uses explicit `ScrollView` hosting for long-page scrolling; `ContentPage` remains non-scrollable by default
   - Demonstrates MAUI ResourceDictionary-first styling with near-zero host CSS (`index.html` reduced to app-shell sizing reset only)
 - `samples/Showcase.Maui`

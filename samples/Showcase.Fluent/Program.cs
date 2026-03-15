@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Hosting;
+using Showcase.Fluent.App;
 using Showcase.Shared.App;
 
 public static class Program
@@ -25,11 +26,16 @@ public static class Program
             fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
             fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
         });
+        builder.ConfigureMauiHandlers(handlers =>
+        {
+            handlers.AddHandler(typeof(ShowcaseXamlEditorView), typeof(ShowcaseMonacoEditorHandler));
+        });
         builder.UseMirageBrowserPlatform();
         builder.UseMirageNavigation(routes =>
         {
             routes.Map<ShowcaseHeroPage>("/");
             routes.Map<ShowcaseLayoutLabPage>("/layout-lab");
+            routes.Map<ShowcaseXamlLabPage>("/xaml-lab");
             routes.Map<ShowcaseNavigationLabPage>("/navigation-lab");
             routes.Map<ShowcaseProjectPage>("/projects/{projectId}");
             routes.SetFallback<ShowcaseHeroPage>();

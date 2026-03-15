@@ -246,6 +246,8 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 changed |= SetStyleIfChanged("display", "grid");
                 changed |= SetStyleIfChanged("justifyItems", "stretch");
                 changed |= SetStyleIfChanged("alignItems", "stretch");
+                changed |= SetStyleIfChanged("justifyContent", "start");
+                changed |= SetStyleIfChanged("alignContent", "start");
                 changed |= ClearFlexContainerStyles();
                 changed |= ApplyGridStyles((Grid)VirtualView);
                 break;
@@ -280,6 +282,8 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         changed |= SetStyleIfChanged("display", "grid");
         changed |= SetStyleIfChanged("justifyItems", "stretch");
         changed |= SetStyleIfChanged("alignItems", "stretch");
+        changed |= SetStyleIfChanged("justifyContent", "start");
+        changed |= SetStyleIfChanged("alignContent", "start");
 
         if (!TryBuildGridTrackTemplate(grid.ColumnDefinitions.Select(definition => definition.Width), out var columnsTemplate))
         {

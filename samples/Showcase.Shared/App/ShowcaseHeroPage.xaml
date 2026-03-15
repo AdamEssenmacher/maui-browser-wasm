@@ -55,6 +55,10 @@
                                 AutomationId="hero-cta-command-layout-lab"
                                 Clicked="OnCommandScrollToLayoutLabClicked"
                                 Text="Open Layout Lab" />
+                            <Button
+                                AutomationId="hero-cta-command-xaml-lab"
+                                Clicked="OnOpenXamlLabClicked"
+                                Text="Open XAML Lab" />
                         </HorizontalStackLayout>
                     </VerticalStackLayout>
                 </ContentView>
@@ -74,7 +78,7 @@
                             Text="NavigationPage remains the source of truth. Mirage projects stack changes into browser URLs and history." />
                         <Label
                             AutomationId="showcase-navigation-lab-preview-routes"
-                            Text="Routes: /, /layout-lab, /navigation-lab, /projects/{id}" />
+                            Text="Routes: /, /layout-lab, /xaml-lab, /navigation-lab, /projects/{id}" />
                         <HorizontalStackLayout Spacing="10">
                             <Button
                                 AutomationId="showcase-open-navigation-lab"

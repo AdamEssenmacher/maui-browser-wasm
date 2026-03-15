@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Showcase.Shared.App.ShowcaseXamlLabPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:app="clr-namespace:Showcase.Shared.App"
+    AutomationId="showcase-page-xaml-lab"
+    Title="XAML Lab">
+    <ScrollView
+        x:Name="XamlLabScrollRoot"
+        AutomationId="xaml-lab-scroll-root"
+        Orientation="Vertical">
+        <VerticalStackLayout
+            AutomationId="xaml-lab-page-stack"
+            HorizontalOptions="Fill"
+            Style="{StaticResource ShowcasePageStack}">
+            <ContentView
+                HorizontalOptions="Fill"
+                Style="{StaticResource ShowcaseSectionCardFrame}">
+                <VerticalStackLayout
+                    AutomationId="xaml-lab-root"
+                    Style="{StaticResource ShowcaseSectionCardBody}">
+                    <Label
+                        AutomationId="xaml-lab-title"
+                        Style="{StaticResource Headline}"
+                        Text="XAML Lab" />
+                    <Label
+                        AutomationId="xaml-lab-summary"
+                        Text="Edit a constrained MAUI XAML fragment on the left and preview the live Mirage-rendered result on the right." />
+
+                    <Grid
+                        AutomationId="xaml-lab-split"
+                        ColumnDefinitions="1.15*,*"
+                        ColumnSpacing="16"
+                        HorizontalOptions="Fill">
+                        <VerticalStackLayout
+                            Grid.Column="0"
+                            AutomationId="xaml-lab-editor-pane"
+                            MinimumWidthRequest="0"
+                            Spacing="10">
+                            <HorizontalStackLayout Spacing="8">
+                                <HorizontalStackLayout
+                                    AutomationId="xaml-lab-snippet-picker"
+                                    HorizontalOptions="Fill"
+                                    Spacing="8">
+                                    <Button
+                                        AutomationId="xaml-lab-snippet-default"
+                                        Clicked="OnLoadDefaultSnippetClicked"
+                                        HorizontalOptions="Fill"
+                                        Text="Welcome" />
+                                    <Button
+                                        AutomationId="xaml-lab-snippet-layout"
+                                        Clicked="OnLoadLayoutSnippetClicked"
+                                        HorizontalOptions="Fill"
+                                        Text="Grid" />
+                                    <Button
+                                        AutomationId="xaml-lab-snippet-input"
+                                        Clicked="OnLoadInputSnippetClicked"
+                                        HorizontalOptions="Fill"
+                                        Text="Input" />
+                                </HorizontalStackLayout>
+                                <Button
+                                    AutomationId="xaml-lab-reset-button"
+                                    Clicked="OnResetSnippetClicked"
+                                    Text="Reset" />
+                                <Button
+                                    AutomationId="xaml-lab-apply-now-button"
+                                    Clicked="OnApplyNowClicked"
+                                    Text="Apply now" />
+                            </HorizontalStackLayout>
+
+                            <app:ShowcaseXamlEditorView
+                                x:Name="EditorView"
+                                AutomationId="xaml-lab-editor"
+                                HeightRequest="560"
+                                HorizontalOptions="Fill"
+                                MinimumWidthRequest="0"
+                                IsReadOnly="False"
+                                Language="xml"
+                                Theme="vs-dark" />
+
+                            <Label
+                                x:Name="EditorStatusLabel"
+                                AutomationId="xaml-lab-editor-status"
+                                Text="Ready." />
+
+                            <ContentView
+                                x:Name="ErrorPanel"
+                                AutomationId="xaml-lab-error-panel"
+                                IsVisible="False"
+                                StyleClass="showcase-layout-parent-surface">
+                                <Label
+                                    x:Name="ErrorLabel"
+                                    AutomationId="xaml-lab-error-text"
+                                    HorizontalOptions="Start"
+                                    HorizontalTextAlignment="Start"
+                                    LineBreakMode="WordWrap" />
+                            </ContentView>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout
+                            Grid.Column="1"
+                            AutomationId="xaml-lab-preview-pane"
+                            HorizontalOptions="Fill"
+                            MinimumWidthRequest="0"
+                            Spacing="10">
+                            <ContentView Style="{StaticResource ShowcaseSectionCardFrame}">
+                                <VerticalStackLayout
+                                    AutomationId="xaml-lab-preview-frame"
+                                    Padding="8"
+                                    Spacing="8">
+                                    <Label
+                                        AutomationId="xaml-lab-preview-note"
+                                        Text="Preview host (Mirage-rendered MAUI subtree)." />
+
+                                    <ContentView
+                                        x:Name="PreviewViewport"
+                                        HorizontalOptions="Fill">
+                                        <ContentView
+                                            x:Name="PreviewHost"
+                                            AutomationId="xaml-lab-preview-host"
+                                            BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray950}}"
+                                            HeightRequest="560"
+                                            HorizontalOptions="Fill"
+                                            Padding="12" />
+                                    </ContentView>
+                                </VerticalStackLayout>
+                            </ContentView>
+                        </VerticalStackLayout>
+                    </Grid>
+                </VerticalStackLayout>
+            </ContentView>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

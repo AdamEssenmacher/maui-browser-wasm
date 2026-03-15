@@ -33,4 +33,11 @@ public partial class ShowcaseHeroPage : ContentPage
             ProjectId = "42"
         }, animated: false);
     }
+
+    private async void OnOpenXamlLabClicked(object? sender, EventArgs e)
+    {
+        _ = sender;
+        _ = e;
+        await Navigation.PushAsync(new ShowcaseXamlLabPage(), animated: false);
+    }
 }

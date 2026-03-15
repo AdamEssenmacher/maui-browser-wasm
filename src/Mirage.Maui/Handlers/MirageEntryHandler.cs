@@ -15,7 +15,13 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
         new PropertyMapper<IEntry, MirageEntryHandler>(MirageViewMapper.CommonViewMapper)
         {
             [nameof(IEntry.Text)] = MapText,
-            [nameof(IPlaceholder.Placeholder)] = MapPlaceholder
+            [nameof(IPlaceholder.Placeholder)] = MapPlaceholder,
+            [nameof(VisualElement.WidthRequest)] = MapSizeRequests,
+            [nameof(VisualElement.HeightRequest)] = MapSizeRequests,
+            [nameof(VisualElement.MinimumWidthRequest)] = MapSizeRequests,
+            [nameof(VisualElement.MinimumHeightRequest)] = MapSizeRequests,
+            [nameof(VisualElement.MaximumWidthRequest)] = MapSizeRequests,
+            [nameof(VisualElement.MaximumHeightRequest)] = MapSizeRequests
         };
 
     private bool _isApplyingRuntimeInput;
@@ -44,6 +50,7 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
         PlatformView.SetStyle("display", "block");
         PlatformView.SetStyle("width", "100%");
         PlatformView.SetStyle("minHeight", "36px");
+        UpdateControlHeightToken(VirtualView);
         PlatformView.SetEvent("input", enabled: true);
         base.ConnectHandler(platformView);
         RequestRender();
@@ -137,6 +144,18 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
     public static void MapPlaceholder(MirageEntryHandler handler, IEntry entry)
     {
         handler.PlatformView.SetProperty("Placeholder", entry.Placeholder);
+        handler.RequestRender();
+    }
+
+    public static void MapSizeRequests(MirageEntryHandler handler, IEntry entry)
+    {
+        var changed = MirageCommonViewProjection.MapSizeRequests(handler, entry);
+        changed |= handler.UpdateControlHeightToken(entry);
+        if (!changed)
+        {
+            return;
+        }
+
         handler.RequestRender();
     }
 
@@ -296,5 +315,65 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
         MirageDiagnostics.Log(
             "entry.input",
             $"eventId={inputEventId} phase=render-timeout baselineRenderSequence={baselineRenderSequence} expectedRenderSequence={expectedRenderSequence} waitedMs={maxWaitMs}");
+    }
+
+    private bool SetStyleIfChanged(string styleName, string? styleValue)
+    {
+        if (string.Equals(PlatformView.GetStyleValue(styleName), styleValue, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        PlatformView.SetStyle(styleName, styleValue);
+        return true;
+    }
+
+    private bool UpdateControlHeightToken(IEntry entry)
+    {
+        if (entry is not VisualElement visualElement)
+        {
+            return SetStyleIfChanged("--base-height-multiplier", null);
+        }
+
+        var preferredHeight = ResolvePreferredControlHeight(visualElement);
+        if (preferredHeight is null)
+        {
+            return SetStyleIfChanged("--base-height-multiplier", null);
+        }
+
+        const double fluentDesignUnit = 4d;
+        var multiplier = Math.Max(1, preferredHeight.Value / fluentDesignUnit);
+        var multiplierValue = $"{multiplier:0.###}";
+        return SetStyleIfChanged("--base-height-multiplier", multiplierValue);
+    }
+
+    private static double? ResolvePreferredControlHeight(VisualElement visualElement)
+    {
+        double? preferredHeight = null;
+        if (IsFinitePositive(visualElement.HeightRequest))
+        {
+            preferredHeight = visualElement.HeightRequest;
+        }
+        else if (IsFinitePositive(visualElement.MinimumHeightRequest))
+        {
+            preferredHeight = visualElement.MinimumHeightRequest;
+        }
+
+        if (preferredHeight is null)
+        {
+            return null;
+        }
+
+        if (IsFinitePositive(visualElement.MaximumHeightRequest))
+        {
+            preferredHeight = Math.Min(preferredHeight.Value, visualElement.MaximumHeightRequest);
+        }
+
+        return preferredHeight.Value;
+    }
+
+    private static bool IsFinitePositive(double value)
+    {
+        return double.IsFinite(value) && value > 0;
     }
 }

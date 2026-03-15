@@ -377,6 +377,8 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("gridTemplateRows", text, StringComparison.Ordinal);
         Assert.Contains("rowGap", text, StringComparison.Ordinal);
         Assert.Contains("columnGap", text, StringComparison.Ordinal);
+        Assert.Contains("\"justifyContent\", \"start\"", text, StringComparison.Ordinal);
+        Assert.Contains("\"alignContent\", \"start\"", text, StringComparison.Ordinal);
         Assert.Contains("TryConvertGridTrack", text, StringComparison.Ordinal);
     }
 
