@@ -1,0 +1,311 @@
+# Controls.Sample Page Status Tracker
+
+Tracks page-level status for vendored upstream Controls.Sample sources under `vendor/upstream/controls-sample/Pages`.
+
+This table is ordered by a suggested implementation progression: foundation and layouts first, then simple controls, then complex scenarios.
+
+Visual legend:
+- `Mirage Support`: `[x]` Runnable, `[!]` HiddenUnsupported, `[R]` HiddenRazor, `[P]` HiddenPlatformSpecific, `[ ]` NotImported.
+- `E2E Covered`: `[x]` covered, `[ ]` not covered.
+- `Manual Parity (User)`: `[x]` validated, `[ ]` pending validation.
+
+| Upstream Page | Source File | Mirage Support | E2E Covered | Manual Parity (User) |
+|---|---|---|---|---|
+| `AppShell.xaml` | `Pages/AppShell.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BasePage.cs` | `Pages/Base/BasePage.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ControlsPage.xaml` | `Pages/ControlsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CustomFlyoutPage.xaml` | `Pages/CustomFlyoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CustomNavigationPage.xaml` | `Pages/CustomNavigationPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `MainPage.xaml` | `Pages/MainPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `OthersPage.xaml` | `Pages/OthersPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SettingsPage.xaml` | `Pages/SettingsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `AbsoluteLayoutPage.xaml` | `Pages/Layouts/AbsoluteLayoutPage.xaml` | `[x]` | `[x]` | `[x]` |
+| `ClippingPage.xaml` | `Pages/Layouts/ClippingPage.xaml` | `[x]` | `[ ]` | `[ ]` |
+| `ContentViewPage.xaml` | `Pages/Layouts/ContentViewPage.xaml` | `[x]` | `[x]` | `[ ]` |
+| `CustomLayoutPage.xaml` | `Pages/Layouts/CustomLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `FlexLayoutPage.xaml` | `Pages/Layouts/FlexLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `GridPage.xaml` | `Pages/Layouts/GridPage.xaml` | `[x]` | `[x]` | `[ ]` |
+| `HorizontalStackLayoutPage.xaml` | `Pages/Layouts/HorizontalStackLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `LayoutIsEnabledPage.xaml` | `Pages/Layouts/LayoutIsEnabledPage.xaml` | `[!]` | `[ ]` | `[ ]` |
+| `LayoutUpdatesPage.cs` | `Pages/Layouts/LayoutUpdatesPage.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `RelativeLayoutPage.xaml` | `Pages/Layouts/RelativeLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ScrollViewPage.xaml` | `Pages/Layouts/ScrollViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ScrollToEndPage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollToEndPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ScrollToFromConstructorPage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollToFromConstructorPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ScrollViewOrientationPage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollViewOrientationPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ScrollViewTemplatePage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollViewTemplatePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `StackLayoutPage.xaml` | `Pages/Layouts/StackLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `TemplatedViewPage.xaml` | `Pages/Layouts/TemplatedViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `VerticalStackLayoutPage.xaml` | `Pages/Layouts/VerticalStackLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ZIndexPage.xaml` | `Pages/Layouts/ZIndexPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `LayoutsPage.xaml` | `Pages/LayoutsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `AlertsPage.xaml` | `Pages/Core/AlertsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `AppThemeBindingPage.xaml` | `Pages/Core/AppThemeBindingPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ApplicationControlPage.xaml` | `Pages/Core/ApplicationControlPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BorderAlignment.xaml` | `Pages/Core/BorderGalleries/BorderAlignment.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BorderClipPlayground.xaml` | `Pages/Core/BorderGalleries/BorderClipPlayground.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BorderLayout.xaml` | `Pages/Core/BorderGalleries/BorderLayout.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BorderPage.cs` | `Pages/Core/BorderGalleries/BorderPage.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `BorderPlayground.xaml` | `Pages/Core/BorderGalleries/BorderPlayground.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BorderResizeContent.xaml` | `Pages/Core/BorderGalleries/BorderResizeContent.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BorderStroke.xaml` | `Pages/Core/BorderGalleries/BorderStroke.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BorderStyles.xaml` | `Pages/Core/BorderGalleries/BorderStyles.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `Borderless.xaml` | `Pages/Core/BorderGalleries/Borderless.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BrushesPage.xaml` | `Pages/Core/BrushesPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ClipPage.xaml` | `Pages/Core/ClipPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ContentPageBackgroundGallery.xaml` | `Pages/Core/ContentPageGalleries/ContentPageBackgroundGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ContentPageBackgroundImageGallery.xaml` | `Pages/Core/ContentPageGalleries/ContentPageBackgroundImageGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ContentPageGallery.cs` | `Pages/Core/ContentPageGalleries/ContentPageGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ContextFlyoutPage.xaml` | `Pages/Core/ContextFlyoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `DevicePage.xaml` | `Pages/Core/DevicePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `DispatcherPage.xaml` | `Pages/Core/DispatcherPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `DragAndDropBetweenLayouts.xaml` | `Pages/Core/DragAndDropBetweenLayouts.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `DropFileToMauiApp.xaml` | `Pages/Core/DropFileToMauiApp.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `EffectsPage.xaml` | `Pages/Core/EffectsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `FlyoutPageGallery.xaml` | `Pages/Core/FlyoutPageGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `FocusPage.xaml` | `Pages/Core/FocusPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `GesturesPage.xaml` | `Pages/Core/GesturesPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `InputTransparentPage.xaml` | `Pages/Core/InputTransparentPage.xaml` | `[!]` | `[ ]` | `[ ]` |
+| `MenuBarPage.xaml` | `Pages/Core/MenuBarPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ModalPage.xaml` | `Pages/Core/ModalPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `MultiWindowPage.xaml` | `Pages/Core/MultiWindowPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `NavigationGallery.xaml` | `Pages/Core/NavigationGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `PanGestureEventsGallery.xaml` | `Pages/Core/PanGestureGalleries/PanGestureEventsGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `PanGestureGallery.cs` | `Pages/Core/PanGestureGalleries/PanGestureGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `PanGesturePlaygroundGallery.cs` | `Pages/Core/PanGestureGalleries/PanGesturePlaygroundGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `PinchGestureTestPage.cs` | `Pages/Core/PinchGestureTestPage.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `PointerGestureGalleryPage.xaml` | `Pages/Core/PointerGestureGalleryPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SemanticsPage.xaml` | `Pages/Core/SemanticsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `InvalidateShadowHostPage.xaml` | `Pages/Core/ShadowGalleries/InvalidateShadowHostPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ShadowPage.cs` | `Pages/Core/ShadowGalleries/ShadowPage.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ShadowPlaygroundPage.xaml` | `Pages/Core/ShadowGalleries/ShadowPlaygroundPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ShellChromeGallery.xaml` | `Pages/Core/ShellGalleries/ShellChromeGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeGestureGalleryPage.cs` | `Pages/Core/SwipeGestureGalleryPage.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `TapGestureGalleryPage.cs` | `Pages/Core/TapGestureGalleryPage.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ToolbarPage.xaml` | `Pages/Core/ToolbarPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `TransformationsPage.xaml` | `Pages/Core/TransformationsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `WindowTitleBar.xaml` | `Pages/Core/WindowTitleBar.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CorePage.xaml` | `Pages/CorePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `HitTestingPage.xaml` | `Pages/HitTestingPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ActivityIndicatorPage.xaml` | `Pages/Controls/ActivityIndicatorPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BoxViewPage.xaml` | `Pages/Controls/BoxViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ButtonPage.xaml` | `Pages/Controls/ButtonPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CheckBoxPage.xaml` | `Pages/Controls/CheckBoxPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `DatePickerPage.xaml` | `Pages/Controls/DatePickerPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `EditorPage.xaml` | `Pages/Controls/EditorPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `EntryPage.xaml` | `Pages/Controls/EntryPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `HybridWebViewPage.xaml` | `Pages/Controls/HybridWebViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ImageButtonPage.xaml` | `Pages/Controls/ImageButtonPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ImagePage.xaml` | `Pages/Controls/ImagePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `IndicatorPage.xaml` | `Pages/Controls/IndicatorPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `LabelPage.xaml` | `Pages/Controls/LabelPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `PickerPage.xaml` | `Pages/Controls/PickerPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ProgressBarPage.xaml` | `Pages/Controls/ProgressBarPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `RefreshViewPage.xaml` | `Pages/Controls/RefreshViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SearchBarPage.xaml` | `Pages/Controls/SearchBarPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ShapesPage.xaml` | `Pages/Controls/ShapesPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SliderPage.xaml` | `Pages/Controls/SliderPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `StepperPage.xaml` | `Pages/Controls/StepperPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwitchPage.xaml` | `Pages/Controls/SwitchPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `TimePickerPage.xaml` | `Pages/Controls/TimePickerPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `TitleBarPage.xaml` | `Pages/Controls/TitleBarPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CarouselCodeGallery.cs` | `Pages/Controls/CarouselViewGalleries/CarouselCodeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `CarouselItemsGallery.cs` | `Pages/Controls/CarouselViewGalleries/CarouselItemsGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `CarouselSnapGallery.cs` | `Pages/Controls/CarouselViewGalleries/CarouselSnapGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `CarouselViewGallery.cs` | `Pages/Controls/CarouselViewGalleries/CarouselViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `CarouselXamlGallery.xaml` | `Pages/Controls/CarouselViewGalleries/CarouselXamlGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CollectionCarouselViewGallery.cs` | `Pages/Controls/CarouselViewGalleries/CollectionCarouselViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `EmptyCarouselGallery.xaml` | `Pages/Controls/CarouselViewGalleries/EmptyCarouselGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ExampleTemplateCarousel.xaml` | `Pages/Controls/CarouselViewGalleries/ExampleTemplateCarousel.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `IndicatorCodeGallery.cs` | `Pages/Controls/CarouselViewGalleries/IndicatorCodeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `AdaptiveCollectionView.xaml` | `Pages/Controls/CollectionViewGalleries/AdaptiveCollectionView.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `AlternateLayoutGallery.cs` | `Pages/Controls/CollectionViewGalleries/AlternateLayoutGalleries/AlternateLayoutGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `StaggeredLayout.xaml` | `Pages/Controls/CollectionViewGalleries/AlternateLayoutGalleries/StaggeredLayout.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CarouselViewPage.xaml` | `Pages/Controls/CollectionViewGalleries/CarouselViewGalleries/CarouselViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/CollectionViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `DataTemplateGallery.cs` | `Pages/Controls/CollectionViewGalleries/DataTemplateGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `VariedSizeDataTemplateSelectorGallery.xaml` | `Pages/Controls/CollectionViewGalleries/DataTemplateSelectorGalleries/VariedSizeDataTemplateSelectorGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `DataTemplateSelectorGallery.xaml` | `Pages/Controls/CollectionViewGalleries/DataTemplateSelectorGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `DefaultTextGallery.cs` | `Pages/Controls/CollectionViewGalleries/DefaultTextGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `EmptyViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `EmptyViewLoadSimulateGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewLoadSimulateGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `EmptyViewNullGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewNullGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `EmptyViewRTLGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewRTLGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `EmptyViewStringGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewStringGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `EmptyViewSwapGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewSwapGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `EmptyViewTemplateGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewTemplateGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `EmptyViewViewGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewViewGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `EmptyViewWithDataTemplateSelector.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewWithDataTemplateSelector.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `FilterCollectionView.xaml` | `Pages/Controls/CollectionViewGalleries/FilterCollectionView.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BasicGrouping.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/BasicGrouping.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `GridGrouping.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/GridGrouping.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `GroupingGallery.cs` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/GroupingGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `GroupingNoTemplates.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/GroupingNoTemplates.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `GroupingPlusSelection.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/GroupingPlusSelection.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `MeasureFirstStrategy.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/MeasureFirstStrategy.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ObservableGrouping.cs` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/ObservableGrouping.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SomeEmptyGroups.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/SomeEmptyGroups.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwitchGrouping.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/SwitchGrouping.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `FooterOnlyString.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/FooterOnlyString.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `HeaderFooterGallery.cs` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `HeaderFooterGrid.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterGrid.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `HeaderFooterGridHorizontal.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterGridHorizontal.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `HeaderFooterString.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterString.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `HeaderFooterTemplate.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterTemplate.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `HeaderFooterView.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterView.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ChatExample.xaml` | `Pages/Controls/CollectionViewGalleries/ItemSizeGalleries/ChatExample.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `DynamicItemSizeGallery.cs` | `Pages/Controls/CollectionViewGalleries/ItemSizeGalleries/DynamicItemSizeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ItemsSizeGallery.cs` | `Pages/Controls/CollectionViewGalleries/ItemSizeGalleries/ItemsSizeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `VariableSizeTemplateGridGallery.cs` | `Pages/Controls/CollectionViewGalleries/ItemSizeGalleries/VariableSizeTemplateGridGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `NestedCollectionViewGallery.xaml` | `Pages/Controls/CollectionViewGalleries/NestedGalleries/NestedCollectionViewGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ObservableCodeCollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/ObservableCodeCollectionViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ObservableCollectionGallery.cs` | `Pages/Controls/CollectionViewGalleries/ObservableCollectionGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ObservableCollectionResetGallery.cs` | `Pages/Controls/CollectionViewGalleries/ObservableCollectionResetGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ObservableMultiItemCollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/ObservableMultiItemCollectionViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `OnlineImages.xaml` | `Pages/Controls/CollectionViewGalleries/OnlineImages.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `PropagateCodeGallery.cs` | `Pages/Controls/CollectionViewGalleries/PropagateCodeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `PropagationGallery.cs` | `Pages/Controls/CollectionViewGalleries/PropagationGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `GroupedReorderingGallery.cs` | `Pages/Controls/CollectionViewGalleries/ReorderingGalleries/GroupedReorderingGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ReorderingGallery.cs` | `Pages/Controls/CollectionViewGalleries/ReorderingGalleries/ReorderingGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `UngroupedReorderingGallery.cs` | `Pages/Controls/CollectionViewGalleries/ReorderingGalleries/UngroupedReorderingGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ItemsUpdatingScrollModeGallery.xaml` | `Pages/Controls/CollectionViewGalleries/ScrollModeGalleries/ItemsUpdatingScrollModeGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ScrollModeGallery.cs` | `Pages/Controls/CollectionViewGalleries/ScrollModeGalleries/ScrollModeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ScrollModeTestGallery.xaml` | `Pages/Controls/CollectionViewGalleries/ScrollModeGalleries/ScrollModeTestGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ScrollToCodeGallery.cs` | `Pages/Controls/CollectionViewGalleries/ScrollToCodeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ScrollToGroup.xaml` | `Pages/Controls/CollectionViewGalleries/ScrollToGalleries/ScrollToGroup.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ScrollToGallery.cs` | `Pages/Controls/CollectionViewGalleries/ScrollToGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `FilterSelection.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/FilterSelection.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `MultipleBoundSelection.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/MultipleBoundSelection.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `PreselectedItemGallery.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/PreselectedItemGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `PreselectedItemsGallery.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/PreselectedItemsGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SelectionChangedCommandParameter.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SelectionChangedCommandParameter.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SelectionGallery.cs` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SelectionGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SelectionModeGallery.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SelectionModeGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SelectionSynchronization.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SelectionSynchronization.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SingleBoundSelection.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SingleBoundSelection.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `VisualStatesGallery.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/VisualStatesGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SnapPointsCodeGallery.cs` | `Pages/Controls/CollectionViewGalleries/SnapPointsCodeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SnapPointsGallery.cs` | `Pages/Controls/CollectionViewGalleries/SnapPointsGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ItemsSpacingGallery.cs` | `Pages/Controls/CollectionViewGalleries/SpacingGalleries/ItemsSpacingGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SpacingGallery.cs` | `Pages/Controls/CollectionViewGalleries/SpacingGalleries/SpacingGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `TemplateCodeCollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/TemplateCodeCollectionViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `TemplateCodeCollectionViewGridGallery.cs` | `Pages/Controls/CollectionViewGalleries/TemplateCodeCollectionViewGridGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `TextCodeCollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/TextCodeCollectionViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `TextCodeCollectionViewGridGallery.cs` | `Pages/Controls/CollectionViewGalleries/TextCodeCollectionViewGridGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ContentProperties.xaml` | `Pages/Controls/RadioButtonGalleries/ContentProperties.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `RadioButtonBorder.xaml` | `Pages/Controls/RadioButtonGalleries/RadioButtonBorder.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `RadioButtonContentGallery.xaml` | `Pages/Controls/RadioButtonGalleries/RadioButtonContentGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `RadioButtonGalleries.cs` | `Pages/Controls/RadioButtonGalleries/RadioButtonGalleries.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `RadioButtonGroupBindingGallery.xaml` | `Pages/Controls/RadioButtonGalleries/RadioButtonGroupBindingGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `RadioButtonGroupGallery.xaml` | `Pages/Controls/RadioButtonGalleries/RadioButtonGroupGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `RadioButtonGroupGalleryPage.xaml` | `Pages/Controls/RadioButtonGalleries/RadioButtonGroupGalleryPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ScatteredRadioButtonGallery.xaml` | `Pages/Controls/RadioButtonGalleries/ScatteredRadioButtonGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `TemplateFromStyle.xaml` | `Pages/Controls/RadioButtonGalleries/TemplateFromStyle.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `AddRemoveClipGallery.cs` | `Pages/Controls/ShapesGalleries/AddRemoveClipGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `AnimateShapeGallery.cs` | `Pages/Controls/ShapesGalleries/AnimateShapeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `AutoSizeShapesGallery.xaml` | `Pages/Controls/ShapesGalleries/AutoSizeShapesGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ClipCornerRadiusGallery.xaml` | `Pages/Controls/ShapesGalleries/ClipCornerRadiusGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ClipGallery.xaml` | `Pages/Controls/ShapesGalleries/ClipGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ClipPerformanceGallery.cs` | `Pages/Controls/ShapesGalleries/ClipPerformanceGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ClipViewsGallery.xaml` | `Pages/Controls/ShapesGalleries/ClipViewsGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CompositionGallery.xaml` | `Pages/Controls/ShapesGalleries/CompositionGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `EllipseGallery.xaml` | `Pages/Controls/ShapesGalleries/EllipseGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `InvalidateBrushGallery.xaml` | `Pages/Controls/ShapesGalleries/InvalidateBrushGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `InvalidateClipGallery.xaml` | `Pages/Controls/ShapesGalleries/InvalidateClipGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `LineCapGallery.xaml` | `Pages/Controls/ShapesGalleries/LineCapGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `LineGallery.xaml` | `Pages/Controls/ShapesGalleries/LineGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `LineJoinGallery.xaml` | `Pages/Controls/ShapesGalleries/LineJoinGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `PathAspectGallery.xaml` | `Pages/Controls/ShapesGalleries/PathAspectGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `PathGallery.xaml` | `Pages/Controls/ShapesGalleries/PathGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `PathLayoutOptionsGallery.xaml` | `Pages/Controls/ShapesGalleries/PathLayoutOptionsGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `PathTransformStringGallery.xaml` | `Pages/Controls/ShapesGalleries/PathTransformStringGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `PolygonGallery.xaml` | `Pages/Controls/ShapesGalleries/PolygonGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `PolylineGallery.xaml` | `Pages/Controls/ShapesGalleries/PolylineGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `RectangleGallery.xaml` | `Pages/Controls/ShapesGalleries/RectangleGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ShapeAppThemeGallery.xaml` | `Pages/Controls/ShapesGalleries/ShapeAppThemeGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ShapeBackgroundGallery.xaml` | `Pages/Controls/ShapesGalleries/ShapeBackgroundGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ShapesGallery.cs` | `Pages/Controls/ShapesGalleries/ShapesGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `TransformPlaygroundGallery.xaml` | `Pages/Controls/ShapesGalleries/TransformPlaygroundGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `UpdatePathDataGallery.xaml` | `Pages/Controls/ShapesGalleries/UpdatePathDataGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `AddRemoveSwipeItemsGallery.cs` | `Pages/Controls/SwipeViewGalleries/AddRemoveSwipeItemsGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `BasicSwipeGallery.xaml` | `Pages/Controls/SwipeViewGalleries/BasicSwipeGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CustomSizeSwipeViewGallery.xaml` | `Pages/Controls/SwipeViewGalleries/CustomSizeSwipeViewGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CustomSwipeControl.xaml` | `Pages/Controls/SwipeViewGalleries/CustomSwipeControl.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CustomSwipeControlGallery.xaml` | `Pages/Controls/SwipeViewGalleries/CustomSwipeControlGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CustomSwipeItemGallery.cs` | `Pages/Controls/SwipeViewGalleries/CustomSwipeItemGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `CustomSwipeItemViewGallery.xaml` | `Pages/Controls/SwipeViewGalleries/CustomSwipeItemViewGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CustomizeSwipeItemGallery.cs` | `Pages/Controls/SwipeViewGalleries/CustomizeSwipeItemGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `HorizontalSwipeThresholdGallery.xaml` | `Pages/Controls/SwipeViewGalleries/HorizontalSwipeThresholdGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `NoIconTextSwipeItemGallery.cs` | `Pages/Controls/SwipeViewGalleries/NoIconTextSwipeItemGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `OpenCloseSwipeGallery.cs` | `Pages/Controls/SwipeViewGalleries/OpenCloseSwipeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `PositionGallery.cs` | `Pages/Controls/SwipeViewGalleries/PositionGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ResourceSwipeItemsGallery.xaml` | `Pages/Controls/SwipeViewGalleries/ResourceSwipeItemsGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeBehaviorOnInvokedGallery.cs` | `Pages/Controls/SwipeViewGalleries/SwipeBehaviorOnInvokedGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeBindableLayoutGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeBindableLayoutGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeCarouselViewGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeCarouselViewGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeCollectionViewGallery.cs` | `Pages/Controls/SwipeViewGalleries/SwipeCollectionViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeHorizontalCollectionViewGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeHorizontalCollectionViewGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeItemIconGallery.cs` | `Pages/Controls/SwipeViewGalleries/SwipeItemIconGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeItemIsEnabledGallery.cs` | `Pages/Controls/SwipeViewGalleries/SwipeItemIsEnabledGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeItemIsVisibleGallery.cs` | `Pages/Controls/SwipeViewGalleries/SwipeItemIsVisibleGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeItemPositionGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeItemPositionGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeItemSizeGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeItemSizeGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeItemViewIsEnabledGallery.cs` | `Pages/Controls/SwipeViewGalleries/SwipeItemViewIsEnabledGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeItemViewPositionGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeItemViewPositionGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeItemsDisposeGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeItemsDisposeGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeListViewGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeListViewGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeThresholdCustomSwipeItemGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeThresholdCustomSwipeItemGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeThresholdGallery.cs` | `Pages/Controls/SwipeViewGalleries/SwipeThresholdGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeTransitionModeGallery.cs` | `Pages/Controls/SwipeViewGalleries/SwipeTransitionModeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeVerticalCollectionViewGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeVerticalCollectionViewGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeViewBindingContextGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeViewBindingContextGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeViewEventsGallery.cs` | `Pages/Controls/SwipeViewGalleries/SwipeViewEventsGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeViewGallery.cs` | `Pages/Controls/SwipeViewGalleries/SwipeViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeViewGestureRecognizerGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeViewGestureRecognizerGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeViewMarginGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeViewMarginGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeViewNoLayoutGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeViewNoLayoutGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeViewShadowGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeViewShadowGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeViewVisualStatesCollectionGallery.xaml` | `Pages/Controls/SwipeViewGalleries/SwipeViewVisualStatesCollectionGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `VerticalSwipeThresholdGallery.xaml` | `Pages/Controls/SwipeViewGalleries/VerticalSwipeThresholdGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `WebViewFullScreenVideoGallery.xaml` | `Pages/Controls/WebViewGalleries/WebViewFullScreenVideoGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `WebViewGalleries.cs` | `Pages/Controls/WebViewGalleries/WebViewGalleries.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `WebViewGallery.xaml` | `Pages/Controls/WebViewGalleries/WebViewGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `AndExpandPage.xaml` | `Pages/Compatibility/AndExpandPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ListViewContextActions.xaml` | `Pages/Compatibility/ListViewGalleries/ListViewContextActions.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ListViewEntryCell.cs` | `Pages/Compatibility/ListViewGalleries/ListViewEntryCell.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ListViewImageCell.cs` | `Pages/Compatibility/ListViewGalleries/ListViewImageCell.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ListViewRefresh.cs` | `Pages/Compatibility/ListViewGalleries/ListViewRefresh.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ListViewSwitchCell.cs` | `Pages/Compatibility/ListViewGalleries/ListViewSwitchCell.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ListViewTextCell.cs` | `Pages/Compatibility/ListViewGalleries/ListViewTextCell.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ListViewViewCell.xaml` | `Pages/Compatibility/ListViewGalleries/ListViewViewCell.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ListViewPage.xaml` | `Pages/Compatibility/ListViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `TabbedPageGallery.xaml` | `Pages/Compatibility/TabbedPageGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `TabbedPageGalleryMainPage.xaml` | `Pages/Compatibility/TabbedPageGalleryMainPage.xaml` | `[x]` | `[x]` | `[ ]` |
+| `TableViewPage.xaml` | `Pages/Compatibility/TableViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CompatibilityPage.xaml` | `Pages/CompatibilityPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `AnimationPage.xaml` | `Pages/UserInterface/AnimationPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BehaviorsPage.xaml` | `Pages/UserInterface/BehaviorsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `FontsPage.xaml` | `Pages/UserInterface/FontsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `StateTriggersPage.xaml` | `Pages/UserInterface/StateTriggersPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `StylesPage.xaml` | `Pages/UserInterface/StylesPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `TriggersPage.xaml` | `Pages/UserInterface/TriggersPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `VisualStatesPage.xaml` | `Pages/UserInterface/VisualStatesPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `UserInterfacePage.xaml` | `Pages/UserInterfacePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BasicMapGallery.xaml` | `Pages/Controls/MapsGalleries/BasicMapGallery.xaml` | `[P]` | `[ ]` | `[ ]` |
+| `CircleGallery.xaml` | `Pages/Controls/MapsGalleries/CircleGallery.xaml` | `[P]` | `[ ]` | `[ ]` |
+| `MapPinsGallery.xaml` | `Pages/Controls/MapsGalleries/MapPinsGallery.xaml` | `[P]` | `[ ]` | `[ ]` |
+| `MapTypeGallery.xaml` | `Pages/Controls/MapsGalleries/MapTypeGallery.xaml` | `[P]` | `[ ]` | `[ ]` |
+| `MapsGallery.cs` | `Pages/Controls/MapsGalleries/MapsGallery.cs` | `[P]` | `[ ]` | `[ ]` |
+| `PinItemsSourceGallery.xaml` | `Pages/Controls/MapsGalleries/PinItemsSourceGallery.xaml` | `[P]` | `[ ]` | `[ ]` |
+| `PolygonsGallery.xaml` | `Pages/Controls/MapsGalleries/PolygonsGallery.xaml` | `[P]` | `[ ]` | `[ ]` |
+| `PlatformSpecificsPage.xaml` | `Pages/PlatformSpecificsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BlazorPage.xaml` | `Pages/Blazor/BlazorPage.xaml` | `[R]` | `[ ]` | `[ ]` |
+| `Index.razor` | `Pages/Blazor/Index.razor` | `[R]` | `[ ]` | `[ ]` |
+| `MyDynamicComponent.razor` | `Pages/Blazor/MyDynamicComponent.razor` | `[R]` | `[ ]` | `[ ]` |
+| `OtherPage.razor` | `Pages/Blazor/OtherPage.razor` | `[R]` | `[ ]` | `[ ]` |
+| `GraphicsViewPage.xaml` | `Pages/Others/GraphicsViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `LargeTitlesPageiOS.cs` | `Pages/Others/LargeTitlesPageiOS.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `RenderViewPage.xaml` | `Pages/Others/RenderViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `StyleSheetsPage.xaml` | `Pages/Others/StyleSheetsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `TemplatePage.xaml` | `Pages/Others/TemplatePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `TwoPaneViewPage.xaml` | `Pages/Others/TwoPaneViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |

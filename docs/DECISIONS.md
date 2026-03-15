@@ -259,6 +259,15 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added integration tests for repeated `x:Name` XAML reapply and `ResourceDictionary` clear+reload semantics, and converted `Counter.Fluent` page authoring to XAML as the minimal app-level hot-reload harness.
 - XAML apply target discovery now includes the resolved primary host window in addition to `Application.Windows` so hot reload still applies when MAUI does not populate the application window collection in browser-hosted startup paths.
 
+## 2026-03-15 (Controls.Sample Subtree Import + Wrapper Hosts)
+- Added an upstream vendor lane for `dotnet/maui` Controls.Sample under `vendor/upstream/controls-sample`, synced via `git subtree` through `tools/vendor/sync-controls-sample.sh`, with sync metadata recorded in `.mirage-upstream.json`.
+- Added licensing/compliance artifacts for the vendored sample (`LICENSE.upstream-MIT.txt` and `THIRD-PARTY-NOTICES.upstream.txt`) and documented third-party usage in `docs/THIRD_PARTY_NOTICES.md`.
+- Locked sync compliance behavior: vendor sync now fails if upstream license/third-party notice files are not found, preventing accidental non-compliant updates.
+- Shared wrapper compiles a curated first-wave upstream subset (Runnable: `TabbedPageGalleryMainPage`; native-only for now: `LayoutIsEnabledPage`, `InputTransparentPage`) while keeping the full upstream source vendored.
+- Added wrapper hosts and shared catalog infrastructure: `ControlsSample.Shared`, `ControlsSample.Fluent`, and `ControlsSample.Maui`, with host-provided visibility policy (`IControlsSampleVisibilityPolicy`) so browser run surface remains Mirage-runnable while native host can expose broader imported pages.
+- Added `ControlsSample.Maui` to `Mirage.sln`; the project supports Android + iOS + MacCatalyst by default on non-Linux hosts, with an opt-out switch (`ControlsSampleEnableAppleTargets=false`) for environments without the required Apple toolchain.
+- Locked Razor handling policy for this lane: upstream `.razor` sources are retained in the vendor copy but excluded from browser/native run surfaces.
+
 ## 2026-03-10 (Navigation Extensibility Wave: NavigationPage-First Browser Projection)
 - Navigation was locked to a `NavigationPage`-first model: MAUI stack operations (`PushAsync`, `PopAsync`, `PopToRootAsync`) remain source of truth while Mirage projects current-page state into browser URL/history/title.
 - Added extensibility seams via `UseMirageNavigation(...)` and DI policies (`IRouteRegistry`, parser/serializer, page activator, parameter binder, guard, history policy, title policy) so apps control route shape/policy without replacing core stack semantics.
@@ -355,3 +364,29 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - The editor is intentionally hosted via the `WebNode` path using a Fluent-specific custom element (`mirage-monaco-editor`) and handler (`ShowcaseMonacoEditorHandler`) to prove arbitrary web-widget hosting through normal Mirage architecture seams.
 - Preview rendering stays in the standard Mirage MAUI pipeline via a shared fragment compiler + validator (`XamlLabFragmentCompiler`) and debounced preview session (`XamlLabPreviewSession`) with strict whitelist enforcement, explicit error reporting, and last-good-preview preservation.
 - Scope is intentionally constrained to fragment authoring only (single root, no app/page roots, no arbitrary event-handler execution, no unrestricted directives/code-behind).
+
+## 2026-03-15 (ControlsSample AbsoluteLayoutPage Enablement)
+- Added browser runtime support for `AbsoluteLayout` and `BoxView` in Mirage (`MirageLayoutHandler` + new `MirageBoxViewHandler`) so foundational absolute-positioning scenarios can run without custom page rewrites.
+- Extended semantic/provider mapping with `ComponentKind.AbsoluteLayout` and `ComponentKind.BoxView` in the Fluent provider, preserving control-node-based realization and existing provider/runtime contracts.
+- Imported upstream `AbsoluteLayoutPage` into `ControlsSample.Shared` with a minimal vendor-compat `BasePage` shim to keep selective import boundaries small while honoring upstream XAML type expectations.
+- Updated ControlsSample catalog/E2E/status tracking so `AbsoluteLayoutPage` is now a runnable, browser-validated entry in the staged implementation backlog.
+
+## 2026-03-15 (ControlsSample Nav Title + Theme Parity Polish)
+- Centered Mirage `NavigationPage` title projection within the nav title slot (`MirageNavigationPageHandler`) so wrapper pages align closer to native page-header expectations.
+- Seeded upstream `AppResources` color keys in `ControlsSampleApp` (`LightBackgroundColor`/`DarkBackgroundColor` plus baseline foreground keys) so imported upstream pages like `BasePage`-derived layouts can resolve theme-driven page backgrounds in browser/native wrapper hosts.
+- Applied explicit app-theme binding to wrapper `NavigationPage` chrome (`BarBackgroundColor`/`BarTextColor`) to remove light-only fallback behavior and keep dark-mode parity for ControlsSample runs.
+- Updated nav-bar shell column sizing to symmetric left/right tracks so the title is centered relative to the full page width (not shifted by back-button-only chrome).
+- Moved unstyled-text parity into Mirage platform defaults: `MirageLabelHandler` now projects system-like fallbacks (`CanvasText` + `system-ui`) when MAUI does not set `TextColor`/`FontFamily`, and synthetic nav-title chrome in `MirageNavigationPageHandler` uses the same fallback family/color path for consistency. `MirageWindowHandler` opts into `colorScheme: light dark` so those defaults track browser/system theme without sample-specific style enforcement.
+
+## 2026-03-15 (ControlsSample Layout Slice: Grid + Clipping + ContentView)
+- Imported upstream `GridPage`, `ClippingPage`, and `ContentViewPage` into `ControlsSample.Shared`, plus the upstream `CardView` control dependency used by `ContentViewPage`.
+- Promoted `GridPage` to `Runnable` in Mirage and extended ControlsSample browser E2E coverage to assert catalog visibility/navigation for the new runnable layout page.
+- Kept `ClippingPage` and `ContentViewPage` as `HiddenUnsupported` in browser host because this slice surfaces additional Mirage backend gaps (`Image`/`Border` paths and related clipping/content rendering behavior), while preserving native-host availability through the shared catalog policy.
+- Added a minimal upstream-compat `Headline` style resource in wrapper app resources so imported page XAML that references this key can initialize without requiring full upstream app bootstrap wiring.
+
+## 2026-03-15 (ControlsSample Media/Border Enablement: Image + Border + StackLayout)
+- Added first-class Mirage browser handler support for `Image` and `Border` (`MirageImageHandler`, `MirageBorderHandler`) with corresponding semantic/provider expansion (`ComponentKind.Image`, `ComponentKind.Border`) in the Fluent provider.
+- Added a shared image-source projection path for `FileImageSource`/`UriImageSource`/`FontImageSource` and projected image aspect/opaque metadata via control-node properties and CSS/object-fit styles.
+- Extended layout compatibility for imported upstream pages by registering `StackLayout` on `MirageLayoutHandler`, mapping `StackLayout.Orientation` and `StackLayout.Spacing`, and honoring the `IsClippedToBounds` alias in addition to `ClipsToBounds`.
+- Promoted `ClippingPage` and `ContentViewPage` to `Runnable` in the ControlsSample catalog/browser host now that required backend control paths are in place.
+- Updated the ControlsSample page tracker to visual status markers (`[x]`, `[ ]`, `[!]`, `[R]`, `[P]`) for faster parity/backlog scanning.

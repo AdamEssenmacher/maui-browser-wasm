@@ -7,7 +7,11 @@ public enum ComponentKind
     VerticalStack,
     HorizontalStack,
     Grid,
+    AbsoluteLayout,
     Label,
     Entry,
-    Button
+    Button,
+    Image,
+    Border,
+    BoxView
 }

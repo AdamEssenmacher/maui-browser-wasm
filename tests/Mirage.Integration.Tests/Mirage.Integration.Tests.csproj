@@ -7,6 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Mirage.Core\Mirage.Core.csproj" />
     <ProjectReference Include="..\..\src\Mirage.Provider.Fluent\Mirage.Provider.Fluent.csproj" />
+    <ProjectReference Include="..\..\samples\ControlsSample.Shared\ControlsSample.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,9 +23,14 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentViewHandlerBase.cs" Link="Handlers\MirageContentViewHandlerBase.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentPageHandler.cs" Link="Handlers\MirageContentPageHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentViewHandler.cs" Link="Handlers\MirageContentViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageBorderHandler.cs" Link="Handlers\MirageBorderHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageButtonHandler.cs" Link="Handlers\MirageButtonHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageBoxViewHandler.cs" Link="Handlers\MirageBoxViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageLabelHandler.cs" Link="Handlers\MirageLabelHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageEntryHandler.cs" Link="Handlers\MirageEntryHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageImageSourceProjection.cs" Link="Handlers\MirageImageSourceProjection.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageImageHandler.cs" Link="Handlers\MirageImageHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageLayoutHandler.cs" Link="Handlers\MirageLayoutHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageNavigationPageHandler.cs" Link="Handlers\MirageNavigationPageHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageScrollViewHandler.cs" Link="Handlers\MirageScrollViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageViewMapper.cs" Link="Handlers\MirageViewMapper.cs" />

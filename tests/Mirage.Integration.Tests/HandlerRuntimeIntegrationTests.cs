@@ -148,6 +148,32 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void LabelHandler_DefaultsToSystemTextFallbacks_WhenUnset()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var label = new Label
+        {
+            Text = "Parity"
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+        Assert.Equal("CanvasText", handler.PlatformView.GetStyleValue("color"));
+        Assert.Equal("system-ui", handler.PlatformView.GetStyleValue("fontFamily"));
+
+        label.TextColor = Colors.Red;
+        label.FontFamily = "OpenSansRegular";
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(ITextStyle.TextColor));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, "FontFamily");
+
+        Assert.Equal("rgba(255,0,0,1)", handler.PlatformView.GetStyleValue("color"));
+        Assert.Equal("\"OpenSansRegular\", system-ui, sans-serif", handler.PlatformView.GetStyleValue("fontFamily"));
+    }
+
+    [Fact]
     public void CommonMapper_CompatibilityAliases_MapBackgroundColorAndFontProperties()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
@@ -203,7 +229,7 @@ public sealed class HandlerRuntimeIntegrationTests
 
         Assert.Equal("rgba(81,43,212,1)", handler.PlatformView.GetStyleValue("backgroundColor"));
         Assert.Equal("rgba(255,255,255,1)", handler.PlatformView.GetStyleValue("color"));
-        Assert.Equal("\"OpenSansRegular\", sans-serif", handler.PlatformView.GetStyleValue("fontFamily"));
+        Assert.Equal("\"OpenSansRegular\", system-ui, sans-serif", handler.PlatformView.GetStyleValue("fontFamily"));
         Assert.Equal("17px", handler.PlatformView.GetStyleValue("fontSize"));
     }
 
@@ -305,6 +331,101 @@ public sealed class HandlerRuntimeIntegrationTests
         entry.MinimumHeightRequest = -1;
         MirageEntryHandler.Mapper.UpdateProperty(handler, entry, nameof(VisualElement.MinimumHeightRequest));
         Assert.Null(handler.PlatformView.GetStyleValue("--base-height-multiplier"));
+    }
+
+    [Fact]
+    public void ImageHandler_MapsSourceAspectAndOpaqueState()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "coffee.png",
+            Aspect = Aspect.AspectFill,
+            IsOpaque = true
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+
+        Assert.Equal("/coffee.png", handler.PlatformView.GetPropertyString("Source"));
+        Assert.Equal("file", handler.PlatformView.GetPropertyString("SourceKind"));
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+        Assert.Equal("true", handler.PlatformView.GetPropertyString("IsOpaque"));
+        Assert.Equal("cover", handler.PlatformView.GetStyleValue("objectFit"));
+
+        image.Source = new UriImageSource { Uri = new Uri("https://example.com/photo.png") };
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+
+        Assert.Equal("https://example.com/photo.png", handler.PlatformView.GetPropertyString("Source"));
+        Assert.Equal("uri", handler.PlatformView.GetPropertyString("SourceKind"));
+    }
+
+    [Fact]
+    public void BorderHandler_MapsStrokeAndHostsPresentedContent()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageBorderHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var border = new Border
+        {
+            Padding = new Thickness(8),
+            Stroke = new SolidColorBrush(Colors.DarkGray),
+            StrokeThickness = 2,
+            StrokeShape = new RoundRectangle
+            {
+                CornerRadius = new CornerRadius(5)
+            }
+        };
+
+        ((IElementHandler)handler).SetVirtualView(border);
+
+        Assert.Equal("solid", handler.PlatformView.GetStyleValue("borderStyle"));
+        Assert.Equal("rgba(169,169,169,1)", handler.PlatformView.GetStyleValue("borderColor"));
+        Assert.Equal("2px", handler.PlatformView.GetStyleValue("borderWidth"));
+        Assert.Equal("5px 5px 5px 5px", handler.PlatformView.GetStyleValue("borderRadius"));
+        Assert.Equal("8px 8px 8px 8px", handler.PlatformView.GetStyleValue("padding"));
+
+        border.StrokeDashArray = new DoubleCollection { 2, 1 };
+        MirageBorderHandler.Mapper.UpdateProperty(handler, border, nameof(Border.StrokeDashArray));
+        Assert.Equal("dashed", handler.PlatformView.GetStyleValue("borderStyle"));
+
+        border.Stroke = null;
+        MirageBorderHandler.Mapper.UpdateProperty(handler, border, nameof(Border.Stroke));
+        Assert.Equal("none", handler.PlatformView.GetStyleValue("borderStyle"));
+        Assert.Null(handler.PlatformView.GetStyleValue("borderColor"));
+    }
+
+    [Fact]
+    public void LayoutHandler_StackLayoutProjectsOrientationSpacingAndClipAlias()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageLayoutHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var stack = new StackLayout
+        {
+            Orientation = StackOrientation.Horizontal,
+            Spacing = 12
+        };
+
+        ((IElementHandler)handler).SetVirtualView(stack);
+
+        Assert.Equal(ComponentKind.HorizontalStack, handler.PlatformView.ControlKind);
+        Assert.Equal("12px", handler.PlatformView.GetStyleValue("gap"));
+        Assert.Equal("visible", handler.PlatformView.GetStyleValue("overflow"));
+
+        stack.IsClippedToBounds = true;
+        MirageLayoutHandler.Mapper.UpdateProperty(handler, stack, "IsClippedToBounds");
+        Assert.Equal("hidden", handler.PlatformView.GetStyleValue("overflow"));
     }
 
     [Fact]
@@ -973,6 +1094,8 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.NotNull(backButton);
 
         Assert.Equal("Home", navTitle!.Properties["Text"].GetStringOrNull());
+        Assert.Equal("system-ui", navTitle.Styles["fontFamily"]);
+        Assert.Equal("CanvasText", navTitle.Styles["color"]);
         Assert.Equal("grid", navBar!.Styles["display"]);
         Assert.Equal("1", navBar.Styles["gridRowStart"]);
         Assert.Equal("2", navBar.Styles["gridRowEnd"]);

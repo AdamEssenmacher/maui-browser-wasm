@@ -42,6 +42,10 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 ComponentKind.Grid,
                 "div",
                 propertyMappings: CommonProperties),
+            [ComponentKind.AbsoluteLayout] = new(
+                ComponentKind.AbsoluteLayout,
+                "div",
+                propertyMappings: CommonProperties),
             [ComponentKind.Label] = new(
                 ComponentKind.Label,
                 "span",
@@ -78,7 +82,34 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
                     ["click"] = new("click")
-                })
+                }),
+            [ComponentKind.Image] = new(
+                ComponentKind.Image,
+                "img",
+                defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["alt"] = string.Empty
+                },
+                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
+                    ["Source"] = new(PropertyTarget.Attribute, "src"),
+                    ["SourceKind"] = new(PropertyTarget.Attribute, "data-maui-image-source-kind"),
+                    ["SourceState"] = new(PropertyTarget.Attribute, "data-maui-image-state"),
+                    ["IsOpaque"] = new(PropertyTarget.Attribute, "data-maui-image-opaque")
+                }),
+            [ComponentKind.Border] = new(
+                ComponentKind.Border,
+                "div",
+                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
+                    ["StrokeDashOffset"] = new(PropertyTarget.Attribute, "data-maui-border-dash-offset")
+                }),
+            [ComponentKind.BoxView] = new(
+                ComponentKind.BoxView,
+                "div",
+                propertyMappings: CommonProperties)
         };
 
     public ProviderCapabilities Capabilities { get; } = new(

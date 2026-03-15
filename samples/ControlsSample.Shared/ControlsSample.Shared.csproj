@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <MauiXamlInflator>SourceGen</MauiXamlInflator>
+    <ControlsSampleVendorRoot>..\..\vendor\upstream\controls-sample\</ControlsSampleVendorRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\AbsoluteLayoutPage.xaml" Link="Vendor\Pages\Layouts\AbsoluteLayoutPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ClippingPage.xaml" Link="Vendor\Pages\Layouts\ClippingPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ContentViewPage.xaml" Link="Vendor\Pages\Layouts\ContentViewPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\GridPage.xaml" Link="Vendor\Pages\Layouts\GridPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Compatibility\TabbedPageGalleryMainPage.xaml" Link="Vendor\Pages\Compatibility\TabbedPageGalleryMainPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\LayoutIsEnabledPage.xaml" Link="Vendor\Pages\Layouts\LayoutIsEnabledPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\InputTransparentPage.xaml" Link="Vendor\Pages\Core\InputTransparentPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Controls\CardView\CardView.xaml" Link="Vendor\Controls\CardView\CardView.xaml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\AbsoluteLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\AbsoluteLayoutPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ClippingPage.xaml.cs" Link="Vendor\Pages\Layouts\ClippingPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ContentViewPage.xaml.cs" Link="Vendor\Pages\Layouts\ContentViewPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\GridPage.xaml.cs" Link="Vendor\Pages\Layouts\GridPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Compatibility\TabbedPageGalleryMainPage.xaml.cs" Link="Vendor\Pages\Compatibility\TabbedPageGalleryMainPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\LayoutIsEnabledPage.xaml.cs" Link="Vendor\Pages\Layouts\LayoutIsEnabledPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\InputTransparentPage.xaml.cs" Link="Vendor\Pages\Core\InputTransparentPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Controls\CardView\CardView.xaml.cs" Link="Vendor\Controls\CardView\CardView.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Converters\NegativeConverter.cs" Link="Vendor\Converters\NegativeConverter.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(ControlsSampleVendorRoot)Main.razor" Link="Vendor\Main.razor" />
+    <None Include="$(ControlsSampleVendorRoot)_Imports.razor" Link="Vendor\_Imports.razor" />
+    <None Include="$(ControlsSampleVendorRoot)Pages\Blazor\**\*.razor" Link="Vendor\Pages\Blazor\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiPackageVersion)" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiPackageVersion)" />
+    <PackageReference Include="Microsoft.Maui.Controls.Xaml" Version="$(MauiPackageVersion)" />
+  </ItemGroup>
+</Project>

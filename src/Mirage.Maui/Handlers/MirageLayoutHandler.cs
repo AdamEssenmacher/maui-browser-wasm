@@ -4,6 +4,7 @@ using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Layouts;
 using Microsoft.Maui.Platform;
 using MauiLayout = Microsoft.Maui.ILayout;
 
@@ -16,6 +17,9 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         {
             [nameof(MauiLayout.Padding)] = MapPadding,
             [nameof(MauiLayout.ClipsToBounds)] = MapClipsToBounds,
+            ["IsClippedToBounds"] = MapClipsToBounds,
+            [nameof(StackLayout.Orientation)] = MapStackLayoutOrientation,
+            [nameof(StackLayout.Spacing)] = MapSpacing,
             [nameof(VerticalStackLayout.Spacing)] = MapSpacing,
             [nameof(HorizontalStackLayout.Spacing)] = MapSpacing,
             [nameof(Grid.RowSpacing)] = MapGridStructure,
@@ -52,7 +56,8 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
             ComponentKind.VerticalStack => new MiragePlatformView(ComponentKind.VerticalStack),
             ComponentKind.HorizontalStack => new MiragePlatformView(ComponentKind.HorizontalStack),
             ComponentKind.Grid => new MiragePlatformView(ComponentKind.Grid),
-            _ => throw new InvalidOperationException("MirageLayoutHandler supports vertical stack, horizontal stack, and grid only.")
+            ComponentKind.AbsoluteLayout => new MiragePlatformView(ComponentKind.AbsoluteLayout),
+            _ => throw new InvalidOperationException("MirageLayoutHandler supports stack, vertical stack, horizontal stack, grid, and absolute layout.")
         };
     }
 
@@ -109,7 +114,23 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
 
     public static void MapSpacing(MirageLayoutHandler handler, MauiLayout layout)
     {
-        handler.ApplySpacingStyles(layout);
+        if (!handler.ApplySpacingStyles(layout))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapStackLayoutOrientation(MirageLayoutHandler handler, MauiLayout layout)
+    {
+        if (layout is not StackLayout)
+        {
+            return;
+        }
+
+        handler.ApplyBaseStyles();
+        handler.RebuildChildren();
     }
 
     public static void MapGridStructure(MirageLayoutHandler handler, MauiLayout layout)
@@ -251,6 +272,14 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 changed |= ClearFlexContainerStyles();
                 changed |= ApplyGridStyles((Grid)VirtualView);
                 break;
+            case ComponentKind.AbsoluteLayout:
+                DefaultDisplayStyle = "block";
+                changed |= SetStyleIfChanged("display", "block");
+                changed |= SetStyleIfChanged("position", "relative");
+                changed |= ClearFlexContainerStyles();
+                changed |= ClearGridContainerStyles();
+                changed |= SetStyleIfChanged("gap", null);
+                break;
             default:
                 throw new InvalidOperationException($"Unsupported layout kind '{kind}'.");
         }
@@ -269,6 +298,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
     {
         return layout switch
         {
+            StackLayout stack => SetStyleIfChanged("gap", MirageViewMapper.ToPx(NormalizeSpacing(stack.Spacing))),
             VerticalStackLayout vertical => SetStyleIfChanged("gap", MirageViewMapper.ToPx(NormalizeSpacing(vertical.Spacing))),
             HorizontalStackLayout horizontal => SetStyleIfChanged("gap", MirageViewMapper.ToPx(NormalizeSpacing(horizontal.Spacing))),
             Grid grid => ApplyGridGapStyles(grid),
@@ -390,6 +420,18 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 changed |= SetChildStyleIfChanged(childPlatformView, "justifySelf", MirageCommonViewProjection.ResolveGridSelfAlignment(childView.HorizontalLayoutAlignment));
                 changed |= SetChildStyleIfChanged(childPlatformView, "alignSelf", MirageCommonViewProjection.ResolveGridSelfAlignment(childView.VerticalLayoutAlignment));
                 break;
+            case ComponentKind.AbsoluteLayout:
+                changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnEnd", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "justifySelf", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "alignSelf", null);
+                changed |= ApplyAbsoluteLayoutChildStyles(childPlatformView, childView);
+                break;
             default:
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
@@ -412,6 +454,108 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         var rowSpan = Math.Max(1, Grid.GetRowSpan(bindable));
         var columnSpan = Math.Max(1, Grid.GetColumnSpan(bindable));
         return (row, column, rowSpan, columnSpan);
+    }
+
+    private static bool ApplyAbsoluteLayoutChildStyles(MiragePlatformView childPlatformView, IView childView)
+    {
+        var changed = SetChildStyleIfChanged(childPlatformView, "position", "absolute");
+
+        if (childView is not BindableObject bindable)
+        {
+            changed |= SetChildStyleIfChanged(childPlatformView, "left", "0px");
+            changed |= SetChildStyleIfChanged(childPlatformView, "top", "0px");
+            changed |= SetChildStyleIfChanged(childPlatformView, "width", null);
+            changed |= SetChildStyleIfChanged(childPlatformView, "height", null);
+            changed |= SetChildStyleIfChanged(childPlatformView, "transform", null);
+            return changed;
+        }
+
+        var bounds = AbsoluteLayout.GetLayoutBounds(bindable);
+        var flags = AbsoluteLayout.GetLayoutFlags(bindable);
+
+        var xProportional = IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.PositionProportional)
+                            || IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.XProportional);
+        var yProportional = IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.PositionProportional)
+                            || IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.YProportional);
+        var widthProportional = IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.SizeProportional)
+                                || IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.WidthProportional);
+        var heightProportional = IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.SizeProportional)
+                                 || IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.HeightProportional);
+
+        var x = NormalizeFinite(bounds.X, 0);
+        var y = NormalizeFinite(bounds.Y, 0);
+
+        changed |= SetChildStyleIfChanged(childPlatformView, "left", xProportional ? ToPercent(x) : MirageCommonViewProjection.ToPxNoClamp(x));
+        changed |= SetChildStyleIfChanged(childPlatformView, "top", yProportional ? ToPercent(y) : MirageCommonViewProjection.ToPxNoClamp(y));
+
+        changed |= SetChildStyleIfChanged(childPlatformView, "width", ResolveAbsoluteLayoutSize(bounds.Width, widthProportional));
+        changed |= SetChildStyleIfChanged(childPlatformView, "height", ResolveAbsoluteLayoutSize(bounds.Height, heightProportional));
+
+        changed |= SetChildStyleIfChanged(childPlatformView, "transform", ResolveAbsoluteLayoutTranslate(xProportional ? x : null, yProportional ? y : null));
+        return changed;
+    }
+
+    private static bool IsAbsoluteLayoutFlagSet(AbsoluteLayoutFlags flags, AbsoluteLayoutFlags flag)
+    {
+        return (flags & flag) == flag;
+    }
+
+    private static string? ResolveAbsoluteLayoutSize(double value, bool proportional)
+    {
+        if (value.Equals(AbsoluteLayout.AutoSize))
+        {
+            return null;
+        }
+
+        var normalized = NormalizeFinite(value, 0);
+        if (proportional)
+        {
+            return ToPercent(Math.Max(0, normalized));
+        }
+
+        return MirageViewMapper.ToPx(Math.Max(0, normalized));
+    }
+
+    private static string? ResolveAbsoluteLayoutTranslate(double? proportionalX, double? proportionalY)
+    {
+        if (proportionalX is null && proportionalY is null)
+        {
+            return null;
+        }
+
+        if (proportionalX is null && proportionalY is double yOnly)
+        {
+            return $"translateY({ToTranslatePercent(yOnly)})";
+        }
+
+        if (proportionalY is null && proportionalX is double xOnly)
+        {
+            return $"translateX({ToTranslatePercent(xOnly)})";
+        }
+
+        return $"translate({ToTranslatePercent(proportionalX ?? 0)}, {ToTranslatePercent(proportionalY ?? 0)})";
+    }
+
+    private static string ToTranslatePercent(double proportionalValue)
+    {
+        var value = NormalizeFinite(proportionalValue, 0) * -100d;
+        return $"{value.ToString("0.###", CultureInfo.InvariantCulture)}%";
+    }
+
+    private static string ToPercent(double value)
+    {
+        var percentValue = NormalizeFinite(value, 0) * 100d;
+        return $"{percentValue.ToString("0.###", CultureInfo.InvariantCulture)}%";
+    }
+
+    private static double NormalizeFinite(double value, double fallback)
+    {
+        if (!double.IsFinite(value))
+        {
+            return fallback;
+        }
+
+        return value;
     }
 
     private static bool TryBuildGridTrackTemplate(IEnumerable<GridLength> trackLengths, out string template)
@@ -473,10 +617,14 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
     {
         return layout switch
         {
+            StackLayout stack => stack.Orientation == StackOrientation.Horizontal
+                ? ComponentKind.HorizontalStack
+                : ComponentKind.VerticalStack,
             VerticalStackLayout => ComponentKind.VerticalStack,
             HorizontalStackLayout => ComponentKind.HorizontalStack,
             Grid => ComponentKind.Grid,
-            _ => throw new NotSupportedException($"MirageLayoutHandler supports VerticalStackLayout, HorizontalStackLayout, and Grid only. '{layout.GetType().Name}' is out of scope.")
+            AbsoluteLayout => ComponentKind.AbsoluteLayout,
+            _ => throw new NotSupportedException($"MirageLayoutHandler supports StackLayout, VerticalStackLayout, HorizontalStackLayout, Grid, and AbsoluteLayout. '{layout.GetType().Name}' is out of scope.")
         };
     }
 

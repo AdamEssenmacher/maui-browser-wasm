@@ -1,0 +1,7 @@
+{
+  "upstreamRepo": "https://github.com/dotnet/maui.git",
+  "upstreamRef": "main",
+  "upstreamHeadSha": "e10b0bee7687274ebc3e8ec9f71eb2a4b068dbf7",
+  "splitSha": "e809917a42bf5c607b17ab66fa6ff1264634ec33",
+  "syncedAtUtc": "2026-03-15T20:31:16Z"
+}

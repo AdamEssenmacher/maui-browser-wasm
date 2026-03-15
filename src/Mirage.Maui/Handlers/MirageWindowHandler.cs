@@ -135,6 +135,7 @@ internal sealed class MirageWindowHandler : ElementHandler<Window, MiragePlatfor
         PlatformView.SetStyle("overflowX", "hidden");
         PlatformView.SetStyle("margin", "0");
         PlatformView.SetStyle("padding", "0");
+        PlatformView.SetStyle("colorScheme", "light dark");
         GetCoordinator().RequestRender();
     }
 

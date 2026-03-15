@@ -84,6 +84,7 @@ dotnet build Mirage.sln
 ```bash
 dotnet run --project samples/Counter.Fluent/Counter.Fluent.csproj
 dotnet run --project samples/Showcase.Fluent/Showcase.Fluent.csproj
+dotnet run --project samples/ControlsSample.Fluent/ControlsSample.Fluent.csproj
 ```
 
 Native MAUI hosts are intentionally **outside** `Mirage.sln`/CI but are runnable directly:
@@ -91,6 +92,14 @@ Native MAUI hosts are intentionally **outside** `Mirage.sln`/CI but are runnable
 ```bash
 dotnet build samples/Counter.Maui/Counter.Maui.csproj
 dotnet build samples/Showcase.Maui/Showcase.Maui.csproj
+dotnet build samples/ControlsSample.Maui/ControlsSample.Maui.csproj
+```
+
+`ControlsSample.Maui` includes Android + iOS + MacCatalyst targets by default on non-Linux hosts.
+If your local Apple toolchain is not ready, build Android-only with:
+
+```bash
+dotnet build samples/ControlsSample.Maui/ControlsSample.Maui.csproj -p:ControlsSampleEnableAppleTargets=false
 ```
 
 ## Run tests
@@ -136,6 +145,8 @@ If missing, startup fails with:
 - Providers must support control-node and web-node realization for full Mirage behavior.
 - Mirage preserves MAUI’s explicit scrolling model: `ContentPage` is non-scrollable by default and scrolling is introduced explicitly with `ScrollView`.
 - Shared sample projects (`Counter.Shared`, `Showcase.Shared`) are included in `Mirage.sln`; native MAUI host projects are not.
+- `ControlsSample` wrappers (`ControlsSample.Shared`, `ControlsSample.Fluent`, `ControlsSample.Maui`) provide a subtree-synced integration lane for upstream `dotnet/maui` Controls.Sample.
+- Upstream license compliance for the vendored Controls.Sample lane is tracked in `docs/THIRD_PARTY_NOTICES.md`.
 - The old `Maui.Browser*` showcase/parity stack is not part of the active solution wiring.
 - Architecture benchmark harness: `tools/benchmarks/Mirage.ArchitectureBenchmarks`.
 - Current rendering wave focus is correctness-first (shared visual projection, stack/grid determinism, and DOM-backed surface rendering) before richer control breadth.
