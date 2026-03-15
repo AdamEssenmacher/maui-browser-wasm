@@ -280,6 +280,34 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void EntryHandler_SizeRequestProjection_UpdatesFluentControlHeightToken()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageEntryHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var entry = new Entry
+        {
+            Text = "Entry"
+        };
+
+        ((IElementHandler)handler).SetVirtualView(entry);
+        Assert.Null(handler.PlatformView.GetStyleValue("--base-height-multiplier"));
+
+        entry.MinimumHeightRequest = 44;
+        MirageEntryHandler.Mapper.UpdateProperty(handler, entry, nameof(VisualElement.MinimumHeightRequest));
+
+        Assert.Equal("44px", handler.PlatformView.GetStyleValue("minHeight"));
+        Assert.Equal("11", handler.PlatformView.GetStyleValue("--base-height-multiplier"));
+
+        entry.MinimumHeightRequest = -1;
+        MirageEntryHandler.Mapper.UpdateProperty(handler, entry, nameof(VisualElement.MinimumHeightRequest));
+        Assert.Null(handler.PlatformView.GetStyleValue("--base-height-multiplier"));
+    }
+
+    [Fact]
     public void CommonMapper_SizeRequests_ProjectsAndClearsWidthRequestDeterministically()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "block");

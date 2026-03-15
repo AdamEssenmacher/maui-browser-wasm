@@ -36,6 +36,10 @@
     <Compile Include="..\..\src\Mirage.Maui\HotReload\MirageXamlHotReloadApplicator.cs" Link="HotReload\MirageXamlHotReloadApplicator.cs" />
     <Compile Include="..\..\samples\Showcase.Fluent\App\ShowcaseVendorWidget.cs" Link="Samples\ShowcaseVendorWidget.cs" />
     <Compile Include="..\..\samples\Showcase.Fluent\App\ShowcaseVendorWidgetHandler.cs" Link="Samples\ShowcaseVendorWidgetHandler.cs" />
+    <Compile Include="..\..\samples\Showcase.Fluent\App\ShowcaseMonacoEditorHandler.cs" Link="Samples\ShowcaseMonacoEditorHandler.cs" />
+    <Compile Include="..\..\samples\Showcase.Shared\App\ShowcaseXamlEditorView.cs" Link="Samples\ShowcaseXamlEditorView.cs" />
+    <Compile Include="..\..\samples\Showcase.Shared\App\XamlLabFragmentCompiler.cs" Link="Samples\XamlLabFragmentCompiler.cs" />
+    <Compile Include="..\..\samples\Showcase.Shared\App\XamlLabPreviewSession.cs" Link="Samples\XamlLabPreviewSession.cs" />
     <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageEventSink.cs" Link="Runtime\IMirageEventSink.cs" />
     <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageBrowserHistory.cs" Link="Runtime\IMirageBrowserHistory.cs" />
     <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageRuntime.cs" Link="Runtime\IMirageRuntime.cs" />

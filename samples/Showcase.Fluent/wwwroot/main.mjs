@@ -1,4 +1,5 @@
 import { dotnet } from "./_framework/dotnet.js";
+import "./xaml-lab-monaco.mjs";
 
 async function installMirageHotReloadHints() {
   try {

@@ -112,6 +112,21 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(elementName);
 
+        if (string.Equals(elementName, "mirage-monaco-editor", StringComparison.Ordinal))
+        {
+            return new WebComponentDescriptor(
+                elementName,
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["input"] = new("input", EventTarget.Self, EventPayloadKind.InputValue)
+                },
+                supportsAttributes: true,
+                supportsProperties: true,
+                supportsStyles: true,
+                supportsClasses: true,
+                supportsEvents: true);
+        }
+
         return new WebComponentDescriptor(
             elementName,
             supportsAttributes: true,

@@ -349,3 +349,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Sample app code-behind now follows normal MAUI conventions by calling `InitializeComponent()` directly instead of helper wrappers around `LoadFromXaml(typeof(...))`.
 - Enabled `MauiXamlInflator=SourceGen` across browser/shared sample projects (`Counter.Fluent`, `Showcase.Fluent`, `Counter.Shared`, `Showcase.Shared`, `Maui.Browser.Sample`) so Debug and Release builds use compile-time generated XAML paths.
 - Removed sample-only `IL2026` suppressions tied to runtime XAML inflation in style dictionary code-behind files.
+
+## 2026-03-14 (Showcase XAML Lab Minimum Full Slice)
+- Added a dedicated `/xaml-lab` showcase route and page with a two-pane workflow: a constrained XAML fragment editor on the left and a live Mirage-rendered MAUI preview host on the right.
+- The editor is intentionally hosted via the `WebNode` path using a Fluent-specific custom element (`mirage-monaco-editor`) and handler (`ShowcaseMonacoEditorHandler`) to prove arbitrary web-widget hosting through normal Mirage architecture seams.
+- Preview rendering stays in the standard Mirage MAUI pipeline via a shared fragment compiler + validator (`XamlLabFragmentCompiler`) and debounced preview session (`XamlLabPreviewSession`) with strict whitelist enforcement, explicit error reporting, and last-good-preview preservation.
+- Scope is intentionally constrained to fragment authoring only (single root, no app/page roots, no arbitrary event-handler execution, no unrestricted directives/code-behind).

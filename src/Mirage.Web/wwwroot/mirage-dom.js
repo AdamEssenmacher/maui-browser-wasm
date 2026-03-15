@@ -253,7 +253,21 @@ export function getRootById(id) {
 }
 
 export function createElement(tag) {
-  return toHandle(document.createElement(tag));
+  const element = document.createElement(tag);
+  const customElementConstructor = globalThis.customElements?.get?.(tag);
+  if (
+    customElementConstructor &&
+    typeof HTMLUnknownElement !== "undefined" &&
+    element instanceof HTMLUnknownElement
+  ) {
+    try {
+      return toHandle(new customElementConstructor());
+    } catch {
+      // Fall back to the document-created element when constructor creation fails.
+    }
+  }
+
+  return toHandle(element);
 }
 
 export function appendChild(parentHandle, childHandle) {

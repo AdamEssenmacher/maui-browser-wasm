@@ -165,6 +165,19 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     }
 
     [Fact]
+    public async Task CtaButton_NavigatesToXamlLab()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1180, height: 760);
+        var page = await OpenAsync(context);
+
+        await page.Locator("[data-automation-id='hero-cta-command-xaml-lab']").ClickAsync();
+        await page.WaitForFunctionAsync("() => window.location.pathname === '/xaml-lab'");
+        await page.WaitForSelectorAsync("[data-automation-id='showcase-page-xaml-lab']");
+        var xamlLabPath = await page.EvaluateAsync<string>("() => window.location.pathname");
+        Assert.Equal("/xaml-lab", xamlLabPath);
+    }
+
+    [Fact]
     public async Task HeroRendersFluentDomElementsAndNoCanvasSurface()
     {
         await using var context = await _fixture.NewContextAsync();
@@ -359,6 +372,309 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
 
         Assert.Contains("/navigation-lab", routeLabel, StringComparison.Ordinal);
         Assert.Equal("/navigation-lab", pathname);
+    }
+
+    [Fact]
+    public async Task XamlLab_RendersEditorAsWebNode_AndInitialPreview()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1360, height: 900);
+        var page = await OpenAsync(
+            context,
+            path: "/xaml-lab",
+            waitForSelector: "[data-automation-id='showcase-page-xaml-lab']");
+
+        await page.WaitForSelectorAsync("[data-automation-id='xaml-lab-editor']");
+        await page.WaitForSelectorAsync("[data-automation-id='xaml-lab-preview-host']");
+
+        var editorTag = await page.EvaluateAsync<string>(
+            "() => (document.querySelector('[data-automation-id=\"xaml-lab-editor\"]')?.tagName ?? '').toLowerCase()");
+        var editorNodeType = await page.Locator("[data-automation-id='xaml-lab-editor']")
+            .GetAttributeAsync("data-mirage-node-type");
+        var customElementDefined = await page.EvaluateAsync<bool>(
+            "() => typeof customElements.get('mirage-monaco-editor') === 'function'");
+        var editorBackend = await page.Locator("[data-automation-id='xaml-lab-editor']")
+            .GetAttributeAsync("data-editor-backend");
+        var editorGeometry = await page.EvaluateAsync<double[]>(
+            @"() => {
+                const editor = document.querySelector('[data-automation-id=""xaml-lab-editor""]');
+                if (!editor) {
+                    return [0, 0];
+                }
+
+                const rect = editor.getBoundingClientRect();
+                return [rect.width, rect.height];
+            }");
+        var editorInternalsJson = await page.EvaluateAsync<string>(
+            @"() => {
+                const editor = document.querySelector('[data-automation-id=""xaml-lab-editor""]');
+                if (!editor) {
+                    return JSON.stringify({ visible: false, reason: 'editor-missing' });
+                }
+
+                const root = editor.shadowRoot ?? editor;
+                if (!root) {
+                    return JSON.stringify({
+                        visible: false,
+                        reason: 'editor-root-missing',
+                        childCount: editor.childElementCount
+                    });
+                }
+
+                const textarea = root.querySelector('textarea');
+                if (textarea && getComputedStyle(textarea).display !== 'none') {
+                    const rect = textarea.getBoundingClientRect();
+                    return JSON.stringify({
+                        visible: rect.width > 100 && rect.height > 100,
+                        reason: 'textarea-visible',
+                        width: rect.width,
+                        height: rect.height
+                    });
+                }
+
+                const monacoHost = root.querySelector('.monaco-host');
+                if (monacoHost && getComputedStyle(monacoHost).display !== 'none') {
+                    const rect = monacoHost.getBoundingClientRect();
+                    return JSON.stringify({
+                        visible: rect.width > 100 && rect.height > 100,
+                        reason: 'monaco-host-visible',
+                        width: rect.width,
+                        height: rect.height
+                    });
+                }
+
+                return JSON.stringify({
+                    visible: false,
+                    reason: 'no-visible-editor-surface',
+                    mode: editor.shadowRoot ? 'shadow' : 'light',
+                    shadowChildren: root.childElementCount
+                });
+            }");
+
+        Assert.Equal("mirage-monaco-editor", editorTag);
+        Assert.Equal("web", editorNodeType);
+        Assert.True(customElementDefined, "Expected mirage-monaco-editor custom element to be defined.");
+        Assert.True(editorBackend is "monaco" or "textarea", $"Expected editor backend marker to be set. Actual='{editorBackend ?? "(null)"}'.");
+        Assert.True(editorGeometry.Length == 2 && editorGeometry[0] > 200 && editorGeometry[1] > 200,
+            $"Expected visible editor geometry. Width={editorGeometry.ElementAtOrDefault(0)}, Height={editorGeometry.ElementAtOrDefault(1)}");
+        using var editorInternalsDocument = System.Text.Json.JsonDocument.Parse(editorInternalsJson);
+        var editorInternalsVisible = editorInternalsDocument.RootElement.TryGetProperty("visible", out var visibleValue)
+            && visibleValue.ValueKind == System.Text.Json.JsonValueKind.True;
+        Assert.True(
+            editorInternalsVisible,
+            $"Expected textarea or Monaco host to be visibly rendered inside editor host. Details={editorInternalsJson}");
+
+        await page.WaitForFunctionAsync(
+            @"() => (document.querySelector('[data-automation-id=""xaml-lab-preview-host""]')?.textContent ?? '')
+                .includes('Hello Mirage XAML Lab')");
+
+        var previewCanvasCount = await page.Locator("[data-automation-id='xaml-lab-preview-host'] canvas").CountAsync();
+        Assert.Equal(0, previewCanvasCount);
+    }
+
+    [Fact]
+    public async Task XamlLab_EditorWidth_RemainsStableAfterInitialRender()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1360, height: 900);
+        var page = await OpenAsync(
+            context,
+            path: "/xaml-lab",
+            waitForSelector: "[data-automation-id='showcase-page-xaml-lab']");
+
+        await page.WaitForSelectorAsync("[data-automation-id='xaml-lab-editor']");
+
+        var samples = new List<double>(capacity: 20);
+        for (var index = 0; index < 20; index++)
+        {
+            var width = await page.EvaluateAsync<double>(
+                @"() => {
+                    const editor = document.querySelector('[data-automation-id=""xaml-lab-editor""]');
+                    if (!editor) {
+                        return Number.NaN;
+                    }
+
+                    return editor.getBoundingClientRect().width;
+                }");
+
+            samples.Add(width);
+            await page.WaitForTimeoutAsync(400);
+        }
+
+        var validSamples = samples.Where(double.IsFinite).ToArray();
+        Assert.True(validSamples.Length >= 16, $"Expected valid editor width samples. Raw={string.Join(", ", samples)}");
+
+        var settledWindow = validSamples.Skip(Math.Max(0, validSamples.Length - 8)).ToArray();
+        var maxWidth = settledWindow.Max();
+        var minWidth = settledWindow.Min();
+        var drift = maxWidth - minWidth;
+        Assert.True(
+            drift <= 4,
+            $"Expected settled editor width drift <= 4px. Drift={drift:0.###}; Settled={string.Join(", ", settledWindow.Select(v => v.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)))}; All={string.Join(", ", validSamples.Select(v => v.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)))}");
+    }
+
+    [Fact]
+    public async Task XamlLab_EditorUpdatesPreviewAfterDebounce()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1360, height: 900);
+        var page = await OpenAsync(
+            context,
+            path: "/xaml-lab",
+            waitForSelector: "[data-automation-id='showcase-page-xaml-lab']");
+
+        await page.EvaluateAsync(
+            """
+            () => {
+                const editor = document.querySelector('[data-automation-id="xaml-lab-editor"]');
+                if (!editor) {
+                    throw new Error("xaml lab editor element is unavailable");
+                }
+
+                editor.value = `<VerticalStackLayout Padding="10" Spacing="8">
+                    <Label Text="Live update marker" />
+                    <Button Text="Apply marker button" />
+                </VerticalStackLayout>`;
+                editor.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+            }
+            """);
+
+        await page.WaitForFunctionAsync(
+            @"() => (document.querySelector('[data-automation-id=""xaml-lab-preview-host""]')?.textContent ?? '')
+                .includes('Live update marker')");
+    }
+
+    [Fact]
+    public async Task XamlLab_InvalidFragment_ShowsErrorAndPreservesLastGoodPreview()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1360, height: 900);
+        var page = await OpenAsync(
+            context,
+            path: "/xaml-lab",
+            waitForSelector: "[data-automation-id='showcase-page-xaml-lab']");
+
+        await page.EvaluateAsync(
+            """
+            () => {
+                const editor = document.querySelector('[data-automation-id="xaml-lab-editor"]');
+                if (!editor) {
+                    throw new Error("xaml lab editor element is unavailable");
+                }
+
+                editor.value = `<VerticalStackLayout Padding="8">
+                    <Label Text="Stable preview marker" />
+                </VerticalStackLayout>`;
+                editor.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+            }
+            """);
+
+        await page.WaitForFunctionAsync(
+            @"() => (document.querySelector('[data-automation-id=""xaml-lab-preview-host""]')?.textContent ?? '')
+                .includes('Stable preview marker')");
+
+        await page.EvaluateAsync(
+            """
+            () => {
+                const editor = document.querySelector('[data-automation-id="xaml-lab-editor"]');
+                if (!editor) {
+                    throw new Error("xaml lab editor element is unavailable");
+                }
+
+                editor.value = `<VerticalStackLayout><Label Text="Broken marker"></VerticalStackLayout>`;
+                editor.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+            }
+            """);
+
+        await page.WaitForFunctionAsync(
+            @"() => {
+                const panel = document.querySelector('[data-automation-id=""xaml-lab-error-panel""]');
+                return !!panel && getComputedStyle(panel).display !== 'none';
+            }");
+
+        var previewTextAfterInvalid = await page.Locator("[data-automation-id='xaml-lab-preview-host']").InnerTextAsync();
+        Assert.Contains("Stable preview marker", previewTextAfterInvalid, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task XamlLab_EntryMinHeight_KeepsFluentChromeAligned()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1360, height: 900);
+        var page = await OpenAsync(
+            context,
+            path: "/xaml-lab",
+            waitForSelector: "[data-automation-id='showcase-page-xaml-lab']");
+
+        await page.EvaluateAsync(
+            """
+            () => {
+                const editor = document.querySelector('[data-automation-id="xaml-lab-editor"]');
+                if (!editor) {
+                    throw new Error("xaml lab editor element is unavailable");
+                }
+
+                editor.value = `<Grid Padding="12" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="10" ColumnSpacing="10">
+                    <Label Text="Name" Grid.Row="0" Grid.Column="0" VerticalOptions="Center" />
+                    <Entry Grid.Row="0" Grid.Column="1" Placeholder="Ada Lovelace" />
+                    <Label Text="Role" Grid.Row="1" Grid.Column="0" VerticalOptions="Center" />
+                    <Entry Grid.Row="1" Grid.Column="1" Placeholder=".NET Architect" />
+                    <Button Grid.Row="2" Grid.Column="1" HorizontalOptions="End" Text="Save" />
+                </Grid>`;
+                editor.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+            }
+            """);
+
+        await page.WaitForSelectorAsync("[data-mirage-kind='Entry']");
+        await page.EvaluateAsync(
+            """
+            () => {
+                const entry = document.querySelectorAll('[data-mirage-kind="Entry"]')[0];
+                if (entry) {
+                    entry.focus();
+                }
+            }
+            """);
+
+        var metricsJson = await page.EvaluateAsync<string>(
+            """
+            () => {
+                const entry = document.querySelectorAll('[data-mirage-kind="Entry"]')[0];
+                if (!entry) {
+                    return JSON.stringify({ hasEntry: false });
+                }
+
+                const hostRect = entry.getBoundingClientRect();
+                const hostStyle = getComputedStyle(entry);
+                const shadow = entry.shadowRoot;
+                const root = shadow?.querySelector('.root, [part="root"]');
+                const control = shadow?.querySelector('[part="control"]');
+                const rootRect = root?.getBoundingClientRect() ?? null;
+                const controlRect = control?.getBoundingClientRect() ?? null;
+
+                return JSON.stringify({
+                    hasEntry: true,
+                    hostHeight: hostRect.height,
+                    rootHeight: rootRect?.height ?? null,
+                    controlHeight: controlRect?.height ?? null,
+                    hostBottom: hostRect.bottom,
+                    rootBottom: rootRect?.bottom ?? null,
+                    baseHeightMultiplier: hostStyle.getPropertyValue('--base-height-multiplier').trim(),
+                    minHeight: hostStyle.minHeight
+                });
+            }
+            """);
+
+        using var metricsDocument = System.Text.Json.JsonDocument.Parse(metricsJson);
+        var root = metricsDocument.RootElement;
+        Assert.True(root.GetProperty("hasEntry").GetBoolean(), $"Expected entry metrics payload. Details={metricsJson}");
+
+        var hostHeight = root.GetProperty("hostHeight").GetDouble();
+        var rootHeight = root.GetProperty("rootHeight").GetDouble();
+        var hostBottom = root.GetProperty("hostBottom").GetDouble();
+        var rootBottom = root.GetProperty("rootBottom").GetDouble();
+        var baseHeightMultiplier = root.GetProperty("baseHeightMultiplier").GetString();
+        var minHeight = root.GetProperty("minHeight").GetString();
+
+        Assert.Equal("44px", minHeight);
+        Assert.Equal("11", baseHeightMultiplier);
+        Assert.True(Math.Abs(hostHeight - rootHeight) <= 2, $"Expected host/root heights to align. Metrics={metricsJson}");
+        Assert.True(Math.Abs(hostBottom - rootBottom) <= 2, $"Expected host/root bottoms to align. Metrics={metricsJson}");
     }
 
     [Fact]
