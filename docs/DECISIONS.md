@@ -405,6 +405,7 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
 ## 2026-03-16 (ControlsSample ContentView Parity: Avatar Framing + Title Vertical Alignment)
 - `MirageImageHandler` now respects explicit `WidthRequest`/`HeightRequest` on `Image` before defaulting to fill sizing, preventing requested image sizes from being clobbered during handler connect and restoring expected framing for `CardView` avatars (`100x100` with negative margins).
+- Image requested-dimension projection now reconciles through shared size-request state mapping before applying image fill fallback (`100%` when width/height requests are unset), so subsequent `Minimum*`/`Maximum*` updates cannot clear image width/height unexpectedly.
 - `MirageLabelHandler` now maps `HorizontalTextAlignment` and `VerticalTextAlignment` semantics (`text-align` + flex `justify-content`) and uses `display:flex` as its visible baseline so vertical text centering works deterministically.
 - Shared thickness projection now distinguishes margin vs padding semantics: margins preserve signed values, while padding remains non-negative-clamped. This restores MAUI negative-margin behavior used by upstream `CardView` avatar framing.
 - Added integration + ControlsSample E2E guards for avatar geometry (`~100x100` with `-20px` offsets) and first-card title centerline alignment against the icon center.

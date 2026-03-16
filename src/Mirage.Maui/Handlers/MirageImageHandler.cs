@@ -130,9 +130,10 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>
 
     private bool UpdateRequestedDimensionProjection(Image image)
     {
+        var changed = MirageCommonViewProjection.MapSizeRequests(this, image);
         var width = ResolveDimensionCss(image.WidthRequest);
         var height = ResolveDimensionCss(image.HeightRequest);
-        var changed = SetStyleIfChanged("width", width);
+        changed |= SetStyleIfChanged("width", width);
         changed |= SetStyleIfChanged("height", height);
         return changed;
     }

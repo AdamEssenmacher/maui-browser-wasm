@@ -441,6 +441,16 @@ public sealed class HandlerRuntimeIntegrationTests
 
         Assert.Equal("100%", handler.PlatformView.GetStyleValue("width"));
         Assert.Equal("100%", handler.PlatformView.GetStyleValue("height"));
+
+        image.MinimumWidthRequest = 40;
+        image.MaximumWidthRequest = 160;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.MinimumWidthRequest));
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.MaximumWidthRequest));
+
+        Assert.Equal("100%", handler.PlatformView.GetStyleValue("width"));
+        Assert.Equal("100%", handler.PlatformView.GetStyleValue("height"));
+        Assert.Equal("40px", handler.PlatformView.GetStyleValue("minWidth"));
+        Assert.Equal("160px", handler.PlatformView.GetStyleValue("maxWidth"));
     }
 
     [Fact]
