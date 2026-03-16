@@ -376,6 +376,7 @@ public sealed class HandlerRuntimeIntegrationTests
 
         Assert.Equal("/_mirage/assets/test/coffee.png", handler.PlatformView.GetPropertyString("ImageSource"));
         Assert.Equal("block", handler.PlatformView.GetPropertyString("ImageDisplay"));
+        Assert.Equal(button.Text, handler.PlatformView.GetPropertyString("ImageAlt"));
         Assert.Equal("column", handler.PlatformView.GetStyleValue("flexDirection"));
         Assert.Equal("6px", handler.PlatformView.GetPropertyString("TextMarginTop"));
         Assert.Equal("10px 20px 10px 20px", handler.PlatformView.GetStyleValue("padding"));
@@ -407,10 +408,45 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.NotNull(tailText);
         Assert.EndsWith("…", tailText, StringComparison.Ordinal);
 
+        button.Text = "Updated accessibility label";
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.Text));
+        Assert.Equal("Updated accessibility label", handler.PlatformView.GetPropertyString("ImageAlt"));
+
         button.ImageSource = null;
         MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.ImageSource));
         Assert.Null(handler.PlatformView.GetPropertyString("ImageSource"));
         Assert.Equal("none", handler.PlatformView.GetPropertyString("ImageDisplay"));
+    }
+
+    [Fact]
+    public void ButtonHandler_Truncation_RecomputesOnPlatformArrangeWidthChanges()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageButtonHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        const string longText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.";
+        var button = new Button
+        {
+            Text = longText,
+            WidthRequest = -1,
+            LineBreakMode = LineBreakMode.MiddleTruncation
+        };
+
+        ((IElementHandler)handler).SetVirtualView(button);
+
+        handler.PlatformView.SetStyle("width", "140px");
+        handler.PlatformArrange(new Rect(0, 0, 140, 40));
+        var narrowProjected = handler.PlatformView.GetPropertyString("Text");
+        Assert.NotNull(narrowProjected);
+        Assert.Contains('…', narrowProjected);
+
+        handler.PlatformView.SetStyle("width", "1400px");
+        handler.PlatformArrange(new Rect(0, 0, 1400, 40));
+        var wideProjected = handler.PlatformView.GetPropertyString("Text");
+        Assert.Equal(longText, wideProjected);
     }
 
     [Fact]

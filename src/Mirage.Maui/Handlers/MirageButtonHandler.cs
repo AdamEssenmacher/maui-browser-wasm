@@ -76,6 +76,23 @@ internal sealed class MirageButtonHandler : MirageViewHandler<Button>, IMirageRu
         RequestRender();
     }
 
+    public override void PlatformArrange(Rect frame)
+    {
+        base.PlatformArrange(frame);
+
+        if (!IsTruncationMode(VirtualView.LineBreakMode))
+        {
+            return;
+        }
+
+        if (!UpdateProjectedText(VirtualView))
+        {
+            return;
+        }
+
+        RequestRender();
+    }
+
     public void OnRuntimeEvent(string eventName, string? payload)
     {
         _ = payload;
@@ -98,6 +115,7 @@ internal sealed class MirageButtonHandler : MirageViewHandler<Button>, IMirageRu
     public static void MapText(MirageButtonHandler handler, Button button)
     {
         var changed = handler.UpdateProjectedText(button);
+        changed |= handler.UpdateImageProjection(button);
         changed |= handler.UpdateContentLayoutProjection(button);
         changed |= handler.UpdateToolTipProjection(button);
         if (!changed)
