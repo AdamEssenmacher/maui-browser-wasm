@@ -349,6 +349,12 @@ public sealed class MirageRuntime : IMirageRuntime
                 case PropertyTarget.InputValue:
                     node.GetValueElement().SetInputValue(operation.Value.GetStringOrNull());
                     break;
+                case PropertyTarget.InputChecked:
+                {
+                    var value = operation.Value.GetStringOrNull();
+                    propertyTargetElement.SetInputChecked(string.Equals(value, "true", StringComparison.OrdinalIgnoreCase));
+                    break;
+                }
                 default:
                     throw new InvalidOperationException($"Unsupported property target: {mapping.Target}");
             }
@@ -406,6 +412,9 @@ public sealed class MirageRuntime : IMirageRuntime
                 }
                 case PropertyTarget.InputValue:
                     node.GetValueElement().SetInputValue(null);
+                    break;
+                case PropertyTarget.InputChecked:
+                    propertyTargetElement.SetInputChecked(false);
                     break;
                 default:
                     throw new InvalidOperationException($"Unsupported property target: {mapping.Target}");
@@ -536,6 +545,16 @@ public sealed class MirageRuntime : IMirageRuntime
             {
                 var value = targetElement.GetInputValue();
                 _eventSink?.OnEvent(operation.NodeId, operation.EventName, value);
+            });
+        }
+        else if (eventDescriptor.PayloadKind == EventPayloadKind.InputChecked)
+        {
+            subscriptionId = targetElement.On(eventDescriptor.DomEventName, () =>
+            {
+                _eventSink?.OnEvent(
+                    operation.NodeId,
+                    operation.EventName,
+                    targetElement.GetInputChecked() ? "true" : "false");
             });
         }
         else

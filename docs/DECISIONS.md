@@ -409,3 +409,8 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - `MirageLabelHandler` now maps `HorizontalTextAlignment` and `VerticalTextAlignment` semantics (`text-align` + flex `justify-content`) and uses `display:flex` as its visible baseline so vertical text centering works deterministically.
 - Shared thickness projection now distinguishes margin vs padding semantics: margins preserve signed values, while padding remains non-negative-clamped. This restores MAUI negative-margin behavior used by upstream `CardView` avatar framing.
 - Added integration + ControlsSample E2E guards for avatar geometry (`~100x100` with `-20px` offsets) and first-card title centerline alignment against the icon center.
+
+## 2026-03-16 (ControlsSample CheckBoxPage Enablement)
+- Added first-class Mirage browser support for `CheckBox` (`MirageCheckBoxHandler`) with two-way `IsChecked` projection, compatibility `Color` alias mapping, and browser-native disabled semantics.
+- Extended provider/runtime property/event payload plumbing with `InputChecked` support so checkbox checked state round-trips through control-node mappings without ad hoc payload parsing.
+- Imported upstream `CheckBoxPage` into `ControlsSample.Shared`, promoted it to `Runnable`, and added stable automation IDs used by ControlsSample E2E coverage.

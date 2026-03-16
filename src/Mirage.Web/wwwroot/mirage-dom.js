@@ -475,6 +475,16 @@ export function getInputValue(elementHandle) {
   return element.value ?? "";
 }
 
+export function setInputChecked(elementHandle, value) {
+  const element = fromHandle(elementHandle);
+  element.checked = !!value;
+}
+
+export function getInputChecked(elementHandle) {
+  const element = fromHandle(elementHandle);
+  return !!element.checked;
+}
+
 export function setScrollPosition(elementHandle, left, top) {
   const element = fromHandle(elementHandle);
   element.scrollLeft = Number.isFinite(left) ? Math.max(0, left) : 0;

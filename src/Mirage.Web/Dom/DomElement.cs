@@ -87,6 +87,10 @@ public sealed class DomElement
 
     public string GetInputValue() => DomApi.GetInputValue(Handle);
 
+    public void SetInputChecked(bool value) => DomApi.SetInputChecked(Handle, value);
+
+    public bool GetInputChecked() => DomApi.GetInputChecked(Handle);
+
     public void SetScrollPosition(double left, double top) => DomApi.SetScrollPosition(Handle, left, top);
 
     public (double Left, double Top) GetScrollPosition()

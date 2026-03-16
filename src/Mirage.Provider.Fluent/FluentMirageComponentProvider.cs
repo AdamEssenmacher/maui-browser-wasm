@@ -109,7 +109,24 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
             [ComponentKind.BoxView] = new(
                 ComponentKind.BoxView,
                 "div",
-                propertyMappings: CommonProperties)
+                propertyMappings: CommonProperties),
+            [ComponentKind.CheckBox] = new(
+                ComponentKind.CheckBox,
+                "input",
+                defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["type"] = "checkbox"
+                },
+                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
+                    ["IsChecked"] = new(PropertyTarget.InputChecked),
+                    ["Disabled"] = new(PropertyTarget.Attribute, "disabled")
+                },
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputChecked)
+                })
         };
 
     public ProviderCapabilities Capabilities { get; } = new(

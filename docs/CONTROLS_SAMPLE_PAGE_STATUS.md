@@ -90,7 +90,7 @@ Visual legend:
 | `ActivityIndicatorPage.xaml` | `Pages/Controls/ActivityIndicatorPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `BoxViewPage.xaml` | `Pages/Controls/BoxViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ButtonPage.xaml` | `Pages/Controls/ButtonPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `CheckBoxPage.xaml` | `Pages/Controls/CheckBoxPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CheckBoxPage.xaml` | `Pages/Controls/CheckBoxPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `DatePickerPage.xaml` | `Pages/Controls/DatePickerPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `EditorPage.xaml` | `Pages/Controls/EditorPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `EntryPage.xaml` | `Pages/Controls/EntryPage.xaml` | `[ ]` | `[ ]` | `[ ]` |

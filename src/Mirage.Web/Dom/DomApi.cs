@@ -88,6 +88,12 @@ internal static partial class DomApi
     [JSImport("getInputValue", Module)]
     internal static partial string GetInputValue(nint element);
 
+    [JSImport("setInputChecked", Module)]
+    internal static partial void SetInputChecked(nint element, bool value);
+
+    [JSImport("getInputChecked", Module)]
+    internal static partial bool GetInputChecked(nint element);
+
     [JSImport("setScrollPosition", Module)]
     internal static partial void SetScrollPosition(nint element, double left, double top);
 
