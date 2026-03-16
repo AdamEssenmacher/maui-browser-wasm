@@ -35,9 +35,9 @@ internal sealed class MirageBorderHandler : MirageContentViewHandlerBase<Border>
 
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
+        base.ConnectHandler(platformView);
         var changed = SetStyleIfChanged("boxSizing", "border-box");
         changed |= UpdateStrokeStyles(VirtualView);
-        base.ConnectHandler(platformView);
         if (changed)
         {
             RequestRender();
@@ -110,6 +110,7 @@ internal sealed class MirageBorderHandler : MirageContentViewHandlerBase<Border>
         var borderColor = ResolveStrokeColor(border.Stroke, border);
         var borderStyle = ResolveBorderStyle(border.StrokeDashArray);
         var borderRadius = ResolveBorderRadius(border.StrokeShape, border);
+        var overflow = ResolveOverflow(border.StrokeShape);
 
         var changed = false;
         if (borderColor is null || borderThickness <= 0)
@@ -126,6 +127,9 @@ internal sealed class MirageBorderHandler : MirageContentViewHandlerBase<Border>
         }
 
         changed |= SetStyleIfChanged("borderRadius", borderRadius);
+        changed |= SetStyleIfChanged("overflow", overflow);
+        changed |= SetStyleIfChanged("overflowX", overflow);
+        changed |= SetStyleIfChanged("overflowY", overflow);
 
         if (border.StrokeDashOffset > 0 && double.IsFinite(border.StrokeDashOffset))
         {
@@ -199,6 +203,17 @@ internal sealed class MirageBorderHandler : MirageContentViewHandlerBase<Border>
 
         ReportUnsupported(nameof(Border.StrokeShape), border, shape);
         return null;
+    }
+
+    private static string ResolveOverflow(IShape? shape)
+    {
+        return shape switch
+        {
+            null => "hidden",
+            Rectangle => "hidden",
+            RoundRectangle => "hidden",
+            _ => "visible"
+        };
     }
 
     private static double NormalizeFinite(double value)
