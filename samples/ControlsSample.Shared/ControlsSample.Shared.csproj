@@ -13,7 +13,9 @@
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ClippingPage.xaml" Link="Vendor\Pages\Layouts\ClippingPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ContentViewPage.xaml" Link="Vendor\Pages\Layouts\ContentViewPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\GridPage.xaml" Link="Vendor\Pages\Layouts\GridPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\HorizontalStackLayoutPage.xaml" Link="Vendor\Pages\Layouts\HorizontalStackLayoutPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml" Link="Vendor\Pages\Controls\ButtonPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\BoxViewPage.xaml" Link="Vendor\Pages\Controls\BoxViewPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\CheckBoxPage.xaml" Link="Vendor\Pages\Controls\CheckBoxPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\SliderPage.xaml" Link="Vendor\Pages\Controls\SliderPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Compatibility\TabbedPageGalleryMainPage.xaml" Link="Vendor\Pages\Compatibility\TabbedPageGalleryMainPage.xaml" />
@@ -27,7 +29,9 @@
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ClippingPage.xaml.cs" Link="Vendor\Pages\Layouts\ClippingPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ContentViewPage.xaml.cs" Link="Vendor\Pages\Layouts\ContentViewPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\GridPage.xaml.cs" Link="Vendor\Pages\Layouts\GridPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\HorizontalStackLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\HorizontalStackLayoutPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml.cs" Link="Vendor\Pages\Controls\ButtonPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\BoxViewPage.xaml.cs" Link="Vendor\Pages\Controls\BoxViewPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\CheckBoxPage.xaml.cs" Link="Vendor\Pages\Controls\CheckBoxPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\SliderPage.xaml.cs" Link="Vendor\Pages\Controls\SliderPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Compatibility\TabbedPageGalleryMainPage.xaml.cs" Link="Vendor\Pages\Compatibility\TabbedPageGalleryMainPage.xaml.cs" />

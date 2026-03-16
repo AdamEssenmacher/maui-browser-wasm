@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Mirage.Core.Diagnostics;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Shapes;
@@ -155,6 +156,38 @@ internal static class MirageCommonViewProjection
 
         var projection = BuildClipPathProjection(view.Clip);
         return SetStyleIfChanged(platformHandler, "clipPath", projection.ToCssValue());
+    }
+
+    public static bool MapShadow(IViewHandler handler, IView view)
+    {
+        if (!TryGetPlatformHandler(handler, out var platformHandler)
+            || view is not VisualElement visualElement)
+        {
+            return false;
+        }
+
+        var shadow = visualElement.Shadow;
+        if (shadow is null)
+        {
+            return SetStyleIfChanged(platformHandler, "boxShadow", null);
+        }
+
+        var shadowColor = ResolveShadowCssColor(shadow);
+        if (string.IsNullOrWhiteSpace(shadowColor))
+        {
+            MirageDiagnostics.Log(
+                "shadow.map",
+                $"unsupported brush type={shadow.Brush?.GetType().Name ?? "<null>"} view={view.GetType().Name}");
+            return SetStyleIfChanged(platformHandler, "boxShadow", null);
+        }
+
+        var offsetX = NormalizeFinite(shadow.Offset.X, 0);
+        var offsetY = NormalizeFinite(shadow.Offset.Y, 0);
+        var blur = Math.Max(0, NormalizeFinite(shadow.Radius, 0));
+        return SetStyleIfChanged(
+            platformHandler,
+            "boxShadow",
+            $"{ToPxNoClamp(offsetX)} {ToPxNoClamp(offsetY)} {ToPx(blur)} {shadowColor}");
     }
 
     public static bool MapLayoutClipsToBounds(IViewHandler handler, Microsoft.Maui.ILayout layout)
@@ -421,6 +454,27 @@ internal static class MirageCommonViewProjection
         changed |= SetStyleIfChanged(platformHandler, "backgroundRepeat", null);
         changed |= SetStyleIfChanged(platformHandler, "backgroundPosition", null);
         return changed;
+    }
+
+    private static string? ResolveShadowCssColor(Shadow shadow)
+    {
+        if (shadow.Brush is not SolidColorBrush solidColorBrush || solidColorBrush.Color is null)
+        {
+            return null;
+        }
+
+        var opacity = double.IsFinite(shadow.Opacity)
+            ? Math.Clamp(shadow.Opacity, 0, 1)
+            : 1d;
+
+        var alpha = Math.Clamp(solidColorBrush.Color.Alpha * (float)opacity, 0f, 1f);
+        var color = new Color(
+            solidColorBrush.Color.Red,
+            solidColorBrush.Color.Green,
+            solidColorBrush.Color.Blue,
+            alpha);
+
+        return ToCssColor(color);
     }
 
     private static bool SetStyleIfChanged(IMiragePlatformHandler platformHandler, string name, string? value)

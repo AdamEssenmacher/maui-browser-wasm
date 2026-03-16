@@ -806,6 +806,58 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void BoxViewHandler_AppliesDefaultMinimumSize_WhenSizeRequestsAreUnset()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageBoxViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var boxView = new BoxView();
+        ((IElementHandler)handler).SetVirtualView(boxView);
+
+        Assert.Equal("40px", handler.PlatformView.GetStyleValue("minWidth"));
+        Assert.Equal("40px", handler.PlatformView.GetStyleValue("minHeight"));
+
+        boxView.WidthRequest = 24;
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(VisualElement.WidthRequest));
+        Assert.Equal("24px", handler.PlatformView.GetStyleValue("width"));
+        Assert.Null(handler.PlatformView.GetStyleValue("minWidth"));
+
+        boxView.HeightRequest = 16;
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(VisualElement.HeightRequest));
+        Assert.Equal("16px", handler.PlatformView.GetStyleValue("height"));
+        Assert.Null(handler.PlatformView.GetStyleValue("minHeight"));
+    }
+
+    [Fact]
+    public void BoxViewHandler_MapsCornerRadius_ForUniformAndComplexValues()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageBoxViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var boxView = new BoxView
+        {
+            CornerRadius = new CornerRadius(10)
+        };
+
+        ((IElementHandler)handler).SetVirtualView(boxView);
+        Assert.Equal("10px 10px 10px 10px", handler.PlatformView.GetStyleValue("borderRadius"));
+
+        boxView.CornerRadius = new CornerRadius(10, 0, 5, 20);
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(BoxView.CornerRadius));
+        Assert.Equal("10px 0px 20px 5px", handler.PlatformView.GetStyleValue("borderRadius"));
+
+        boxView.CornerRadius = new CornerRadius(0);
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(BoxView.CornerRadius));
+        Assert.Null(handler.PlatformView.GetStyleValue("borderRadius"));
+    }
+
+    [Fact]
     public void LayoutHandler_StackLayoutProjectsOrientationSpacingAndClipAlias()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -866,6 +918,62 @@ public sealed class HandlerRuntimeIntegrationTests
         var changedHidden = MirageCommonViewProjection.MapLayoutClipsToBounds(handler, layout);
         Assert.True(changedHidden);
         Assert.Equal("hidden", handler.Node.GetStyleValue("overflow"));
+    }
+
+    [Fact]
+    public void CommonMapper_MapsShadow_ProjectsAndClearsDeterministically()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var view = new BoxView();
+
+        view.Shadow = new Shadow
+        {
+            Brush = new SolidColorBrush(Colors.Red),
+            Opacity = 0.5f,
+            Radius = 6,
+            Offset = new Point(4, 8)
+        };
+
+        MirageViewMapper.MapShadow(handler, view);
+        Assert.Equal("4px 8px 6px rgba(255,0,0,0.5)", handler.Node.GetStyleValue("boxShadow"));
+
+        view.ClearValue(VisualElement.ShadowProperty);
+        MirageViewMapper.MapShadow(handler, view);
+        Assert.Null(handler.Node.GetStyleValue("boxShadow"));
+    }
+
+    [Fact]
+    public void CommonMapper_MapShadow_UnsupportedBrush_ClearsProjection()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var view = new BoxView
+        {
+            Shadow = new Shadow
+            {
+                Brush = new SolidColorBrush(Colors.Black),
+                Radius = 4,
+                Offset = new Point(1, 1),
+                Opacity = 1
+            }
+        };
+
+        MirageViewMapper.MapShadow(handler, view);
+        Assert.Contains("rgba(0,0,0,1)", handler.Node.GetStyleValue("boxShadow"), StringComparison.Ordinal);
+
+        view.Shadow = new Shadow
+        {
+            Brush = new LinearGradientBrush(
+            [
+                new GradientStop(Colors.Red, 0),
+                new GradientStop(Colors.Blue, 1)
+            ], new Point(0, 0), new Point(1, 1)),
+            Radius = 6,
+            Offset = new Point(2, 3),
+            Opacity = 1
+        };
+
+        MirageViewMapper.MapShadow(handler, view);
+        Assert.Null(handler.Node.GetStyleValue("boxShadow"));
     }
 
     [Fact]

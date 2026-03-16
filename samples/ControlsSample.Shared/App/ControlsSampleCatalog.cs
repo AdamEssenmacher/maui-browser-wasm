@@ -24,6 +24,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(GridPage),
             description: "Runnable in Mirage today: exercises Grid row/column definitions, spans, and centered label overlays."),
         new(
+            id: "horizontalstacklayoutpage",
+            title: "HorizontalStackLayoutPage",
+            upstreamPath: "Pages/Layouts/HorizontalStackLayoutPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(HorizontalStackLayoutPage),
+            description: "Runnable in Mirage today: exercises HorizontalStackLayout row flow with Label and BoxView children."),
+        new(
             id: "clippingpage",
             title: "ClippingPage",
             upstreamPath: "Pages/Layouts/ClippingPage.xaml",
@@ -37,6 +44,14 @@ public static class ControlsSampleCatalog
             status: ControlsSampleStatus.Runnable,
             pageType: typeof(ContentViewPage),
             description: "Runnable in Mirage today: exercises ContentView composition with Border + Image content."),
+        new(
+            id: "boxviewpage",
+            title: "BoxViewPage",
+            upstreamPath: "Pages/Controls/BoxViewPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(BoxViewPage),
+            description: "Runnable in Mirage today: exercises BoxView color/brush, corner radius, opacity, clip, and shadow scenarios.",
+            pageFactory: CreateBoxViewPage),
         new(
             id: "buttonpage",
             title: "ButtonPage",
@@ -134,6 +149,35 @@ public static class ControlsSampleCatalog
         if (lineBreakUpdateButton is not null)
         {
             lineBreakUpdateButton.AutomationId = "controls-sample-buttonpage-linebreak-update";
+        }
+
+        return page;
+    }
+
+    private static Page CreateBoxViewPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new BoxViewPage();
+
+        var boxViews = FindDescendants<BoxView>(page).ToArray();
+        var boxViewAutomationIds = new[]
+        {
+            "controls-sample-boxviewpage-default",
+            "controls-sample-boxviewpage-color",
+            "controls-sample-boxviewpage-background",
+            "controls-sample-boxviewpage-corner-radius",
+            "controls-sample-boxviewpage-complex-corner-radius",
+            "controls-sample-boxviewpage-opacity",
+            "controls-sample-boxviewpage-clip",
+            "controls-sample-boxviewpage-shadow"
+        };
+
+        for (var i = 0; i < boxViews.Length && i < boxViewAutomationIds.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(boxViews[i].AutomationId))
+            {
+                boxViews[i].AutomationId = boxViewAutomationIds[i];
+            }
         }
 
         return page;
