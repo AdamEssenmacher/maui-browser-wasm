@@ -5,6 +5,118 @@ const hotReloadHints = [];
 const HOT_RELOAD_HINT_LIMIT = 256;
 const HOT_RELOAD_PATH_PATTERN = /\/_hotreload\/[A-Za-z0-9_.-]+\/[^"'\\\s]+/g;
 let hotReloadHintBridgeInstalled = false;
+const MIRAGE_FRAMEWORK_STYLE_ID = "mirage-framework-control-styles";
+
+function ensureMirageFrameworkStyles() {
+  if (typeof document === "undefined" || !document.head) {
+    return;
+  }
+
+  if (document.getElementById(MIRAGE_FRAMEWORK_STYLE_ID)) {
+    return;
+  }
+
+  const styleElement = document.createElement("style");
+  styleElement.id = MIRAGE_FRAMEWORK_STYLE_ID;
+  styleElement.textContent = `
+input[data-mirage-kind="Slider"][type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  outline: none;
+}
+
+input[data-mirage-kind="Slider"][type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--mirage-slider-track-gradient, linear-gradient(to right, rgba(59,130,246,1) 0%, rgba(59,130,246,1) 50%, rgba(209,213,219,1) 50%, rgba(209,213,219,1) 100%));
+}
+
+input[data-mirage-kind="Slider"][type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(193,194,202,1);
+  margin-top: -9px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  background-color: var(--mirage-slider-thumb-color, rgba(255,255,255,1));
+  background-image: var(--mirage-slider-thumb-image, none);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+input[data-mirage-kind="Slider"][type="range"][data-maui-slider-thumb-image-state="resolved"]::-webkit-slider-thumb {
+  width: 10px;
+  height: 20px;
+  border-radius: 2px;
+  border: 0;
+  margin-top: -8px;
+  box-shadow: none;
+  background-color: transparent;
+  background-size: contain;
+}
+
+input[data-mirage-kind="Slider"][type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--mirage-slider-track-gradient, linear-gradient(to right, rgba(59,130,246,1) 0%, rgba(59,130,246,1) 50%, rgba(209,213,219,1) 50%, rgba(209,213,219,1) 100%));
+}
+
+input[data-mirage-kind="Slider"][type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(193,194,202,1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  background-color: var(--mirage-slider-thumb-color, rgba(255,255,255,1));
+  background-image: var(--mirage-slider-thumb-image, none);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+input[data-mirage-kind="Slider"][type="range"][data-maui-slider-thumb-image-state="resolved"]::-moz-range-thumb {
+  width: 10px;
+  height: 20px;
+  border-radius: 2px;
+  border: 0;
+  box-shadow: none;
+  background-color: transparent;
+  background-size: contain;
+}
+
+input[data-mirage-kind="Slider"][type="range"]:disabled {
+  cursor: default;
+}
+
+input[data-mirage-kind="Slider"][type="range"]:disabled::-webkit-slider-runnable-track {
+  background: rgba(221,223,230,1);
+}
+
+input[data-mirage-kind="Slider"][type="range"]:disabled::-webkit-slider-thumb {
+  background-color: rgba(246,246,249,1);
+  border-color: rgba(201,202,210,1);
+  box-shadow: none;
+}
+
+input[data-mirage-kind="Slider"][type="range"]:disabled::-moz-range-track {
+  background: rgba(221,223,230,1);
+}
+
+input[data-mirage-kind="Slider"][type="range"]:disabled::-moz-range-thumb {
+  background-color: rgba(246,246,249,1);
+  border-color: rgba(201,202,210,1);
+  box-shadow: none;
+}
+`;
+
+  document.head.appendChild(styleElement);
+}
 
 function normalizeHotReloadHint(rawHint) {
   if (typeof rawHint !== "string") {
@@ -253,6 +365,7 @@ export function getRootById(id) {
 }
 
 export function createElement(tag) {
+  ensureMirageFrameworkStyles();
   const element = document.createElement(tag);
   const customElementConstructor = globalThis.customElements?.get?.(tag);
   if (
@@ -477,12 +590,12 @@ export function getInputValue(elementHandle) {
 
 export function setInputChecked(elementHandle, value) {
   const element = fromHandle(elementHandle);
-  element.checked = !!value;
+  element.checked = Boolean(value);
 }
 
 export function getInputChecked(elementHandle) {
   const element = fromHandle(elementHandle);
-  return !!element.checked;
+  return Boolean(element.checked);
 }
 
 export function setScrollPosition(elementHandle, left, top) {

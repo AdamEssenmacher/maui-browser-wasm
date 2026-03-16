@@ -1,4 +1,6 @@
 using Mirage.Core.Semantics;
+using Mirage.Maui.Images;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
@@ -6,22 +8,44 @@ using Microsoft.Maui.Handlers;
 
 namespace Mirage.Maui.Handlers;
 
-internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMirageRuntimeEventTarget
+internal sealed class MirageButtonHandler : MirageViewHandler<Button>, IMirageRuntimeEventTarget
 {
-    public static IPropertyMapper<ITextButton, MirageButtonHandler> Mapper =
-        new PropertyMapper<ITextButton, MirageButtonHandler>(MirageViewMapper.CommonViewMapper)
+    private const int MinimumTruncationBudget = 6;
+    private const int DefaultTruncationBudget = 56;
+    private const double DefaultImageExtent = 20;
+    private IMirageImageSourceResolver? _imageSourceResolver;
+
+    public static IPropertyMapper<Button, MirageButtonHandler> Mapper =
+        new PropertyMapper<Button, MirageButtonHandler>(MirageViewMapper.CommonViewMapper)
         {
-            [nameof(ITextButton.Text)] = MapText,
+            [nameof(Button.Text)] = MapText,
+            [nameof(Button.ImageSource)] = MapImageSource,
+            [nameof(Button.ContentLayout)] = MapContentLayout,
+            [nameof(Button.LineBreakMode)] = MapLineBreakMode,
+            [nameof(Button.Padding)] = MapContentPadding,
+            [nameof(ITextStyle.Font)] = MapFont,
+            [nameof(ITextStyle.CharacterSpacing)] = MapCharacterSpacing,
+            ["FontFamily"] = MapFont,
+            ["FontSize"] = MapFont,
+            ["FontAttributes"] = MapFont,
+            ["FontAutoScalingEnabled"] = MapFont,
             [nameof(ITextStyle.TextColor)] = MapTextColor,
             [nameof(IView.Background)] = MapBackground,
             ["TextColor"] = MapTextColor,
             ["BackgroundColor"] = MapBackground,
             [nameof(IView.IsEnabled)] = MapIsEnabled,
+            [nameof(VisualElement.WidthRequest)] = MapSizeRequests,
+            [nameof(VisualElement.HeightRequest)] = MapSizeRequests,
+            [nameof(VisualElement.MinimumWidthRequest)] = MapSizeRequests,
+            [nameof(VisualElement.MinimumHeightRequest)] = MapSizeRequests,
+            [nameof(VisualElement.MaximumWidthRequest)] = MapSizeRequests,
+            [nameof(VisualElement.MaximumHeightRequest)] = MapSizeRequests,
             [nameof(IButtonStroke.StrokeColor)] = MapStrokeColor,
             [nameof(IButtonStroke.StrokeThickness)] = MapStrokeThickness,
             [nameof(IButtonStroke.CornerRadius)] = MapCornerRadius,
             ["BorderColor"] = MapStrokeColor,
-            ["BorderWidth"] = MapStrokeThickness
+            ["BorderWidth"] = MapStrokeThickness,
+            ["ToolTipProperties.Text"] = MapToolTipText
         };
 
     public MirageButtonHandler()
@@ -35,12 +59,19 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         PlatformView.SetStyle("display", "inline-flex");
         PlatformView.SetStyle("alignItems", "center");
         PlatformView.SetStyle("justifyContent", "center");
+        PlatformView.SetStyle("position", "relative");
+        PlatformView.SetStyle("boxSizing", "border-box");
         PlatformView.SetStyle("cursor", VirtualView.IsEnabled ? "pointer" : "default");
         PlatformView.SetEvent("click", enabled: true);
+        UpdateProjectedText(VirtualView);
+        UpdateImageProjection(VirtualView);
+        UpdateContentLayoutProjection(VirtualView);
+        UpdatePaddingProjection(VirtualView);
         UpdateBackgroundStyles(VirtualView);
         UpdateTextColorStyles(VirtualView);
         UpdateStrokeStyles(VirtualView);
         UpdateCornerRadius(VirtualView);
+        UpdateToolTipProjection(VirtualView);
         base.ConnectHandler(platformView);
         RequestRender();
     }
@@ -58,23 +89,18 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
             return;
         }
 
-        VirtualView.Clicked();
-    }
-
-    public static void MapText(MirageButtonHandler handler, ITextButton button)
-    {
-        if (string.Equals(handler.PlatformView.GetPropertyString("Text"), button.Text, StringComparison.Ordinal))
+        if (VirtualView is IButton buttonView)
         {
-            return;
+            buttonView.Clicked();
         }
-
-        handler.PlatformView.SetProperty("Text", button.Text);
-        handler.RequestRender();
     }
 
-    public static void MapIsEnabled(MirageButtonHandler handler, ITextButton button)
+    public static void MapText(MirageButtonHandler handler, Button button)
     {
-        if (!handler.SetStyleIfChanged("cursor", button.IsEnabled ? "pointer" : "default"))
+        var changed = handler.UpdateProjectedText(button);
+        changed |= handler.UpdateContentLayoutProjection(button);
+        changed |= handler.UpdateToolTipProjection(button);
+        if (!changed)
         {
             return;
         }
@@ -82,7 +108,104 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         handler.RequestRender();
     }
 
-    public static void MapBackground(MirageButtonHandler handler, ITextButton button)
+    public static void MapImageSource(MirageButtonHandler handler, Button button)
+    {
+        var changed = handler.UpdateImageProjection(button);
+        changed |= handler.UpdateProjectedText(button);
+        changed |= handler.UpdateContentLayoutProjection(button);
+        if (!changed)
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapContentLayout(MirageButtonHandler handler, Button button)
+    {
+        var changed = handler.UpdateContentLayoutProjection(button);
+        changed |= handler.UpdateProjectedText(button);
+        if (!changed)
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapLineBreakMode(MirageButtonHandler handler, Button button)
+    {
+        if (!handler.UpdateProjectedText(button))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapContentPadding(MirageButtonHandler handler, Button button)
+    {
+        var changed = handler.UpdatePaddingProjection(button);
+        changed |= handler.UpdateProjectedText(button);
+        if (!changed)
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapFont(MirageButtonHandler handler, Button button)
+    {
+        var changed = MirageCommonViewProjection.MapFont(handler, button);
+        changed |= handler.UpdateProjectedText(button);
+        if (!changed)
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapCharacterSpacing(MirageButtonHandler handler, Button button)
+    {
+        var changed = MirageCommonViewProjection.MapCharacterSpacing(handler, button);
+        changed |= handler.UpdateProjectedText(button);
+        if (!changed)
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapIsEnabled(MirageButtonHandler handler, Button button)
+    {
+        var changed = handler.SetStyleIfChanged("cursor", button.IsEnabled ? "pointer" : "default");
+        changed |= handler.SetStyleIfChanged("pointerEvents", button.IsEnabled ? "auto" : "none");
+        changed |= handler.SetStyleIfChanged("opacity", button.IsEnabled ? null : "0.6");
+        if (!changed)
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapSizeRequests(MirageButtonHandler handler, Button button)
+    {
+        var changed = MirageCommonViewProjection.MapSizeRequests(handler, button);
+        changed |= MirageCommonViewProjection.MapLayoutAlignment(handler, button);
+        changed |= handler.UpdateProjectedText(button);
+        if (!changed)
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapBackground(MirageButtonHandler handler, Button button)
     {
         if (!handler.UpdateBackgroundStyles(button))
         {
@@ -92,7 +215,7 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         handler.RequestRender();
     }
 
-    public static void MapTextColor(MirageButtonHandler handler, ITextButton button)
+    public static void MapTextColor(MirageButtonHandler handler, Button button)
     {
         if (!handler.UpdateTextColorStyles(button))
         {
@@ -102,7 +225,7 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         handler.RequestRender();
     }
 
-    public static void MapStrokeColor(MirageButtonHandler handler, ITextButton button)
+    public static void MapStrokeColor(MirageButtonHandler handler, Button button)
     {
         if (!handler.UpdateStrokeStyles(button))
         {
@@ -112,7 +235,7 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         handler.RequestRender();
     }
 
-    public static void MapStrokeThickness(MirageButtonHandler handler, ITextButton button)
+    public static void MapStrokeThickness(MirageButtonHandler handler, Button button)
     {
         if (!handler.UpdateStrokeStyles(button))
         {
@@ -122,7 +245,7 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         handler.RequestRender();
     }
 
-    public static void MapCornerRadius(MirageButtonHandler handler, ITextButton button)
+    public static void MapCornerRadius(MirageButtonHandler handler, Button button)
     {
         if (!handler.UpdateCornerRadius(button))
         {
@@ -132,7 +255,17 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         handler.RequestRender();
     }
 
-    private bool UpdateStrokeStyles(ITextButton button)
+    public static void MapToolTipText(MirageButtonHandler handler, Button button)
+    {
+        if (!handler.UpdateToolTipProjection(button))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    private bool UpdateStrokeStyles(Button button)
     {
         if (button is not IButtonStroke strokedButton)
         {
@@ -162,93 +295,273 @@ internal sealed class MirageButtonHandler : MirageViewHandler<ITextButton>, IMir
         return changed;
     }
 
-    private bool UpdateBackgroundStyles(ITextButton button)
+    private bool UpdateBackgroundStyles(Button button)
     {
-        var hasExplicitBackgroundPaint = button.Background is not null;
-        var backgroundColor = button.Background switch
-        {
-            SolidPaint solidPaint => MirageCommonViewProjection.ToCssColor(solidPaint.Color),
-            _ => null
-        };
-
-        if (backgroundColor is null
-            && !hasExplicitBackgroundPaint
-            && button is VisualElement visualElement
-            && visualElement.BackgroundColor is { } backgroundColorValue)
-        {
-            backgroundColor = MirageCommonViewProjection.ToCssColor(backgroundColorValue);
-        }
-
-        if (backgroundColor is null)
-        {
-            // Non-solid paints (such as gradients) should continue to project through the common view path.
-            // Clear Fluent token overrides so provider defaults remain intact when no solid color is set.
-            var projectionChanged = SetStyleIfChanged("--accent-fill-rest", null);
-            projectionChanged |= SetStyleIfChanged("--accent-fill-hover", null);
-            projectionChanged |= SetStyleIfChanged("--accent-fill-active", null);
-            projectionChanged |= SetStyleIfChanged("--neutral-fill-rest", null);
-            projectionChanged |= SetStyleIfChanged("--neutral-fill-hover", null);
-            projectionChanged |= SetStyleIfChanged("--neutral-fill-active", null);
-            projectionChanged |= MirageCommonViewProjection.MapBackground(this, button);
-            return projectionChanged;
-        }
-
-        // Fluent button visuals are rendered inside an internal control surface.
-        // Avoid painting the host shell; push solid background intents through Fluent tokens.
-        var solidChanged = SetStyleIfChanged("backgroundColor", null);
-        solidChanged |= SetStyleIfChanged("backgroundImage", null);
-        solidChanged |= SetStyleIfChanged("backgroundSize", null);
-        solidChanged |= SetStyleIfChanged("backgroundRepeat", null);
-        solidChanged |= SetStyleIfChanged("backgroundPosition", null);
-        solidChanged |= SetStyleIfChanged("--accent-fill-rest", backgroundColor);
-        solidChanged |= SetStyleIfChanged("--accent-fill-hover", backgroundColor);
-        solidChanged |= SetStyleIfChanged("--accent-fill-active", backgroundColor);
-        solidChanged |= SetStyleIfChanged("--neutral-fill-rest", backgroundColor);
-        solidChanged |= SetStyleIfChanged("--neutral-fill-hover", backgroundColor);
-        solidChanged |= SetStyleIfChanged("--neutral-fill-active", backgroundColor);
-        return solidChanged;
+        return MirageCommonViewProjection.MapBackground(this, button);
     }
 
-    private bool UpdateTextColorStyles(ITextButton button)
+    private bool UpdateTextColorStyles(Button button)
     {
-        var textColor = button is ITextStyle textStyle
-            ? MirageCommonViewProjection.ToCssColor(textStyle.TextColor)
-            : null;
+        var textColor = MirageCommonViewProjection.ToCssColor(button.TextColor);
 
-        var changed = SetStyleIfChanged("color", textColor);
-        changed |= SetStyleIfChanged("--accent-foreground-rest", textColor);
-        changed |= SetStyleIfChanged("--accent-foreground-hover", textColor);
-        changed |= SetStyleIfChanged("--accent-foreground-active", textColor);
-        changed |= SetStyleIfChanged("--foreground-on-accent-rest", textColor);
-        changed |= SetStyleIfChanged("--foreground-on-accent-hover", textColor);
-        changed |= SetStyleIfChanged("--foreground-on-accent-active", textColor);
-        changed |= SetStyleIfChanged("--neutral-foreground-rest", textColor);
-        changed |= SetStyleIfChanged("--neutral-foreground-hover", textColor);
-        changed |= SetStyleIfChanged("--neutral-foreground-active", textColor);
-        return changed;
+        return SetStyleIfChanged("color", textColor);
     }
 
-    private bool UpdateCornerRadius(ITextButton button)
+    private bool UpdateCornerRadius(Button button)
     {
         if (button is not IButtonStroke strokedButton)
         {
-            var cleared = SetStyleIfChanged("borderRadius", null);
-            cleared |= SetStyleIfChanged("--control-corner-radius", null);
-            return cleared;
+            return SetStyleIfChanged("borderRadius", null);
         }
 
         var cornerRadius = strokedButton.CornerRadius;
         if (!double.IsFinite(cornerRadius) || cornerRadius < 0)
         {
-            var cleared = SetStyleIfChanged("borderRadius", null);
-            cleared |= SetStyleIfChanged("--control-corner-radius", null);
-            return cleared;
+            return SetStyleIfChanged("borderRadius", null);
         }
 
         var radius = MirageViewMapper.ToPx(cornerRadius);
-        var changed = SetStyleIfChanged("borderRadius", null);
-        changed |= SetStyleIfChanged("--control-corner-radius", radius);
+        return SetStyleIfChanged("borderRadius", radius);
+    }
+
+    private bool UpdatePaddingProjection(Button button)
+    {
+        return SetStyleIfChanged("padding", MirageCommonViewProjection.ToPaddingThickness(button.Padding));
+    }
+
+    private bool UpdateToolTipProjection(Button button)
+    {
+        var tooltipText = ToolTipProperties.GetText(button) as string;
+        return SetPropertyIfChanged("TooltipText", string.IsNullOrWhiteSpace(tooltipText) ? null : tooltipText);
+    }
+
+    private bool UpdateImageProjection(Button button)
+    {
+        var projection = MirageImageSourceProjection.BuildProjection(button.ImageSource, GetImageSourceResolver(), button);
+        var hasImage = !string.IsNullOrWhiteSpace(projection.SourceValue);
+        var changed = SetPropertyIfChanged("ImageSource", projection.SourceValue);
+        changed |= SetPropertyIfChanged("ImageDisplay", hasImage ? "block" : "none");
+        changed |= SetPropertyIfChanged("ImageAlt", string.IsNullOrWhiteSpace(button.Text) ? "button image" : button.Text);
+        changed |= SetPropertyIfChanged("ImageWidth", hasImage ? MirageViewMapper.ToPx(DefaultImageExtent) : null);
+        changed |= SetPropertyIfChanged("ImageHeight", hasImage ? MirageViewMapper.ToPx(DefaultImageExtent) : null);
+        changed |= SetPropertyIfChanged("ImageObjectFit", hasImage ? "contain" : null);
+        changed |= SetPropertyIfChanged("ImagePointerEvents", hasImage ? "none" : null);
         return changed;
+    }
+
+    private bool UpdateContentLayoutProjection(Button button)
+    {
+        var hasImage = !string.IsNullOrWhiteSpace(PlatformView.GetPropertyString("ImageSource"));
+        var hasText = !string.IsNullOrWhiteSpace(PlatformView.GetPropertyString("Text"));
+        var contentLayout = button.ContentLayout ?? new Button.ButtonContentLayout(Button.ButtonContentLayout.ImagePosition.Left, 10);
+
+        var flexDirection = contentLayout.Position switch
+        {
+            Button.ButtonContentLayout.ImagePosition.Right => "row-reverse",
+            Button.ButtonContentLayout.ImagePosition.Top => "column",
+            Button.ButtonContentLayout.ImagePosition.Bottom => "column-reverse",
+            _ => "row"
+        };
+
+        var spacing = double.IsFinite(contentLayout.Spacing)
+            ? contentLayout.Spacing
+            : 0;
+
+        var changed = SetStyleIfChanged("flexDirection", flexDirection);
+        changed |= SetStyleIfChanged("alignItems", "center");
+        changed |= SetStyleIfChanged("justifyContent", "center");
+        changed |= SetPropertyIfChanged("TextDisplay", hasText ? "inline" : "none");
+
+        var textMarginTop = "0px";
+        var textMarginRight = "0px";
+        var textMarginBottom = "0px";
+        var textMarginLeft = "0px";
+        if (hasImage && hasText && Math.Abs(spacing) > 0)
+        {
+            var spacingValue = MirageCommonViewProjection.ToPxNoClamp(spacing);
+            switch (contentLayout.Position)
+            {
+                case Button.ButtonContentLayout.ImagePosition.Right:
+                    textMarginRight = spacingValue;
+                    break;
+                case Button.ButtonContentLayout.ImagePosition.Top:
+                    textMarginTop = spacingValue;
+                    break;
+                case Button.ButtonContentLayout.ImagePosition.Bottom:
+                    textMarginBottom = spacingValue;
+                    break;
+                default:
+                    textMarginLeft = spacingValue;
+                    break;
+            }
+        }
+
+        changed |= SetPropertyIfChanged("TextMarginTop", textMarginTop);
+        changed |= SetPropertyIfChanged("TextMarginRight", textMarginRight);
+        changed |= SetPropertyIfChanged("TextMarginBottom", textMarginBottom);
+        changed |= SetPropertyIfChanged("TextMarginLeft", textMarginLeft);
+        return changed;
+    }
+
+    private bool UpdateProjectedText(Button button)
+    {
+        var text = button.Text ?? string.Empty;
+        var hasImage = button.ImageSource is not null;
+        var projectedText = text;
+
+        if (text.Length > 0 && IsTruncationMode(button.LineBreakMode))
+        {
+            var budget = ResolveTruncationBudget(button, text.Length, hasImage);
+            projectedText = ApplyTruncation(text, button.LineBreakMode, budget);
+        }
+
+        var changed = SetPropertyIfChanged("Text", projectedText);
+        changed |= SetPropertyIfChanged("TextDisplay", text.Length == 0 ? "none" : "inline");
+        changed |= SetPropertyIfChanged("TextWhiteSpace", ResolveTextWhiteSpace(button.LineBreakMode));
+        changed |= SetPropertyIfChanged("TextOverflow", ResolveTextOverflow(button.LineBreakMode));
+        changed |= SetPropertyIfChanged("TextOverflowStyle", ResolveTextOverflowStyle(button.LineBreakMode));
+        changed |= SetPropertyIfChanged("TextWordBreak", ResolveTextWordBreak(button.LineBreakMode));
+        changed |= SetPropertyIfChanged("TextOverflowWrap", ResolveTextOverflowWrap(button.LineBreakMode));
+        return changed;
+    }
+
+    private static bool IsTruncationMode(LineBreakMode mode)
+    {
+        return mode is LineBreakMode.HeadTruncation or LineBreakMode.MiddleTruncation or LineBreakMode.TailTruncation;
+    }
+
+    private static int ResolveTruncationBudget(Button button, int textLength, bool hasImage)
+    {
+        var contentLayout = button.ContentLayout ?? new Button.ButtonContentLayout(Button.ButtonContentLayout.ImagePosition.Left, 10);
+        var width = double.IsFinite(button.WidthRequest) && button.WidthRequest > 0
+            ? button.WidthRequest
+            : DefaultTruncationBudget * 7.0;
+
+        var horizontalPadding = 0d;
+        if (double.IsFinite(button.Padding.Left))
+        {
+            horizontalPadding += Math.Max(0, button.Padding.Left);
+        }
+
+        if (double.IsFinite(button.Padding.Right))
+        {
+            horizontalPadding += Math.Max(0, button.Padding.Right);
+        }
+
+        width = Math.Max(0, width - horizontalPadding);
+        if (hasImage && contentLayout.Position is Button.ButtonContentLayout.ImagePosition.Left or Button.ButtonContentLayout.ImagePosition.Right)
+        {
+            var spacing = double.IsFinite(contentLayout.Spacing) ? contentLayout.Spacing : 0;
+            width -= DefaultImageExtent + Math.Max(0, spacing);
+        }
+
+        var textStyle = (ITextStyle)button;
+        var fontSize = double.IsFinite(textStyle.Font.Size) && textStyle.Font.Size > 0
+            ? textStyle.Font.Size
+            : 14;
+        var charWidth = Math.Max(5d, (fontSize * 0.56) + Math.Max(0, button.CharacterSpacing) * 0.15);
+        var estimated = (int)Math.Floor(width / charWidth);
+        var clamped = Math.Clamp(estimated, MinimumTruncationBudget, textLength);
+        return clamped;
+    }
+
+    private static string ApplyTruncation(string text, LineBreakMode mode, int budget)
+    {
+        if (text.Length <= budget || budget <= 0)
+        {
+            return text;
+        }
+
+        if (budget == 1)
+        {
+            return "…";
+        }
+
+        return mode switch
+        {
+            LineBreakMode.HeadTruncation => $"…{text[^Math.Min(text.Length, budget - 1)..]}",
+            LineBreakMode.MiddleTruncation => ApplyMiddleTruncation(text, budget),
+            _ => $"{text[..Math.Min(text.Length, budget - 1)]}…"
+        };
+    }
+
+    private static string ApplyMiddleTruncation(string text, int budget)
+    {
+        if (budget <= 1)
+        {
+            return "…";
+        }
+
+        var available = budget - 1;
+        var leftCount = available / 2;
+        var rightCount = available - leftCount;
+        var left = text[..Math.Min(text.Length, leftCount)];
+        var right = rightCount <= 0 ? string.Empty : text[^Math.Min(text.Length - left.Length, rightCount)..];
+        return $"{left}…{right}";
+    }
+
+    private static string ResolveTextWhiteSpace(LineBreakMode mode)
+    {
+        return mode switch
+        {
+            LineBreakMode.WordWrap or LineBreakMode.CharacterWrap => "normal",
+            _ => "nowrap"
+        };
+    }
+
+    private static string ResolveTextOverflow(LineBreakMode mode)
+    {
+        return mode switch
+        {
+            LineBreakMode.WordWrap or LineBreakMode.CharacterWrap => "visible",
+            _ => "hidden"
+        };
+    }
+
+    private static string ResolveTextOverflowStyle(LineBreakMode mode)
+    {
+        return mode switch
+        {
+            LineBreakMode.TailTruncation => "ellipsis",
+            _ => "clip"
+        };
+    }
+
+    private static string ResolveTextWordBreak(LineBreakMode mode)
+    {
+        return mode == LineBreakMode.CharacterWrap ? "break-all" : "normal";
+    }
+
+    private static string ResolveTextOverflowWrap(LineBreakMode mode)
+    {
+        return mode switch
+        {
+            LineBreakMode.CharacterWrap => "anywhere",
+            LineBreakMode.WordWrap => "break-word",
+            _ => "normal"
+        };
+    }
+
+    private IMirageImageSourceResolver? GetImageSourceResolver()
+    {
+        if (_imageSourceResolver is not null)
+        {
+            return _imageSourceResolver;
+        }
+
+        _imageSourceResolver = MauiContext?.Services.GetService<IMirageImageSourceResolver>();
+        return _imageSourceResolver;
+    }
+
+    private bool SetPropertyIfChanged(string propertyName, string? value)
+    {
+        if (string.Equals(PlatformView.GetPropertyString(propertyName), value, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        PlatformView.SetProperty(propertyName, value);
+        return true;
     }
 
     private bool SetStyleIfChanged(string styleName, string? styleValue)

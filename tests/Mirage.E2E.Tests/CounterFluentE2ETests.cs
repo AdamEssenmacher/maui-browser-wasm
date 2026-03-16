@@ -57,15 +57,15 @@ public sealed class CounterFluentE2ETests : IClassFixture<BrowserHostFixture>
     }
 
     [Fact]
-    public async Task RendersFluentElementsInDom()
+    public async Task RendersExpectedElementsInDom()
     {
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenAsync(context);
 
-        var fluentButtonCount = await page.Locator("fluent-button").CountAsync();
+        var buttonCount = await page.Locator("button[data-mirage-kind='Button']").CountAsync();
         var fluentTextFieldCount = await page.Locator("fluent-text-field").CountAsync();
 
-        Assert.True(fluentButtonCount > 0, "Expected at least one <fluent-button> element.");
+        Assert.True(buttonCount > 0, "Expected at least one Mirage Button host element.");
         Assert.True(fluentTextFieldCount > 0, "Expected at least one <fluent-text-field> element.");
     }
 

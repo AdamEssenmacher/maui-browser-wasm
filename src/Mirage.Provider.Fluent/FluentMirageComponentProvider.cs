@@ -69,20 +69,41 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 }),
             [ComponentKind.Button] = new(
                 ComponentKind.Button,
-                "fluent-button",
+                "button",
                 defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
                 {
-                    ["appearance"] = "accent"
+                    ["type"] = "button"
                 },
                 propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
                     ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
-                    ["Text"] = new(PropertyTarget.TextContent)
+                    ["Text"] = new(PropertyTarget.TextContent, ElementTarget: PropertyElementTarget.ValueElement),
+                    ["TextDisplay"] = new(PropertyTarget.Style, "display", ElementTarget: PropertyElementTarget.ValueElement),
+                    ["TextWhiteSpace"] = new(PropertyTarget.Style, "whiteSpace", ElementTarget: PropertyElementTarget.ValueElement),
+                    ["TextOverflow"] = new(PropertyTarget.Style, "overflow", ElementTarget: PropertyElementTarget.ValueElement),
+                    ["TextOverflowStyle"] = new(PropertyTarget.Style, "textOverflow", ElementTarget: PropertyElementTarget.ValueElement),
+                    ["TextWordBreak"] = new(PropertyTarget.Style, "wordBreak", ElementTarget: PropertyElementTarget.ValueElement),
+                    ["TextOverflowWrap"] = new(PropertyTarget.Style, "overflowWrap", ElementTarget: PropertyElementTarget.ValueElement),
+                    ["TextMarginTop"] = new(PropertyTarget.Style, "marginTop", ElementTarget: PropertyElementTarget.ValueElement),
+                    ["TextMarginRight"] = new(PropertyTarget.Style, "marginRight", ElementTarget: PropertyElementTarget.ValueElement),
+                    ["TextMarginBottom"] = new(PropertyTarget.Style, "marginBottom", ElementTarget: PropertyElementTarget.ValueElement),
+                    ["TextMarginLeft"] = new(PropertyTarget.Style, "marginLeft", ElementTarget: PropertyElementTarget.ValueElement),
+                    ["ImageSource"] = new(PropertyTarget.Attribute, "src", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["ImageDisplay"] = new(PropertyTarget.Style, "display", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["ImageAlt"] = new(PropertyTarget.Attribute, "alt", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["ImageWidth"] = new(PropertyTarget.Style, "width", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["ImageHeight"] = new(PropertyTarget.Style, "height", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["ImageObjectFit"] = new(PropertyTarget.Style, "objectFit", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["ImagePointerEvents"] = new(PropertyTarget.Style, "pointerEvents", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["TooltipText"] = new(PropertyTarget.Attribute, "title")
                 },
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
                     ["click"] = new("click")
-                }),
+                },
+                valueElementTagName: "span",
+                secondaryElementTagName: "img",
+                stretchValueElementWidth: false),
             [ComponentKind.Image] = new(
                 ComponentKind.Image,
                 "img",
@@ -126,6 +147,32 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
                     ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputChecked)
+                }),
+            [ComponentKind.Slider] = new(
+                ComponentKind.Slider,
+                "input",
+                defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["type"] = "range",
+                    ["step"] = "any"
+                },
+                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
+                    ["Minimum"] = new(PropertyTarget.Attribute, "min"),
+                    ["Maximum"] = new(PropertyTarget.Attribute, "max"),
+                    ["Step"] = new(PropertyTarget.Attribute, "step"),
+                    ["Value"] = new(PropertyTarget.InputValue),
+                    ["Disabled"] = new(PropertyTarget.Attribute, "disabled"),
+                    ["TrackGradient"] = new(PropertyTarget.Style, "--mirage-slider-track-gradient"),
+                    ["ThumbAccent"] = new(PropertyTarget.Style, "--mirage-slider-thumb-color"),
+                    ["ThumbImage"] = new(PropertyTarget.Style, "--mirage-slider-thumb-image"),
+                    ["ThumbImageState"] = new(PropertyTarget.Attribute, "data-maui-slider-thumb-image-state")
+                },
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["input"] = new("input", EventTarget.Self, EventPayloadKind.InputValue),
+                    ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue)
                 })
         };
 

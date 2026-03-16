@@ -280,7 +280,7 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void ButtonHandler_CompatibilityAliases_MapBackgroundColorAndTextColorToFluentTokens()
+    public void ButtonHandler_CompatibilityAliases_MapBackgroundColorAndTextColor()
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var mauiContext = new MauiContext(services);
@@ -302,15 +302,16 @@ public sealed class HandlerRuntimeIntegrationTests
         MirageButtonHandler.Mapper.UpdateProperty(handler, button, "TextColor");
         MirageButtonHandler.Mapper.UpdateProperty(handler, button, "CornerRadius");
 
-        Assert.Equal("rgba(81,43,212,1)", handler.PlatformView.GetStyleValue("--accent-fill-rest"));
-        Assert.Equal("rgba(255,255,255,1)", handler.PlatformView.GetStyleValue("--foreground-on-accent-rest"));
-        Assert.Equal("8px", handler.PlatformView.GetStyleValue("--control-corner-radius"));
-        Assert.Null(handler.PlatformView.GetStyleValue("backgroundColor"));
-        Assert.Null(handler.PlatformView.GetStyleValue("borderRadius"));
+        Assert.Equal("rgba(81,43,212,1)", handler.PlatformView.GetStyleValue("backgroundColor"));
+        Assert.Equal("rgba(255,255,255,1)", handler.PlatformView.GetStyleValue("color"));
+        Assert.Equal("8px", handler.PlatformView.GetStyleValue("borderRadius"));
+        Assert.Null(handler.PlatformView.GetStyleValue("--accent-fill-rest"));
+        Assert.Null(handler.PlatformView.GetStyleValue("--foreground-on-accent-rest"));
+        Assert.Null(handler.PlatformView.GetStyleValue("--control-corner-radius"));
     }
 
     [Fact]
-    public void ButtonHandler_GradientBackground_UsesCommonProjectionAndClearsFluentFillTokens()
+    public void ButtonHandler_GradientBackground_UsesCommonProjection()
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var mauiContext = new MauiContext(services);
@@ -327,7 +328,7 @@ public sealed class HandlerRuntimeIntegrationTests
         ((IElementHandler)handler).SetVirtualView(button);
         MirageButtonHandler.Mapper.UpdateProperty(handler, button, "BackgroundColor");
 
-        Assert.Equal("rgba(81,43,212,1)", handler.PlatformView.GetStyleValue("--accent-fill-rest"));
+        Assert.Equal("rgba(81,43,212,1)", handler.PlatformView.GetStyleValue("backgroundColor"));
 
         button.Background = new LinearGradientBrush(
             new GradientStopCollection
@@ -347,8 +348,178 @@ public sealed class HandlerRuntimeIntegrationTests
             || backgroundImage.StartsWith("url(", StringComparison.Ordinal),
             $"Expected gradient projection background image, found '{backgroundImage}'.");
         Assert.Equal("100% 100%", handler.PlatformView.GetStyleValue("backgroundSize"));
-        Assert.Null(handler.PlatformView.GetStyleValue("--accent-fill-rest"));
-        Assert.Null(handler.PlatformView.GetStyleValue("--neutral-fill-rest"));
+        Assert.Null(handler.PlatformView.GetStyleValue("backgroundColor"));
+    }
+
+    [Fact]
+    public void ButtonHandler_ProjectsImageSourceContentLayoutPaddingAndLineBreakModes()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageButtonHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var button = new Button
+        {
+            Text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+            ImageSource = "coffee.png",
+            ContentLayout = new Button.ButtonContentLayout(Button.ButtonContentLayout.ImagePosition.Top, 6),
+            Padding = new Thickness(20, 10),
+            WidthRequest = 180,
+            LineBreakMode = LineBreakMode.HeadTruncation
+        };
+
+        ((IElementHandler)handler).SetVirtualView(button);
+
+        Assert.Equal("/_mirage/assets/test/coffee.png", handler.PlatformView.GetPropertyString("ImageSource"));
+        Assert.Equal("block", handler.PlatformView.GetPropertyString("ImageDisplay"));
+        Assert.Equal("column", handler.PlatformView.GetStyleValue("flexDirection"));
+        Assert.Equal("6px", handler.PlatformView.GetPropertyString("TextMarginTop"));
+        Assert.Equal("10px 20px 10px 20px", handler.PlatformView.GetStyleValue("padding"));
+
+        var headText = handler.PlatformView.GetPropertyString("Text");
+        Assert.NotNull(headText);
+        Assert.StartsWith("…", headText, StringComparison.Ordinal);
+
+        button.ContentLayout = new Button.ButtonContentLayout(Button.ButtonContentLayout.ImagePosition.Right, 4);
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.ContentLayout));
+        Assert.Equal("row-reverse", handler.PlatformView.GetStyleValue("flexDirection"));
+        Assert.Equal("4px", handler.PlatformView.GetPropertyString("TextMarginRight"));
+
+        button.Padding = new Thickness(double.NaN, double.NaN, 4, double.NaN);
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.Padding));
+        Assert.Equal("0px 4px 0px 0px", handler.PlatformView.GetStyleValue("padding"));
+
+        button.LineBreakMode = LineBreakMode.MiddleTruncation;
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.LineBreakMode));
+        var middleText = handler.PlatformView.GetPropertyString("Text");
+        Assert.NotNull(middleText);
+        Assert.Contains('…', middleText);
+        Assert.False(middleText.StartsWith("…", StringComparison.Ordinal));
+        Assert.False(middleText.EndsWith("…", StringComparison.Ordinal));
+
+        button.LineBreakMode = LineBreakMode.TailTruncation;
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.LineBreakMode));
+        var tailText = handler.PlatformView.GetPropertyString("Text");
+        Assert.NotNull(tailText);
+        Assert.EndsWith("…", tailText, StringComparison.Ordinal);
+
+        button.ImageSource = null;
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.ImageSource));
+        Assert.Null(handler.PlatformView.GetPropertyString("ImageSource"));
+        Assert.Equal("none", handler.PlatformView.GetPropertyString("ImageDisplay"));
+    }
+
+    [Fact]
+    public void CheckBoxHandler_ProjectsColorAliasesCheckedAndDisabledSemantics()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCheckBoxHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var checkBox = new CheckBox
+        {
+            IsChecked = true,
+            Color = Colors.Purple
+        };
+
+        ((IElementHandler)handler).SetVirtualView(checkBox);
+        Assert.Equal("true", handler.PlatformView.GetPropertyString("IsChecked"));
+        Assert.Equal("rgba(128,0,128,1)", handler.PlatformView.GetStyleValue("accentColor"));
+
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, nameof(ICheckBox.Foreground));
+        Assert.Equal("rgba(128,0,128,1)", handler.PlatformView.GetStyleValue("accentColor"));
+
+        checkBox.Color = Colors.Green;
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, "Color");
+        Assert.Equal("rgba(0,128,0,1)", handler.PlatformView.GetStyleValue("accentColor"));
+
+        handler.OnRuntimeEvent("change", "false");
+        Assert.False(checkBox.IsChecked);
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, nameof(ICheckBox.IsChecked));
+        Assert.Equal("false", handler.PlatformView.GetPropertyString("IsChecked"));
+
+        checkBox.IsEnabled = false;
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, nameof(IView.IsEnabled));
+        Assert.Equal("none", handler.PlatformView.GetStyleValue("pointerEvents"));
+        Assert.Equal("disabled", handler.PlatformView.GetPropertyString("Disabled"));
+
+        handler.OnRuntimeEvent("change", "true");
+        Assert.False(checkBox.IsChecked);
+    }
+
+    [Fact]
+    public void SliderHandler_ProjectsRangeAndRuntimeDragFlow()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageSliderHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var dragStartedCount = 0;
+        var dragCompletedCount = 0;
+
+        var slider = new Slider
+        {
+            Minimum = 0,
+            Maximum = 100,
+            Value = 25,
+            MinimumTrackColor = Colors.Red,
+            MaximumTrackColor = Colors.LightGray,
+            ThumbColor = Colors.LimeGreen,
+            ThumbImageSource = "thumb_image.png"
+        };
+        slider.DragStarted += (_, _) => dragStartedCount++;
+        slider.DragCompleted += (_, _) => dragCompletedCount++;
+
+        ((IElementHandler)handler).SetVirtualView(slider);
+
+        Assert.Equal("0", handler.PlatformView.GetPropertyString("Minimum"));
+        Assert.Equal("100", handler.PlatformView.GetPropertyString("Maximum"));
+        Assert.Equal("25", handler.PlatformView.GetPropertyString("Value"));
+        Assert.Null(handler.PlatformView.GetStyleValue("accentColor"));
+        Assert.Null(handler.PlatformView.GetStyleValue("background"));
+        Assert.Contains("25%", handler.PlatformView.GetPropertyString("TrackGradient") ?? string.Empty, StringComparison.Ordinal);
+        Assert.Equal("rgba(50,205,50,1)", handler.PlatformView.GetPropertyString("ThumbAccent"));
+        Assert.Equal("url(\"/_mirage/assets/test/thumb_image.png\")", handler.PlatformView.GetPropertyString("ThumbImage"));
+
+        handler.OnRuntimeEvent("input", "40");
+        Assert.Equal(40d, slider.Value, 3);
+        Assert.Equal(1, dragStartedCount);
+
+        handler.OnRuntimeEvent("input", "42");
+        Assert.Equal(42d, slider.Value, 3);
+        Assert.Equal(1, dragStartedCount);
+
+        handler.OnRuntimeEvent("change", "42");
+        Assert.Equal(1, dragCompletedCount);
+
+        slider.ThumbImageSource = null;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, "ThumbImageSource");
+        Assert.Null(handler.PlatformView.GetPropertyString("ThumbImage"));
+
+        slider.ThumbImageSource = "coffee.png";
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, "ThumbImageSource");
+        Assert.Equal("url(\"/_mirage/assets/test/coffee.png\")", handler.PlatformView.GetPropertyString("ThumbImage"));
+
+        slider.ThumbColor = null;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(ISlider.ThumbColor));
+        Assert.Equal("rgba(255,255,255,1)", handler.PlatformView.GetPropertyString("ThumbAccent"));
+
+        slider.IsEnabled = false;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(IView.IsEnabled));
+        Assert.Equal("none", handler.PlatformView.GetStyleValue("pointerEvents"));
+        Assert.Null(handler.PlatformView.GetStyleValue("opacity"));
+        Assert.Equal("disabled", handler.PlatformView.GetPropertyString("Disabled"));
+        var valueBeforeDisabledInput = slider.Value;
+        handler.OnRuntimeEvent("input", "88");
+        Assert.Equal(valueBeforeDisabledInput, slider.Value, 3);
     }
 
     [Fact]
@@ -1973,6 +2144,11 @@ public sealed class HandlerRuntimeIntegrationTests
             if (string.Equals(source, "coffee.png", StringComparison.Ordinal))
             {
                 return MirageImageSourceResolveResult.Resolved("/_mirage/assets/test/coffee.png");
+            }
+
+            if (string.Equals(source, "thumb_image.png", StringComparison.Ordinal))
+            {
+                return MirageImageSourceResolveResult.Resolved("/_mirage/assets/test/thumb_image.png");
             }
 
             if (string.IsNullOrWhiteSpace(source))

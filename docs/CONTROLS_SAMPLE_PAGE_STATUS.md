@@ -89,7 +89,7 @@ Visual legend:
 | `HitTestingPage.xaml` | `Pages/HitTestingPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ActivityIndicatorPage.xaml` | `Pages/Controls/ActivityIndicatorPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `BoxViewPage.xaml` | `Pages/Controls/BoxViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `ButtonPage.xaml` | `Pages/Controls/ButtonPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ButtonPage.xaml` | `Pages/Controls/ButtonPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `CheckBoxPage.xaml` | `Pages/Controls/CheckBoxPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `DatePickerPage.xaml` | `Pages/Controls/DatePickerPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `EditorPage.xaml` | `Pages/Controls/EditorPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
@@ -104,7 +104,7 @@ Visual legend:
 | `RefreshViewPage.xaml` | `Pages/Controls/RefreshViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `SearchBarPage.xaml` | `Pages/Controls/SearchBarPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ShapesPage.xaml` | `Pages/Controls/ShapesPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `SliderPage.xaml` | `Pages/Controls/SliderPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SliderPage.xaml` | `Pages/Controls/SliderPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `StepperPage.xaml` | `Pages/Controls/StepperPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `SwitchPage.xaml` | `Pages/Controls/SwitchPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `TimePickerPage.xaml` | `Pages/Controls/TimePickerPage.xaml` | `[ ]` | `[ ]` | `[ ]` |

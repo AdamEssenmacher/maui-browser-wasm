@@ -410,7 +410,14 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Shared thickness projection now distinguishes margin vs padding semantics: margins preserve signed values, while padding remains non-negative-clamped. This restores MAUI negative-margin behavior used by upstream `CardView` avatar framing.
 - Added integration + ControlsSample E2E guards for avatar geometry (`~100x100` with `-20px` offsets) and first-card title centerline alignment against the icon center.
 
-## 2026-03-16 (ControlsSample CheckBoxPage Enablement)
-- Added first-class Mirage browser support for `CheckBox` (`MirageCheckBoxHandler`) with two-way `IsChecked` projection, compatibility `Color` alias mapping, and browser-native disabled semantics.
-- Extended provider/runtime property/event payload plumbing with `InputChecked` support so checkbox checked state round-trips through control-node mappings without ad hoc payload parsing.
-- Imported upstream `CheckBoxPage` into `ControlsSample.Shared`, promoted it to `Runnable`, and added stable automation IDs used by ControlsSample E2E coverage.
+## 2026-03-16 (ControlsSample ButtonPage Enablement + Mirage-Owned Button Composition)
+- Promoted upstream `ButtonPage` to a runnable ControlsSample wrapper entry and imported its required upstream dependencies (`BoolToCustomValueConverter`, `ThicknessConverter`, plus a minimal `CustomButton` compatibility type in `Maui.Controls.Sample`).
+- Shifted Fluent-provider button realization from `fluent-button` to a Mirage-owned button shell (`button` host + dedicated text and image sub-elements), so MAUI button content semantics are not constrained by a web-component-native content model.
+- Extended Mirage core/runtime property plumbing with secondary control elements plus style-target property mapping and checked-value event/property support, enabling deterministic sub-element routing for button text/image projection and two-way checkbox state updates.
+- Expanded Mirage browser control surface with first-class `CheckBox` and `Slider` handlers (with runtime event flow), and broadened `MirageButtonHandler` mapping to cover ButtonPage scenarios: image source/content-layout projection, spacing updates, line-break mode projection, padding, tooltip projection, and existing stroke/background/text behaviors.
+
+## 2026-03-16 (ControlsSample Slider + CheckBox Slice with Slider ThumbImage Parity)
+- Promoted upstream `CheckBoxPage` and `SliderPage` to runnable ControlsSample entries and added deterministic page-factory automation IDs for key controls used by E2E scenarios.
+- Completed `MirageCheckBoxHandler` parity paths needed by upstream pages: compatibility `Color` alias support alongside `Foreground`, two-way `IsChecked`, and deterministic disabled semantics (`disabled` projection + interaction blocking).
+- Extended `MirageSliderHandler` with disabled-state projection and `ThumbImageSource` resolution through `IMirageImageSourceResolver`, including deterministic clear/reapply behavior for runtime thumb-image toggles.
+- Added framework-level slider realization styles in Mirage runtime (`mirage-dom.js`) using projected slider style channels (`--mirage-slider-track-gradient`, `--mirage-slider-thumb-color`, `--mirage-slider-thumb-image`) so thumb-image rendering is owned by Mirage platform plumbing rather than sample host CSS.

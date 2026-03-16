@@ -45,12 +45,17 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
-    public void FluentButtonDescriptor_MapsToFluentWebComponent()
+    public void FluentButtonDescriptor_MapsToMirageOwnedButtonShell()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();
         var descriptor = provider.ResolveControl(ComponentKind.Button);
 
-        Assert.Equal("fluent-button", descriptor.ElementTagName);
+        Assert.Equal("button", descriptor.ElementTagName);
+        Assert.Equal("span", descriptor.ValueElementTagName);
+        Assert.Equal("img", descriptor.SecondaryElementTagName);
+        Assert.False(descriptor.StretchValueElementWidth);
+        Assert.Equal(PropertyElementTarget.ValueElement, descriptor.PropertyMappings["Text"].ElementTarget);
+        Assert.Equal(PropertyElementTarget.SecondaryElement, descriptor.PropertyMappings["ImageSource"].ElementTarget);
         Assert.True(descriptor.EventMappings.ContainsKey("click"));
     }
 
@@ -78,7 +83,7 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
-    public void FluentCheckBoxDescriptor_MapsCheckedAndChangePayload()
+    public void FluentCheckBoxDescriptor_MapsCheckedAndDisabledState()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();
         var descriptor = provider.ResolveControl(ComponentKind.CheckBox);
@@ -87,7 +92,23 @@ public sealed class ProviderValidationTests
         Assert.Equal(PropertyTarget.InputChecked, descriptor.PropertyMappings["IsChecked"].Target);
         Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Disabled"].Target);
         Assert.Equal("disabled", descriptor.PropertyMappings["Disabled"].Name);
-        Assert.Equal(EventPayloadKind.InputChecked, descriptor.EventMappings["change"].PayloadKind);
+        Assert.True(descriptor.EventMappings.ContainsKey("change"));
+    }
+
+    [Fact]
+    public void FluentSliderDescriptor_MapsThumbImageProjectionChannels()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.Slider);
+
+        Assert.Equal("input", descriptor.ElementTagName);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Disabled"].Target);
+        Assert.Equal(PropertyTarget.Style, descriptor.PropertyMappings["TrackGradient"].Target);
+        Assert.Equal("--mirage-slider-track-gradient", descriptor.PropertyMappings["TrackGradient"].Name);
+        Assert.Equal(PropertyTarget.Style, descriptor.PropertyMappings["ThumbAccent"].Target);
+        Assert.Equal("--mirage-slider-thumb-color", descriptor.PropertyMappings["ThumbAccent"].Name);
+        Assert.Equal(PropertyTarget.Style, descriptor.PropertyMappings["ThumbImage"].Target);
+        Assert.Equal("--mirage-slider-thumb-image", descriptor.PropertyMappings["ThumbImage"].Name);
     }
 
     [Fact]

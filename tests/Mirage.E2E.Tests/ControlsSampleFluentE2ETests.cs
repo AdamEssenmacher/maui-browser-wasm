@@ -25,7 +25,9 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-clippingpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-contentviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-gridpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-buttonpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-layoutisenabledpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
@@ -220,7 +222,178 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
-    public async Task CheckBoxPage_IsRunnable_AndSupportsColorDisabledAndChangeScenarios()
+    public async Task ButtonPage_IsRunnable_AndExercisesCoreScenarios()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 760, height: 980);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-buttonpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-buttonpage']");
+            });
+
+        Assert.True(await page.Locator("[data-automation-id='controls-sample-page-buttonpage'] input[type='checkbox']").CountAsync() > 0);
+        Assert.True(await page.Locator("[data-automation-id='controls-sample-page-buttonpage'] input[type='range']").CountAsync() > 0);
+
+        var imageToggleSelector = "[data-automation-id='controls-sample-buttonpage-image-source-toggle']";
+        Assert.Equal(1, await page.Locator(imageToggleSelector).CountAsync());
+        var imageBefore = await page.Locator($"{imageToggleSelector} img").GetAttributeAsync("src");
+        Assert.False(string.IsNullOrWhiteSpace(imageBefore));
+        await page.Locator(imageToggleSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(120);
+        var imageAfter = await page.Locator($"{imageToggleSelector} img").GetAttributeAsync("src");
+        Assert.True(string.IsNullOrWhiteSpace(imageAfter));
+
+        var positionSelector = "[data-automation-id='controls-sample-buttonpage-position-toggle']";
+        var decreaseSpacingSelector = "[data-automation-id='controls-sample-buttonpage-decrease-spacing']";
+        Assert.Equal(1, await page.Locator(positionSelector).CountAsync());
+        Assert.Equal(1, await page.Locator(decreaseSpacingSelector).CountAsync());
+
+        var initialFlexDirection = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).flexDirection",
+            positionSelector);
+        await page.Locator(positionSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(120);
+        var changedFlexDirection = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).flexDirection",
+            positionSelector);
+        Assert.NotEqual(initialFlexDirection, changedFlexDirection);
+
+        var marginBefore = await page.EvaluateAsync<string>(
+            """
+            (selector) => {
+                const text = document.querySelector(selector)?.querySelector("[data-mirage-value-element='true']");
+                if (!text) {
+                    return "__missing__";
+                }
+
+                return [text.style.marginTop, text.style.marginRight, text.style.marginBottom, text.style.marginLeft].join("|");
+            }
+            """,
+            positionSelector);
+
+        await page.Locator(decreaseSpacingSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(120);
+
+        var marginAfter = await page.EvaluateAsync<string>(
+            """
+            (selector) => {
+                const text = document.querySelector(selector)?.querySelector("[data-mirage-value-element='true']");
+                if (!text) {
+                    return "__missing__";
+                }
+
+                return [text.style.marginTop, text.style.marginRight, text.style.marginBottom, text.style.marginLeft].join("|");
+            }
+            """,
+            positionSelector);
+
+        Assert.NotEqual("__missing__", marginBefore);
+        Assert.NotEqual("__missing__", marginAfter);
+        Assert.NotEqual(marginBefore, marginAfter);
+
+        var backgroundConverterPairLocated = await page.EvaluateAsync<bool>(
+            """
+            () => {
+                const root = document.querySelector("[data-automation-id='controls-sample-page-buttonpage']");
+                if (!root) {
+                    return false;
+                }
+
+                const checkbox = root.querySelector("input[type='checkbox']");
+                if (!checkbox) {
+                    return false;
+                }
+
+                const mappedButton = checkbox.nextElementSibling;
+                if (!(mappedButton instanceof HTMLButtonElement)) {
+                    return false;
+                }
+
+                checkbox.setAttribute("data-e2e-buttonpage-color-checkbox", "true");
+                mappedButton.setAttribute("data-e2e-buttonpage-color-target", "true");
+                return true;
+            }
+            """);
+
+        Assert.True(backgroundConverterPairLocated);
+        var colorTargetSelector = "[data-e2e-buttonpage-color-target='true']";
+        var converterBackgroundBefore = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundColor",
+            colorTargetSelector);
+        await page.Locator("[data-e2e-buttonpage-color-checkbox='true']").ClickAsync();
+        await page.WaitForTimeoutAsync(120);
+        var converterBackgroundAfter = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundColor",
+            colorTargetSelector);
+        Assert.NotEqual(converterBackgroundBefore, converterBackgroundAfter);
+
+        var borderButtonSelector = "[data-automation-id='controls-sample-buttonpage-border-button']";
+        var borderSliderSelector = "[data-automation-id='controls-sample-buttonpage-border-slider']";
+        Assert.Equal(1, await page.Locator(borderButtonSelector).CountAsync());
+        Assert.Equal(1, await page.Locator(borderSliderSelector).CountAsync());
+        var borderWidthBefore = await page.EvaluateAsync<double>(
+            "(selector) => parseFloat(getComputedStyle(document.querySelector(selector)).borderTopWidth || '0')",
+            borderButtonSelector);
+        await page.EvaluateAsync(
+            """
+            (selector) => {
+                const slider = document.querySelector(selector);
+                if (!(slider instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                slider.value = "25";
+                slider.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+                slider.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+            }
+            """,
+            borderSliderSelector);
+        await page.WaitForTimeoutAsync(120);
+        var borderWidthAfter = await page.EvaluateAsync<double>(
+            "(selector) => parseFloat(getComputedStyle(document.querySelector(selector)).borderTopWidth || '0')",
+            borderButtonSelector);
+        Assert.True(borderWidthAfter > borderWidthBefore);
+
+        var lineBreakUpdateSelector = "[data-automation-id='controls-sample-buttonpage-linebreak-update']";
+        var lineBreakTargetSelector = "[data-automation-id='controls-sample-buttonpage-linebreak-target']";
+        Assert.Equal(1, await page.Locator(lineBreakUpdateSelector).CountAsync());
+        Assert.Equal(1, await page.Locator(lineBreakTargetSelector).CountAsync());
+
+        await page.Locator(lineBreakUpdateSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+        await page.Locator(lineBreakUpdateSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+        var headText = await page.EvaluateAsync<string>(
+            "(selector) => (document.querySelector(selector)?.querySelector('[data-mirage-value-element=\"true\"]')?.textContent ?? '').trim()",
+            lineBreakTargetSelector);
+        Assert.StartsWith("…", headText, StringComparison.Ordinal);
+
+        await page.Locator(lineBreakUpdateSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+        var middleText = await page.EvaluateAsync<string>(
+            "(selector) => (document.querySelector(selector)?.querySelector('[data-mirage-value-element=\"true\"]')?.textContent ?? '').trim()",
+            lineBreakTargetSelector);
+        Assert.Contains('…', middleText);
+        Assert.False(middleText.StartsWith("…", StringComparison.Ordinal));
+        Assert.False(middleText.EndsWith("…", StringComparison.Ordinal));
+
+        await page.Locator(lineBreakUpdateSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+        await page.Locator(lineBreakUpdateSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+        var tailText = await page.EvaluateAsync<string>(
+            "(selector) => (document.querySelector(selector)?.querySelector('[data-mirage-value-element=\"true\"]')?.textContent ?? '').trim()",
+            lineBreakTargetSelector);
+        Assert.EndsWith("…", tailText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CheckBoxPage_IsRunnable_AndExercisesColorAndCheckedScenarios()
     {
         await using var context = await _fixture.NewContextAsync(width: 760, height: 980);
         var (page, diagnostics) = await OpenAsync(context);
@@ -244,28 +417,141 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             "[data-automation-id='controls-sample-checkboxpage-disabled']");
         Assert.Equal("disabled", disabledAttribute);
 
-        var dynamicCheckSelector = "[data-automation-id='controls-sample-checkboxpage-change-checkbox']";
-        var dynamicButtonSelector = "[data-automation-id='controls-sample-checkboxpage-change-button']";
-        var beforeAccent = await page.EvaluateAsync<string>(
+        var dynamicAccentBefore = await page.EvaluateAsync<string>(
             "(selector) => getComputedStyle(document.querySelector(selector)).accentColor",
-            dynamicCheckSelector);
-        var beforeText = await page.EvaluateAsync<string>(
-            "(selector) => document.querySelector(selector)?.textContent ?? ''",
-            dynamicButtonSelector);
+            "[data-automation-id='controls-sample-checkboxpage-change-checkbox']");
 
-        await page.Locator(dynamicButtonSelector).ClickAsync();
+        await page.Locator("[data-automation-id='controls-sample-checkboxpage-change-button']").ClickAsync();
         await page.WaitForTimeoutAsync(100);
 
-        var afterAccent = await page.EvaluateAsync<string>(
+        var dynamicAccentAfter = await page.EvaluateAsync<string>(
             "(selector) => getComputedStyle(document.querySelector(selector)).accentColor",
-            dynamicCheckSelector);
-        var afterText = await page.EvaluateAsync<string>(
-            "(selector) => document.querySelector(selector)?.textContent ?? ''",
-            dynamicButtonSelector);
+            "[data-automation-id='controls-sample-checkboxpage-change-checkbox']");
+        Assert.NotEqual(dynamicAccentBefore, dynamicAccentAfter);
 
-        Assert.NotEqual(beforeAccent, afterAccent);
-        Assert.NotEqual(beforeText, afterText);
-        Assert.Contains("True", afterText, StringComparison.OrdinalIgnoreCase);
+        var dynamicButtonText = await page.Locator("[data-automation-id='controls-sample-checkboxpage-change-button']").InnerTextAsync();
+        Assert.Contains("Is green? True", dynamicButtonText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SliderPage_IsRunnable_AndExercisesThumbImageAndDynamicRangeScenarios()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 900, height: 1080);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-sliderpage']");
+            });
+
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-sliderpage-image-slider']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-sliderpage-dynamic-slider']").CountAsync());
+
+        var defaultSliderHostBackground = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundColor",
+            "[data-automation-id='controls-sample-sliderpage-default-slider']");
+        Assert.True(
+            string.Equals(defaultSliderHostBackground, "rgba(0, 0, 0, 0)", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(defaultSliderHostBackground, "transparent", StringComparison.OrdinalIgnoreCase),
+            $"Expected transparent slider host background but found '{defaultSliderHostBackground}'.");
+
+        var defaultSliderHostBackgroundImage = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundImage",
+            "[data-automation-id='controls-sample-sliderpage-default-slider']");
+        Assert.True(
+            string.IsNullOrWhiteSpace(defaultSliderHostBackgroundImage)
+            || string.Equals(defaultSliderHostBackgroundImage, "none", StringComparison.OrdinalIgnoreCase),
+            $"Expected no host background image but found '{defaultSliderHostBackgroundImage}'.");
+
+        var backgroundColorHost = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundColor",
+            "[data-automation-id='controls-sample-sliderpage-background-color-slider']");
+        Assert.Contains("0, 0, 255", backgroundColorHost, StringComparison.Ordinal);
+
+        var backgroundBrushHost = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundImage",
+            "[data-automation-id='controls-sample-sliderpage-background-brush-slider']");
+        Assert.True(
+            !string.IsNullOrWhiteSpace(backgroundBrushHost)
+            && !string.Equals(backgroundBrushHost, "none", StringComparison.OrdinalIgnoreCase),
+            "Expected a brush background image to be projected on the slider host.");
+
+        var maximumTrackGradient = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).getPropertyValue('--mirage-slider-track-gradient').trim()",
+            "[data-automation-id='controls-sample-sliderpage-maximum-track-slider']");
+        Assert.Contains("255,192,203", maximumTrackGradient.Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+
+        var customTrackGradient = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).getPropertyValue('--mirage-slider-track-gradient').trim()",
+            "[data-automation-id='controls-sample-sliderpage-custom-slider']");
+        var compactCustomGradient = customTrackGradient.Replace(" ", string.Empty, StringComparison.Ordinal);
+        Assert.Contains("255,0,0", compactCustomGradient, StringComparison.Ordinal);
+        Assert.Contains("0,128,0", compactCustomGradient, StringComparison.Ordinal);
+
+        var thumbImageBefore = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).getPropertyValue('--mirage-slider-thumb-image').trim()",
+            "[data-automation-id='controls-sample-sliderpage-image-slider']");
+        Assert.Contains("/_mirage/assets/", thumbImageBefore, StringComparison.Ordinal);
+
+        var thumbImageStateBefore = await page.EvaluateAsync<string?>(
+            "(selector) => document.querySelector(selector)?.getAttribute('data-maui-slider-thumb-image-state')",
+            "[data-automation-id='controls-sample-sliderpage-image-slider']");
+        Assert.Equal("resolved", thumbImageStateBefore);
+
+        var thumbImageBorderRadiusBefore = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector), '::-webkit-slider-thumb').borderRadius",
+            "[data-automation-id='controls-sample-sliderpage-image-slider']");
+        Assert.NotEqual("50%", thumbImageBorderRadiusBefore);
+
+        await page.Locator("[data-automation-id='controls-sample-sliderpage-toggle-image']").ClickAsync();
+        await page.WaitForTimeoutAsync(100);
+        var thumbImageRemoved = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).getPropertyValue('--mirage-slider-thumb-image').trim()",
+            "[data-automation-id='controls-sample-sliderpage-image-slider']");
+        Assert.True(string.IsNullOrWhiteSpace(thumbImageRemoved) || string.Equals(thumbImageRemoved, "none", StringComparison.OrdinalIgnoreCase));
+
+        await page.Locator("[data-automation-id='controls-sample-sliderpage-toggle-image']").ClickAsync();
+        await page.WaitForTimeoutAsync(100);
+        var thumbImageRestored = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).getPropertyValue('--mirage-slider-thumb-image').trim()",
+            "[data-automation-id='controls-sample-sliderpage-image-slider']");
+        Assert.Contains("/_mirage/assets/", thumbImageRestored, StringComparison.Ordinal);
+
+        var thumbImageStateRestored = await page.EvaluateAsync<string?>(
+            "(selector) => document.querySelector(selector)?.getAttribute('data-maui-slider-thumb-image-state')",
+            "[data-automation-id='controls-sample-sliderpage-image-slider']");
+        Assert.Equal("resolved", thumbImageStateRestored);
+
+        var dynamicInfoBefore = await page.Locator("[data-automation-id='controls-sample-sliderpage-dynamic-info']").InnerTextAsync();
+        Assert.Contains("Minimum: 0", dynamicInfoBefore, StringComparison.Ordinal);
+        Assert.Contains("Maximum: 10", dynamicInfoBefore, StringComparison.Ordinal);
+
+        await page.Locator("[data-automation-id='controls-sample-sliderpage-update-minimum']").ClickAsync();
+        await page.Locator("[data-automation-id='controls-sample-sliderpage-update-maximum']").ClickAsync();
+        await page.WaitForTimeoutAsync(100);
+
+        var dynamicInfoAfter = await page.Locator("[data-automation-id='controls-sample-sliderpage-dynamic-info']").InnerTextAsync();
+        Assert.Contains("Minimum: 4", dynamicInfoAfter, StringComparison.Ordinal);
+        Assert.Contains("Maximum: 8", dynamicInfoAfter, StringComparison.Ordinal);
+
+        var disabledSliderAttribute = await page.EvaluateAsync<string?>(
+            "(selector) => document.querySelector(selector)?.getAttribute('disabled')",
+            "[data-automation-id='controls-sample-sliderpage-disabled-slider']");
+        Assert.Equal("disabled", disabledSliderAttribute);
+
+        var disabledSliderOpacity = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).opacity",
+            "[data-automation-id='controls-sample-sliderpage-disabled-slider']");
+        Assert.Equal("1", disabledSliderOpacity);
+
+        var disabledThumbColor = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).getPropertyValue('--mirage-slider-thumb-color').trim()",
+            "[data-automation-id='controls-sample-sliderpage-disabled-slider']");
+        Assert.Contains("255,255,255", disabledThumbColor.Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
     }
 
     private async Task<(IPage Page, ConcurrentQueue<string> Diagnostics)> OpenAsync(IBrowserContext context)
