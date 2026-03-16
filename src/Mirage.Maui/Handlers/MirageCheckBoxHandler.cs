@@ -113,7 +113,6 @@ internal sealed class MirageCheckBoxHandler : MirageViewHandler<ICheckBox>, IMir
         var isEnabled = checkBox.IsEnabled;
         var changed = SetStyleIfChanged("cursor", isEnabled ? "pointer" : "default");
         changed |= SetStyleIfChanged("pointerEvents", isEnabled ? "auto" : "none");
-        changed |= SetStyleIfChanged("opacity", isEnabled ? null : "0.6");
         changed |= SetPropertyIfChanged("Disabled", isEnabled ? null : "disabled");
         return changed;
     }

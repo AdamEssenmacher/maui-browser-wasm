@@ -511,6 +511,31 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CheckBoxHandler_IsEnabledToggle_DoesNotOverrideExplicitOpacityProjection()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCheckBoxHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var checkBox = new CheckBox
+        {
+            Opacity = 0.35
+        };
+
+        ((IElementHandler)handler).SetVirtualView(checkBox);
+        Assert.Equal("0.35", handler.PlatformView.GetStyleValue("opacity"));
+
+        checkBox.IsEnabled = false;
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, nameof(IView.IsEnabled));
+        Assert.Equal("0.35", handler.PlatformView.GetStyleValue("opacity"));
+
+        checkBox.IsEnabled = true;
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, nameof(IView.IsEnabled));
+        Assert.Equal("0.35", handler.PlatformView.GetStyleValue("opacity"));
+    }
+
+    [Fact]
     public void SliderHandler_ProjectsRangeAndRuntimeDragFlow()
     {
         var services = new ServiceCollection()
@@ -581,6 +606,33 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void SliderHandler_IsEnabledToggle_DoesNotOverrideExplicitOpacityProjection()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageSliderHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var slider = new Slider
+        {
+            Opacity = 0.45
+        };
+
+        ((IElementHandler)handler).SetVirtualView(slider);
+        Assert.Equal("0.45", handler.PlatformView.GetStyleValue("opacity"));
+
+        slider.IsEnabled = false;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(IView.IsEnabled));
+        Assert.Equal("0.45", handler.PlatformView.GetStyleValue("opacity"));
+
+        slider.IsEnabled = true;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(IView.IsEnabled));
+        Assert.Equal("0.45", handler.PlatformView.GetStyleValue("opacity"));
+    }
+
+    [Fact]
     public void CheckBoxHandler_ProjectsColorAliasCheckedAndDisabledSemantics()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -641,6 +693,42 @@ public sealed class HandlerRuntimeIntegrationTests
         entry.MinimumHeightRequest = -1;
         MirageEntryHandler.Mapper.UpdateProperty(handler, entry, nameof(VisualElement.MinimumHeightRequest));
         Assert.Null(handler.PlatformView.GetStyleValue("--base-height-multiplier"));
+    }
+
+    [Fact]
+    public void EntryHandler_WidthRequestUpdate_RecomputesStackCrossAxisAlignment()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageEntryHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var entry = new Entry
+        {
+            HorizontalOptions = LayoutOptions.Fill,
+            WidthRequest = -1
+        };
+
+        var parent = new VerticalStackLayout();
+        parent.Children.Add(entry);
+
+        ((IElementHandler)handler).SetVirtualView(entry);
+
+        var projectedParent = MiragePlatformView.CreateControl(ComponentKind.VerticalStack);
+        projectedParent.AddChild(handler.PlatformView);
+
+        MirageViewMapper.MapLayoutAlignment(handler, entry);
+        Assert.Equal("stretch", handler.PlatformView.GetStyleValue("alignSelf"));
+
+        entry.WidthRequest = 400;
+        MirageEntryHandler.Mapper.UpdateProperty(handler, entry, nameof(VisualElement.WidthRequest));
+        Assert.Equal("400px", handler.PlatformView.GetStyleValue("width"));
+        Assert.Equal("center", handler.PlatformView.GetStyleValue("alignSelf"));
+
+        entry.WidthRequest = -1;
+        MirageEntryHandler.Mapper.UpdateProperty(handler, entry, nameof(VisualElement.WidthRequest));
+        Assert.Equal("stretch", handler.PlatformView.GetStyleValue("alignSelf"));
     }
 
     [Fact]
@@ -988,6 +1076,36 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CommonMapper_WidthRequestUpdate_RecomputesStackCrossAxisAlignment()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var child = new Grid
+        {
+            HorizontalOptions = LayoutOptions.Fill,
+            WidthRequest = -1
+        };
+
+        var parent = new VerticalStackLayout();
+        parent.Children.Add(child);
+
+        var verticalParent = MiragePlatformView.CreateControl(ComponentKind.VerticalStack);
+        verticalParent.AddChild(handler.Node);
+
+        MirageViewMapper.MapLayoutAlignment(handler, child);
+        Assert.Equal("stretch", handler.Node.GetStyleValue("alignSelf"));
+
+        child.WidthRequest = 400;
+        MirageViewMapper.CommonViewMapper.UpdateProperty(handler, child, nameof(VisualElement.WidthRequest));
+        Assert.Equal("400px", handler.Node.GetStyleValue("width"));
+        Assert.Equal("center", handler.Node.GetStyleValue("alignSelf"));
+
+        child.WidthRequest = -1;
+        MirageViewMapper.CommonViewMapper.UpdateProperty(handler, child, nameof(VisualElement.WidthRequest));
+        Assert.Null(handler.Node.GetStyleValue("width"));
+        Assert.Equal("stretch", handler.Node.GetStyleValue("alignSelf"));
+    }
+
+    [Fact]
     public void CommonMapper_MapsLayoutClipsToBoundsToOverflowStyle()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "flex");
@@ -1199,6 +1317,59 @@ public sealed class HandlerRuntimeIntegrationTests
         MirageViewMapper.MapLayoutAlignment(handler, child);
         Assert.Equal("flex-end", handler.Node.GetStyleValue("alignSelf"));
         Assert.Null(handler.Node.GetStyleValue("justifySelf"));
+    }
+
+    [Fact]
+    public void CommonMapper_AlignmentProjection_CentersFillWhenCrossAxisRequestIsExplicit()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var child = new Grid
+        {
+            HorizontalOptions = LayoutOptions.Fill,
+            WidthRequest = 400
+        };
+
+        var verticalParent = MiragePlatformView.CreateControl(ComponentKind.VerticalStack);
+        verticalParent.AddChild(handler.Node);
+
+        MirageViewMapper.MapLayoutAlignment(handler, child);
+        Assert.Equal("center", handler.Node.GetStyleValue("alignSelf"));
+        Assert.Null(handler.Node.GetStyleValue("justifySelf"));
+
+        child.WidthRequest = -1;
+        MirageViewMapper.MapLayoutAlignment(handler, child);
+        Assert.Equal("stretch", handler.Node.GetStyleValue("alignSelf"));
+        Assert.Null(handler.Node.GetStyleValue("justifySelf"));
+    }
+
+    [Fact]
+    public void LayoutHandler_ChildProjection_UsesCompatibilityLayoutOptionsSemantics()
+    {
+        var applyMethod = typeof(MirageLayoutHandler).GetMethod(
+            "ApplyChildProjectionStyles",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(applyMethod);
+
+        var childPlatformView = MiragePlatformView.CreateControl(ComponentKind.Grid);
+        var child = new Grid
+        {
+            HorizontalOptions = LayoutOptions.Fill
+        };
+
+        var changed = (bool)applyMethod!.Invoke(null, [childPlatformView, child, ComponentKind.VerticalStack])!;
+        Assert.True(changed);
+        Assert.Equal("stretch", childPlatformView.GetStyleValue("alignSelf"));
+
+        child.WidthRequest = 400;
+        changed = (bool)applyMethod.Invoke(null, [childPlatformView, child, ComponentKind.VerticalStack])!;
+        Assert.True(changed);
+        Assert.Equal("center", childPlatformView.GetStyleValue("alignSelf"));
+
+        child.HorizontalOptions = LayoutOptions.Center;
+        child.WidthRequest = -1;
+        changed = (bool)applyMethod.Invoke(null, [childPlatformView, child, ComponentKind.VerticalStack])!;
+        Assert.False(changed);
+        Assert.Equal("center", childPlatformView.GetStyleValue("alignSelf"));
     }
 
     [Fact]

@@ -16,8 +16,8 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
         {
             [nameof(IEntry.Text)] = MapText,
             [nameof(IPlaceholder.Placeholder)] = MapPlaceholder,
-            [nameof(VisualElement.WidthRequest)] = MapSizeRequests,
-            [nameof(VisualElement.HeightRequest)] = MapSizeRequests,
+            [nameof(VisualElement.WidthRequest)] = MapSizeRequestsAndLayoutAlignment,
+            [nameof(VisualElement.HeightRequest)] = MapSizeRequestsAndLayoutAlignment,
             [nameof(VisualElement.MinimumWidthRequest)] = MapSizeRequests,
             [nameof(VisualElement.MinimumHeightRequest)] = MapSizeRequests,
             [nameof(VisualElement.MaximumWidthRequest)] = MapSizeRequests,
@@ -150,6 +150,19 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
     public static void MapSizeRequests(MirageEntryHandler handler, IEntry entry)
     {
         var changed = MirageCommonViewProjection.MapSizeRequests(handler, entry);
+        changed |= handler.UpdateControlHeightToken(entry);
+        if (!changed)
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapSizeRequestsAndLayoutAlignment(MirageEntryHandler handler, IEntry entry)
+    {
+        var changed = MirageCommonViewProjection.MapSizeRequests(handler, entry);
+        changed |= MirageCommonViewProjection.MapLayoutAlignment(handler, entry);
         changed |= handler.UpdateControlHeightToken(entry);
         if (!changed)
         {

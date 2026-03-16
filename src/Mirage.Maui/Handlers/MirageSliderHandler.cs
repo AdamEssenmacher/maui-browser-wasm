@@ -226,7 +226,6 @@ internal sealed class MirageSliderHandler : MirageViewHandler<ISlider>, IMirageR
         var isEnabled = slider.IsEnabled;
         var changed = SetStyleIfChanged("cursor", isEnabled ? "pointer" : "default");
         changed |= SetStyleIfChanged("pointerEvents", isEnabled ? "auto" : "none");
-        changed |= SetStyleIfChanged("opacity", null);
         changed |= SetPropertyIfChanged("Disabled", isEnabled ? null : "disabled");
         return changed;
     }
