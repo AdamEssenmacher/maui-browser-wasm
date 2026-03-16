@@ -19,7 +19,9 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>
         {
             [nameof(Image.Source)] = MapSource,
             [nameof(Image.Aspect)] = MapAspect,
-            [nameof(Image.IsOpaque)] = MapIsOpaque
+            [nameof(Image.IsOpaque)] = MapIsOpaque,
+            [nameof(VisualElement.WidthRequest)] = MapRequestedDimensions,
+            [nameof(VisualElement.HeightRequest)] = MapRequestedDimensions
         };
 
     public MirageImageHandler()
@@ -31,8 +33,7 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
         var changed = SetStyleIfChanged("display", "block");
-        changed |= SetStyleIfChanged("width", "100%");
-        changed |= SetStyleIfChanged("height", "100%");
+        changed |= UpdateRequestedDimensionProjection(VirtualView);
         changed |= SetStyleIfChanged("boxSizing", "border-box");
         changed |= SetStyleIfChanged("objectPosition", "center center");
         changed |= UpdateSourceProjection(VirtualView);
@@ -81,6 +82,16 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>
         handler.RequestRender();
     }
 
+    public static void MapRequestedDimensions(MirageImageHandler handler, Image image)
+    {
+        if (!handler.UpdateRequestedDimensionProjection(image))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
     private bool UpdateSourceProjection(Image image)
     {
         var projection = MirageImageSourceProjection.BuildProjection(image.Source, GetImageSourceResolver(), image);
@@ -115,6 +126,15 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>
     private bool UpdateOpaqueProjection(Image image)
     {
         return SetPropertyIfChanged("IsOpaque", image.IsOpaque ? "true" : null);
+    }
+
+    private bool UpdateRequestedDimensionProjection(Image image)
+    {
+        var width = ResolveDimensionCss(image.WidthRequest);
+        var height = ResolveDimensionCss(image.HeightRequest);
+        var changed = SetStyleIfChanged("width", width);
+        changed |= SetStyleIfChanged("height", height);
+        return changed;
     }
 
     private bool SetPropertyIfChanged(string propertyName, string? value)
@@ -241,5 +261,15 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>
         }
 
         return reason.Contains("manifest", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string ResolveDimensionCss(double requestedValue)
+    {
+        if (!double.IsFinite(requestedValue) || requestedValue < 0)
+        {
+            return "100%";
+        }
+
+        return MirageViewMapper.ToPx(requestedValue);
     }
 }

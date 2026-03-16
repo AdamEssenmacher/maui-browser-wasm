@@ -54,7 +54,7 @@ internal static class MirageCommonViewProjection
             return false;
         }
 
-        return SetStyleIfChanged(platformHandler, "margin", ToThickness(view.Margin));
+        return SetStyleIfChanged(platformHandler, "margin", ToMarginThickness(view.Margin));
     }
 
     public static bool MapVisibility(IViewHandler handler, IView view)
@@ -177,7 +177,7 @@ internal static class MirageCommonViewProjection
             return false;
         }
 
-        return SetStyleIfChanged(platformHandler, "padding", ToThickness(paddingView.Padding));
+        return SetStyleIfChanged(platformHandler, "padding", ToPaddingThickness(paddingView.Padding));
     }
 
     public static bool MapTextColor(IViewHandler handler, IView view, string? fallbackCssColor = null)
@@ -380,9 +380,14 @@ internal static class MirageCommonViewProjection
         return $"{normalized:0.###}px";
     }
 
-    public static string ToThickness(Thickness thickness)
+    public static string ToPaddingThickness(Thickness thickness)
     {
         return $"{ToPx(thickness.Top)} {ToPx(thickness.Right)} {ToPx(thickness.Bottom)} {ToPx(thickness.Left)}";
+    }
+
+    public static string ToMarginThickness(Thickness thickness)
+    {
+        return $"{ToPxNoClamp(thickness.Top)} {ToPxNoClamp(thickness.Right)} {ToPxNoClamp(thickness.Bottom)} {ToPxNoClamp(thickness.Left)}";
     }
 
     private static bool ApplyRequestedLength(

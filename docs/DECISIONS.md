@@ -402,3 +402,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Handler connect ordering now applies border stroke/clipping styles after the content-container base styles, preventing base-style resets from silently clearing border clipping.
 - `MirageBoxViewHandler` now applies shared background mapping first and treats `BoxView.Color` as an explicit override only when set, so `BackgroundColor`-driven BoxView scenarios (including `ContentViewPage` card dividers) no longer get overwritten to transparent.
 - Added regression coverage at both levels: integration asserts border clipping and BoxView color precedence behavior, and ControlsSample E2E asserts card avatar hosts in `ContentViewPage` expose clipping (`overflow: hidden`) with non-zero corner radius plus visible divider rendering.
+
+## 2026-03-16 (ControlsSample ContentView Parity: Avatar Framing + Title Vertical Alignment)
+- `MirageImageHandler` now respects explicit `WidthRequest`/`HeightRequest` on `Image` before defaulting to fill sizing, preventing requested image sizes from being clobbered during handler connect and restoring expected framing for `CardView` avatars (`100x100` with negative margins).
+- `MirageLabelHandler` now maps `HorizontalTextAlignment` and `VerticalTextAlignment` semantics (`text-align` + flex `justify-content`) and uses `display:flex` as its visible baseline so vertical text centering works deterministically.
+- Shared thickness projection now distinguishes margin vs padding semantics: margins preserve signed values, while padding remains non-negative-clamped. This restores MAUI negative-margin behavior used by upstream `CardView` avatar framing.
+- Added integration + ControlsSample E2E guards for avatar geometry (`~100x100` with `-20px` offsets) and first-card title centerline alignment against the icon center.

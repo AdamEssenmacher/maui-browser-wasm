@@ -23,21 +23,27 @@ internal sealed class MirageLabelHandler : MirageViewHandler<ILabel>
             ["FontFamily"] = MapFont,
             ["FontSize"] = MapFont,
             ["FontAttributes"] = MapFont,
-            ["FontAutoScalingEnabled"] = MapFont
+            ["FontAutoScalingEnabled"] = MapFont,
+            [nameof(ITextAlignment.HorizontalTextAlignment)] = MapHorizontalTextAlignment,
+            [nameof(ITextAlignment.VerticalTextAlignment)] = MapVerticalTextAlignment
         };
 
     public MirageLabelHandler()
         : base(ComponentKind.Label, Mapper)
     {
-        DefaultDisplayStyle = "block";
+        DefaultDisplayStyle = "flex";
     }
 
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
-        var changed = SetStyleIfChanged("display", "block");
+        var changed = SetStyleIfChanged("display", "flex");
+        changed |= SetStyleIfChanged("flexDirection", "column");
+        changed |= SetStyleIfChanged("justifyContent", "flex-start");
         changed |= SetStyleIfChanged("lineHeight", DefaultLineHeight);
         changed |= MirageCommonViewProjection.MapTextColor(this, VirtualView, DefaultSystemLabelColor);
         changed |= MirageCommonViewProjection.MapFont(this, VirtualView, DefaultFontSize, DefaultSystemFontFamily);
+        changed |= UpdateHorizontalTextAlignment(VirtualView);
+        changed |= UpdateVerticalTextAlignment(VirtualView);
         base.ConnectHandler(platformView);
         if (changed)
         {
@@ -70,6 +76,51 @@ internal sealed class MirageLabelHandler : MirageViewHandler<ILabel>
         {
             handler.RequestRender();
         }
+    }
+
+    public static void MapHorizontalTextAlignment(MirageLabelHandler handler, ILabel label)
+    {
+        if (!handler.UpdateHorizontalTextAlignment(label))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapVerticalTextAlignment(MirageLabelHandler handler, ILabel label)
+    {
+        if (!handler.UpdateVerticalTextAlignment(label))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    private bool UpdateHorizontalTextAlignment(ILabel label)
+    {
+        var textAlign = label.HorizontalTextAlignment switch
+        {
+            TextAlignment.Center => "center",
+            TextAlignment.End => "right",
+            TextAlignment.Justify => "justify",
+            _ => "left"
+        };
+
+        return SetStyleIfChanged("textAlign", textAlign);
+    }
+
+    private bool UpdateVerticalTextAlignment(ILabel label)
+    {
+        var justifyContent = label.VerticalTextAlignment switch
+        {
+            TextAlignment.Center => "center",
+            TextAlignment.End => "flex-end",
+            _ => "flex-start"
+        };
+
+        return SetStyleIfChanged("justifyContent", justifyContent);
     }
 
     private bool SetStyleIfChanged(string name, string? value)
