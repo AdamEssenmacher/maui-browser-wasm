@@ -413,7 +413,7 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void ImageHandler_RespectsRequestedDimensions_AndFallsBackToFillWhenUnset()
+    public void ImageHandler_RespectsRequestedDimensions_AndClearsWhenUnset()
     {
         var services = new ServiceCollection()
             .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
@@ -439,16 +439,16 @@ public sealed class HandlerRuntimeIntegrationTests
         MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.WidthRequest));
         MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.HeightRequest));
 
-        Assert.Equal("100%", handler.PlatformView.GetStyleValue("width"));
-        Assert.Equal("100%", handler.PlatformView.GetStyleValue("height"));
+        Assert.Null(handler.PlatformView.GetStyleValue("width"));
+        Assert.Null(handler.PlatformView.GetStyleValue("height"));
 
         image.MinimumWidthRequest = 40;
         image.MaximumWidthRequest = 160;
         MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.MinimumWidthRequest));
         MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.MaximumWidthRequest));
 
-        Assert.Equal("100%", handler.PlatformView.GetStyleValue("width"));
-        Assert.Equal("100%", handler.PlatformView.GetStyleValue("height"));
+        Assert.Null(handler.PlatformView.GetStyleValue("width"));
+        Assert.Null(handler.PlatformView.GetStyleValue("height"));
         Assert.Equal("40px", handler.PlatformView.GetStyleValue("minWidth"));
         Assert.Equal("160px", handler.PlatformView.GetStyleValue("maxWidth"));
     }

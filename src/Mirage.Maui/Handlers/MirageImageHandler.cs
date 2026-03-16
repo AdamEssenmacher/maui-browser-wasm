@@ -264,11 +264,11 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>
         return reason.Contains("manifest", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string ResolveDimensionCss(double requestedValue)
+    private static string? ResolveDimensionCss(double requestedValue)
     {
         if (!double.IsFinite(requestedValue) || requestedValue < 0)
         {
-            return "100%";
+            return null;
         }
 
         return MirageViewMapper.ToPx(requestedValue);
