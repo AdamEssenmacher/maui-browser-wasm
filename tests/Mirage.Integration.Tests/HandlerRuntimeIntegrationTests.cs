@@ -336,6 +336,42 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void EntryHandler_WidthRequestUpdate_RecomputesStackCrossAxisAlignment()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageEntryHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var entry = new Entry
+        {
+            HorizontalOptions = LayoutOptions.Fill,
+            WidthRequest = -1
+        };
+
+        var parent = new VerticalStackLayout();
+        parent.Children.Add(entry);
+
+        ((IElementHandler)handler).SetVirtualView(entry);
+
+        var projectedParent = MiragePlatformView.CreateControl(ComponentKind.VerticalStack);
+        projectedParent.AddChild(handler.PlatformView);
+
+        MirageViewMapper.MapLayoutAlignment(handler, entry);
+        Assert.Equal("stretch", handler.PlatformView.GetStyleValue("alignSelf"));
+
+        entry.WidthRequest = 400;
+        MirageEntryHandler.Mapper.UpdateProperty(handler, entry, nameof(VisualElement.WidthRequest));
+        Assert.Equal("400px", handler.PlatformView.GetStyleValue("width"));
+        Assert.Equal("center", handler.PlatformView.GetStyleValue("alignSelf"));
+
+        entry.WidthRequest = -1;
+        MirageEntryHandler.Mapper.UpdateProperty(handler, entry, nameof(VisualElement.WidthRequest));
+        Assert.Equal("stretch", handler.PlatformView.GetStyleValue("alignSelf"));
+    }
+
+    [Fact]
     public void ImageHandler_MapsSourceAspectAndOpaqueState()
     {
         var services = new ServiceCollection()
