@@ -24,8 +24,8 @@ public static class MirageViewMapper
         [nameof(IView.Background)] = MapBackground,
         ["BackgroundColor"] = MapBackground,
         [nameof(IView.Clip)] = MapClip,
-        [nameof(VisualElement.WidthRequest)] = MapSizeRequests,
-        [nameof(VisualElement.HeightRequest)] = MapSizeRequests,
+        [nameof(VisualElement.WidthRequest)] = MapSizeRequestsAndLayoutAlignment,
+        [nameof(VisualElement.HeightRequest)] = MapSizeRequestsAndLayoutAlignment,
         [nameof(VisualElement.MinimumWidthRequest)] = MapSizeRequests,
         [nameof(VisualElement.MinimumHeightRequest)] = MapSizeRequests,
         [nameof(VisualElement.MaximumWidthRequest)] = MapSizeRequests,
@@ -141,6 +141,18 @@ public static class MirageViewMapper
     public static void MapSizeRequests(IViewHandler handler, IView view)
     {
         if (!MirageCommonViewProjection.MapSizeRequests(handler, view))
+        {
+            return;
+        }
+
+        ((IMiragePlatformHandler)handler).RequestRender();
+    }
+
+    public static void MapSizeRequestsAndLayoutAlignment(IViewHandler handler, IView view)
+    {
+        var changed = MirageCommonViewProjection.MapSizeRequests(handler, view);
+        changed |= MirageCommonViewProjection.MapLayoutAlignment(handler, view);
+        if (!changed)
         {
             return;
         }

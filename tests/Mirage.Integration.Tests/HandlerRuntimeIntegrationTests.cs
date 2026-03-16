@@ -475,6 +475,36 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CommonMapper_WidthRequestUpdate_RecomputesStackCrossAxisAlignment()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var child = new Grid
+        {
+            HorizontalOptions = LayoutOptions.Fill,
+            WidthRequest = -1
+        };
+
+        var parent = new VerticalStackLayout();
+        parent.Children.Add(child);
+
+        var verticalParent = MiragePlatformView.CreateControl(ComponentKind.VerticalStack);
+        verticalParent.AddChild(handler.Node);
+
+        MirageViewMapper.MapLayoutAlignment(handler, child);
+        Assert.Equal("stretch", handler.Node.GetStyleValue("alignSelf"));
+
+        child.WidthRequest = 400;
+        MirageViewMapper.CommonViewMapper.UpdateProperty(handler, child, nameof(VisualElement.WidthRequest));
+        Assert.Equal("400px", handler.Node.GetStyleValue("width"));
+        Assert.Equal("center", handler.Node.GetStyleValue("alignSelf"));
+
+        child.WidthRequest = -1;
+        MirageViewMapper.CommonViewMapper.UpdateProperty(handler, child, nameof(VisualElement.WidthRequest));
+        Assert.Null(handler.Node.GetStyleValue("width"));
+        Assert.Equal("stretch", handler.Node.GetStyleValue("alignSelf"));
+    }
+
+    [Fact]
     public void CommonMapper_MapsLayoutClipsToBoundsToOverflowStyle()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "flex");
