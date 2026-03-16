@@ -25,6 +25,8 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-clippingpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-contentviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-gridpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-horizontalstacklayoutpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-boxviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-buttonpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").CountAsync());
@@ -222,6 +224,66 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
+    public async Task HorizontalStackLayoutPage_IsRunnable_AndRendersHorizontalChildFlow()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 900, height: 700);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-horizontalstacklayoutpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-horizontalstacklayoutpage']");
+            });
+
+        var layoutSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id='controls-sample-page-horizontalstacklayoutpage']");
+                const stack = host?.querySelector("[data-mirage-kind='HorizontalStack']");
+                if (!host || !stack) {
+                    return ["__missing__", "0", "0", "0", "0", "0", "0", "0"];
+                }
+
+                const label = stack.querySelector("[data-mirage-kind='Label']");
+                const labelText = (label?.textContent ?? "").trim();
+                const boxViews = Array.from(stack.querySelectorAll("[data-mirage-kind='BoxView']"));
+                const first = boxViews[0];
+                const last = boxViews[boxViews.length - 1];
+
+                const firstRect = first?.getBoundingClientRect();
+                const secondRect = boxViews[1]?.getBoundingClientRect();
+                const lastRect = last?.getBoundingClientRect();
+
+                return [
+                    "ok",
+                    labelText,
+                    boxViews.length.toString(),
+                    (firstRect?.width ?? 0).toString(),
+                    (firstRect?.height ?? 0).toString(),
+                    (firstRect?.left ?? 0).toString(),
+                    (secondRect?.left ?? 0).toString(),
+                    (lastRect?.left ?? 0).toString(),
+                    getComputedStyle(first ?? stack).backgroundColor ?? "",
+                    getComputedStyle(last ?? stack).backgroundColor ?? ""
+                ];
+            }
+            """);
+
+        Assert.Equal("ok", layoutSnapshot[0]);
+        Assert.Equal("HorizontalStackLayout", layoutSnapshot[1]);
+        Assert.Equal("6", layoutSnapshot[2]);
+        Assert.True(double.Parse(layoutSnapshot[3], CultureInfo.InvariantCulture) > 0d);
+        Assert.True(double.Parse(layoutSnapshot[4], CultureInfo.InvariantCulture) > 0d);
+        Assert.True(double.Parse(layoutSnapshot[6], CultureInfo.InvariantCulture) > double.Parse(layoutSnapshot[5], CultureInfo.InvariantCulture));
+        Assert.True(double.Parse(layoutSnapshot[7], CultureInfo.InvariantCulture) > double.Parse(layoutSnapshot[6], CultureInfo.InvariantCulture));
+        Assert.Contains("255, 0, 0", layoutSnapshot[8], StringComparison.Ordinal);
+        Assert.Contains("128, 0, 128", layoutSnapshot[9], StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ButtonPage_IsRunnable_AndExercisesCoreScenarios()
     {
         await using var context = await _fixture.NewContextAsync(width: 760, height: 980);
@@ -398,6 +460,88 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         {
             Assert.EndsWith("…", tailText, StringComparison.Ordinal);
         }
+    }
+
+    [Fact]
+    public async Task BoxViewPage_IsRunnable_AndExercisesCoreProjectionScenarios()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 900, height: 1100);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-boxviewpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-boxviewpage']");
+            });
+
+        var boxIds = new[]
+        {
+            "controls-sample-boxviewpage-default",
+            "controls-sample-boxviewpage-color",
+            "controls-sample-boxviewpage-background",
+            "controls-sample-boxviewpage-corner-radius",
+            "controls-sample-boxviewpage-complex-corner-radius",
+            "controls-sample-boxviewpage-opacity",
+            "controls-sample-boxviewpage-clip",
+            "controls-sample-boxviewpage-shadow"
+        };
+
+        foreach (var boxId in boxIds)
+        {
+            Assert.Equal(1, await page.Locator($"[data-automation-id='{boxId}']").CountAsync());
+        }
+
+        var defaultBackground = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundColor",
+            "[data-automation-id='controls-sample-boxviewpage-default']");
+        Assert.Contains("100, 149, 237", defaultBackground, StringComparison.Ordinal);
+
+        var colorBackground = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundColor",
+            "[data-automation-id='controls-sample-boxviewpage-color']");
+        Assert.Contains("128, 0, 128", colorBackground, StringComparison.Ordinal);
+
+        var brushBackground = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundImage",
+            "[data-automation-id='controls-sample-boxviewpage-background']");
+        Assert.True(
+            !string.IsNullOrWhiteSpace(brushBackground)
+            && !string.Equals(brushBackground, "none", StringComparison.OrdinalIgnoreCase),
+            "Expected brush-based background projection for BoxView background scenario.");
+
+        var cornerRadius = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).borderRadius",
+            "[data-automation-id='controls-sample-boxviewpage-corner-radius']");
+        Assert.Equal("10px", cornerRadius);
+
+        var complexCornerRadius = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).borderRadius",
+            "[data-automation-id='controls-sample-boxviewpage-complex-corner-radius']");
+        Assert.Equal("10px 0px 20px 5px", complexCornerRadius);
+
+        var opacity = await page.EvaluateAsync<double>(
+            "(selector) => parseFloat(getComputedStyle(document.querySelector(selector)).opacity || '1')",
+            "[data-automation-id='controls-sample-boxviewpage-opacity']");
+        Assert.InRange(opacity, 0.45d, 0.55d);
+
+        var clipPath = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).clipPath",
+            "[data-automation-id='controls-sample-boxviewpage-clip']");
+        Assert.True(
+            !string.IsNullOrWhiteSpace(clipPath)
+            && !string.Equals(clipPath, "none", StringComparison.OrdinalIgnoreCase),
+            $"Expected non-empty clip-path for BoxView clip scenario but found '{clipPath}'.");
+
+        var shadow = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).boxShadow",
+            "[data-automation-id='controls-sample-boxviewpage-shadow']");
+        Assert.True(
+            !string.IsNullOrWhiteSpace(shadow)
+            && !string.Equals(shadow, "none", StringComparison.OrdinalIgnoreCase),
+            $"Expected non-empty box-shadow for BoxView shadow scenario but found '{shadow}'.");
     }
 
     [Fact]

@@ -421,3 +421,17 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Completed `MirageCheckBoxHandler` parity paths needed by upstream pages: compatibility `Color` alias support alongside `Foreground`, two-way `IsChecked`, and deterministic disabled semantics (`disabled` projection + interaction blocking).
 - Extended `MirageSliderHandler` with disabled-state projection and `ThumbImageSource` resolution through `IMirageImageSourceResolver`, including deterministic clear/reapply behavior for runtime thumb-image toggles.
 - Added framework-level slider realization styles in Mirage runtime (`mirage-dom.js`) using projected slider style channels (`--mirage-slider-track-gradient`, `--mirage-slider-thumb-color`, `--mirage-slider-thumb-image`) so thumb-image rendering is owned by Mirage platform plumbing rather than sample host CSS.
+
+## 2026-03-16 (ControlsSample HorizontalStackLayoutPage Enablement)
+- Promoted upstream `HorizontalStackLayoutPage` to a runnable ControlsSample entry using existing Mirage `HorizontalStackLayout` and `BoxView` support, with no new runtime/provider contracts required.
+- Imported upstream page XAML/code-behind into `ControlsSample.Shared` and added ControlsSample E2E coverage for page discoverability plus horizontal child flow assertions (label + six `BoxView` children with left-to-right ordering and projected colors).
+
+## 2026-03-16 (HorizontalStackLayoutPage Follow-up: BoxView Default Size Parity)
+- While enabling `HorizontalStackLayoutPage`, we found a browser parity gap where unconstrained `BoxView` children could collapse to zero size in stack layouts.
+- `MirageBoxViewHandler` now applies MAUI-aligned default minimum sizing (`40px`) only when no explicit width/height/min/max requests are set, preserving explicit size requests and avoiding sample-specific layout hacks.
+- Added integration coverage for this fallback and clear-on-explicit-size behavior so future handler changes do not regress default `BoxView` visibility.
+
+## 2026-03-16 (ControlsSample BoxViewPage Enablement + Shared Shadow Mapping)
+- Promoted upstream `BoxViewPage` to a runnable ControlsSample entry and added deterministic automation IDs for each BoxView demo scenario so parity checks stay stable.
+- Expanded `MirageBoxViewHandler` with `CornerRadius` projection (uniform and per-corner) while preserving existing `Color` vs. `Background` precedence and default-size fallback behavior.
+- Implemented `IView.Shadow` projection in shared Mirage view mapping so BoxView shadow behavior flows through the same framework-level path used by other controls, with deterministic fallback (clear + diagnostics) for unsupported non-solid shadow brushes.
