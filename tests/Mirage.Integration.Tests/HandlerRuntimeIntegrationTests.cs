@@ -740,6 +740,33 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void SliderHandler_WidthRequestUnset_RestoresDefaultFillWidth()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageSliderHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var slider = new Slider
+        {
+            WidthRequest = -1
+        };
+
+        ((IElementHandler)handler).SetVirtualView(slider);
+        Assert.Equal("100%", handler.PlatformView.GetStyleValue("width"));
+
+        slider.WidthRequest = 220;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(VisualElement.WidthRequest));
+        Assert.Equal("220px", handler.PlatformView.GetStyleValue("width"));
+
+        slider.WidthRequest = -1;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(VisualElement.WidthRequest));
+        Assert.Equal("100%", handler.PlatformView.GetStyleValue("width"));
+    }
+
+    [Fact]
     public void CheckBoxHandler_ProjectsColorAliasCheckedAndDisabledSemantics()
     {
         var services = new ServiceCollection().BuildServiceProvider();

@@ -16,6 +16,12 @@ internal sealed class MirageSliderHandler : MirageViewHandler<ISlider>, IMirageR
             [nameof(IRange.Minimum)] = MapMinimum,
             [nameof(IRange.Maximum)] = MapMaximum,
             [nameof(IRange.Value)] = MapValue,
+            [nameof(VisualElement.WidthRequest)] = MapSizeRequestsAndLayoutAlignment,
+            [nameof(VisualElement.HeightRequest)] = MapSizeRequestsAndLayoutAlignment,
+            [nameof(VisualElement.MinimumWidthRequest)] = MapSizeRequests,
+            [nameof(VisualElement.MinimumHeightRequest)] = MapSizeRequests,
+            [nameof(VisualElement.MaximumWidthRequest)] = MapSizeRequests,
+            [nameof(VisualElement.MaximumHeightRequest)] = MapSizeRequests,
             [nameof(ISlider.MinimumTrackColor)] = MapMinimumTrackColor,
             [nameof(ISlider.MaximumTrackColor)] = MapMaximumTrackColor,
             [nameof(ISlider.ThumbColor)] = MapThumbColor,
@@ -162,6 +168,31 @@ internal sealed class MirageSliderHandler : MirageViewHandler<ISlider>, IMirageR
         handler.RequestRender();
     }
 
+    public static void MapSizeRequests(MirageSliderHandler handler, ISlider slider)
+    {
+        var changed = MirageCommonViewProjection.MapSizeRequests(handler, slider);
+        changed |= handler.ApplyDefaultFillWidthIfUnspecified(slider);
+        if (!changed)
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapSizeRequestsAndLayoutAlignment(MirageSliderHandler handler, ISlider slider)
+    {
+        var changed = MirageCommonViewProjection.MapSizeRequests(handler, slider);
+        changed |= MirageCommonViewProjection.MapLayoutAlignment(handler, slider);
+        changed |= handler.ApplyDefaultFillWidthIfUnspecified(slider);
+        if (!changed)
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
     public static void MapThumbImageSource(MirageSliderHandler handler, ISlider slider)
     {
         if (!handler.UpdateThumbImageProjection(slider))
@@ -243,6 +274,22 @@ internal sealed class MirageSliderHandler : MirageViewHandler<ISlider>, IMirageR
         // MAUI Slider ignores drag completion notifications while disabled, but this
         // still keeps non-controls ISlider implementations and future behavior aligned.
         slider.DragCompleted();
+    }
+
+    private bool ApplyDefaultFillWidthIfUnspecified(ISlider slider)
+    {
+        if (slider is not VisualElement visualElement)
+        {
+            return false;
+        }
+
+        var hasExplicitWidth = double.IsFinite(visualElement.WidthRequest) && visualElement.WidthRequest >= 0;
+        if (hasExplicitWidth)
+        {
+            return false;
+        }
+
+        return SetStyleIfChanged("width", "100%");
     }
 
     private IMirageImageSourceResolver? GetImageSourceResolver()
