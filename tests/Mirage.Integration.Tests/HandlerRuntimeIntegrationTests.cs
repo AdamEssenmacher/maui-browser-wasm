@@ -73,7 +73,8 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal("0px", MirageViewMapper.ToPx(-15));
         Assert.Equal("0px", MirageViewMapper.ToPx(double.NaN));
         Assert.Equal("12.345px", MirageViewMapper.ToPx(12.3454));
-        Assert.Equal("2px 8.5px 0px 1.25px", MirageCommonViewProjection.ToThickness(new Thickness(1.25, 2, 8.5, -3)));
+        Assert.Equal("2px 8.5px 0px 1.25px", MirageCommonViewProjection.ToPaddingThickness(new Thickness(1.25, 2, 8.5, -3)));
+        Assert.Equal("2px 8.5px -3px 1.25px", MirageCommonViewProjection.ToMarginThickness(new Thickness(1.25, 2, 8.5, -3)));
     }
 
     [Fact]
@@ -176,6 +177,35 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void LabelHandler_MapsHorizontalAndVerticalTextAlignment()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var label = new Label
+        {
+            Text = "Aligned",
+            HorizontalTextAlignment = TextAlignment.Start,
+            VerticalTextAlignment = TextAlignment.Center
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+        Assert.Equal("left", handler.PlatformView.GetStyleValue("textAlign"));
+        Assert.Equal("center", handler.PlatformView.GetStyleValue("justifyContent"));
+        Assert.Equal("flex", handler.PlatformView.GetStyleValue("display"));
+
+        label.HorizontalTextAlignment = TextAlignment.End;
+        label.VerticalTextAlignment = TextAlignment.End;
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(ITextAlignment.HorizontalTextAlignment));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(ITextAlignment.VerticalTextAlignment));
+
+        Assert.Equal("right", handler.PlatformView.GetStyleValue("textAlign"));
+        Assert.Equal("flex-end", handler.PlatformView.GetStyleValue("justifyContent"));
+    }
+
+    [Fact]
     public void CommonMapper_CompatibilityAliases_MapBackgroundColorAndFontProperties()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
@@ -193,6 +223,20 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal("rgba(81,43,212,1)", handler.Node.GetStyleValue("backgroundColor"));
         Assert.Equal("\"OpenSansRegular\", sans-serif", handler.Node.GetStyleValue("fontFamily"));
         Assert.Equal("19px", handler.Node.GetStyleValue("fontSize"));
+    }
+
+    [Fact]
+    public void CommonMapper_MapMargin_PreservesNegativeThicknessValues()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var image = new Image
+        {
+            Margin = new Thickness(-20)
+        };
+
+        MirageViewMapper.MapMargin(handler, image);
+
+        Assert.Equal("-20px -20px -20px -20px", handler.Node.GetStyleValue("margin"));
     }
 
     [Fact]
@@ -369,6 +413,109 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void ImageHandler_RespectsRequestedDimensions_AndClearsWhenUnset()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "coffee.png",
+            WidthRequest = 100,
+            HeightRequest = 100
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+        Assert.Equal("100px", handler.PlatformView.GetStyleValue("width"));
+        Assert.Equal("100px", handler.PlatformView.GetStyleValue("height"));
+
+        image.WidthRequest = -1;
+        image.HeightRequest = -1;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.WidthRequest));
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.HeightRequest));
+
+        Assert.Null(handler.PlatformView.GetStyleValue("width"));
+        Assert.Null(handler.PlatformView.GetStyleValue("height"));
+
+        image.MinimumWidthRequest = 40;
+        image.MaximumWidthRequest = 160;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.MinimumWidthRequest));
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.MaximumWidthRequest));
+
+        Assert.Null(handler.PlatformView.GetStyleValue("width"));
+        Assert.Null(handler.PlatformView.GetStyleValue("height"));
+        Assert.Equal("40px", handler.PlatformView.GetStyleValue("minWidth"));
+        Assert.Equal("160px", handler.PlatformView.GetStyleValue("maxWidth"));
+    }
+
+    [Fact]
+    public void ImageHandler_WidthRequestUpdate_DoesNotClearParentManagedHeightStyle()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "coffee.png"
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+
+        handler.PlatformView.SetStyle("height", "77px");
+
+        image.WidthRequest = 180;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.WidthRequest));
+        Assert.Equal("180px", handler.PlatformView.GetStyleValue("width"));
+        Assert.Equal("77px", handler.PlatformView.GetStyleValue("height"));
+
+        image.WidthRequest = -1;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.WidthRequest));
+        Assert.Null(handler.PlatformView.GetStyleValue("width"));
+        Assert.Equal("77px", handler.PlatformView.GetStyleValue("height"));
+    }
+
+    [Fact]
+    public void ImageHandler_HeightRequestUpdate_DoesNotClearParentManagedWidthStyle()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "coffee.png"
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+
+        handler.PlatformView.SetStyle("width", "88px");
+
+        image.HeightRequest = 210;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.HeightRequest));
+        Assert.Equal("210px", handler.PlatformView.GetStyleValue("height"));
+        Assert.Equal("88px", handler.PlatformView.GetStyleValue("width"));
+
+        image.HeightRequest = -1;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.HeightRequest));
+        Assert.Null(handler.PlatformView.GetStyleValue("height"));
+        Assert.Equal("88px", handler.PlatformView.GetStyleValue("width"));
+    }
+
+    [Fact]
     public void ImageHandler_UnresolvedFileSource_ProjectsUnsupportedState()
     {
         var services = new ServiceCollection()
@@ -428,6 +575,28 @@ public sealed class HandlerRuntimeIntegrationTests
         MirageBorderHandler.Mapper.UpdateProperty(handler, border, nameof(Border.Stroke));
         Assert.Equal("none", handler.PlatformView.GetStyleValue("borderStyle"));
         Assert.Null(handler.PlatformView.GetStyleValue("borderColor"));
+    }
+
+    [Fact]
+    public void BoxViewHandler_UsesBackgroundColorUnlessColorPropertyIsExplicitlySet()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageBoxViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var boxView = new BoxView
+        {
+            BackgroundColor = Colors.DarkGray
+        };
+
+        ((IElementHandler)handler).SetVirtualView(boxView);
+        Assert.Equal("rgba(169,169,169,1)", handler.PlatformView.GetStyleValue("backgroundColor"));
+
+        boxView.Color = Colors.Crimson;
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(BoxView.Color));
+        Assert.Equal("rgba(220,20,60,1)", handler.PlatformView.GetStyleValue("backgroundColor"));
     }
 
     [Fact]

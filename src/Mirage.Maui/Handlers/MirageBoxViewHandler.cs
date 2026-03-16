@@ -42,12 +42,18 @@ internal sealed class MirageBoxViewHandler : MirageViewHandler<BoxView>
 
     private bool UpdateColorStyles(BoxView boxView)
     {
-        var cssColor = MirageCommonViewProjection.ToCssColor(boxView.Color);
-        var changed = SetStyleIfChanged("backgroundColor", cssColor);
-        changed |= SetStyleIfChanged("backgroundImage", null);
-        changed |= SetStyleIfChanged("backgroundSize", null);
-        changed |= SetStyleIfChanged("backgroundRepeat", null);
-        changed |= SetStyleIfChanged("backgroundPosition", null);
+        var changed = MirageCommonViewProjection.MapBackground(this, boxView);
+
+        if (boxView.IsSet(BoxView.ColorProperty))
+        {
+            var cssColor = MirageCommonViewProjection.ToCssColor(boxView.Color);
+            changed |= SetStyleIfChanged("backgroundColor", cssColor);
+            changed |= SetStyleIfChanged("backgroundImage", null);
+            changed |= SetStyleIfChanged("backgroundSize", null);
+            changed |= SetStyleIfChanged("backgroundRepeat", null);
+            changed |= SetStyleIfChanged("backgroundPosition", null);
+        }
+
         changed |= SetStyleIfChanged("borderRadius", null);
         return changed;
     }

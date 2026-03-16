@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Text;
 using Microsoft.Playwright;
 using Xunit;
@@ -151,6 +152,70 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             "IMG",
             overlapProbeTagName);
 
+        var avatarAndTitleMetrics = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const image = document.querySelector("[data-automation-id='controls-sample-page-contentviewpage'] img[src*='/_mirage/assets/']");
+                const iconHost = image?.parentElement;
+                const grid = iconHost?.parentElement;
+                const title = grid?.children?.item(1);
+                if (!image || !iconHost || !title) {
+                    return ["__missing__", "0", "0", "0", "0", "0", "0"];
+                }
+
+                const imageRect = image.getBoundingClientRect();
+                const iconRect = iconHost.getBoundingClientRect();
+                const titleRect = title.getBoundingClientRect();
+                return [
+                    "ok",
+                    imageRect.width.toString(),
+                    imageRect.height.toString(),
+                    (iconRect.top + (iconRect.height / 2)).toString(),
+                    (titleRect.top + (titleRect.height / 2)).toString(),
+                    getComputedStyle(image).marginLeft,
+                    getComputedStyle(image).marginTop
+                ];
+            }
+            """);
+
+        Assert.Equal("ok", avatarAndTitleMetrics[0]);
+        Assert.True(double.Parse(avatarAndTitleMetrics[1], CultureInfo.InvariantCulture) >= 95d);
+        Assert.True(double.Parse(avatarAndTitleMetrics[2], CultureInfo.InvariantCulture) >= 95d);
+        Assert.True(
+            Math.Abs(
+                double.Parse(avatarAndTitleMetrics[3], CultureInfo.InvariantCulture)
+                - double.Parse(avatarAndTitleMetrics[4], CultureInfo.InvariantCulture)) <= 8d);
+        Assert.Equal("-20px", avatarAndTitleMetrics[5]);
+        Assert.Equal("-20px", avatarAndTitleMetrics[6]);
+
+        var dividerMetrics = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const image = document.querySelector("[data-automation-id='controls-sample-page-contentviewpage'] img[src*='/_mirage/assets/']");
+                const iconHost = image?.parentElement;
+                const grid = iconHost?.parentElement;
+                const divider = grid?.children?.item(2);
+                if (!divider) {
+                    return ["__missing__", "", "", "0", "0"];
+                }
+
+                const style = getComputedStyle(divider);
+                const rect = divider.getBoundingClientRect();
+                return [
+                    divider.tagName,
+                    style.backgroundColor ?? "",
+                    style.display ?? "",
+                    rect.height.toString(),
+                    rect.width.toString()
+                ];
+            }
+            """);
+
+        Assert.NotEqual("__missing__", dividerMetrics[0]);
+        Assert.NotEqual("rgba(0, 0, 0, 0)", dividerMetrics[1]);
+        Assert.NotEqual("none", dividerMetrics[2]);
+        Assert.True(double.Parse(dividerMetrics[3], CultureInfo.InvariantCulture) >= 1d);
+        Assert.True(double.Parse(dividerMetrics[4], CultureInfo.InvariantCulture) >= 120d);
     }
 
     private async Task<(IPage Page, ConcurrentQueue<string> Diagnostics)> OpenAsync(IBrowserContext context)
