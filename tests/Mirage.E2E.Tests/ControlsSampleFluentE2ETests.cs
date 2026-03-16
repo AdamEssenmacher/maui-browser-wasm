@@ -224,7 +224,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
-    public async Task HorizontalStackLayoutPage_IsRunnable_AndRendersHorizontalChildFlow()
+    public async Task HorizontalStackLayoutPage_IsRunnable_AndAllowsUnsizedBoxViewsToCollapse()
     {
         await using var context = await _fixture.NewContextAsync(width: 900, height: 700);
         var (page, diagnostics) = await OpenAsync(context);
@@ -244,30 +244,24 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 const host = document.querySelector("[data-automation-id='controls-sample-page-horizontalstacklayoutpage']");
                 const stack = host?.querySelector("[data-mirage-kind='HorizontalStack']");
                 if (!host || !stack) {
-                    return ["__missing__", "0", "0", "0", "0", "0", "0", "0"];
+                    return ["__missing__", "0", "0", "0", "0", "0"];
                 }
 
                 const label = stack.querySelector("[data-mirage-kind='Label']");
                 const labelText = (label?.textContent ?? "").trim();
                 const boxViews = Array.from(stack.querySelectorAll("[data-mirage-kind='BoxView']"));
-                const first = boxViews[0];
-                const last = boxViews[boxViews.length - 1];
-
-                const firstRect = first?.getBoundingClientRect();
-                const secondRect = boxViews[1]?.getBoundingClientRect();
-                const lastRect = last?.getBoundingClientRect();
+                const boxRects = boxViews.map(box => box.getBoundingClientRect());
+                const collapsedCount = boxRects.filter(rect => rect.width <= 1 || rect.height <= 1 || (rect.width * rect.height) <= 1).length;
+                const maxWidth = boxRects.reduce((current, rect) => Math.max(current, rect.width), 0);
+                const maxArea = boxRects.reduce((current, rect) => Math.max(current, rect.width * rect.height), 0);
 
                 return [
                     "ok",
                     labelText,
                     boxViews.length.toString(),
-                    (firstRect?.width ?? 0).toString(),
-                    (firstRect?.height ?? 0).toString(),
-                    (firstRect?.left ?? 0).toString(),
-                    (secondRect?.left ?? 0).toString(),
-                    (lastRect?.left ?? 0).toString(),
-                    getComputedStyle(first ?? stack).backgroundColor ?? "",
-                    getComputedStyle(last ?? stack).backgroundColor ?? ""
+                    collapsedCount.toString(),
+                    maxWidth.toString(),
+                    maxArea.toString()
                 ];
             }
             """);
@@ -275,12 +269,9 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal("ok", layoutSnapshot[0]);
         Assert.Equal("HorizontalStackLayout", layoutSnapshot[1]);
         Assert.Equal("6", layoutSnapshot[2]);
-        Assert.True(double.Parse(layoutSnapshot[3], CultureInfo.InvariantCulture) > 0d);
-        Assert.True(double.Parse(layoutSnapshot[4], CultureInfo.InvariantCulture) > 0d);
-        Assert.True(double.Parse(layoutSnapshot[6], CultureInfo.InvariantCulture) > double.Parse(layoutSnapshot[5], CultureInfo.InvariantCulture));
-        Assert.True(double.Parse(layoutSnapshot[7], CultureInfo.InvariantCulture) > double.Parse(layoutSnapshot[6], CultureInfo.InvariantCulture));
-        Assert.Contains("255, 0, 0", layoutSnapshot[8], StringComparison.Ordinal);
-        Assert.Contains("128, 0, 128", layoutSnapshot[9], StringComparison.Ordinal);
+        Assert.Equal("6", layoutSnapshot[3]);
+        Assert.True(double.Parse(layoutSnapshot[4], CultureInfo.InvariantCulture) <= 1d);
+        Assert.True(double.Parse(layoutSnapshot[5], CultureInfo.InvariantCulture) <= 1d);
     }
 
     [Fact]

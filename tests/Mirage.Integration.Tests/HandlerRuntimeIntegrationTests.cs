@@ -1086,7 +1086,7 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void BoxViewHandler_AppliesDefaultMinimumSize_WhenSizeRequestsAreUnset()
+    public void BoxViewHandler_DoesNotInjectDefaultMinimumSize_WhenSizeRequestsAreUnset()
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var mauiContext = new MauiContext(services);
@@ -1097,22 +1097,32 @@ public sealed class HandlerRuntimeIntegrationTests
         var boxView = new BoxView();
         ((IElementHandler)handler).SetVirtualView(boxView);
 
-        Assert.Equal("40px", handler.PlatformView.GetStyleValue("minWidth"));
-        Assert.Equal("40px", handler.PlatformView.GetStyleValue("minHeight"));
+        Assert.Null(handler.PlatformView.GetStyleValue("minWidth"));
+        Assert.Null(handler.PlatformView.GetStyleValue("minHeight"));
+        Assert.Null(handler.PlatformView.GetStyleValue("width"));
+        Assert.Null(handler.PlatformView.GetStyleValue("height"));
 
         boxView.WidthRequest = 24;
         MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(VisualElement.WidthRequest));
         Assert.Equal("24px", handler.PlatformView.GetStyleValue("width"));
-        Assert.Null(handler.PlatformView.GetStyleValue("minWidth"));
 
         boxView.HeightRequest = 16;
         MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(VisualElement.HeightRequest));
         Assert.Equal("16px", handler.PlatformView.GetStyleValue("height"));
+
+        boxView.WidthRequest = -1;
+        boxView.HeightRequest = -1;
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(VisualElement.WidthRequest));
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(VisualElement.HeightRequest));
+
+        Assert.Null(handler.PlatformView.GetStyleValue("width"));
+        Assert.Null(handler.PlatformView.GetStyleValue("height"));
         Assert.Null(handler.PlatformView.GetStyleValue("minHeight"));
+        Assert.Null(handler.PlatformView.GetStyleValue("minWidth"));
     }
 
     [Fact]
-    public void BoxViewHandler_ExplicitMinimumRequests_ArePreservedByDefaultSizingLogic()
+    public void BoxViewHandler_ExplicitMinimumRequests_ArePreservedWhenSizeRequestsChange()
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var mauiContext = new MauiContext(services);

@@ -435,3 +435,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Promoted upstream `BoxViewPage` to a runnable ControlsSample entry and added deterministic automation IDs for each BoxView demo scenario so parity checks stay stable.
 - Expanded `MirageBoxViewHandler` with `CornerRadius` projection (uniform and per-corner) while preserving existing `Color` vs. `Background` precedence and default-size fallback behavior.
 - Implemented `IView.Shadow` projection in shared Mirage view mapping so BoxView shadow behavior flows through the same framework-level path used by other controls, with deterministic fallback (clear + diagnostics) for unsupported non-solid shadow brushes.
+
+## 2026-03-16 (BoxView Native Sizing Parity Correction)
+- Removed Mirage's synthetic `40px` default minimum sizing for unconstrained `BoxView` instances in `MirageBoxViewHandler`.
+- Native MAUI behavior observed on iOS and Android allows unsized `BoxView` elements to collapse in layouts like `HorizontalStackLayoutPage`; Mirage now follows that behavior instead of forcing visibility.
+- BoxView sizing is now driven only by explicit MAUI size requests (`WidthRequest`, `HeightRequest`, `Minimum*Request`, `Maximum*Request`) through shared size mapping.
+- Updated ControlsSample HorizontalStackLayout E2E expectations to assert node presence with collapsed geometry rather than visible colored boxes.

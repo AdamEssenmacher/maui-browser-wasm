@@ -7,8 +7,6 @@ namespace Mirage.Maui.Handlers;
 
 internal sealed class MirageBoxViewHandler : MirageViewHandler<BoxView>
 {
-    private const string DefaultBoxSizePx = "40px";
-
     public static IPropertyMapper<BoxView, MirageBoxViewHandler> Mapper =
         new PropertyMapper<BoxView, MirageBoxViewHandler>(MirageViewMapper.CommonViewMapper)
         {
@@ -34,7 +32,6 @@ internal sealed class MirageBoxViewHandler : MirageViewHandler<BoxView>
         base.ConnectHandler(platformView);
         changed |= UpdateColorStyles(VirtualView);
         changed |= UpdateCornerRadiusStyles(VirtualView);
-        changed |= UpdateDefaultSizeStyles(VirtualView);
         if (changed)
         {
             RequestRender();
@@ -63,9 +60,7 @@ internal sealed class MirageBoxViewHandler : MirageViewHandler<BoxView>
 
     public static void MapSizeRequests(MirageBoxViewHandler handler, BoxView boxView)
     {
-        var changed = MirageCommonViewProjection.MapSizeRequests(handler, boxView);
-        changed |= handler.UpdateDefaultSizeStyles(boxView);
-        if (!changed)
+        if (!MirageCommonViewProjection.MapSizeRequests(handler, boxView))
         {
             return;
         }
@@ -106,79 +101,6 @@ internal sealed class MirageBoxViewHandler : MirageViewHandler<BoxView>
         var borderRadiusStyle =
             $"{MirageViewMapper.ToPx(topLeft)} {MirageViewMapper.ToPx(topRight)} {MirageViewMapper.ToPx(bottomRight)} {MirageViewMapper.ToPx(bottomLeft)}";
         return SetStyleIfChanged("borderRadius", borderRadiusStyle);
-    }
-
-    private bool UpdateDefaultSizeStyles(BoxView boxView)
-    {
-        var hasExplicitMinWidth = HasExplicitLength(boxView, VisualElement.MinimumWidthRequestProperty);
-        var hasExplicitMinHeight = HasExplicitLength(boxView, VisualElement.MinimumHeightRequestProperty);
-
-        var applyDefaultMinWidth = ShouldApplyDefaultMinLength(
-            boxView,
-            VisualElement.WidthRequestProperty,
-            VisualElement.MinimumWidthRequestProperty,
-            VisualElement.MaximumWidthRequestProperty);
-
-        var applyDefaultMinHeight = ShouldApplyDefaultMinLength(
-            boxView,
-            VisualElement.HeightRequestProperty,
-            VisualElement.MinimumHeightRequestProperty,
-            VisualElement.MaximumHeightRequestProperty);
-
-        var changed = false;
-        if (applyDefaultMinWidth)
-        {
-            changed |= SetStyleIfChanged("minWidth", DefaultBoxSizePx);
-        }
-        else if (!hasExplicitMinWidth)
-        {
-            changed |= SetStyleIfChanged("minWidth", null);
-        }
-
-        if (applyDefaultMinHeight)
-        {
-            changed |= SetStyleIfChanged("minHeight", DefaultBoxSizePx);
-        }
-        else if (!hasExplicitMinHeight)
-        {
-            changed |= SetStyleIfChanged("minHeight", null);
-        }
-
-        return changed;
-    }
-
-    private static bool ShouldApplyDefaultMinLength(
-        BoxView boxView,
-        BindableProperty requestProperty,
-        BindableProperty minimumRequestProperty,
-        BindableProperty maximumRequestProperty)
-    {
-        if (HasExplicitLength(boxView, requestProperty))
-        {
-            return false;
-        }
-
-        if (HasExplicitLength(boxView, minimumRequestProperty))
-        {
-            return false;
-        }
-
-        return !HasExplicitLength(boxView, maximumRequestProperty);
-    }
-
-    private static bool HasExplicitLength(BoxView boxView, BindableProperty property)
-    {
-        if (!boxView.IsSet(property))
-        {
-            return false;
-        }
-
-        if (boxView.GetValue(property) is not double value)
-        {
-            return false;
-        }
-
-        return double.IsFinite(value) && value >= 0d;
     }
 
     private static double NormalizeFinite(double value)
