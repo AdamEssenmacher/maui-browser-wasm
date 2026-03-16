@@ -1,5 +1,6 @@
 using Mirage.Core.Providers;
 using Mirage.Maui.Handlers;
+using Mirage.Maui.Images;
 using Mirage.Maui.Navigation;
 using Mirage.Web.Runtime;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,6 +46,8 @@ public static class MirageHostingExtensions
         builder.Services.TryAddSingleton<BrowserPageNavigator>();
         builder.Services.TryAddSingleton<IMiragePageNavigator>(sp => sp.GetRequiredService<BrowserPageNavigator>());
         builder.Services.TryAddSingleton<IMirageBrowserHistory, BrowserHistoryService>();
+        builder.Services.TryAddSingleton<IMirageImageManifestProvider, DomMirageImageManifestProvider>();
+        builder.Services.TryAddSingleton<IMirageImageSourceResolver, MirageManifestImageSourceResolver>();
         EnsureNavigationServices(builder.Services);
 
         return builder;

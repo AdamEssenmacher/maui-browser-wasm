@@ -41,6 +41,7 @@ tools/vendor/sync-controls-sample.sh --dry-run
 - Shared wrapper/catalog: `samples/ControlsSample.Shared`
 
 The browser host intentionally filters to Mirage-runnable entries, while the native host includes Mirage-unsupported entries except externally blocked categories.
+Bundled images for browser runs are now provided by the shared Mirage bundled-image pipeline (`Directory.Build.targets`) and manifest resolver (`/_mirage/assets/images.manifest.v1.json`), not by ControlsSample-specific `wwwroot` copy targets.
 
 Current curated upstream pages wired in `ControlsSample.Shared`:
 

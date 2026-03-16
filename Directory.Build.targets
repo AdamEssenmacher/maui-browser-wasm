@@ -1,4 +1,357 @@
 <Project>
+  <UsingTask TaskName="MirageComputeBundledImageMetadata"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <InputImages ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <BundledImages ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Linq" />
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="System.Security.Cryptography" />
+      <Using Namespace="System.Text.RegularExpressions" />
+      <Using Namespace="Microsoft.Build.Framework" />
+      <Using Namespace="Microsoft.Build.Utilities" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+var supportedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+{
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".svg"
+};
+
+var canonicalIdentityToSource = new Dictionary<string, string>(StringComparer.Ordinal);
+var outputPathToCanonicalIdentity = new Dictionary<string, string>(StringComparer.Ordinal);
+var bundled = new List<ITaskItem>();
+
+foreach (var candidate in InputImages ?? Array.Empty<ITaskItem>())
+{
+    var sourceMetadata = candidate.GetMetadata("SourceFullPath");
+    var sourcePath = string.IsNullOrWhiteSpace(sourceMetadata)
+        ? candidate.ItemSpec
+        : sourceMetadata;
+
+    if (string.IsNullOrWhiteSpace(sourcePath))
+    {
+        Log.LogError("Mirage bundled image metadata was missing SourceFullPath.");
+        continue;
+    }
+
+    sourcePath = Path.GetFullPath(sourcePath);
+    if (!File.Exists(sourcePath))
+    {
+        Log.LogError($"Mirage bundled image source file was not found: '{sourcePath}'.");
+        continue;
+    }
+
+    var originAssemblyName = candidate.GetMetadata("OriginAssemblyName");
+    if (string.IsNullOrWhiteSpace(originAssemblyName))
+    {
+        originAssemblyName = "UnknownAssembly";
+    }
+
+    var originProjectPath = candidate.GetMetadata("OriginProjectPath");
+    if (string.IsNullOrWhiteSpace(originProjectPath))
+    {
+        originProjectPath = string.Empty;
+    }
+    else
+    {
+        originProjectPath = Path.GetFullPath(originProjectPath);
+    }
+
+    var logicalImagePath = NormalizeLogicalPath(candidate.GetMetadata("LogicalImagePath"));
+    if (string.IsNullOrWhiteSpace(logicalImagePath))
+    {
+        Log.LogError($"Mirage bundled image '{sourcePath}' resolved to an empty logical path.");
+        continue;
+    }
+
+    var extension = Path.GetExtension(logicalImagePath).ToLowerInvariant();
+    if (!supportedExtensions.Contains(extension))
+    {
+        continue;
+    }
+
+    var identityKey = $"{originAssemblyName}:{logicalImagePath}";
+    var canonicalIdentityKey = identityKey.ToLowerInvariant();
+    var canonicalSourcePath = sourcePath.ToLowerInvariant();
+
+    if (canonicalIdentityToSource.TryGetValue(canonicalIdentityKey, out var existingSourcePath))
+    {
+        if (!string.Equals(existingSourcePath, canonicalSourcePath, StringComparison.Ordinal))
+        {
+            Log.LogError(
+                $"Mirage bundled image identity collision detected for '{identityKey}'. " +
+                $"Sources: '{existingSourcePath}' and '{canonicalSourcePath}'.");
+        }
+
+        continue;
+    }
+
+    canonicalIdentityToSource[canonicalIdentityKey] = canonicalSourcePath;
+
+    var fullHash = ComputeSha256Hex(sourcePath);
+    var hash8 = fullHash.Substring(0, 8);
+
+    var logicalDirectory = Path.GetDirectoryName(logicalImagePath.Replace('/', Path.DirectorySeparatorChar)) ?? string.Empty;
+    logicalDirectory = logicalDirectory.Replace('\\', '/').Trim('/');
+    var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(logicalImagePath);
+    var publishedFileName = $"{fileNameWithoutExtension}.{hash8}{extension}";
+    var outputRelativePath = string.IsNullOrEmpty(logicalDirectory)
+        ? $"_mirage/assets/{originAssemblyName}/{publishedFileName}"
+        : $"_mirage/assets/{originAssemblyName}/{logicalDirectory}/{publishedFileName}";
+    outputRelativePath = NormalizeLogicalPath(outputRelativePath);
+    var browserUrl = "/" + outputRelativePath;
+
+    var canonicalOutputPath = outputRelativePath.ToLowerInvariant();
+    if (outputPathToCanonicalIdentity.TryGetValue(canonicalOutputPath, out var existingIdentity)
+        && !string.Equals(existingIdentity, canonicalIdentityKey, StringComparison.Ordinal))
+    {
+        Log.LogError(
+            $"Mirage bundled image output-path collision detected for '{outputRelativePath}'. " +
+            $"Identities: '{existingIdentity}' and '{canonicalIdentityKey}'.");
+        continue;
+    }
+
+    outputPathToCanonicalIdentity[canonicalOutputPath] = canonicalIdentityKey;
+
+    var output = new TaskItem(sourcePath);
+    output.SetMetadata("SourceFullPath", sourcePath);
+    output.SetMetadata("OriginAssemblyName", originAssemblyName);
+    output.SetMetadata("OriginProjectPath", originProjectPath);
+    output.SetMetadata("LogicalImagePath", logicalImagePath);
+    output.SetMetadata("IdentityKey", identityKey);
+    output.SetMetadata("IdentityCanonicalKey", canonicalIdentityKey);
+    output.SetMetadata("Hash", fullHash);
+    output.SetMetadata("OutputRelativePath", outputRelativePath);
+    output.SetMetadata("BrowserUrl", browserUrl);
+    bundled.Add(output);
+}
+
+BundledImages = bundled
+    .OrderBy(item => item.GetMetadata("IdentityCanonicalKey"), StringComparer.Ordinal)
+    .ThenBy(item => item.GetMetadata("SourceFullPath"), StringComparer.Ordinal)
+    .ToArray();
+
+static string NormalizeLogicalPath(string value)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        return string.Empty;
+    }
+
+    var normalized = value.Trim().Replace('\\', '/');
+    normalized = Regex.Replace(normalized, @"^(?:\./|/)+", string.Empty);
+    normalized = Regex.Replace(normalized, "/{2,}", "/");
+    return normalized;
+}
+
+static string ComputeSha256Hex(string path)
+{
+    using var stream = File.OpenRead(path);
+    using var sha = SHA256.Create();
+    var hashBytes = sha.ComputeHash(stream);
+    return BitConverter.ToString(hashBytes).Replace("-", string.Empty).ToLowerInvariant();
+}
+
+return !Log.HasLoggedErrors;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <UsingTask TaskName="MirageWriteBundledImageManifest"
+             TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <BundledImages ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <ManifestPath ParameterType="System.String" Required="true" />
+      <ImageCount ParameterType="System.Int32" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.Linq" />
+      <Using Namespace="System.Text" />
+      <Using Namespace="System.Collections.Generic" />
+      <Using Namespace="Microsoft.Build.Framework" />
+      <Using Namespace="Microsoft.Build.Utilities" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+if (string.IsNullOrWhiteSpace(ManifestPath))
+{
+    Log.LogError("Mirage bundled image manifest path was not provided.");
+    return false;
+}
+
+var images = new SortedDictionary<string, string>(StringComparer.Ordinal);
+var logicalPathAliases = new SortedDictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+var fileNameAliases = new SortedDictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+var fileStemAliases = new SortedDictionary<string, SortedSet<string>>(StringComparer.Ordinal);
+
+foreach (var item in BundledImages ?? Array.Empty<ITaskItem>())
+{
+    var identity = item.GetMetadata("IdentityKey");
+    var browserUrl = item.GetMetadata("BrowserUrl");
+    var logicalPath = NormalizeAlias(item.GetMetadata("LogicalImagePath"));
+    if (string.IsNullOrWhiteSpace(identity) || string.IsNullOrWhiteSpace(browserUrl) || string.IsNullOrWhiteSpace(logicalPath))
+    {
+        continue;
+    }
+
+    images[identity] = browserUrl;
+    AddAlias(logicalPathAliases, logicalPath, identity);
+
+    var fileName = Path.GetFileName(logicalPath);
+    if (!string.IsNullOrWhiteSpace(fileName))
+    {
+        AddAlias(fileNameAliases, fileName.ToLowerInvariant(), identity);
+        var fileStem = Path.GetFileNameWithoutExtension(fileName);
+        if (!string.IsNullOrWhiteSpace(fileStem))
+        {
+            AddAlias(fileStemAliases, fileStem.ToLowerInvariant(), identity);
+        }
+    }
+}
+
+var manifestDirectory = Path.GetDirectoryName(ManifestPath);
+if (!string.IsNullOrWhiteSpace(manifestDirectory))
+{
+    Directory.CreateDirectory(manifestDirectory);
+}
+
+var lines = new List<string>
+{
+    "{",
+    "  \"version\": 1,"
+};
+
+AppendImageMap(lines, "images", images, true);
+AppendAliasMap(lines, "logicalPath", logicalPathAliases, true);
+AppendAliasMap(lines, "fileName", fileNameAliases, true);
+AppendAliasMap(lines, "fileStem", fileStemAliases, false);
+lines.Add("}");
+
+File.WriteAllLines(ManifestPath, lines, new UTF8Encoding(false));
+
+ImageCount = images.Count;
+
+static string NormalizeAlias(string value)
+{
+    if (string.IsNullOrWhiteSpace(value))
+    {
+        return string.Empty;
+    }
+
+    var normalized = value.Trim().Replace('\\', '/');
+    while (normalized.StartsWith("./", StringComparison.Ordinal))
+    {
+        normalized = normalized.Substring(2);
+    }
+
+    normalized = normalized.TrimStart('/');
+    while (normalized.Contains("//"))
+    {
+        normalized = normalized.Replace("//", "/");
+    }
+
+    return normalized.ToLowerInvariant();
+}
+
+static void AddAlias(IDictionary<string, SortedSet<string>> map, string alias, string identity)
+{
+    if (!map.TryGetValue(alias, out var identities))
+    {
+        identities = new SortedSet<string>(StringComparer.Ordinal);
+        map[alias] = identities;
+    }
+
+    identities.Add(identity);
+}
+
+static void AppendImageMap(List<string> lines, string propertyName, IReadOnlyDictionary<string, string> map, bool trailingComma)
+{
+    lines.Add($"  \"{EscapeJson(propertyName)}\": {{");
+    var index = 0;
+    foreach (var pair in map)
+    {
+        var suffix = index < map.Count - 1 ? "," : string.Empty;
+        lines.Add($"    \"{EscapeJson(pair.Key)}\": \"{EscapeJson(pair.Value)}\"{suffix}");
+        index++;
+    }
+
+    lines.Add(trailingComma ? "  }," : "  }");
+}
+
+static void AppendAliasMap(List<string> lines, string propertyName, IReadOnlyDictionary<string, SortedSet<string>> map, bool trailingComma)
+{
+    lines.Add($"  \"{EscapeJson(propertyName)}\": {{");
+    var keyIndex = 0;
+    foreach (var pair in map)
+    {
+        lines.Add($"    \"{EscapeJson(pair.Key)}\": [");
+        var valueIndex = 0;
+        foreach (var identity in pair.Value)
+        {
+            var suffix = valueIndex < pair.Value.Count - 1 ? "," : string.Empty;
+            lines.Add($"      \"{EscapeJson(identity)}\"{suffix}");
+            valueIndex++;
+        }
+
+        var keySuffix = keyIndex < map.Count - 1 ? "," : string.Empty;
+        lines.Add($"    ]{keySuffix}");
+        keyIndex++;
+    }
+
+    lines.Add(trailingComma ? "  }," : "  }");
+}
+
+static string EscapeJson(string value)
+{
+    if (string.IsNullOrEmpty(value))
+    {
+        return string.Empty;
+    }
+
+    var builder = new StringBuilder(value.Length + 4);
+    foreach (var ch in value)
+    {
+        switch (ch)
+        {
+            case '\\':
+                builder.Append("\\\\");
+                break;
+            case '\"':
+                builder.Append("\\\"");
+                break;
+            case '\r':
+                builder.Append("\\r");
+                break;
+            case '\n':
+                builder.Append("\\n");
+                break;
+            case '\t':
+                builder.Append("\\t");
+                break;
+            default:
+                builder.Append(ch);
+                break;
+        }
+    }
+
+    return builder.ToString();
+}
+
+return !Log.HasLoggedErrors;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
   <PropertyGroup>
     <MirageBrowserHostApp>false</MirageBrowserHostApp>
     <MirageBrowserHostApp Condition="'$(MirageBrowserApp)' == 'true' and '$(TargetFramework)' == 'net10.0-browser' and '$(OutputType)' == 'Exe'">true</MirageBrowserHostApp>
@@ -9,6 +362,7 @@
   <PropertyGroup Condition="'$(MirageBrowserHostApp)' == 'true'">
     <MirageDomSourcePath>$(MSBuildThisFileDirectory)src/Mirage.Web/wwwroot/mirage-dom.js</MirageDomSourcePath>
     <MirageDomDestinationPath>$(MSBuildProjectDirectory)/wwwroot/_framework/mirage-dom.js</MirageDomDestinationPath>
+    <MirageBundledImageManifestPath>$(MSBuildProjectDirectory)/wwwroot/_mirage/assets/images.manifest.v1.json</MirageBundledImageManifestPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MirageBrowserHotReloadEnabled)' == 'true'">
@@ -122,6 +476,105 @@
           DestinationFiles="@(_MirageHotReloadMirror->'%(MirrorPath)')"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="true" />
+  </Target>
+
+  <Target Name="MirageCollectBundledImagesForHost"
+          Returns="@(_MirageCollectedBundledImage)">
+    <PropertyGroup>
+      <_MirageBundledImageOriginAssemblyName>$(AssemblyName)</_MirageBundledImageOriginAssemblyName>
+      <_MirageBundledImageOriginAssemblyName Condition="'$(_MirageBundledImageOriginAssemblyName)' == ''">$(MSBuildProjectName)</_MirageBundledImageOriginAssemblyName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_MirageLocalBundledImage Include="@(MauiImage)"
+                                Condition="'%(MauiImage.Identity)' != ''">
+        <SourceFullPath>$([System.IO.Path]::GetFullPath('%(MauiImage.FullPath)'))</SourceFullPath>
+        <OriginAssemblyName>$(_MirageBundledImageOriginAssemblyName)</OriginAssemblyName>
+        <OriginProjectPath>$(MSBuildProjectFullPath)</OriginProjectPath>
+        <LogicalImagePath>$([System.String]::Copy('%(MauiImage.RecursiveDir)%(MauiImage.Filename)%(MauiImage.Extension)').Replace('\\', '/'))</LogicalImagePath>
+      </_MirageLocalBundledImage>
+    </ItemGroup>
+
+    <MSBuild Projects="@(ProjectReference)"
+             Targets="MirageCollectBundledImagesForHost"
+             BuildInParallel="true"
+             Condition="'@(ProjectReference)' != ''">
+      <Output TaskParameter="TargetOutputs" ItemName="_MirageTransitiveBundledImage" />
+    </MSBuild>
+
+    <ItemGroup>
+      <_MirageCollectedBundledImage Include="@(_MirageLocalBundledImage)" />
+      <_MirageCollectedBundledImage Include="@(_MirageTransitiveBundledImage)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="MiragePrepareBundledImagesForBrowserHosts"
+          BeforeTargets="PrepareForBuild"
+          Condition="'$(MirageBrowserHostApp)' == 'true'">
+    <CallTarget Targets="MirageCollectBundledImagesForHost">
+      <Output TaskParameter="TargetOutputs" ItemName="_MirageDiscoveredBundledImage" />
+    </CallTarget>
+
+    <Message Importance="Normal"
+             Text="Mirage bundled-image discovery: found @(_MirageDiscoveredBundledImage->Count()) candidate image(s) for $(MSBuildProjectName)." />
+
+    <MirageComputeBundledImageMetadata InputImages="@(_MirageDiscoveredBundledImage)">
+      <Output TaskParameter="BundledImages" ItemName="_MirageBundledImageAsset" />
+    </MirageComputeBundledImageMetadata>
+
+    <ItemGroup>
+      <MirageBundledImage Include="@(_MirageBundledImageAsset)">
+        <SourceFullPath>%(SourceFullPath)</SourceFullPath>
+        <OriginAssemblyName>%(OriginAssemblyName)</OriginAssemblyName>
+        <OriginProjectPath>%(OriginProjectPath)</OriginProjectPath>
+        <LogicalImagePath>%(LogicalImagePath)</LogicalImagePath>
+        <IdentityKey>%(IdentityKey)</IdentityKey>
+        <Hash>%(Hash)</Hash>
+        <OutputRelativePath>%(OutputRelativePath)</OutputRelativePath>
+        <BrowserUrl>%(BrowserUrl)</BrowserUrl>
+      </MirageBundledImage>
+
+      <_MirageBundledImageMirror Include="@(_MirageBundledImageAsset)">
+        <OutputRelativePath>%(OutputRelativePath)</OutputRelativePath>
+        <DestinationPath>$(MSBuildProjectDirectory)/wwwroot/%(OutputRelativePath)</DestinationPath>
+        <DestinationDir>$([System.IO.Path]::GetDirectoryName('$(MSBuildProjectDirectory)/wwwroot/%(OutputRelativePath)'))</DestinationDir>
+      </_MirageBundledImageMirror>
+    </ItemGroup>
+
+    <MakeDir Directories="@(_MirageBundledImageMirror->'%(DestinationDir)')"
+             Condition="'@(_MirageBundledImageMirror)' != ''" />
+    <Copy SourceFiles="@(_MirageBundledImageMirror)"
+          DestinationFiles="@(_MirageBundledImageMirror->'%(DestinationPath)')"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true"
+          Condition="'@(_MirageBundledImageMirror)' != ''" />
+
+    <Message Importance="Normal"
+             Text="Mirage bundled-image publish: emitted @(_MirageBundledImageMirror->Count()) image asset(s) for $(MSBuildProjectName)." />
+
+    <MirageWriteBundledImageManifest BundledImages="@(_MirageBundledImageAsset)"
+                                     ManifestPath="$(MirageBundledImageManifestPath)">
+      <Output TaskParameter="ImageCount" PropertyName="_MirageBundledImageManifestCount" />
+    </MirageWriteBundledImageManifest>
+
+    <Message Importance="Normal"
+             Text="Mirage bundled-image manifest: generated $(MirageBundledImageManifestPath) with $(_MirageBundledImageManifestCount) image entries." />
+
+    <ItemGroup>
+      <Watch Include="@(_MirageBundledImageAsset)">
+        <StaticWebAssetPath>%(_MirageBundledImageAsset.OutputRelativePath)</StaticWebAssetPath>
+      </Watch>
+      <Watch Include="$(MirageBundledImageManifestPath)">
+        <StaticWebAssetPath>_mirage/assets/images.manifest.v1.json</StaticWebAssetPath>
+      </Watch>
+
+      <WasmExtraFilesToDeploy Include="@(_MirageBundledImageAsset)">
+        <TargetPath>%(_MirageBundledImageAsset.OutputRelativePath)</TargetPath>
+      </WasmExtraFilesToDeploy>
+      <WasmExtraFilesToDeploy Include="$(MirageBundledImageManifestPath)">
+        <TargetPath>_mirage/assets/images.manifest.v1.json</TargetPath>
+      </WasmExtraFilesToDeploy>
+    </ItemGroup>
   </Target>
 
 </Project>

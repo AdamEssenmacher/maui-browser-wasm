@@ -390,3 +390,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Extended layout compatibility for imported upstream pages by registering `StackLayout` on `MirageLayoutHandler`, mapping `StackLayout.Orientation` and `StackLayout.Spacing`, and honoring the `IsClippedToBounds` alias in addition to `ClipsToBounds`.
 - Promoted `ClippingPage` and `ContentViewPage` to `Runnable` in the ControlsSample catalog/browser host now that required backend control paths are in place.
 - Updated the ControlsSample page tracker to visual status markers (`[x]`, `[ ]`, `[!]`, `[R]`, `[P]`) for faster parity/backlog scanning.
+
+## 2026-03-16 (Mirage Bundled Image Asset Pipeline Wave 1)
+- Browser hosts now collect bundled `MauiImage` assets from both the host project and the full transitive `ProjectReference` graph via shared `Directory.Build.targets` targets (`MirageCollectBundledImagesForHost` and `MiragePrepareBundledImagesForBrowserHosts`).
+- Build output now deterministically publishes bundled images under `wwwroot/_mirage/assets/{Assembly}/{logical-dir}/{name}.{hash8}{ext}` and writes a stable manifest at `wwwroot/_mirage/assets/images.manifest.v1.json` containing identity and alias maps.
+- `FileImageSource` resolution is centralized behind `IMirageImageSourceResolver` (`MirageManifestImageSourceResolver`), with startup manifest load, deterministic degraded mode on manifest failures, explicit ambiguity handling, and no handler-side browser-path construction.
+- ControlsSample browser image behavior now uses the shared pipeline; the old `ControlsSample.Fluent` image-mirroring target was removed.

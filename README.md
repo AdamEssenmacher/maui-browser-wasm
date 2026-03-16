@@ -146,6 +146,8 @@ If missing, startup fails with:
 - Mirage preserves MAUI’s explicit scrolling model: `ContentPage` is non-scrollable by default and scrolling is introduced explicitly with `ScrollView`.
 - Shared sample projects (`Counter.Shared`, `Showcase.Shared`) are included in `Mirage.sln`; native MAUI host projects are not.
 - `ControlsSample` wrappers (`ControlsSample.Shared`, `ControlsSample.Fluent`, `ControlsSample.Maui`) provide a subtree-synced integration lane for upstream `dotnet/maui` Controls.Sample.
+- Mirage browser hosts automatically collect bundled `MauiImage` assets (including transitive `ProjectReference` projects), publish them to `/_mirage/assets/...`, and resolve MAUI image source strings through a shared runtime resolver + manifest (`/_mirage/assets/images.manifest.v1.json`).
+- Bundled-image wave scope is file-based images only (`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`); stream/font/full MAUI image pipeline parity is explicitly deferred.
 - Upstream license compliance for the vendored Controls.Sample lane is tracked in `docs/THIRD_PARTY_NOTICES.md`.
 - The old `Maui.Browser*` showcase/parity stack is not part of the active solution wiring.
 - Architecture benchmark harness: `tools/benchmarks/Mirage.ArchitectureBenchmarks`.
