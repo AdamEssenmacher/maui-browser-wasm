@@ -261,7 +261,7 @@ internal static class MirageCommonViewProjection
             return false;
         }
 
-        var parentKind = platformHandler.MiragePlatformView.Parent?.ControlKind;
+        var parentKind = ResolveParentLayoutKind(view, platformHandler.MiragePlatformView.Parent?.ControlKind);
         if (parentKind is null)
         {
             return false;
@@ -339,6 +339,22 @@ internal static class MirageCommonViewProjection
         }
 
         return view.VerticalLayoutAlignment;
+    }
+
+    private static Mirage.Core.Semantics.ComponentKind? ResolveParentLayoutKind(
+        IView view,
+        Mirage.Core.Semantics.ComponentKind? projectedParentKind)
+    {
+        return view.Parent switch
+        {
+            StackLayout stack => stack.Orientation == StackOrientation.Horizontal
+                ? Mirage.Core.Semantics.ComponentKind.HorizontalStack
+                : Mirage.Core.Semantics.ComponentKind.VerticalStack,
+            VerticalStackLayout => Mirage.Core.Semantics.ComponentKind.VerticalStack,
+            HorizontalStackLayout => Mirage.Core.Semantics.ComponentKind.HorizontalStack,
+            Grid => Mirage.Core.Semantics.ComponentKind.Grid,
+            _ => projectedParentKind
+        };
     }
 
     private static Microsoft.Maui.Primitives.LayoutAlignment ToPrimitivesAlignment(Microsoft.Maui.Controls.LayoutAlignment alignment)

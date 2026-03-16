@@ -9,6 +9,7 @@ using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 using Xunit;
 
 namespace Mirage.Integration.Tests;
@@ -572,6 +573,61 @@ public sealed class HandlerRuntimeIntegrationTests
         MirageViewMapper.MapLayoutAlignment(handler, child);
         Assert.Equal("end", handler.Node.GetStyleValue("justifySelf"));
         Assert.Equal("center", handler.Node.GetStyleValue("alignSelf"));
+    }
+
+    [Fact]
+    public void CommonMapper_AlignmentProjection_UsesLiveStackOrientationFromMauiParent()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var child = new Label
+        {
+            HorizontalOptions = LayoutOptions.End,
+            VerticalOptions = LayoutOptions.Center
+        };
+
+        var stack = new StackLayout
+        {
+            Orientation = StackOrientation.Horizontal
+        };
+        stack.Children.Add(child);
+
+        // Keep the projected parent kind intentionally stale to verify we trust MAUI parent state.
+        var staleProjectedParent = MiragePlatformView.CreateControl(ComponentKind.VerticalStack);
+        staleProjectedParent.AddChild(handler.Node);
+
+        MirageViewMapper.MapLayoutAlignment(handler, child);
+        Assert.Equal("center", handler.Node.GetStyleValue("alignSelf"));
+        Assert.Null(handler.Node.GetStyleValue("justifySelf"));
+
+        stack.Orientation = StackOrientation.Vertical;
+        MirageViewMapper.MapLayoutAlignment(handler, child);
+        Assert.Equal("flex-end", handler.Node.GetStyleValue("alignSelf"));
+        Assert.Null(handler.Node.GetStyleValue("justifySelf"));
+    }
+
+    [Fact]
+    public void LayoutHandler_AbsoluteLayoutAutoSize_PreservesExplicitSizeRequests()
+    {
+        var childPlatformView = MiragePlatformView.CreateControl(ComponentKind.BoxView);
+        var child = new BoxView
+        {
+            WidthRequest = 72,
+            HeightRequest = 24
+        };
+
+        AbsoluteLayout.SetLayoutBounds(child, new Rect(0, 0, AbsoluteLayout.AutoSize, AbsoluteLayout.AutoSize));
+        AbsoluteLayout.SetLayoutFlags(child, Microsoft.Maui.Layouts.AbsoluteLayoutFlags.None);
+
+        var applyMethod = typeof(MirageLayoutHandler).GetMethod(
+            "ApplyAbsoluteLayoutChildStyles",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(applyMethod);
+
+        var changed = (bool)applyMethod!.Invoke(null, [childPlatformView, child])!;
+
+        Assert.True(changed);
+        Assert.Equal("72px", childPlatformView.GetStyleValue("width"));
+        Assert.Equal("24px", childPlatformView.GetStyleValue("height"));
     }
 
     [Fact]

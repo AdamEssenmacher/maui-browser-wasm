@@ -488,8 +488,8 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         changed |= SetChildStyleIfChanged(childPlatformView, "left", xProportional ? ToPercent(x) : MirageCommonViewProjection.ToPxNoClamp(x));
         changed |= SetChildStyleIfChanged(childPlatformView, "top", yProportional ? ToPercent(y) : MirageCommonViewProjection.ToPxNoClamp(y));
 
-        changed |= SetChildStyleIfChanged(childPlatformView, "width", ResolveAbsoluteLayoutSize(bounds.Width, widthProportional));
-        changed |= SetChildStyleIfChanged(childPlatformView, "height", ResolveAbsoluteLayoutSize(bounds.Height, heightProportional));
+        changed |= SetChildStyleIfChanged(childPlatformView, "width", ResolveAbsoluteLayoutSize(childView, bounds.Width, widthProportional, isWidth: true));
+        changed |= SetChildStyleIfChanged(childPlatformView, "height", ResolveAbsoluteLayoutSize(childView, bounds.Height, heightProportional, isWidth: false));
 
         changed |= SetChildStyleIfChanged(childPlatformView, "transform", ResolveAbsoluteLayoutTranslate(xProportional ? x : null, yProportional ? y : null));
         return changed;
@@ -500,11 +500,11 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         return (flags & flag) == flag;
     }
 
-    private static string? ResolveAbsoluteLayoutSize(double value, bool proportional)
+    private static string? ResolveAbsoluteLayoutSize(IView childView, double value, bool proportional, bool isWidth)
     {
         if (value.Equals(AbsoluteLayout.AutoSize))
         {
-            return null;
+            return ResolveAbsoluteLayoutAutoSizeRequestedLength(childView, isWidth);
         }
 
         var normalized = NormalizeFinite(value, 0);
@@ -514,6 +514,22 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         }
 
         return MirageViewMapper.ToPx(Math.Max(0, normalized));
+    }
+
+    private static string? ResolveAbsoluteLayoutAutoSizeRequestedLength(IView childView, bool isWidth)
+    {
+        if (childView is not VisualElement visualElement)
+        {
+            return null;
+        }
+
+        var requestedLength = isWidth ? visualElement.WidthRequest : visualElement.HeightRequest;
+        if (!double.IsFinite(requestedLength) || requestedLength < 0)
+        {
+            return null;
+        }
+
+        return MirageViewMapper.ToPx(requestedLength);
     }
 
     private static string? ResolveAbsoluteLayoutTranslate(double? proportionalX, double? proportionalY)
