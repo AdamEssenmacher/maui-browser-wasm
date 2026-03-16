@@ -268,6 +268,65 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Contains("True", afterText, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public async Task ClippingPage_GridFrame_RendersAtExpectedSize_AndIsHorizontallyCentered()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-clippingpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-clippingpage']");
+            });
+
+        var gridMetrics = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const pageRoot = document.querySelector("[data-automation-id='controls-sample-page-clippingpage']");
+                if (!pageRoot) {
+                    return ["__missing_page__", "0", "0", "0"];
+                }
+
+                const targetGrid = Array
+                    .from(pageRoot.querySelectorAll("div"))
+                    .find(element => {
+                        const inline = element.style;
+                        return inline.display === "grid" && inline.width === "400px" && inline.height === "200px";
+                    });
+
+                if (!targetGrid) {
+                    return ["__missing_grid__", "0", "0", "0"];
+                }
+
+                const pageRect = pageRoot.getBoundingClientRect();
+                const gridRect = targetGrid.getBoundingClientRect();
+                const pageCenterX = pageRect.left + (pageRect.width / 2);
+                const gridCenterX = gridRect.left + (gridRect.width / 2);
+                const centerDelta = Math.abs(gridCenterX - pageCenterX);
+
+                return [
+                    "ok",
+                    gridRect.width.toString(),
+                    gridRect.height.toString(),
+                    centerDelta.toString()
+                ];
+            }
+            """);
+
+        Assert.Equal("ok", gridMetrics[0]);
+        var width = double.Parse(gridMetrics[1], CultureInfo.InvariantCulture);
+        var height = double.Parse(gridMetrics[2], CultureInfo.InvariantCulture);
+        var centerDelta = double.Parse(gridMetrics[3], CultureInfo.InvariantCulture);
+
+        Assert.InRange(width, 398d, 402d);
+        Assert.InRange(height, 198d, 202d);
+        Assert.True(centerDelta <= 12d, $"Expected clipping grid to be horizontally centered; center delta was {centerDelta:0.###}.");
+    }
+
     private async Task<(IPage Page, ConcurrentQueue<string> Diagnostics)> OpenAsync(IBrowserContext context)
     {
         var appUrl = _fixture.HttpAppUrl ?? throw new InvalidOperationException("Host URL was not initialized.");

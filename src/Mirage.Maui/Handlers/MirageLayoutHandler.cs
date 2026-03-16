@@ -377,6 +377,9 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         IView childView,
         ComponentKind parentKind)
     {
+        var horizontalAlignment = MirageCommonViewProjection.ResolveHorizontalAlignment(childView);
+        var verticalAlignment = MirageCommonViewProjection.ResolveVerticalAlignment(childView);
+
         var changed = false;
         changed |= SetChildStyleIfChanged(childPlatformView, "position", "relative");
         changed |= SetChildStyleIfChanged(childPlatformView, "left", null);
@@ -395,7 +398,13 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnEnd", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "justifySelf", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "alignSelf", MirageCommonViewProjection.ResolveStackCrossAxisAlignment(childView.HorizontalLayoutAlignment));
+                changed |= SetChildStyleIfChanged(
+                    childPlatformView,
+                    "alignSelf",
+                    MirageCommonViewProjection.ResolveStackCrossAxisAlignment(
+                        MirageCommonViewProjection.ResolveEffectiveStackCrossAxisAlignment(
+                            childView,
+                            parentIsVerticalStack: true)));
                 break;
             case ComponentKind.HorizontalStack:
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", "0");
@@ -406,7 +415,13 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnEnd", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "justifySelf", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "alignSelf", MirageCommonViewProjection.ResolveStackCrossAxisAlignment(childView.VerticalLayoutAlignment));
+                changed |= SetChildStyleIfChanged(
+                    childPlatformView,
+                    "alignSelf",
+                    MirageCommonViewProjection.ResolveStackCrossAxisAlignment(
+                        MirageCommonViewProjection.ResolveEffectiveStackCrossAxisAlignment(
+                            childView,
+                            parentIsVerticalStack: false)));
                 break;
             case ComponentKind.Grid:
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
@@ -417,8 +432,8 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", $"span {rowSpan.ToString(CultureInfo.InvariantCulture)}");
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", (column + 1).ToString(CultureInfo.InvariantCulture));
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnEnd", $"span {columnSpan.ToString(CultureInfo.InvariantCulture)}");
-                changed |= SetChildStyleIfChanged(childPlatformView, "justifySelf", MirageCommonViewProjection.ResolveGridSelfAlignment(childView.HorizontalLayoutAlignment));
-                changed |= SetChildStyleIfChanged(childPlatformView, "alignSelf", MirageCommonViewProjection.ResolveGridSelfAlignment(childView.VerticalLayoutAlignment));
+                changed |= SetChildStyleIfChanged(childPlatformView, "justifySelf", MirageCommonViewProjection.ResolveGridSelfAlignment(horizontalAlignment));
+                changed |= SetChildStyleIfChanged(childPlatformView, "alignSelf", MirageCommonViewProjection.ResolveGridSelfAlignment(verticalAlignment));
                 break;
             case ComponentKind.AbsoluteLayout:
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
