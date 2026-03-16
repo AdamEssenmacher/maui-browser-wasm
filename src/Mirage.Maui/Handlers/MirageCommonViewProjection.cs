@@ -274,11 +274,19 @@ internal static class MirageCommonViewProjection
         switch (parentKind.Value)
         {
             case Core.Semantics.ComponentKind.VerticalStack:
-                changed |= SetStyleIfChanged(platformHandler, "alignSelf", ResolveStackCrossAxisAlignment(horizontalAlignment));
+                changed |= SetStyleIfChanged(
+                    platformHandler,
+                    "alignSelf",
+                    ResolveStackCrossAxisAlignment(
+                        ResolveEffectiveStackCrossAxisAlignment(view, parentIsVerticalStack: true)));
                 changed |= SetStyleIfChanged(platformHandler, "justifySelf", null);
                 break;
             case Core.Semantics.ComponentKind.HorizontalStack:
-                changed |= SetStyleIfChanged(platformHandler, "alignSelf", ResolveStackCrossAxisAlignment(verticalAlignment));
+                changed |= SetStyleIfChanged(
+                    platformHandler,
+                    "alignSelf",
+                    ResolveStackCrossAxisAlignment(
+                        ResolveEffectiveStackCrossAxisAlignment(view, parentIsVerticalStack: false)));
                 changed |= SetStyleIfChanged(platformHandler, "justifySelf", null);
                 break;
             case Core.Semantics.ComponentKind.ContentContainer:
@@ -297,6 +305,30 @@ internal static class MirageCommonViewProjection
         }
 
         return changed;
+    }
+
+    internal static Microsoft.Maui.Primitives.LayoutAlignment ResolveEffectiveStackCrossAxisAlignment(
+        IView view,
+        bool parentIsVerticalStack)
+    {
+        var alignment = parentIsVerticalStack
+            ? ResolveHorizontalAlignment(view)
+            : ResolveVerticalAlignment(view);
+
+        if (alignment != Microsoft.Maui.Primitives.LayoutAlignment.Fill
+            || view is not VisualElement visualElement)
+        {
+            return alignment;
+        }
+
+        var crossAxisRequest = parentIsVerticalStack
+            ? visualElement.WidthRequest
+            : visualElement.HeightRequest;
+
+        // MAUI stack layout keeps explicit cross-axis requests sized and centered instead of stretching.
+        return HasFiniteCrossAxisRequest(crossAxisRequest)
+            ? Microsoft.Maui.Primitives.LayoutAlignment.Center
+            : alignment;
     }
 
     public static string ResolveStackCrossAxisAlignment(Microsoft.Maui.Primitives.LayoutAlignment alignment)
@@ -321,7 +353,7 @@ internal static class MirageCommonViewProjection
         };
     }
 
-    private static Microsoft.Maui.Primitives.LayoutAlignment ResolveHorizontalAlignment(IView view)
+    internal static Microsoft.Maui.Primitives.LayoutAlignment ResolveHorizontalAlignment(IView view)
     {
         if (view is View mauiView)
         {
@@ -331,7 +363,7 @@ internal static class MirageCommonViewProjection
         return view.HorizontalLayoutAlignment;
     }
 
-    private static Microsoft.Maui.Primitives.LayoutAlignment ResolveVerticalAlignment(IView view)
+    internal static Microsoft.Maui.Primitives.LayoutAlignment ResolveVerticalAlignment(IView view)
     {
         if (view is View mauiView)
         {
@@ -339,6 +371,11 @@ internal static class MirageCommonViewProjection
         }
 
         return view.VerticalLayoutAlignment;
+    }
+
+    private static bool HasFiniteCrossAxisRequest(double requestedLength)
+    {
+        return double.IsFinite(requestedLength) && requestedLength > 0;
     }
 
     private static Mirage.Core.Semantics.ComponentKind? ResolveParentLayoutKind(

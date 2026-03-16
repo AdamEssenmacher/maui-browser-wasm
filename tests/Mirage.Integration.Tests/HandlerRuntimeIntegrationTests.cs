@@ -633,6 +633,59 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CommonMapper_AlignmentProjection_CentersFillWhenCrossAxisRequestIsExplicit()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var child = new Grid
+        {
+            HorizontalOptions = LayoutOptions.Fill,
+            WidthRequest = 400
+        };
+
+        var verticalParent = MiragePlatformView.CreateControl(ComponentKind.VerticalStack);
+        verticalParent.AddChild(handler.Node);
+
+        MirageViewMapper.MapLayoutAlignment(handler, child);
+        Assert.Equal("center", handler.Node.GetStyleValue("alignSelf"));
+        Assert.Null(handler.Node.GetStyleValue("justifySelf"));
+
+        child.WidthRequest = -1;
+        MirageViewMapper.MapLayoutAlignment(handler, child);
+        Assert.Equal("stretch", handler.Node.GetStyleValue("alignSelf"));
+        Assert.Null(handler.Node.GetStyleValue("justifySelf"));
+    }
+
+    [Fact]
+    public void LayoutHandler_ChildProjection_UsesCompatibilityLayoutOptionsSemantics()
+    {
+        var applyMethod = typeof(MirageLayoutHandler).GetMethod(
+            "ApplyChildProjectionStyles",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(applyMethod);
+
+        var childPlatformView = MiragePlatformView.CreateControl(ComponentKind.Grid);
+        var child = new Grid
+        {
+            HorizontalOptions = LayoutOptions.Fill
+        };
+
+        var changed = (bool)applyMethod!.Invoke(null, [childPlatformView, child, ComponentKind.VerticalStack])!;
+        Assert.True(changed);
+        Assert.Equal("stretch", childPlatformView.GetStyleValue("alignSelf"));
+
+        child.WidthRequest = 400;
+        changed = (bool)applyMethod.Invoke(null, [childPlatformView, child, ComponentKind.VerticalStack])!;
+        Assert.True(changed);
+        Assert.Equal("center", childPlatformView.GetStyleValue("alignSelf"));
+
+        child.HorizontalOptions = LayoutOptions.Center;
+        child.WidthRequest = -1;
+        changed = (bool)applyMethod.Invoke(null, [childPlatformView, child, ComponentKind.VerticalStack])!;
+        Assert.False(changed);
+        Assert.Equal("center", childPlatformView.GetStyleValue("alignSelf"));
+    }
+
+    [Fact]
     public void LayoutHandler_AbsoluteLayoutAutoSize_PreservesExplicitSizeRequests()
     {
         var childPlatformView = MiragePlatformView.CreateControl(ComponentKind.BoxView);
