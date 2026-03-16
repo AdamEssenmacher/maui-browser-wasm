@@ -454,6 +454,68 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void ImageHandler_WidthRequestUpdate_DoesNotClearParentManagedHeightStyle()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "coffee.png"
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+
+        handler.PlatformView.SetStyle("height", "77px");
+
+        image.WidthRequest = 180;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.WidthRequest));
+        Assert.Equal("180px", handler.PlatformView.GetStyleValue("width"));
+        Assert.Equal("77px", handler.PlatformView.GetStyleValue("height"));
+
+        image.WidthRequest = -1;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.WidthRequest));
+        Assert.Null(handler.PlatformView.GetStyleValue("width"));
+        Assert.Equal("77px", handler.PlatformView.GetStyleValue("height"));
+    }
+
+    [Fact]
+    public void ImageHandler_HeightRequestUpdate_DoesNotClearParentManagedWidthStyle()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "coffee.png"
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+
+        handler.PlatformView.SetStyle("width", "88px");
+
+        image.HeightRequest = 210;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.HeightRequest));
+        Assert.Equal("210px", handler.PlatformView.GetStyleValue("height"));
+        Assert.Equal("88px", handler.PlatformView.GetStyleValue("width"));
+
+        image.HeightRequest = -1;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(VisualElement.HeightRequest));
+        Assert.Null(handler.PlatformView.GetStyleValue("height"));
+        Assert.Equal("88px", handler.PlatformView.GetStyleValue("width"));
+    }
+
+    [Fact]
     public void ImageHandler_UnresolvedFileSource_ProjectsUnsupportedState()
     {
         var services = new ServiceCollection()

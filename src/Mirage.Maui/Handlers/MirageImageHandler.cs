@@ -130,12 +130,7 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>
 
     private bool UpdateRequestedDimensionProjection(Image image)
     {
-        var changed = MirageCommonViewProjection.MapSizeRequests(this, image);
-        var width = ResolveDimensionCss(image.WidthRequest);
-        var height = ResolveDimensionCss(image.HeightRequest);
-        changed |= SetStyleIfChanged("width", width);
-        changed |= SetStyleIfChanged("height", height);
-        return changed;
+        return MirageCommonViewProjection.MapSizeRequests(this, image);
     }
 
     private bool SetPropertyIfChanged(string propertyName, string? value)
@@ -264,13 +259,4 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>
         return reason.Contains("manifest", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string? ResolveDimensionCss(double requestedValue)
-    {
-        if (!double.IsFinite(requestedValue) || requestedValue < 0)
-        {
-            return null;
-        }
-
-        return MirageViewMapper.ToPx(requestedValue);
-    }
 }
