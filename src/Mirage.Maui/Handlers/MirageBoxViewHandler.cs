@@ -110,6 +110,9 @@ internal sealed class MirageBoxViewHandler : MirageViewHandler<BoxView>
 
     private bool UpdateDefaultSizeStyles(BoxView boxView)
     {
+        var hasExplicitMinWidth = HasExplicitLength(boxView, VisualElement.MinimumWidthRequestProperty);
+        var hasExplicitMinHeight = HasExplicitLength(boxView, VisualElement.MinimumHeightRequestProperty);
+
         var applyDefaultMinWidth = ShouldApplyDefaultMinLength(
             boxView,
             VisualElement.WidthRequestProperty,
@@ -122,8 +125,25 @@ internal sealed class MirageBoxViewHandler : MirageViewHandler<BoxView>
             VisualElement.MinimumHeightRequestProperty,
             VisualElement.MaximumHeightRequestProperty);
 
-        var changed = SetStyleIfChanged("minWidth", applyDefaultMinWidth ? DefaultBoxSizePx : null);
-        changed |= SetStyleIfChanged("minHeight", applyDefaultMinHeight ? DefaultBoxSizePx : null);
+        var changed = false;
+        if (applyDefaultMinWidth)
+        {
+            changed |= SetStyleIfChanged("minWidth", DefaultBoxSizePx);
+        }
+        else if (!hasExplicitMinWidth)
+        {
+            changed |= SetStyleIfChanged("minWidth", null);
+        }
+
+        if (applyDefaultMinHeight)
+        {
+            changed |= SetStyleIfChanged("minHeight", DefaultBoxSizePx);
+        }
+        else if (!hasExplicitMinHeight)
+        {
+            changed |= SetStyleIfChanged("minHeight", null);
+        }
+
         return changed;
     }
 

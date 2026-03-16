@@ -832,6 +832,34 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void BoxViewHandler_ExplicitMinimumRequests_ArePreservedByDefaultSizingLogic()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageBoxViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var boxView = new BoxView
+        {
+            MinimumWidthRequest = 48,
+            MinimumHeightRequest = 26
+        };
+
+        ((IElementHandler)handler).SetVirtualView(boxView);
+        Assert.Equal("48px", handler.PlatformView.GetStyleValue("minWidth"));
+        Assert.Equal("26px", handler.PlatformView.GetStyleValue("minHeight"));
+
+        boxView.WidthRequest = 96;
+        boxView.HeightRequest = 64;
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(VisualElement.WidthRequest));
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(VisualElement.HeightRequest));
+
+        Assert.Equal("48px", handler.PlatformView.GetStyleValue("minWidth"));
+        Assert.Equal("26px", handler.PlatformView.GetStyleValue("minHeight"));
+    }
+
+    [Fact]
     public void BoxViewHandler_MapsCornerRadius_ForUniformAndComplexValues()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -1259,6 +1287,7 @@ public sealed class HandlerRuntimeIntegrationTests
         coordinator.Register(root, eventTarget: null);
         coordinator.SetRoot(root);
         await WaitUntilAsync(() => runtime.RenderCount >= 1);
+        await Task.Delay(30);
 
         var baselineRenderCount = runtime.RenderCount;
         coordinator.RequestRender();
