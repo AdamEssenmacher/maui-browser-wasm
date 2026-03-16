@@ -431,6 +431,28 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void BoxViewHandler_UsesBackgroundColorUnlessColorPropertyIsExplicitlySet()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageBoxViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var boxView = new BoxView
+        {
+            BackgroundColor = Colors.DarkGray
+        };
+
+        ((IElementHandler)handler).SetVirtualView(boxView);
+        Assert.Equal("rgba(169,169,169,1)", handler.PlatformView.GetStyleValue("backgroundColor"));
+
+        boxView.Color = Colors.Crimson;
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(BoxView.Color));
+        Assert.Equal("rgba(220,20,60,1)", handler.PlatformView.GetStyleValue("backgroundColor"));
+    }
+
+    [Fact]
     public void LayoutHandler_StackLayoutProjectsOrientationSpacingAndClipAlias()
     {
         var services = new ServiceCollection().BuildServiceProvider();

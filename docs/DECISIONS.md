@@ -400,4 +400,5 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 ## 2026-03-16 (ControlsSample ContentView Parity: Border Child Clipping)
 - `MirageBorderHandler` now applies clipping semantics for supported border shapes (`Rectangle`/`RoundRectangle`) by projecting `overflow: hidden` on border hosts, so border-contained content cannot bleed outside shaped bounds.
 - Handler connect ordering now applies border stroke/clipping styles after the content-container base styles, preventing base-style resets from silently clearing border clipping.
-- Added regression coverage at both levels: integration asserts border clipping style behavior, and ControlsSample E2E asserts card avatar hosts in `ContentViewPage` expose clipping (`overflow: hidden`) with non-zero corner radius.
+- `MirageBoxViewHandler` now applies shared background mapping first and treats `BoxView.Color` as an explicit override only when set, so `BackgroundColor`-driven BoxView scenarios (including `ContentViewPage` card dividers) no longer get overwritten to transparent.
+- Added regression coverage at both levels: integration asserts border clipping and BoxView color precedence behavior, and ControlsSample E2E asserts card avatar hosts in `ContentViewPage` expose clipping (`overflow: hidden`) with non-zero corner radius plus visible divider rendering.

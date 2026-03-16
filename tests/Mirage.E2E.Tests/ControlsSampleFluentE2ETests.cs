@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Text;
 using Microsoft.Playwright;
 using Xunit;
@@ -151,6 +152,34 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             "IMG",
             overlapProbeTagName);
 
+        var dividerMetrics = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const image = document.querySelector("[data-automation-id='controls-sample-page-contentviewpage'] img[src*='/_mirage/assets/']");
+                const iconHost = image?.parentElement;
+                const grid = iconHost?.parentElement;
+                const divider = grid?.children?.item(2);
+                if (!divider) {
+                    return ["__missing__", "", "", "0", "0"];
+                }
+
+                const style = getComputedStyle(divider);
+                const rect = divider.getBoundingClientRect();
+                return [
+                    divider.tagName,
+                    style.backgroundColor ?? "",
+                    style.display ?? "",
+                    rect.height.toString(),
+                    rect.width.toString()
+                ];
+            }
+            """);
+
+        Assert.NotEqual("__missing__", dividerMetrics[0]);
+        Assert.NotEqual("rgba(0, 0, 0, 0)", dividerMetrics[1]);
+        Assert.NotEqual("none", dividerMetrics[2]);
+        Assert.True(double.Parse(dividerMetrics[3], CultureInfo.InvariantCulture) >= 1d);
+        Assert.True(double.Parse(dividerMetrics[4], CultureInfo.InvariantCulture) >= 120d);
     }
 
     private async Task<(IPage Page, ConcurrentQueue<string> Diagnostics)> OpenAsync(IBrowserContext context)
