@@ -280,7 +280,7 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void ButtonHandler_CompatibilityAliases_MapBackgroundColorAndTextColorToFluentTokens()
+    public void ButtonHandler_CompatibilityAliases_MapBackgroundColorAndTextColor()
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var mauiContext = new MauiContext(services);
@@ -302,15 +302,16 @@ public sealed class HandlerRuntimeIntegrationTests
         MirageButtonHandler.Mapper.UpdateProperty(handler, button, "TextColor");
         MirageButtonHandler.Mapper.UpdateProperty(handler, button, "CornerRadius");
 
-        Assert.Equal("rgba(81,43,212,1)", handler.PlatformView.GetStyleValue("--accent-fill-rest"));
-        Assert.Equal("rgba(255,255,255,1)", handler.PlatformView.GetStyleValue("--foreground-on-accent-rest"));
-        Assert.Equal("8px", handler.PlatformView.GetStyleValue("--control-corner-radius"));
-        Assert.Null(handler.PlatformView.GetStyleValue("backgroundColor"));
-        Assert.Null(handler.PlatformView.GetStyleValue("borderRadius"));
+        Assert.Equal("rgba(81,43,212,1)", handler.PlatformView.GetStyleValue("backgroundColor"));
+        Assert.Equal("rgba(255,255,255,1)", handler.PlatformView.GetStyleValue("color"));
+        Assert.Equal("8px", handler.PlatformView.GetStyleValue("borderRadius"));
+        Assert.Null(handler.PlatformView.GetStyleValue("--accent-fill-rest"));
+        Assert.Null(handler.PlatformView.GetStyleValue("--foreground-on-accent-rest"));
+        Assert.Null(handler.PlatformView.GetStyleValue("--control-corner-radius"));
     }
 
     [Fact]
-    public void ButtonHandler_GradientBackground_UsesCommonProjectionAndClearsFluentFillTokens()
+    public void ButtonHandler_GradientBackground_UsesCommonProjection()
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var mauiContext = new MauiContext(services);
@@ -327,7 +328,7 @@ public sealed class HandlerRuntimeIntegrationTests
         ((IElementHandler)handler).SetVirtualView(button);
         MirageButtonHandler.Mapper.UpdateProperty(handler, button, "BackgroundColor");
 
-        Assert.Equal("rgba(81,43,212,1)", handler.PlatformView.GetStyleValue("--accent-fill-rest"));
+        Assert.Equal("rgba(81,43,212,1)", handler.PlatformView.GetStyleValue("backgroundColor"));
 
         button.Background = new LinearGradientBrush(
             new GradientStopCollection
@@ -347,8 +348,422 @@ public sealed class HandlerRuntimeIntegrationTests
             || backgroundImage.StartsWith("url(", StringComparison.Ordinal),
             $"Expected gradient projection background image, found '{backgroundImage}'.");
         Assert.Equal("100% 100%", handler.PlatformView.GetStyleValue("backgroundSize"));
-        Assert.Null(handler.PlatformView.GetStyleValue("--accent-fill-rest"));
-        Assert.Null(handler.PlatformView.GetStyleValue("--neutral-fill-rest"));
+        Assert.Null(handler.PlatformView.GetStyleValue("backgroundColor"));
+    }
+
+    [Fact]
+    public void ButtonHandler_ProjectsImageSourceContentLayoutPaddingAndLineBreakModes()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageButtonHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var button = new Button
+        {
+            Text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+            ImageSource = "coffee.png",
+            ContentLayout = new Button.ButtonContentLayout(Button.ButtonContentLayout.ImagePosition.Top, 6),
+            Padding = new Thickness(20, 10),
+            WidthRequest = 180,
+            LineBreakMode = LineBreakMode.HeadTruncation
+        };
+
+        ((IElementHandler)handler).SetVirtualView(button);
+
+        Assert.Equal("/_mirage/assets/test/coffee.png", handler.PlatformView.GetPropertyString("ImageSource"));
+        Assert.Equal("block", handler.PlatformView.GetPropertyString("ImageDisplay"));
+        Assert.Equal(button.Text, handler.PlatformView.GetPropertyString("ImageAlt"));
+        Assert.Equal("column", handler.PlatformView.GetStyleValue("flexDirection"));
+        Assert.Equal("6px", handler.PlatformView.GetPropertyString("TextMarginTop"));
+        Assert.Equal("10px 20px 10px 20px", handler.PlatformView.GetStyleValue("padding"));
+
+        var headText = handler.PlatformView.GetPropertyString("Text");
+        Assert.NotNull(headText);
+        Assert.StartsWith("…", headText, StringComparison.Ordinal);
+
+        button.ContentLayout = new Button.ButtonContentLayout(Button.ButtonContentLayout.ImagePosition.Right, 4);
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.ContentLayout));
+        Assert.Equal("row-reverse", handler.PlatformView.GetStyleValue("flexDirection"));
+        Assert.Equal("4px", handler.PlatformView.GetPropertyString("TextMarginRight"));
+
+        button.Padding = new Thickness(double.NaN, double.NaN, 4, double.NaN);
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.Padding));
+        Assert.Equal("0px 4px 0px 0px", handler.PlatformView.GetStyleValue("padding"));
+
+        button.LineBreakMode = LineBreakMode.MiddleTruncation;
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.LineBreakMode));
+        var middleText = handler.PlatformView.GetPropertyString("Text");
+        Assert.NotNull(middleText);
+        Assert.Contains('…', middleText);
+        Assert.False(middleText.StartsWith("…", StringComparison.Ordinal));
+        Assert.False(middleText.EndsWith("…", StringComparison.Ordinal));
+
+        button.LineBreakMode = LineBreakMode.TailTruncation;
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.LineBreakMode));
+        var tailText = handler.PlatformView.GetPropertyString("Text");
+        Assert.NotNull(tailText);
+        Assert.EndsWith("…", tailText, StringComparison.Ordinal);
+
+        button.Text = "Updated accessibility label";
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.Text));
+        Assert.Equal("Updated accessibility label", handler.PlatformView.GetPropertyString("ImageAlt"));
+
+        button.ImageSource = null;
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.ImageSource));
+        Assert.Null(handler.PlatformView.GetPropertyString("ImageSource"));
+        Assert.Equal("none", handler.PlatformView.GetPropertyString("ImageDisplay"));
+    }
+
+    [Fact]
+    public void ButtonHandler_Truncation_RecomputesOnPlatformArrangeWidthChanges()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageButtonHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        const string longText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.";
+        var button = new Button
+        {
+            Text = longText,
+            WidthRequest = -1,
+            LineBreakMode = LineBreakMode.MiddleTruncation
+        };
+
+        ((IElementHandler)handler).SetVirtualView(button);
+
+        handler.PlatformView.SetStyle("width", "140px");
+        handler.PlatformArrange(new Rect(0, 0, 140, 40));
+        var narrowProjected = handler.PlatformView.GetPropertyString("Text");
+        Assert.NotNull(narrowProjected);
+        Assert.Contains('…', narrowProjected);
+
+        handler.PlatformView.SetStyle("width", "1400px");
+        handler.PlatformArrange(new Rect(0, 0, 1400, 40));
+        var wideProjected = handler.PlatformView.GetPropertyString("Text");
+        Assert.Equal(longText, wideProjected);
+    }
+
+    [Fact]
+    public void ButtonHandler_IsEnabledToggle_DoesNotOverrideExplicitOpacityProjection()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageButtonHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var button = new Button
+        {
+            Text = "Opacity",
+            Opacity = 0.4
+        };
+
+        ((IElementHandler)handler).SetVirtualView(button);
+        Assert.Equal("0.4", handler.PlatformView.GetStyleValue("opacity"));
+
+        button.IsEnabled = false;
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(IView.IsEnabled));
+        Assert.Equal("0.4", handler.PlatformView.GetStyleValue("opacity"));
+
+        button.IsEnabled = true;
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(IView.IsEnabled));
+        Assert.Equal("0.4", handler.PlatformView.GetStyleValue("opacity"));
+    }
+
+    [Fact]
+    public void ButtonHandler_TruncationBudget_UsesProjectedWidthWhenWidthRequestIsUnset()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageButtonHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        const string longText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.";
+        var button = new Button
+        {
+            Text = longText,
+            WidthRequest = -1,
+            LineBreakMode = LineBreakMode.TailTruncation
+        };
+
+        ((IElementHandler)handler).SetVirtualView(button);
+
+        handler.PlatformView.SetStyle("width", "1400px");
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(VisualElement.WidthRequest));
+        var wideProjected = handler.PlatformView.GetPropertyString("Text");
+        Assert.Equal(longText, wideProjected);
+
+        handler.PlatformView.SetStyle("width", "140px");
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.LineBreakMode));
+        var narrowProjected = handler.PlatformView.GetPropertyString("Text");
+        Assert.NotNull(narrowProjected);
+        Assert.EndsWith("…", narrowProjected, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ButtonHandler_UnresolvedImage_DoesNotReduceTruncationBudget()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new RejectingImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageButtonHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var button = new Button
+        {
+            Text = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            ImageSource = "missing.png",
+            WidthRequest = 140,
+            Padding = new Thickness(0),
+            LineBreakMode = LineBreakMode.TailTruncation
+        };
+
+        ((IElementHandler)handler).SetVirtualView(button);
+        Assert.Equal("none", handler.PlatformView.GetPropertyString("ImageDisplay"));
+        var unresolvedProjected = handler.PlatformView.GetPropertyString("Text");
+
+        button.ImageSource = null;
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.ImageSource));
+        var noImageProjected = handler.PlatformView.GetPropertyString("Text");
+
+        Assert.Equal(noImageProjected, unresolvedProjected);
+    }
+
+    [Fact]
+    public void CheckBoxHandler_ProjectsColorAliasesCheckedAndDisabledSemantics()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCheckBoxHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var checkBox = new CheckBox
+        {
+            IsChecked = true,
+            Color = Colors.Purple
+        };
+
+        ((IElementHandler)handler).SetVirtualView(checkBox);
+        Assert.Equal("true", handler.PlatformView.GetPropertyString("IsChecked"));
+        Assert.Equal("rgba(128,0,128,1)", handler.PlatformView.GetStyleValue("accentColor"));
+
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, nameof(ICheckBox.Foreground));
+        Assert.Equal("rgba(128,0,128,1)", handler.PlatformView.GetStyleValue("accentColor"));
+
+        checkBox.Color = Colors.Green;
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, "Color");
+        Assert.Equal("rgba(0,128,0,1)", handler.PlatformView.GetStyleValue("accentColor"));
+
+        handler.OnRuntimeEvent("change", "false");
+        Assert.False(checkBox.IsChecked);
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, nameof(ICheckBox.IsChecked));
+        Assert.Equal("false", handler.PlatformView.GetPropertyString("IsChecked"));
+
+        checkBox.IsEnabled = false;
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, nameof(IView.IsEnabled));
+        Assert.Equal("none", handler.PlatformView.GetStyleValue("pointerEvents"));
+        Assert.Equal("disabled", handler.PlatformView.GetPropertyString("Disabled"));
+
+        handler.OnRuntimeEvent("change", "true");
+        Assert.False(checkBox.IsChecked);
+    }
+
+    [Fact]
+    public void CheckBoxHandler_IsEnabledToggle_DoesNotOverrideExplicitOpacityProjection()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCheckBoxHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var checkBox = new CheckBox
+        {
+            Opacity = 0.35
+        };
+
+        ((IElementHandler)handler).SetVirtualView(checkBox);
+        Assert.Equal("0.35", handler.PlatformView.GetStyleValue("opacity"));
+
+        checkBox.IsEnabled = false;
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, nameof(IView.IsEnabled));
+        Assert.Equal("0.35", handler.PlatformView.GetStyleValue("opacity"));
+
+        checkBox.IsEnabled = true;
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, nameof(IView.IsEnabled));
+        Assert.Equal("0.35", handler.PlatformView.GetStyleValue("opacity"));
+    }
+
+    [Fact]
+    public void SliderHandler_ProjectsRangeAndRuntimeDragFlow()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageSliderHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var dragStartedCount = 0;
+        var dragCompletedCount = 0;
+
+        var slider = new Slider
+        {
+            Minimum = 0,
+            Maximum = 100,
+            Value = 25,
+            MinimumTrackColor = Colors.Red,
+            MaximumTrackColor = Colors.LightGray,
+            ThumbColor = Colors.LimeGreen,
+            ThumbImageSource = "thumb_image.png"
+        };
+        slider.DragStarted += (_, _) => dragStartedCount++;
+        slider.DragCompleted += (_, _) => dragCompletedCount++;
+
+        ((IElementHandler)handler).SetVirtualView(slider);
+
+        Assert.Equal("0", handler.PlatformView.GetPropertyString("Minimum"));
+        Assert.Equal("100", handler.PlatformView.GetPropertyString("Maximum"));
+        Assert.Equal("25", handler.PlatformView.GetPropertyString("Value"));
+        Assert.Null(handler.PlatformView.GetStyleValue("accentColor"));
+        Assert.Null(handler.PlatformView.GetStyleValue("background"));
+        Assert.Contains("25%", handler.PlatformView.GetPropertyString("TrackGradient") ?? string.Empty, StringComparison.Ordinal);
+        Assert.Equal("rgba(50,205,50,1)", handler.PlatformView.GetPropertyString("ThumbAccent"));
+        Assert.Equal("url(\"/_mirage/assets/test/thumb_image.png\")", handler.PlatformView.GetPropertyString("ThumbImage"));
+
+        handler.OnRuntimeEvent("input", "40");
+        Assert.Equal(40d, slider.Value, 3);
+        Assert.Equal(1, dragStartedCount);
+
+        handler.OnRuntimeEvent("input", "42");
+        Assert.Equal(42d, slider.Value, 3);
+        Assert.Equal(1, dragStartedCount);
+
+        handler.OnRuntimeEvent("change", "42");
+        Assert.Equal(1, dragCompletedCount);
+
+        slider.ThumbImageSource = null;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, "ThumbImageSource");
+        Assert.Null(handler.PlatformView.GetPropertyString("ThumbImage"));
+
+        slider.ThumbImageSource = "coffee.png";
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, "ThumbImageSource");
+        Assert.Equal("url(\"/_mirage/assets/test/coffee.png\")", handler.PlatformView.GetPropertyString("ThumbImage"));
+
+        slider.ThumbColor = null;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(ISlider.ThumbColor));
+        Assert.Equal("rgba(255,255,255,1)", handler.PlatformView.GetPropertyString("ThumbAccent"));
+
+        slider.IsEnabled = false;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(IView.IsEnabled));
+        Assert.Equal("none", handler.PlatformView.GetStyleValue("pointerEvents"));
+        Assert.Null(handler.PlatformView.GetStyleValue("opacity"));
+        Assert.Equal("disabled", handler.PlatformView.GetPropertyString("Disabled"));
+        var valueBeforeDisabledInput = slider.Value;
+        handler.OnRuntimeEvent("input", "88");
+        Assert.Equal(valueBeforeDisabledInput, slider.Value, 3);
+    }
+
+    [Fact]
+    public void SliderHandler_IsEnabledToggle_DoesNotOverrideExplicitOpacityProjection()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageSliderHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var slider = new Slider
+        {
+            Opacity = 0.45
+        };
+
+        ((IElementHandler)handler).SetVirtualView(slider);
+        Assert.Equal("0.45", handler.PlatformView.GetStyleValue("opacity"));
+
+        slider.IsEnabled = false;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(IView.IsEnabled));
+        Assert.Equal("0.45", handler.PlatformView.GetStyleValue("opacity"));
+
+        slider.IsEnabled = true;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(IView.IsEnabled));
+        Assert.Equal("0.45", handler.PlatformView.GetStyleValue("opacity"));
+    }
+
+    [Fact]
+    public void SliderHandler_DisabledMidDrag_CompletesAndResetsDragLifecycle()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageSliderHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var dragStartedCount = 0;
+        var dragCompletedCount = 0;
+        var slider = new Slider
+        {
+            Minimum = 0,
+            Maximum = 100,
+            Value = 10
+        };
+        slider.DragStarted += (_, _) => dragStartedCount++;
+        slider.DragCompleted += (_, _) => dragCompletedCount++;
+
+        ((IElementHandler)handler).SetVirtualView(slider);
+
+        handler.OnRuntimeEvent("input", "20");
+        Assert.Equal(1, dragStartedCount);
+        Assert.Equal(0, dragCompletedCount);
+
+        slider.IsEnabled = false;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(IView.IsEnabled));
+        Assert.Equal(0, dragCompletedCount);
+
+        slider.IsEnabled = true;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(IView.IsEnabled));
+
+        handler.OnRuntimeEvent("input", "30");
+        Assert.Equal(2, dragStartedCount);
+        handler.OnRuntimeEvent("change", "30");
+        Assert.Equal(1, dragCompletedCount);
+    }
+
+    [Fact]
+    public void SliderHandler_WidthRequestUnset_RestoresDefaultFillWidth()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageSliderHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var slider = new Slider
+        {
+            WidthRequest = -1
+        };
+
+        ((IElementHandler)handler).SetVirtualView(slider);
+        Assert.Equal("100%", handler.PlatformView.GetStyleValue("width"));
+
+        slider.WidthRequest = 220;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(VisualElement.WidthRequest));
+        Assert.Equal("220px", handler.PlatformView.GetStyleValue("width"));
+
+        slider.WidthRequest = -1;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(VisualElement.WidthRequest));
+        Assert.Equal("100%", handler.PlatformView.GetStyleValue("width"));
     }
 
     [Fact]
@@ -671,6 +1086,86 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void BoxViewHandler_AppliesDefaultMinimumSize_WhenSizeRequestsAreUnset()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageBoxViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var boxView = new BoxView();
+        ((IElementHandler)handler).SetVirtualView(boxView);
+
+        Assert.Equal("40px", handler.PlatformView.GetStyleValue("minWidth"));
+        Assert.Equal("40px", handler.PlatformView.GetStyleValue("minHeight"));
+
+        boxView.WidthRequest = 24;
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(VisualElement.WidthRequest));
+        Assert.Equal("24px", handler.PlatformView.GetStyleValue("width"));
+        Assert.Null(handler.PlatformView.GetStyleValue("minWidth"));
+
+        boxView.HeightRequest = 16;
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(VisualElement.HeightRequest));
+        Assert.Equal("16px", handler.PlatformView.GetStyleValue("height"));
+        Assert.Null(handler.PlatformView.GetStyleValue("minHeight"));
+    }
+
+    [Fact]
+    public void BoxViewHandler_ExplicitMinimumRequests_ArePreservedByDefaultSizingLogic()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageBoxViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var boxView = new BoxView
+        {
+            MinimumWidthRequest = 48,
+            MinimumHeightRequest = 26
+        };
+
+        ((IElementHandler)handler).SetVirtualView(boxView);
+        Assert.Equal("48px", handler.PlatformView.GetStyleValue("minWidth"));
+        Assert.Equal("26px", handler.PlatformView.GetStyleValue("minHeight"));
+
+        boxView.WidthRequest = 96;
+        boxView.HeightRequest = 64;
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(VisualElement.WidthRequest));
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(VisualElement.HeightRequest));
+
+        Assert.Equal("48px", handler.PlatformView.GetStyleValue("minWidth"));
+        Assert.Equal("26px", handler.PlatformView.GetStyleValue("minHeight"));
+    }
+
+    [Fact]
+    public void BoxViewHandler_MapsCornerRadius_ForUniformAndComplexValues()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageBoxViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var boxView = new BoxView
+        {
+            CornerRadius = new CornerRadius(10)
+        };
+
+        ((IElementHandler)handler).SetVirtualView(boxView);
+        Assert.Equal("10px 10px 10px 10px", handler.PlatformView.GetStyleValue("borderRadius"));
+
+        boxView.CornerRadius = new CornerRadius(10, 0, 5, 20);
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(BoxView.CornerRadius));
+        Assert.Equal("10px 0px 20px 5px", handler.PlatformView.GetStyleValue("borderRadius"));
+
+        boxView.CornerRadius = new CornerRadius(0);
+        MirageBoxViewHandler.Mapper.UpdateProperty(handler, boxView, nameof(BoxView.CornerRadius));
+        Assert.Null(handler.PlatformView.GetStyleValue("borderRadius"));
+    }
+
+    [Fact]
     public void LayoutHandler_StackLayoutProjectsOrientationSpacingAndClipAlias()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -761,6 +1256,62 @@ public sealed class HandlerRuntimeIntegrationTests
         var changedHidden = MirageCommonViewProjection.MapLayoutClipsToBounds(handler, layout);
         Assert.True(changedHidden);
         Assert.Equal("hidden", handler.Node.GetStyleValue("overflow"));
+    }
+
+    [Fact]
+    public void CommonMapper_MapsShadow_ProjectsAndClearsDeterministically()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var view = new BoxView();
+
+        view.Shadow = new Shadow
+        {
+            Brush = new SolidColorBrush(Colors.Red),
+            Opacity = 0.5f,
+            Radius = 6,
+            Offset = new Point(4, 8)
+        };
+
+        MirageViewMapper.MapShadow(handler, view);
+        Assert.Equal("4px 8px 6px rgba(255,0,0,0.5)", handler.Node.GetStyleValue("boxShadow"));
+
+        view.ClearValue(VisualElement.ShadowProperty);
+        MirageViewMapper.MapShadow(handler, view);
+        Assert.Null(handler.Node.GetStyleValue("boxShadow"));
+    }
+
+    [Fact]
+    public void CommonMapper_MapShadow_UnsupportedBrush_ClearsProjection()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var view = new BoxView
+        {
+            Shadow = new Shadow
+            {
+                Brush = new SolidColorBrush(Colors.Black),
+                Radius = 4,
+                Offset = new Point(1, 1),
+                Opacity = 1
+            }
+        };
+
+        MirageViewMapper.MapShadow(handler, view);
+        Assert.Contains("rgba(0,0,0,1)", handler.Node.GetStyleValue("boxShadow"), StringComparison.Ordinal);
+
+        view.Shadow = new Shadow
+        {
+            Brush = new LinearGradientBrush(
+            [
+                new GradientStop(Colors.Red, 0),
+                new GradientStop(Colors.Blue, 1)
+            ], new Point(0, 0), new Point(1, 1)),
+            Radius = 6,
+            Offset = new Point(2, 3),
+            Opacity = 1
+        };
+
+        MirageViewMapper.MapShadow(handler, view);
+        Assert.Null(handler.Node.GetStyleValue("boxShadow"));
     }
 
     [Fact]
@@ -1099,6 +1650,7 @@ public sealed class HandlerRuntimeIntegrationTests
         coordinator.Register(root, eventTarget: null);
         coordinator.SetRoot(root);
         await WaitUntilAsync(() => runtime.RenderCount >= 1);
+        await Task.Delay(30);
 
         var baselineRenderCount = runtime.RenderCount;
         coordinator.RequestRender();
@@ -2092,6 +2644,11 @@ public sealed class HandlerRuntimeIntegrationTests
             if (string.Equals(source, "coffee.png", StringComparison.Ordinal))
             {
                 return MirageImageSourceResolveResult.Resolved("/_mirage/assets/test/coffee.png");
+            }
+
+            if (string.Equals(source, "thumb_image.png", StringComparison.Ordinal))
+            {
+                return MirageImageSourceResolveResult.Resolved("/_mirage/assets/test/thumb_image.png");
             }
 
             if (string.IsNullOrWhiteSpace(source))

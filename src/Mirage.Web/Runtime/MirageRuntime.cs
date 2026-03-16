@@ -237,11 +237,31 @@ public sealed class MirageRuntime : IMirageRuntime
             valueElement = DomElement.Create(descriptor.ValueElementTagName!);
             valueElement.Attr(ValueElementMarker, "true");
             valueElement.Style("boxSizing", "border-box");
-            valueElement.Style("width", "100%");
+            if (descriptor.StretchValueElementWidth)
+            {
+                valueElement.Style("width", "100%");
+            }
+        }
+
+        DomElement? secondaryElement = null;
+        if (!string.IsNullOrWhiteSpace(descriptor.SecondaryElementTagName))
+        {
+            secondaryElement = DomElement.Create(descriptor.SecondaryElementTagName!);
+            secondaryElement.Attr("data-mirage-secondary-element", "true");
+            secondaryElement.Style("boxSizing", "border-box");
+        }
+
+        if (secondaryElement is not null)
+        {
+            element.Append(secondaryElement);
+        }
+
+        if (valueElement is not null)
+        {
             element.Append(valueElement);
         }
 
-        return RealizedNode.ForControl(element, descriptor, valueElement);
+        return RealizedNode.ForControl(element, descriptor, valueElement, secondaryElement);
     }
 
     private RealizedNode CreateWebNode(CreateNodeOperation operation)
@@ -331,9 +351,7 @@ public sealed class MirageRuntime : IMirageRuntime
                 return;
             }
 
-            var propertyTargetElement = mapping.ElementTarget == PropertyElementTarget.ValueElement
-                ? node.GetValueElement()
-                : node.Element;
+            var propertyTargetElement = node.GetElement(mapping.ElementTarget);
 
             switch (mapping.Target)
             {
@@ -347,12 +365,18 @@ public sealed class MirageRuntime : IMirageRuntime
                     break;
                 }
                 case PropertyTarget.InputValue:
-                    node.GetValueElement().SetInputValue(operation.Value.GetStringOrNull());
+                    propertyTargetElement.SetInputValue(operation.Value.GetStringOrNull());
                     break;
                 case PropertyTarget.InputChecked:
                 {
                     var value = operation.Value.GetStringOrNull();
                     propertyTargetElement.SetInputChecked(string.Equals(value, "true", StringComparison.OrdinalIgnoreCase));
+                    break;
+                }
+                case PropertyTarget.Style:
+                {
+                    var styleName = string.IsNullOrWhiteSpace(mapping.Name) ? operation.PropertyName : mapping.Name;
+                    propertyTargetElement.Style(styleName!, operation.Value.GetStringOrNull());
                     break;
                 }
                 default:
@@ -395,9 +419,7 @@ public sealed class MirageRuntime : IMirageRuntime
                 return;
             }
 
-            var propertyTargetElement = mapping.ElementTarget == PropertyElementTarget.ValueElement
-                ? node.GetValueElement()
-                : node.Element;
+            var propertyTargetElement = node.GetElement(mapping.ElementTarget);
 
             switch (mapping.Target)
             {
@@ -411,11 +433,17 @@ public sealed class MirageRuntime : IMirageRuntime
                     break;
                 }
                 case PropertyTarget.InputValue:
-                    node.GetValueElement().SetInputValue(null);
+                    propertyTargetElement.SetInputValue(null);
                     break;
                 case PropertyTarget.InputChecked:
                     propertyTargetElement.SetInputChecked(false);
                     break;
+                case PropertyTarget.Style:
+                {
+                    var styleName = string.IsNullOrWhiteSpace(mapping.Name) ? operation.PropertyName : mapping.Name;
+                    propertyTargetElement.Style(styleName!, null);
+                    break;
+                }
                 default:
                     throw new InvalidOperationException($"Unsupported property target: {mapping.Target}");
             }
@@ -622,13 +650,15 @@ public sealed class MirageRuntime : IMirageRuntime
             DomElement element,
             ControlComponentDescriptor? controlDescriptor,
             WebComponentDescriptor? webDescriptor,
-            DomElement? valueElement)
+            DomElement? valueElement,
+            DomElement? secondaryElement)
         {
             NodeId = nodeId;
             Element = element;
             ControlDescriptor = controlDescriptor;
             WebDescriptor = webDescriptor;
             ValueElement = valueElement;
+            SecondaryElement = secondaryElement;
         }
 
         public string NodeId { get; private set; } = string.Empty;
@@ -637,15 +667,21 @@ public sealed class MirageRuntime : IMirageRuntime
 
         public DomElement? ValueElement { get; }
 
+        public DomElement? SecondaryElement { get; }
+
         private ControlComponentDescriptor? ControlDescriptor { get; }
 
         private WebComponentDescriptor? WebDescriptor { get; }
 
-        public static RealizedNode ForControl(DomElement element, ControlComponentDescriptor descriptor, DomElement? valueElement)
-            => new(nodeId: string.Empty, element, descriptor, webDescriptor: null, valueElement);
+        public static RealizedNode ForControl(
+            DomElement element,
+            ControlComponentDescriptor descriptor,
+            DomElement? valueElement,
+            DomElement? secondaryElement)
+            => new(nodeId: string.Empty, element, descriptor, webDescriptor: null, valueElement, secondaryElement);
 
         public static RealizedNode ForWeb(DomElement element, WebComponentDescriptor descriptor)
-            => new(nodeId: string.Empty, element, controlDescriptor: null, descriptor, valueElement: null);
+            => new(nodeId: string.Empty, element, controlDescriptor: null, descriptor, valueElement: null, secondaryElement: null);
 
         public bool TryGetControlDescriptor(out ControlComponentDescriptor descriptor)
         {
@@ -674,6 +710,21 @@ public sealed class MirageRuntime : IMirageRuntime
         public DomElement GetValueElement()
         {
             return ValueElement ?? Element;
+        }
+
+        public DomElement GetSecondaryElement()
+        {
+            return SecondaryElement ?? Element;
+        }
+
+        public DomElement GetElement(PropertyElementTarget target)
+        {
+            return target switch
+            {
+                PropertyElementTarget.ValueElement => GetValueElement(),
+                PropertyElementTarget.SecondaryElement => GetSecondaryElement(),
+                _ => Element
+            };
         }
 
         public RealizedNode WithNodeId(string nodeId)

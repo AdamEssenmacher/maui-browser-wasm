@@ -5,13 +5,15 @@ public enum PropertyTarget
     TextContent,
     Attribute,
     InputValue,
-    InputChecked
+    InputChecked,
+    Style
 }
 
 public enum PropertyElementTarget
 {
     Self,
-    ValueElement
+    ValueElement,
+    SecondaryElement
 }
 
 public sealed record ProviderPropertyDescriptor(

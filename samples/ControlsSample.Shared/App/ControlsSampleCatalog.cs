@@ -24,6 +24,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(GridPage),
             description: "Runnable in Mirage today: exercises Grid row/column definitions, spans, and centered label overlays."),
         new(
+            id: "horizontalstacklayoutpage",
+            title: "HorizontalStackLayoutPage",
+            upstreamPath: "Pages/Layouts/HorizontalStackLayoutPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(HorizontalStackLayoutPage),
+            description: "Runnable in Mirage today: exercises HorizontalStackLayout row flow with Label and BoxView children."),
+        new(
             id: "clippingpage",
             title: "ClippingPage",
             upstreamPath: "Pages/Layouts/ClippingPage.xaml",
@@ -38,13 +45,37 @@ public static class ControlsSampleCatalog
             pageType: typeof(ContentViewPage),
             description: "Runnable in Mirage today: exercises ContentView composition with Border + Image content."),
         new(
+            id: "boxviewpage",
+            title: "BoxViewPage",
+            upstreamPath: "Pages/Controls/BoxViewPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(BoxViewPage),
+            description: "Runnable in Mirage today: exercises BoxView color/brush, corner radius, opacity, clip, and shadow scenarios.",
+            pageFactory: CreateBoxViewPage),
+        new(
+            id: "buttonpage",
+            title: "ButtonPage",
+            upstreamPath: "Pages/Controls/ButtonPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(ButtonPage),
+            description: "Runnable in Mirage today: exercises Button text/image/content layout, line-break modes, bindings, and stroke/chrome variants.",
+            pageFactory: CreateButtonPage),
+        new(
             id: "checkboxpage",
             title: "CheckBoxPage",
             upstreamPath: "Pages/Controls/CheckBoxPage.xaml",
             status: ControlsSampleStatus.Runnable,
             pageType: typeof(CheckBoxPage),
-            description: "Runnable in Mirage today: exercises CheckBox checked state, color aliases, and disabled variants.",
+            description: "Runnable in Mirage today: exercises CheckBox checked state, accent color aliases, and disabled variants.",
             pageFactory: CreateCheckBoxPage),
+        new(
+            id: "sliderpage",
+            title: "SliderPage",
+            upstreamPath: "Pages/Controls/SliderPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(SliderPage),
+            description: "Runnable in Mirage today: exercises Slider range updates, color projections, thumb image sources, and runtime min/max changes.",
+            pageFactory: CreateSliderPage),
         new(
             id: "tabbedpagegallerymainpage",
             title: "TabbedPageGalleryMainPage",
@@ -88,6 +119,70 @@ public static class ControlsSampleCatalog
                 message: "Maps and other platform-specific galleries are imported but hidden in this wrapper unless host dependencies are wired."))
     ];
 
+    private static Page CreateButtonPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new ButtonPage();
+
+        SetNamedElementAutomationId(page, "ImageSourceButton", "controls-sample-buttonpage-image-source-toggle");
+        SetNamedElementAutomationId(page, "positionChange", "controls-sample-buttonpage-position-toggle");
+        SetNamedElementAutomationId(page, "decreaseSpacing", "controls-sample-buttonpage-decrease-spacing");
+        SetNamedElementAutomationId(page, "increaseSpacing", "controls-sample-buttonpage-increase-spacing");
+        SetNamedElementAutomationId(page, "LineBreakModeButton", "controls-sample-buttonpage-linebreak-target");
+        SetNamedElementAutomationId(page, "BorderWidthSlider", "controls-sample-buttonpage-border-slider");
+
+        var checkBox = FindDescendants<CheckBox>(page).FirstOrDefault();
+        if (checkBox is not null)
+        {
+            checkBox.AutomationId = "controls-sample-buttonpage-color-checkbox";
+        }
+
+        var borderWidthButton = FindDescendants<Button>(page)
+            .FirstOrDefault(button => string.Equals(button.Text, "BorderWidth Changing", StringComparison.Ordinal));
+        if (borderWidthButton is not null)
+        {
+            borderWidthButton.AutomationId = "controls-sample-buttonpage-border-button";
+        }
+
+        var lineBreakUpdateButton = FindDescendants<Button>(page)
+            .FirstOrDefault(button => string.Equals(button.Text, "Update LineBreakMode", StringComparison.Ordinal));
+        if (lineBreakUpdateButton is not null)
+        {
+            lineBreakUpdateButton.AutomationId = "controls-sample-buttonpage-linebreak-update";
+        }
+
+        return page;
+    }
+
+    private static Page CreateBoxViewPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new BoxViewPage();
+
+        var boxViews = FindDescendants<BoxView>(page).ToArray();
+        var boxViewAutomationIds = new[]
+        {
+            "controls-sample-boxviewpage-default",
+            "controls-sample-boxviewpage-color",
+            "controls-sample-boxviewpage-background",
+            "controls-sample-boxviewpage-corner-radius",
+            "controls-sample-boxviewpage-complex-corner-radius",
+            "controls-sample-boxviewpage-opacity",
+            "controls-sample-boxviewpage-clip",
+            "controls-sample-boxviewpage-shadow"
+        };
+
+        for (var i = 0; i < boxViews.Length && i < boxViewAutomationIds.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(boxViews[i].AutomationId))
+            {
+                boxViews[i].AutomationId = boxViewAutomationIds[i];
+            }
+        }
+
+        return page;
+    }
+
     private static Page CreateCheckBoxPage(IServiceProvider services)
     {
         _ = services;
@@ -107,10 +202,79 @@ public static class ControlsSampleCatalog
             checkBoxes[1].AutomationId = "controls-sample-checkboxpage-colored";
         }
 
-        var disabledCheckBox = checkBoxes.FirstOrDefault(checkBox => !checkBox.IsEnabled);
-        if (disabledCheckBox is not null)
+        if (checkBoxes.Length > 2)
         {
-            disabledCheckBox.AutomationId = "controls-sample-checkboxpage-disabled";
+            checkBoxes[2].AutomationId = "controls-sample-checkboxpage-disabled";
+        }
+
+        if (checkBoxes.Length > 3)
+        {
+            checkBoxes[3].AutomationId = "controls-sample-checkboxpage-disabled-colored";
+        }
+
+        return page;
+    }
+
+    private static Page CreateSliderPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new SliderPage();
+
+        var sliders = FindDescendants<Slider>(page).ToArray();
+        var sliderAutomationIds = new[]
+        {
+            "controls-sample-sliderpage-default-slider",
+            "controls-sample-sliderpage-background-color-slider",
+            "controls-sample-sliderpage-background-brush-slider",
+            "controls-sample-sliderpage-minmax-slider",
+            "controls-sample-sliderpage-disabled-slider",
+            "controls-sample-sliderpage-minimum-track-slider",
+            "controls-sample-sliderpage-maximum-track-slider",
+            "controls-sample-sliderpage-thumb-color-slider",
+            "controls-sample-sliderpage-image-slider",
+            "controls-sample-sliderpage-custom-slider",
+            "controls-sample-sliderpage-dynamic-slider",
+            "controls-sample-sliderpage-edge-case-slider"
+        };
+
+        for (var i = 0; i < sliders.Length && i < sliderAutomationIds.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(sliders[i].AutomationId))
+            {
+                sliders[i].AutomationId = sliderAutomationIds[i];
+            }
+        }
+
+        SetNamedElementAutomationId(page, "MinMaxSlider", "controls-sample-sliderpage-minmax-slider");
+        SetNamedElementAutomationId(page, "ImageSlider", "controls-sample-sliderpage-image-slider");
+        SetNamedElementAutomationId(page, "DynamicSlider", "controls-sample-sliderpage-dynamic-slider");
+        SetNamedElementAutomationId(page, "DynamicInfoLabel", "controls-sample-sliderpage-dynamic-info");
+
+        var toggleImageButton = FindDescendants<Button>(page)
+            .FirstOrDefault(button => string.Equals(button.Text, "Toggle Image", StringComparison.Ordinal));
+        if (toggleImageButton is not null)
+        {
+            toggleImageButton.AutomationId = "controls-sample-sliderpage-toggle-image";
+        }
+
+        var updateMinimumButton = FindDescendants<Button>(page)
+            .FirstOrDefault(button => string.Equals(button.Text, "Update Minimum", StringComparison.Ordinal));
+        if (updateMinimumButton is not null)
+        {
+            updateMinimumButton.AutomationId = "controls-sample-sliderpage-update-minimum";
+        }
+
+        var updateMaximumButton = FindDescendants<Button>(page)
+            .FirstOrDefault(button => string.Equals(button.Text, "Update Maximum", StringComparison.Ordinal));
+        if (updateMaximumButton is not null)
+        {
+            updateMaximumButton.AutomationId = "controls-sample-sliderpage-update-maximum";
+        }
+
+        var disabledSlider = sliders.FirstOrDefault(slider => !slider.IsEnabled);
+        if (disabledSlider is not null && string.IsNullOrWhiteSpace(disabledSlider.AutomationId))
+        {
+            disabledSlider.AutomationId = "controls-sample-sliderpage-disabled-slider";
         }
 
         return page;
@@ -121,7 +285,10 @@ public static class ControlsSampleCatalog
         var field = page.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         if (field?.GetValue(page) is VisualElement visualElement)
         {
-            visualElement.AutomationId = automationId;
+            if (string.IsNullOrWhiteSpace(visualElement.AutomationId))
+            {
+                visualElement.AutomationId = automationId;
+            }
         }
     }
 

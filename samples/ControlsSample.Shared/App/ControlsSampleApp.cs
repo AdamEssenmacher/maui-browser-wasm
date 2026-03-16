@@ -1,6 +1,7 @@
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
+using Controls.Sample.Converters;
 
 namespace ControlsSample.Shared.App;
 
@@ -22,6 +23,7 @@ public class ControlsSampleApp : Application
         Resources ??= new ResourceDictionary();
         SeedUpstreamThemeResources(Resources);
         SeedUpstreamStyleResources(Resources);
+        SeedUpstreamConverterResources(Resources);
     }
 
     public ControlsSampleApp(IServiceProvider services)
@@ -82,6 +84,14 @@ public class ControlsSampleApp : Application
         });
 
         resources["Headline"] = headlineStyle;
+    }
+
+    private static void SeedUpstreamConverterResources(ResourceDictionary resources)
+    {
+        if (!resources.ContainsKey("ThicknessConverter"))
+        {
+            resources["ThicknessConverter"] = new ThicknessConverter();
+        }
     }
 
     private static void EnsureColorResource(ResourceDictionary resources, string key, Color value)

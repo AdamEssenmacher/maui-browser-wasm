@@ -25,7 +25,7 @@ Visual legend:
 | `CustomLayoutPage.xaml` | `Pages/Layouts/CustomLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `FlexLayoutPage.xaml` | `Pages/Layouts/FlexLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `GridPage.xaml` | `Pages/Layouts/GridPage.xaml` | `[x]` | `[x]` | `[ ]` |
-| `HorizontalStackLayoutPage.xaml` | `Pages/Layouts/HorizontalStackLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `HorizontalStackLayoutPage.xaml` | `Pages/Layouts/HorizontalStackLayoutPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `LayoutIsEnabledPage.xaml` | `Pages/Layouts/LayoutIsEnabledPage.xaml` | `[!]` | `[ ]` | `[ ]` |
 | `LayoutUpdatesPage.cs` | `Pages/Layouts/LayoutUpdatesPage.cs` | `[ ]` | `[ ]` | `[ ]` |
 | `RelativeLayoutPage.xaml` | `Pages/Layouts/RelativeLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
@@ -88,8 +88,8 @@ Visual legend:
 | `CorePage.xaml` | `Pages/CorePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `HitTestingPage.xaml` | `Pages/HitTestingPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ActivityIndicatorPage.xaml` | `Pages/Controls/ActivityIndicatorPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `BoxViewPage.xaml` | `Pages/Controls/BoxViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `ButtonPage.xaml` | `Pages/Controls/ButtonPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BoxViewPage.xaml` | `Pages/Controls/BoxViewPage.xaml` | `[x]` | `[x]` | `[ ]` |
+| `ButtonPage.xaml` | `Pages/Controls/ButtonPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `CheckBoxPage.xaml` | `Pages/Controls/CheckBoxPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `DatePickerPage.xaml` | `Pages/Controls/DatePickerPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `EditorPage.xaml` | `Pages/Controls/EditorPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
@@ -104,7 +104,7 @@ Visual legend:
 | `RefreshViewPage.xaml` | `Pages/Controls/RefreshViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `SearchBarPage.xaml` | `Pages/Controls/SearchBarPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ShapesPage.xaml` | `Pages/Controls/ShapesPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `SliderPage.xaml` | `Pages/Controls/SliderPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `SliderPage.xaml` | `Pages/Controls/SliderPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `StepperPage.xaml` | `Pages/Controls/StepperPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `SwitchPage.xaml` | `Pages/Controls/SwitchPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `TimePickerPage.xaml` | `Pages/Controls/TimePickerPage.xaml` | `[ ]` | `[ ]` | `[ ]` |

@@ -13,7 +13,11 @@
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ClippingPage.xaml" Link="Vendor\Pages\Layouts\ClippingPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ContentViewPage.xaml" Link="Vendor\Pages\Layouts\ContentViewPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\GridPage.xaml" Link="Vendor\Pages\Layouts\GridPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\HorizontalStackLayoutPage.xaml" Link="Vendor\Pages\Layouts\HorizontalStackLayoutPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml" Link="Vendor\Pages\Controls\ButtonPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\BoxViewPage.xaml" Link="Vendor\Pages\Controls\BoxViewPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\CheckBoxPage.xaml" Link="Vendor\Pages\Controls\CheckBoxPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\SliderPage.xaml" Link="Vendor\Pages\Controls\SliderPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Compatibility\TabbedPageGalleryMainPage.xaml" Link="Vendor\Pages\Compatibility\TabbedPageGalleryMainPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\LayoutIsEnabledPage.xaml" Link="Vendor\Pages\Layouts\LayoutIsEnabledPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\InputTransparentPage.xaml" Link="Vendor\Pages\Core\InputTransparentPage.xaml" />
@@ -25,12 +29,18 @@
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ClippingPage.xaml.cs" Link="Vendor\Pages\Layouts\ClippingPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ContentViewPage.xaml.cs" Link="Vendor\Pages\Layouts\ContentViewPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\GridPage.xaml.cs" Link="Vendor\Pages\Layouts\GridPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\HorizontalStackLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\HorizontalStackLayoutPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml.cs" Link="Vendor\Pages\Controls\ButtonPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\BoxViewPage.xaml.cs" Link="Vendor\Pages\Controls\BoxViewPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\CheckBoxPage.xaml.cs" Link="Vendor\Pages\Controls\CheckBoxPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\SliderPage.xaml.cs" Link="Vendor\Pages\Controls\SliderPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Compatibility\TabbedPageGalleryMainPage.xaml.cs" Link="Vendor\Pages\Compatibility\TabbedPageGalleryMainPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\LayoutIsEnabledPage.xaml.cs" Link="Vendor\Pages\Layouts\LayoutIsEnabledPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\InputTransparentPage.xaml.cs" Link="Vendor\Pages\Core\InputTransparentPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Controls\CardView\CardView.xaml.cs" Link="Vendor\Controls\CardView\CardView.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Converters\BoolToCustomValueConverter.cs" Link="Vendor\Converters\BoolToCustomValueConverter.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Converters\NegativeConverter.cs" Link="Vendor\Converters\NegativeConverter.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Converters\ThicknessConverter.cs" Link="Vendor\Converters\ThicknessConverter.cs" />
   </ItemGroup>
 
   <ItemGroup>

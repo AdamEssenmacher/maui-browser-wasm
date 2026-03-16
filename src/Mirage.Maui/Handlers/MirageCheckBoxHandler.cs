@@ -98,7 +98,8 @@ internal sealed class MirageCheckBoxHandler : MirageViewHandler<ICheckBox>, IMir
 
     private bool UpdateForeground(ICheckBox checkBox)
     {
-        var cssColor = checkBox.Foreground switch
+        var foreground = checkBox.Foreground;
+        var cssColor = foreground switch
         {
             SolidPaint solidPaint => MirageCommonViewProjection.ToCssColor(solidPaint.Color),
             _ => TryGetCompatibilityColor(checkBox)
@@ -109,8 +110,10 @@ internal sealed class MirageCheckBoxHandler : MirageViewHandler<ICheckBox>, IMir
 
     private bool UpdateEnabledProjection(ICheckBox checkBox)
     {
-        var changed = SetStyleIfChanged("cursor", checkBox.IsEnabled ? "pointer" : "default");
-        changed |= SetPropertyIfChanged("Disabled", checkBox.IsEnabled ? null : "disabled");
+        var isEnabled = checkBox.IsEnabled;
+        var changed = SetStyleIfChanged("cursor", isEnabled ? "pointer" : "default");
+        changed |= SetStyleIfChanged("pointerEvents", isEnabled ? "auto" : "none");
+        changed |= SetPropertyIfChanged("Disabled", isEnabled ? null : "disabled");
         return changed;
     }
 
@@ -138,8 +141,11 @@ internal sealed class MirageCheckBoxHandler : MirageViewHandler<ICheckBox>, IMir
 
     private static string? TryGetCompatibilityColor(ICheckBox checkBox)
     {
-        return checkBox is CheckBox compatCheckBox
-            ? MirageCommonViewProjection.ToCssColor(compatCheckBox.Color)
-            : null;
+        if (checkBox is not CheckBox compatCheckBox)
+        {
+            return null;
+        }
+
+        return MirageCommonViewProjection.ToCssColor(compatCheckBox.Color);
     }
 }
