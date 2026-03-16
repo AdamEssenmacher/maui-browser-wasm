@@ -418,6 +418,7 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal("2px", handler.PlatformView.GetStyleValue("borderWidth"));
         Assert.Equal("5px 5px 5px 5px", handler.PlatformView.GetStyleValue("borderRadius"));
         Assert.Equal("8px 8px 8px 8px", handler.PlatformView.GetStyleValue("padding"));
+        Assert.Equal("hidden", handler.PlatformView.GetStyleValue("overflow"));
 
         border.StrokeDashArray = new DoubleCollection { 2, 1 };
         MirageBorderHandler.Mapper.UpdateProperty(handler, border, nameof(Border.StrokeDashArray));

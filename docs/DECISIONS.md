@@ -396,3 +396,8 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Build output now deterministically publishes bundled images under `wwwroot/_mirage/assets/{Assembly}/{logical-dir}/{name}.{hash8}{ext}` and writes a stable manifest at `wwwroot/_mirage/assets/images.manifest.v1.json` containing identity and alias maps.
 - `FileImageSource` resolution is centralized behind `IMirageImageSourceResolver` (`MirageManifestImageSourceResolver`), with startup manifest load, deterministic degraded mode on manifest failures, explicit ambiguity handling, and no handler-side browser-path construction.
 - ControlsSample browser image behavior now uses the shared pipeline; the old `ControlsSample.Fluent` image-mirroring target was removed.
+
+## 2026-03-16 (ControlsSample ContentView Parity: Border Child Clipping)
+- `MirageBorderHandler` now applies clipping semantics for supported border shapes (`Rectangle`/`RoundRectangle`) by projecting `overflow: hidden` on border hosts, so border-contained content cannot bleed outside shaped bounds.
+- Handler connect ordering now applies border stroke/clipping styles after the content-container base styles, preventing base-style resets from silently clearing border clipping.
+- Added regression coverage at both levels: integration asserts border clipping style behavior, and ControlsSample E2E asserts card avatar hosts in `ContentViewPage` expose clipping (`overflow: hidden`) with non-zero corner radius.

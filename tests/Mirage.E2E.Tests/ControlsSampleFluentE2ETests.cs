@@ -96,6 +96,61 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             await contentPageImages.CountAsync() > 0,
             $"Expected ContentViewPage to render card images from the Mirage bundled-image asset path. " +
             $"Found sources: [{string.Join(", ", contentImageSources)}]\nHost logs:\n{hostLogs}\nPage diagnostics:\n{diagnosticsSnapshot}");
+
+        var iconHostOverflow = await page.EvaluateAsync<string>(
+            """
+            () => {
+                const image = document.querySelector("[data-automation-id='controls-sample-page-contentviewpage'] img[src*='/_mirage/assets/']");
+                const iconHost = image?.parentElement;
+                if (!iconHost) {
+                    return "__missing__";
+                }
+
+                return getComputedStyle(iconHost).overflow;
+            }
+            """);
+
+        Assert.Equal(
+            "hidden",
+            iconHostOverflow);
+
+        var iconHostBorderRadius = await page.EvaluateAsync<string>(
+            """
+            () => {
+                const image = document.querySelector("[data-automation-id='controls-sample-page-contentviewpage'] img[src*='/_mirage/assets/']");
+                const iconHost = image?.parentElement;
+                if (!iconHost) {
+                    return "__missing__";
+                }
+
+                return getComputedStyle(iconHost).borderRadius;
+            }
+            """);
+
+        Assert.NotEqual("0px", iconHostBorderRadius);
+
+        var overlapProbeTagName = await page.EvaluateAsync<string>(
+            """
+            () => {
+                const description = Array
+                    .from(document.querySelectorAll("[data-automation-id='controls-sample-page-contentviewpage'] span"))
+                    .find(span => (span.textContent ?? "").includes("Lorem ipsum"));
+                if (!description) {
+                    return "__missing_description__";
+                }
+
+                const rect = description.getBoundingClientRect();
+                const probeX = rect.left + Math.min(12, Math.max(1, rect.width * 0.15));
+                const probeY = rect.top + Math.min(12, Math.max(1, rect.height * 0.35));
+                const topElement = document.elementFromPoint(probeX, probeY);
+                return topElement?.tagName ?? "__missing_probe__";
+            }
+            """);
+
+        Assert.NotEqual(
+            "IMG",
+            overlapProbeTagName);
+
     }
 
     private async Task<(IPage Page, ConcurrentQueue<string> Diagnostics)> OpenAsync(IBrowserContext context)
