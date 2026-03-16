@@ -5,6 +5,11 @@ namespace Mirage.Web.Dom;
 
 public sealed class DomElement
 {
+    private static readonly JsonSerializerOptions FetchPayloadSerializerOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     public DomElement(nint handle) => Handle = handle;
 
     public nint Handle { get; }
@@ -169,7 +174,7 @@ public sealed class DomElement
 
         try
         {
-            var payload = JsonSerializer.Deserialize<FetchTextPayload>(json);
+            var payload = JsonSerializer.Deserialize<FetchTextPayload>(json, FetchPayloadSerializerOptions);
             if (payload is null)
             {
                 return FetchTextResult.Failure(0);

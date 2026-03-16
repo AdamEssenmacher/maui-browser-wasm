@@ -1,4 +1,5 @@
 using System.Text;
+using Mirage.Maui.Images;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
@@ -7,17 +8,25 @@ namespace Mirage.Maui.Handlers;
 
 internal static class MirageImageSourceProjection
 {
-    internal readonly record struct SourceProjection(string? SourceValue, string SourceKind, string InitialState, bool IsSupported);
+    internal readonly record struct SourceProjection(
+        string? SourceValue,
+        string SourceKind,
+        string InitialState,
+        bool IsSupported,
+        string? FailureReason);
 
 #if DEBUG
     private static readonly HashSet<string> UnsupportedWarnings = new();
 #endif
 
-    public static SourceProjection BuildProjection(ImageSource? source, IView? ownerView = null)
+    public static SourceProjection BuildProjection(
+        ImageSource? source,
+        IMirageImageSourceResolver? imageSourceResolver,
+        IView? ownerView = null)
     {
         if (source is null)
         {
-            return new SourceProjection(null, "none", "empty", true);
+            return new SourceProjection(null, "none", "empty", true, null);
         }
 
         if (source is UriImageSource uriImageSource)
@@ -25,38 +34,48 @@ internal static class MirageImageSourceProjection
             var uri = uriImageSource.Uri?.ToString();
             if (!string.IsNullOrWhiteSpace(uri))
             {
-                return new SourceProjection(uri, "uri", "loading", true);
+                return new SourceProjection(uri, "uri", "loading", true, null);
             }
 
             ReportUnsupported(ownerView, source, "UriImageSource was missing a Uri.");
-            return new SourceProjection(null, "unsupported", "unsupported", false);
+            return new SourceProjection(null, "unsupported", "unsupported", false, "UriImageSource was missing a Uri.");
         }
 
         if (source is FileImageSource fileImageSource)
         {
-            var normalized = NormalizeFileSource(fileImageSource.File);
-            if (!string.IsNullOrWhiteSpace(normalized))
+            if (imageSourceResolver is null)
             {
-                return new SourceProjection(normalized, "file", "loading", true);
+                const string resolverMissingReason = "IMirageImageSourceResolver was not available.";
+                ReportUnsupported(ownerView, source, resolverMissingReason);
+                return new SourceProjection(null, "unsupported", "unsupported", false, resolverMissingReason);
             }
 
-            ReportUnsupported(ownerView, source, "FileImageSource was missing a file path.");
-            return new SourceProjection(null, "unsupported", "unsupported", false);
+            var resolved = imageSourceResolver.Resolve(fileImageSource.File);
+            if (resolved.IsResolved && !string.IsNullOrWhiteSpace(resolved.BrowserUrl))
+            {
+                return new SourceProjection(resolved.BrowserUrl, "file", "loading", true, null);
+            }
+
+            var reason = string.IsNullOrWhiteSpace(resolved.FailureReason)
+                ? "FileImageSource could not be resolved."
+                : resolved.FailureReason;
+            ReportUnsupported(ownerView, source, reason);
+            return new SourceProjection(null, "unsupported", "unsupported", false, reason);
         }
 
         if (source is FontImageSource fontImageSource)
         {
             if (TryBuildFontImageDataUri(fontImageSource, out var dataUri))
             {
-                return new SourceProjection(dataUri, "font", "loading", true);
+                return new SourceProjection(dataUri, "font", "loading", true, null);
             }
 
             ReportUnsupported(ownerView, source, "FontImageSource did not have enough information to project.");
-            return new SourceProjection(null, "unsupported", "unsupported", false);
+            return new SourceProjection(null, "unsupported", "unsupported", false, "FontImageSource did not have enough information to project.");
         }
 
         ReportUnsupported(ownerView, source, "ImageSource type is not yet supported.");
-        return new SourceProjection(null, "unsupported", "unsupported", false);
+        return new SourceProjection(null, "unsupported", "unsupported", false, "ImageSource type is not yet supported.");
     }
 
     public static string ResolveObjectFit(Aspect aspect)
@@ -68,31 +87,6 @@ internal static class MirageImageSourceProjection
             Aspect.Center => "none",
             _ => "contain"
         };
-    }
-
-    private static string? NormalizeFileSource(string? file)
-    {
-        if (string.IsNullOrWhiteSpace(file))
-        {
-            return null;
-        }
-
-        var trimmed = file.Trim().Replace('\\', '/');
-        if (trimmed.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
-            || trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-            || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-            || trimmed.StartsWith("blob:", StringComparison.OrdinalIgnoreCase)
-            || trimmed.StartsWith("/", StringComparison.Ordinal))
-        {
-            return trimmed;
-        }
-
-        if (trimmed.StartsWith("./", StringComparison.Ordinal))
-        {
-            trimmed = trimmed[2..];
-        }
-
-        return $"/{trimmed}";
     }
 
     private static bool TryBuildFontImageDataUri(FontImageSource fontImageSource, out string dataUri)

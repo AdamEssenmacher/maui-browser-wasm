@@ -2,6 +2,7 @@ using Mirage.Core.Providers;
 using Mirage.Core.Diagnostics;
 using Mirage.Maui.HotReload;
 using Mirage.Maui.Handlers;
+using Mirage.Maui.Images;
 using Mirage.Maui.Navigation;
 using Mirage.Web.Dom;
 using Mirage.Web.Runtime;
@@ -34,6 +35,11 @@ public static class MirageBrowserAppHost
 
         await DomElement.EnsureInteropReadyAsync();
         MirageDiagnostics.EnableIf(DomElement.IsDiagnosticsEnabled());
+
+        if (mauiApp.Services.GetService<IMirageImageSourceResolver>() is { } imageSourceResolver)
+        {
+            await imageSourceResolver.EnsureInitializedAsync();
+        }
 
         var provider = MirageProviderValidation.GetRequiredProvider(mauiApp.Services);
         var rootDomElement = DomElement.RootById(rootElementId);

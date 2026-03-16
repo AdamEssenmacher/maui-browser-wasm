@@ -46,11 +46,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*;wwwroot\_mirage\assets\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
-    <WasmExtraFilesToDeploy Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*">
+    <WasmExtraFilesToDeploy Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*;wwwroot\_mirage\assets\**\*.*">
       <TargetPath>%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
     </WasmExtraFilesToDeploy>
   </ItemGroup>

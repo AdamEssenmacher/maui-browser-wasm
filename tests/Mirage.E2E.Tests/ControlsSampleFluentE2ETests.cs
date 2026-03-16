@@ -55,18 +55,47 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-contentviewpage']");
             });
 
-        var contentPageImages = page.Locator("[data-automation-id='controls-sample-page-contentviewpage'] img[src$='dotnet_bot.png']");
-        Assert.True(
-            await contentPageImages.CountAsync() > 0,
-            "Expected ContentViewPage to render card images with src ending in dotnet_bot.png.");
+        var manifestStatus = await page.EvaluateAsync<int>(
+            "async () => { const response = await fetch('/_mirage/assets/images.manifest.v1.json', { cache: 'no-store' }); return response.status; }");
+        Assert.Equal(200, manifestStatus);
+
+        var manifestLookup = await page.EvaluateAsync<string>(
+            """
+            async () => {
+                const response = await fetch('/_mirage/assets/images.manifest.v1.json', { cache: 'no-store' });
+                const json = await response.json();
+                const key = 'ControlsSample.Shared:dotnet_bot.png';
+                const imageUrl = json?.images?.[key] ?? '';
+                return imageUrl;
+            }
+            """);
+
+        Assert.False(string.IsNullOrWhiteSpace(manifestLookup));
+        Assert.StartsWith("/_mirage/assets/ControlsSample.Shared/", manifestLookup, StringComparison.Ordinal);
 
         var dotnetBotStatus = await page.EvaluateAsync<int>(
-            "async () => { const response = await fetch('/dotnet_bot.png', { cache: 'no-store' }); return response.status; }");
+            "async (url) => { const response = await fetch(url, { cache: 'no-store' }); return response.status; }",
+            manifestLookup);
         Assert.Equal(200, dotnetBotStatus);
 
         var dotnetBotPngSignature = await page.EvaluateAsync<string>(
-            "async () => { const response = await fetch('/dotnet_bot.png', { cache: 'no-store' }); const bytes = new Uint8Array(await response.arrayBuffer()); return Array.from(bytes.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join(''); }");
+            "async (url) => { const response = await fetch(url, { cache: 'no-store' }); const bytes = new Uint8Array(await response.arrayBuffer()); return Array.from(bytes.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join(''); }",
+            manifestLookup);
         Assert.Equal("89504e47", dotnetBotPngSignature);
+
+        var contentImageSources = await page.EvaluateAsync<string[]>(
+            """
+            () => Array
+                .from(document.querySelectorAll("[data-automation-id='controls-sample-page-contentviewpage'] img"))
+                .map(img => img.getAttribute("src") ?? "")
+            """);
+        var contentPageImages = page.Locator("[data-automation-id='controls-sample-page-contentviewpage'] img[src*='/_mirage/assets/']");
+        var hostLogs = _fixture.GetHostLogsSnapshot();
+        var diagnosticsSnapshot = RenderDiagnostics(diagnostics);
+        Assert.True(
+            await contentPageImages.CountAsync() > 0,
+            $"Expected ContentViewPage to render card images from the Mirage bundled-image asset path. " +
+            $"Found sources: [{string.Join(", ", contentImageSources)}]\nHost logs:\n{hostLogs}\nPage diagnostics:\n{diagnosticsSnapshot}");
     }
 
     private async Task<(IPage Page, ConcurrentQueue<string> Diagnostics)> OpenAsync(IBrowserContext context)

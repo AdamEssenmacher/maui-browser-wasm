@@ -1,6 +1,7 @@
 using Mirage.Core.Semantics;
 using Mirage.Maui.Handlers;
 using Mirage.Maui.Hosting;
+using Mirage.Maui.Images;
 using Mirage.Web.Runtime;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
@@ -337,7 +338,9 @@ public sealed class HandlerRuntimeIntegrationTests
     [Fact]
     public void ImageHandler_MapsSourceAspectAndOpaqueState()
     {
-        var services = new ServiceCollection().BuildServiceProvider();
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
         var mauiContext = new MauiContext(services);
 
         var handler = new MirageImageHandler();
@@ -352,7 +355,7 @@ public sealed class HandlerRuntimeIntegrationTests
 
         ((IElementHandler)handler).SetVirtualView(image);
 
-        Assert.Equal("/coffee.png", handler.PlatformView.GetPropertyString("Source"));
+        Assert.Equal("/_mirage/assets/test/coffee.png", handler.PlatformView.GetPropertyString("Source"));
         Assert.Equal("file", handler.PlatformView.GetPropertyString("SourceKind"));
         Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
         Assert.Equal("true", handler.PlatformView.GetPropertyString("IsOpaque"));
@@ -363,6 +366,29 @@ public sealed class HandlerRuntimeIntegrationTests
 
         Assert.Equal("https://example.com/photo.png", handler.PlatformView.GetPropertyString("Source"));
         Assert.Equal("uri", handler.PlatformView.GetPropertyString("SourceKind"));
+    }
+
+    [Fact]
+    public void ImageHandler_UnresolvedFileSource_ProjectsUnsupportedState()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new RejectingImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "missing.png"
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+
+        Assert.Null(handler.PlatformView.GetPropertyString("Source"));
+        Assert.Equal("unsupported", handler.PlatformView.GetPropertyString("SourceKind"));
+        Assert.Equal("unsupported", handler.PlatformView.GetPropertyString("SourceState"));
     }
 
     [Fact]
@@ -1727,6 +1753,42 @@ public sealed class HandlerRuntimeIntegrationTests
             LastWidthConstraint = widthConstraint;
             LastHeightConstraint = heightConstraint;
             return _measuredSize;
+        }
+    }
+
+    private sealed class StubImageSourceResolver : IMirageImageSourceResolver
+    {
+        public ValueTask EnsureInitializedAsync()
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        public MirageImageSourceResolveResult Resolve(string? source)
+        {
+            if (string.Equals(source, "coffee.png", StringComparison.Ordinal))
+            {
+                return MirageImageSourceResolveResult.Resolved("/_mirage/assets/test/coffee.png");
+            }
+
+            if (string.IsNullOrWhiteSpace(source))
+            {
+                return MirageImageSourceResolveResult.Unresolved("Empty source.");
+            }
+
+            return MirageImageSourceResolveResult.Resolved(source);
+        }
+    }
+
+    private sealed class RejectingImageSourceResolver : IMirageImageSourceResolver
+    {
+        public ValueTask EnsureInitializedAsync()
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        public MirageImageSourceResolveResult Resolve(string? source)
+        {
+            return MirageImageSourceResolveResult.Unresolved($"Could not resolve '{source}'.");
         }
     }
 }

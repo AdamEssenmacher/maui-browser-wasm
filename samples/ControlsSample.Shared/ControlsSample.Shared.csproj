@@ -32,6 +32,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <MauiImage Include="$(ControlsSampleVendorRoot)Resources\Images\*" Exclude="$(ControlsSampleVendorRoot)Resources\Images\dotnet_bot.svg" />
+    <MauiImage Update="$(ControlsSampleVendorRoot)Resources\Images\*.gif" Resize="False" />
+    <MauiImage Include="$(ControlsSampleVendorRoot)Resources\Embedded\dotnet_bot.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="$(ControlsSampleVendorRoot)Main.razor" Link="Vendor\Main.razor" />
     <None Include="$(ControlsSampleVendorRoot)_Imports.razor" Link="Vendor\_Imports.razor" />
     <None Include="$(ControlsSampleVendorRoot)Pages\Blazor\**\*.razor" Link="Vendor\Pages\Blazor\%(RecursiveDir)%(Filename)%(Extension)" />

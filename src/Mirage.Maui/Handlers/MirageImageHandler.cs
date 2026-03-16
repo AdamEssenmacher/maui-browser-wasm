@@ -1,11 +1,19 @@
 using Mirage.Core.Semantics;
+using Mirage.Maui.Images;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Handlers;
 
 namespace Mirage.Maui.Handlers;
 
 internal sealed class MirageImageHandler : MirageViewHandler<Image>
 {
+    private const int ManifestRetryMaxAttempts = 3;
+    private IMirageImageSourceResolver? _imageSourceResolver;
+    private CancellationTokenSource? _manifestRetryCancellation;
+    private int _manifestRetryAttemptCount;
+
     public static IPropertyMapper<Image, MirageImageHandler> Mapper =
         new PropertyMapper<Image, MirageImageHandler>(MirageViewMapper.CommonViewMapper)
         {
@@ -35,6 +43,12 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>
         {
             RequestRender();
         }
+    }
+
+    protected override void DisconnectHandler(MiragePlatformView platformView)
+    {
+        CancelManifestRetry();
+        base.DisconnectHandler(platformView);
     }
 
     public static void MapSource(MirageImageHandler handler, Image image)
@@ -69,10 +83,24 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>
 
     private bool UpdateSourceProjection(Image image)
     {
-        var projection = MirageImageSourceProjection.BuildProjection(image.Source, image);
+        var projection = MirageImageSourceProjection.BuildProjection(image.Source, GetImageSourceResolver(), image);
         var changed = SetPropertyIfChanged("Source", projection.SourceValue);
         changed |= SetPropertyIfChanged("SourceKind", projection.SourceKind);
         changed |= SetPropertyIfChanged("SourceState", projection.InitialState);
+
+        if (projection.IsSupported)
+        {
+            _manifestRetryAttemptCount = 0;
+            CancelManifestRetry();
+            return changed;
+        }
+
+        if (image.Source is FileImageSource
+            && IsManifestUnavailableFailure(projection.FailureReason))
+        {
+            ScheduleManifestRetry(image);
+        }
+
         return changed;
     }
 
@@ -109,5 +137,109 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>
 
         PlatformView.SetStyle(styleName, styleValue);
         return true;
+    }
+
+    private IMirageImageSourceResolver? GetImageSourceResolver()
+    {
+        if (_imageSourceResolver is not null)
+        {
+            return _imageSourceResolver;
+        }
+
+        _imageSourceResolver = MauiContext?.Services.GetService<IMirageImageSourceResolver>();
+        return _imageSourceResolver;
+    }
+
+    private void ScheduleManifestRetry(Image image)
+    {
+        if (_manifestRetryAttemptCount >= ManifestRetryMaxAttempts)
+        {
+            return;
+        }
+
+        CancelManifestRetry();
+        _manifestRetryAttemptCount++;
+        var attempt = _manifestRetryAttemptCount;
+        var cts = new CancellationTokenSource();
+        _manifestRetryCancellation = cts;
+        _ = RetryManifestResolutionAsync(image, attempt, cts.Token);
+    }
+
+    private async Task RetryManifestResolutionAsync(Image image, int attempt, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(250 * attempt, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            if (GetImageSourceResolver() is { } resolver)
+            {
+                await resolver.EnsureInitializedAsync();
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
+            var dispatcher = MauiContext?.Services.GetService<IDispatcher>();
+            if (dispatcher is not null && dispatcher.IsDispatchRequired)
+            {
+                if (!dispatcher.Dispatch(ApplyRetry))
+                {
+                    ApplyRetry();
+                }
+            }
+            else
+            {
+                ApplyRetry();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+
+        void ApplyRetry()
+        {
+            if (cancellationToken.IsCancellationRequested || VirtualView != image)
+            {
+                return;
+            }
+
+            if (UpdateSourceProjection(image))
+            {
+                RequestRender();
+            }
+        }
+    }
+
+    private void CancelManifestRetry()
+    {
+        try
+        {
+            _manifestRetryCancellation?.Cancel();
+        }
+        catch
+        {
+            // best effort
+        }
+        finally
+        {
+            _manifestRetryCancellation?.Dispose();
+            _manifestRetryCancellation = null;
+        }
+    }
+
+    private static bool IsManifestUnavailableFailure(string? reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return false;
+        }
+
+        return reason.Contains("manifest", StringComparison.OrdinalIgnoreCase);
     }
 }

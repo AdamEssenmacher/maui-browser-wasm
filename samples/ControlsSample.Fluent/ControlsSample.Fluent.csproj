@@ -44,39 +44,16 @@
 
   <ItemGroup>
     <MauiFont Include="$(ControlsSampleVendorRoot)Resources\Fonts\*.ttf" />
-    <MauiImage Include="$(ControlsSampleVendorRoot)Resources\Images\*" />
     <MauiAsset Include="$(ControlsSampleVendorRoot)Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>
-    <ControlsSampleBrowserImage Include="$(ControlsSampleVendorRoot)Resources\Images\*" />
-    <ControlsSampleBrowserImage Include="$(ControlsSampleVendorRoot)Resources\Embedded\dotnet_bot.png" />
+    <None Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*;wwwroot\_mirage\assets\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <_ControlsSampleBrowserImageMirror Include="@(ControlsSampleBrowserImage)">
-      <MirrorPath>$(MSBuildProjectDirectory)/wwwroot/%(Filename)%(Extension)</MirrorPath>
-      <MirrorDir>$([System.IO.Path]::GetDirectoryName('%(MirrorPath)'))</MirrorDir>
-    </_ControlsSampleBrowserImageMirror>
-  </ItemGroup>
-
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*">
+    <WasmExtraFilesToDeploy Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*;wwwroot\_mirage\assets\**\*.*">
       <TargetPath>%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
     </WasmExtraFilesToDeploy>
   </ItemGroup>
-
-  <Target Name="ControlsSampleMirrorBrowserImages"
-          BeforeTargets="PrepareForBuild"
-          Condition="'@(_ControlsSampleBrowserImageMirror)' != ''">
-    <MakeDir Directories="@(_ControlsSampleBrowserImageMirror->'%(MirrorDir)')" />
-    <Copy SourceFiles="@(_ControlsSampleBrowserImageMirror)"
-          DestinationFiles="@(_ControlsSampleBrowserImageMirror->'%(MirrorPath)')"
-          SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="true" />
-  </Target>
 </Project>
