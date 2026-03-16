@@ -174,7 +174,9 @@ internal sealed class MirageSliderHandler : MirageViewHandler<ISlider>, IMirageR
 
     public static void MapIsEnabled(MirageSliderHandler handler, ISlider slider)
     {
-        if (!handler.UpdateEnabledProjection(slider))
+        var changed = handler.UpdateEnabledProjection(slider);
+        handler.CompleteActiveDragIfDisabled(slider);
+        if (!changed)
         {
             return;
         }
@@ -228,6 +230,19 @@ internal sealed class MirageSliderHandler : MirageViewHandler<ISlider>, IMirageR
         changed |= SetStyleIfChanged("pointerEvents", isEnabled ? "auto" : "none");
         changed |= SetPropertyIfChanged("Disabled", isEnabled ? null : "disabled");
         return changed;
+    }
+
+    private void CompleteActiveDragIfDisabled(ISlider slider)
+    {
+        if (slider.IsEnabled || !_isDragging)
+        {
+            return;
+        }
+
+        _isDragging = false;
+        // MAUI Slider ignores drag completion notifications while disabled, but this
+        // still keeps non-controls ISlider implementations and future behavior aligned.
+        slider.DragCompleted();
     }
 
     private IMirageImageSourceResolver? GetImageSourceResolver()

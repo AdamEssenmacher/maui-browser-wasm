@@ -700,6 +700,46 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void SliderHandler_DisabledMidDrag_CompletesAndResetsDragLifecycle()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageSliderHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var dragStartedCount = 0;
+        var dragCompletedCount = 0;
+        var slider = new Slider
+        {
+            Minimum = 0,
+            Maximum = 100,
+            Value = 10
+        };
+        slider.DragStarted += (_, _) => dragStartedCount++;
+        slider.DragCompleted += (_, _) => dragCompletedCount++;
+
+        ((IElementHandler)handler).SetVirtualView(slider);
+
+        handler.OnRuntimeEvent("input", "20");
+        Assert.Equal(1, dragStartedCount);
+        Assert.Equal(0, dragCompletedCount);
+
+        slider.IsEnabled = false;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(IView.IsEnabled));
+        Assert.Equal(0, dragCompletedCount);
+
+        slider.IsEnabled = true;
+        MirageSliderHandler.Mapper.UpdateProperty(handler, slider, nameof(IView.IsEnabled));
+
+        handler.OnRuntimeEvent("input", "30");
+        Assert.Equal(2, dragStartedCount);
+        handler.OnRuntimeEvent("change", "30");
+        Assert.Equal(1, dragCompletedCount);
+    }
+
+    [Fact]
     public void CheckBoxHandler_ProjectsColorAliasCheckedAndDisabledSemantics()
     {
         var services = new ServiceCollection().BuildServiceProvider();
