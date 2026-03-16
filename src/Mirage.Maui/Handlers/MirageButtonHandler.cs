@@ -183,7 +183,6 @@ internal sealed class MirageButtonHandler : MirageViewHandler<Button>, IMirageRu
     {
         var changed = handler.SetStyleIfChanged("cursor", button.IsEnabled ? "pointer" : "default");
         changed |= handler.SetStyleIfChanged("pointerEvents", button.IsEnabled ? "auto" : "none");
-        changed |= handler.SetStyleIfChanged("opacity", button.IsEnabled ? null : "0.6");
         if (!changed)
         {
             return;
@@ -411,7 +410,7 @@ internal sealed class MirageButtonHandler : MirageViewHandler<Button>, IMirageRu
 
         if (text.Length > 0 && IsTruncationMode(button.LineBreakMode))
         {
-            var budget = ResolveTruncationBudget(button, text.Length, hasImage);
+            var budget = ResolveTruncationBudget(button, PlatformView, text.Length, hasImage);
             projectedText = ApplyTruncation(text, button.LineBreakMode, budget);
         }
 
@@ -430,12 +429,14 @@ internal sealed class MirageButtonHandler : MirageViewHandler<Button>, IMirageRu
         return mode is LineBreakMode.HeadTruncation or LineBreakMode.MiddleTruncation or LineBreakMode.TailTruncation;
     }
 
-    private static int ResolveTruncationBudget(Button button, int textLength, bool hasImage)
+    private static int ResolveTruncationBudget(Button button, MiragePlatformView platformView, int textLength, bool hasImage)
     {
         var contentLayout = button.ContentLayout ?? new Button.ButtonContentLayout(Button.ButtonContentLayout.ImagePosition.Left, 10);
-        var width = double.IsFinite(button.WidthRequest) && button.WidthRequest > 0
-            ? button.WidthRequest
-            : DefaultTruncationBudget * 7.0;
+        var width = ResolveProjectedWidth(button, platformView);
+        if (width <= 0)
+        {
+            return textLength;
+        }
 
         var horizontalPadding = 0d;
         if (double.IsFinite(button.Padding.Left))
@@ -463,6 +464,44 @@ internal sealed class MirageButtonHandler : MirageViewHandler<Button>, IMirageRu
         var estimated = (int)Math.Floor(width / charWidth);
         var clamped = Math.Clamp(estimated, MinimumTruncationBudget, textLength);
         return clamped;
+    }
+
+    private static double ResolveProjectedWidth(Button button, MiragePlatformView platformView)
+    {
+        if (double.IsFinite(button.WidthRequest) && button.WidthRequest > 0)
+        {
+            return button.WidthRequest;
+        }
+
+        if (TryParsePx(platformView.GetStyleValue("width"), out var projectedWidth) && projectedWidth > 0)
+        {
+            return projectedWidth;
+        }
+
+        if (TryParsePx(platformView.GetStyleValue("maxWidth"), out var projectedMaxWidth) && projectedMaxWidth > 0)
+        {
+            return projectedMaxWidth;
+        }
+
+        return 0;
+    }
+
+    private static bool TryParsePx(string? styleValue, out double value)
+    {
+        value = 0;
+        if (string.IsNullOrWhiteSpace(styleValue))
+        {
+            return false;
+        }
+
+        var trimmed = styleValue.Trim();
+        if (!trimmed.EndsWith("px", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        var numeric = trimmed[..^2];
+        return double.TryParse(numeric, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out value);
     }
 
     private static string ApplyTruncation(string text, LineBreakMode mode, int budget)

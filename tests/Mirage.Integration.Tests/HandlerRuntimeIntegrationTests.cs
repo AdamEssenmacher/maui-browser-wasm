@@ -414,6 +414,64 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void ButtonHandler_IsEnabledToggle_DoesNotOverrideExplicitOpacityProjection()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageButtonHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var button = new Button
+        {
+            Text = "Opacity",
+            Opacity = 0.4
+        };
+
+        ((IElementHandler)handler).SetVirtualView(button);
+        Assert.Equal("0.4", handler.PlatformView.GetStyleValue("opacity"));
+
+        button.IsEnabled = false;
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(IView.IsEnabled));
+        Assert.Equal("0.4", handler.PlatformView.GetStyleValue("opacity"));
+
+        button.IsEnabled = true;
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(IView.IsEnabled));
+        Assert.Equal("0.4", handler.PlatformView.GetStyleValue("opacity"));
+    }
+
+    [Fact]
+    public void ButtonHandler_TruncationBudget_UsesProjectedWidthWhenWidthRequestIsUnset()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageButtonHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        const string longText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt.";
+        var button = new Button
+        {
+            Text = longText,
+            WidthRequest = -1,
+            LineBreakMode = LineBreakMode.TailTruncation
+        };
+
+        ((IElementHandler)handler).SetVirtualView(button);
+
+        handler.PlatformView.SetStyle("width", "1400px");
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(VisualElement.WidthRequest));
+        var wideProjected = handler.PlatformView.GetPropertyString("Text");
+        Assert.Equal(longText, wideProjected);
+
+        handler.PlatformView.SetStyle("width", "140px");
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.LineBreakMode));
+        var narrowProjected = handler.PlatformView.GetPropertyString("Text");
+        Assert.NotNull(narrowProjected);
+        Assert.EndsWith("…", narrowProjected, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CheckBoxHandler_ProjectsColorAliasesCheckedAndDisabledSemantics()
     {
         var services = new ServiceCollection().BuildServiceProvider();
