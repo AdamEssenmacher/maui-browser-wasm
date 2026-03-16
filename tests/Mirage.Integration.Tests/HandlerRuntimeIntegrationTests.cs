@@ -352,6 +352,41 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CheckBoxHandler_ProjectsColorAliasCheckedAndDisabledSemantics()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCheckBoxHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var checkBox = new CheckBox
+        {
+            IsChecked = true,
+            Color = Colors.Purple
+        };
+
+        ((IElementHandler)handler).SetVirtualView(checkBox);
+        Assert.Equal("true", handler.PlatformView.GetPropertyString("IsChecked"));
+        Assert.Equal("rgba(128,0,128,1)", handler.PlatformView.GetStyleValue("accentColor"));
+
+        handler.OnRuntimeEvent("change", "false");
+        Assert.False(checkBox.IsChecked);
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, nameof(ICheckBox.IsChecked));
+        Assert.Equal("false", handler.PlatformView.GetPropertyString("IsChecked"));
+
+        checkBox.Color = Colors.Green;
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, "Color");
+        Assert.Equal("rgba(0,128,0,1)", handler.PlatformView.GetStyleValue("accentColor"));
+
+        checkBox.IsEnabled = false;
+        MirageCheckBoxHandler.Mapper.UpdateProperty(handler, checkBox, nameof(IView.IsEnabled));
+        Assert.Equal("disabled", handler.PlatformView.GetPropertyString("Disabled"));
+
+        handler.OnRuntimeEvent("change", "true");
+        Assert.False(checkBox.IsChecked);
+    }
+
+    [Fact]
     public void EntryHandler_SizeRequestProjection_UpdatesFluentControlHeightToken()
     {
         var services = new ServiceCollection().BuildServiceProvider();

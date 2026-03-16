@@ -9,7 +9,8 @@ public enum EventTarget
 public enum EventPayloadKind
 {
     None,
-    InputValue
+    InputValue,
+    InputChecked
 }
 
 public sealed record ProviderEventDescriptor(

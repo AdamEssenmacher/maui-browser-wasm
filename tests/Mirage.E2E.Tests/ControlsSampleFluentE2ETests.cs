@@ -25,6 +25,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-clippingpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-contentviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-gridpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-layoutisenabledpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
@@ -216,6 +217,55 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.NotEqual("none", dividerMetrics[2]);
         Assert.True(double.Parse(dividerMetrics[3], CultureInfo.InvariantCulture) >= 1d);
         Assert.True(double.Parse(dividerMetrics[4], CultureInfo.InvariantCulture) >= 120d);
+    }
+
+    [Fact]
+    public async Task CheckBoxPage_IsRunnable_AndSupportsColorDisabledAndChangeScenarios()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 760, height: 980);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-checkboxpage']");
+            });
+
+        var coloredAccent = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).accentColor",
+            "[data-automation-id='controls-sample-checkboxpage-colored']");
+        Assert.Contains("128", coloredAccent, StringComparison.Ordinal);
+
+        var disabledAttribute = await page.EvaluateAsync<string?>(
+            "(selector) => document.querySelector(selector)?.getAttribute('disabled')",
+            "[data-automation-id='controls-sample-checkboxpage-disabled']");
+        Assert.Equal("disabled", disabledAttribute);
+
+        var dynamicCheckSelector = "[data-automation-id='controls-sample-checkboxpage-change-checkbox']";
+        var dynamicButtonSelector = "[data-automation-id='controls-sample-checkboxpage-change-button']";
+        var beforeAccent = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).accentColor",
+            dynamicCheckSelector);
+        var beforeText = await page.EvaluateAsync<string>(
+            "(selector) => document.querySelector(selector)?.textContent ?? ''",
+            dynamicButtonSelector);
+
+        await page.Locator(dynamicButtonSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(100);
+
+        var afterAccent = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).accentColor",
+            dynamicCheckSelector);
+        var afterText = await page.EvaluateAsync<string>(
+            "(selector) => document.querySelector(selector)?.textContent ?? ''",
+            dynamicButtonSelector);
+
+        Assert.NotEqual(beforeAccent, afterAccent);
+        Assert.NotEqual(beforeText, afterText);
+        Assert.Contains("True", afterText, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task<(IPage Page, ConcurrentQueue<string> Diagnostics)> OpenAsync(IBrowserContext context)

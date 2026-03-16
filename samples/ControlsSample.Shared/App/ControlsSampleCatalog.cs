@@ -1,5 +1,7 @@
 using Maui.Controls.Sample.Pages;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Internals;
+using System.Reflection;
 
 namespace ControlsSample.Shared.App;
 
@@ -35,6 +37,14 @@ public static class ControlsSampleCatalog
             status: ControlsSampleStatus.Runnable,
             pageType: typeof(ContentViewPage),
             description: "Runnable in Mirage today: exercises ContentView composition with Border + Image content."),
+        new(
+            id: "checkboxpage",
+            title: "CheckBoxPage",
+            upstreamPath: "Pages/Controls/CheckBoxPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(CheckBoxPage),
+            description: "Runnable in Mirage today: exercises CheckBox checked state, color aliases, and disabled variants.",
+            pageFactory: CreateCheckBoxPage),
         new(
             id: "tabbedpagegallerymainpage",
             title: "TabbedPageGalleryMainPage",
@@ -77,4 +87,63 @@ public static class ControlsSampleCatalog
                 title: "MapsGallery",
                 message: "Maps and other platform-specific galleries are imported but hidden in this wrapper unless host dependencies are wired."))
     ];
+
+    private static Page CreateCheckBoxPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new CheckBoxPage();
+
+        SetNamedElementAutomationId(page, "ChangeIsCheckedButton", "controls-sample-checkboxpage-change-button");
+        SetNamedElementAutomationId(page, "IsCheckedCheckBox", "controls-sample-checkboxpage-change-checkbox");
+
+        var checkBoxes = FindDescendants<CheckBox>(page).ToArray();
+        if (checkBoxes.Length > 0)
+        {
+            checkBoxes[0].AutomationId = "controls-sample-checkboxpage-default";
+        }
+
+        if (checkBoxes.Length > 1)
+        {
+            checkBoxes[1].AutomationId = "controls-sample-checkboxpage-colored";
+        }
+
+        var disabledCheckBox = checkBoxes.FirstOrDefault(checkBox => !checkBox.IsEnabled);
+        if (disabledCheckBox is not null)
+        {
+            disabledCheckBox.AutomationId = "controls-sample-checkboxpage-disabled";
+        }
+
+        return page;
+    }
+
+    private static void SetNamedElementAutomationId(Page page, string fieldName, string automationId)
+    {
+        var field = page.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (field?.GetValue(page) is VisualElement visualElement)
+        {
+            visualElement.AutomationId = automationId;
+        }
+    }
+
+    private static IEnumerable<TView> FindDescendants<TView>(Element root)
+        where TView : Element
+    {
+        if (root is TView match)
+        {
+            yield return match;
+        }
+
+        if (root is not IElementController controller)
+        {
+            yield break;
+        }
+
+        foreach (var child in controller.LogicalChildren)
+        {
+            foreach (var descendant in FindDescendants<TView>(child))
+            {
+                yield return descendant;
+            }
+        }
+    }
 }

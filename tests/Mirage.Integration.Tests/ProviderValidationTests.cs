@@ -78,6 +78,19 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentCheckBoxDescriptor_MapsCheckedAndChangePayload()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.CheckBox);
+
+        Assert.Equal("input", descriptor.ElementTagName);
+        Assert.Equal(PropertyTarget.InputChecked, descriptor.PropertyMappings["IsChecked"].Target);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Disabled"].Target);
+        Assert.Equal("disabled", descriptor.PropertyMappings["Disabled"].Name);
+        Assert.Equal(EventPayloadKind.InputChecked, descriptor.EventMappings["change"].PayloadKind);
+    }
+
+    [Fact]
     public void FluentProvider_ResolvesHorizontalStackSemanticKind()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();

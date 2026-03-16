@@ -13,5 +13,6 @@ public enum ComponentKind
     Button,
     Image,
     Border,
-    BoxView
+    BoxView,
+    CheckBox
 }

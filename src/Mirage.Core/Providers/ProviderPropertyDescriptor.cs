@@ -4,7 +4,8 @@ public enum PropertyTarget
 {
     TextContent,
     Attribute,
-    InputValue
+    InputValue,
+    InputChecked
 }
 
 public enum PropertyElementTarget
