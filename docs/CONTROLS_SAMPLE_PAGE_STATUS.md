@@ -36,7 +36,7 @@ Visual legend:
 | `ScrollViewTemplatePage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollViewTemplatePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `StackLayoutPage.xaml` | `Pages/Layouts/StackLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `TemplatedViewPage.xaml` | `Pages/Layouts/TemplatedViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `VerticalStackLayoutPage.xaml` | `Pages/Layouts/VerticalStackLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `VerticalStackLayoutPage.xaml` | `Pages/Layouts/VerticalStackLayoutPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ZIndexPage.xaml` | `Pages/Layouts/ZIndexPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `LayoutsPage.xaml` | `Pages/LayoutsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `AlertsPage.xaml` | `Pages/Core/AlertsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |

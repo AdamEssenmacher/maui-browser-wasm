@@ -441,3 +441,8 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Native MAUI behavior observed on iOS and Android allows unsized `BoxView` elements to collapse in layouts like `HorizontalStackLayoutPage`; Mirage now follows that behavior instead of forcing visibility.
 - BoxView sizing is now driven only by explicit MAUI size requests (`WidthRequest`, `HeightRequest`, `Minimum*Request`, `Maximum*Request`) through shared size mapping.
 - Updated ControlsSample HorizontalStackLayout E2E expectations to assert node presence with collapsed geometry rather than visible colored boxes.
+
+## 2026-03-16 (ControlsSample VerticalStackLayoutPage Enablement)
+- Promoted upstream `VerticalStackLayoutPage` to a runnable ControlsSample entry using existing Mirage `VerticalStackLayout` and `BoxView` support, with no new runtime/provider contracts required.
+- Imported upstream page XAML/code-behind into `ControlsSample.Shared` and added ControlsSample E2E coverage for page discoverability.
+- Aligned E2E parity expectations with native MAUI behavior (confirmed on iOS/Android): unsized `BoxView` children collapse rather than render visible colored blocks.

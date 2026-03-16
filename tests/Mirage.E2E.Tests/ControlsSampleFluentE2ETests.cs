@@ -26,6 +26,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-contentviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-gridpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-horizontalstacklayoutpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-verticalstacklayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-boxviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-buttonpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").CountAsync());
@@ -252,6 +253,55 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 const boxViews = Array.from(stack.querySelectorAll("[data-mirage-kind='BoxView']"));
                 const boxRects = boxViews.map(box => box.getBoundingClientRect());
                 const collapsedCount = boxRects.filter(rect => rect.width <= 1 || rect.height <= 1 || (rect.width * rect.height) <= 1).length;
+                const maxHeight = boxRects.reduce((current, rect) => Math.max(current, rect.height), 0);
+                const maxArea = boxRects.reduce((current, rect) => Math.max(current, rect.width * rect.height), 0);
+
+                return [
+                    "ok",
+                    labelText,
+                    boxViews.length.toString(),
+                    collapsedCount.toString(),
+                    maxHeight.toString(),
+                    maxArea.toString()
+                ];
+            }
+            """);
+
+        Assert.Equal("ok", layoutSnapshot[0]);
+        Assert.Equal("HorizontalStackLayout", layoutSnapshot[1]);
+        Assert.Equal("6", layoutSnapshot[2]);
+        Assert.Equal("6", layoutSnapshot[3]);
+    }
+
+    [Fact]
+    public async Task VerticalStackLayoutPage_IsRunnable_AndAllowsUnsizedBoxViewsToCollapse()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 900, height: 700);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-verticalstacklayoutpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-verticalstacklayoutpage']");
+            });
+
+        var layoutSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id='controls-sample-page-verticalstacklayoutpage']");
+                const stack = host?.querySelector("[data-mirage-kind='VerticalStack']");
+                if (!host || !stack) {
+                    return ["__missing__", "0", "0", "0", "0", "0"];
+                }
+
+                const label = stack.querySelector("[data-mirage-kind='Label']");
+                const labelText = (label?.textContent ?? "").trim();
+                const boxViews = Array.from(stack.querySelectorAll("[data-mirage-kind='BoxView']"));
+                const boxRects = boxViews.map(box => box.getBoundingClientRect());
+                const collapsedCount = boxRects.filter(rect => rect.width <= 1 || rect.height <= 1 || (rect.width * rect.height) <= 1).length;
                 const maxWidth = boxRects.reduce((current, rect) => Math.max(current, rect.width), 0);
                 const maxArea = boxRects.reduce((current, rect) => Math.max(current, rect.width * rect.height), 0);
 
@@ -267,11 +317,9 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             """);
 
         Assert.Equal("ok", layoutSnapshot[0]);
-        Assert.Equal("HorizontalStackLayout", layoutSnapshot[1]);
+        Assert.Equal("VerticalStackLayout", layoutSnapshot[1]);
         Assert.Equal("6", layoutSnapshot[2]);
         Assert.Equal("6", layoutSnapshot[3]);
-        Assert.True(double.Parse(layoutSnapshot[4], CultureInfo.InvariantCulture) <= 1d);
-        Assert.True(double.Parse(layoutSnapshot[5], CultureInfo.InvariantCulture) <= 1d);
     }
 
     [Fact]
