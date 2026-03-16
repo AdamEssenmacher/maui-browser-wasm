@@ -8,6 +8,8 @@ internal sealed class MirageLabelHandler : MirageViewHandler<ILabel>
 {
     private const string DefaultLineHeight = "1.3";
     private const double DefaultFontSize = 14;
+    private const string DefaultSystemLabelColor = MirageCommonViewProjection.DefaultSystemTextColor;
+    private const string DefaultSystemFontFamily = MirageCommonViewProjection.DefaultSystemFontFamily;
 
     public static IPropertyMapper<ILabel, MirageLabelHandler> Mapper =
         new PropertyMapper<ILabel, MirageLabelHandler>(MirageViewMapper.CommonViewMapper)
@@ -15,7 +17,13 @@ internal sealed class MirageLabelHandler : MirageViewHandler<ILabel>
             // Phase-1 scope intentionally stays narrow: text + core text-style primitives.
             // Richer label semantics (line-break, formatting runs, text transforms) are deferred.
             [nameof(ILabel.Text)] = MapText,
-            [nameof(ILabel.Font)] = MapFont
+            [nameof(ITextStyle.TextColor)] = MapTextColor,
+            ["TextColor"] = MapTextColor,
+            [nameof(ILabel.Font)] = MapFont,
+            ["FontFamily"] = MapFont,
+            ["FontSize"] = MapFont,
+            ["FontAttributes"] = MapFont,
+            ["FontAutoScalingEnabled"] = MapFont
         };
 
     public MirageLabelHandler()
@@ -28,7 +36,8 @@ internal sealed class MirageLabelHandler : MirageViewHandler<ILabel>
     {
         var changed = SetStyleIfChanged("display", "block");
         changed |= SetStyleIfChanged("lineHeight", DefaultLineHeight);
-        changed |= MirageCommonViewProjection.MapFont(this, VirtualView, DefaultFontSize);
+        changed |= MirageCommonViewProjection.MapTextColor(this, VirtualView, DefaultSystemLabelColor);
+        changed |= MirageCommonViewProjection.MapFont(this, VirtualView, DefaultFontSize, DefaultSystemFontFamily);
         base.ConnectHandler(platformView);
         if (changed)
         {
@@ -47,9 +56,17 @@ internal sealed class MirageLabelHandler : MirageViewHandler<ILabel>
         handler.RequestRender();
     }
 
+    public static void MapTextColor(MirageLabelHandler handler, ILabel label)
+    {
+        if (MirageCommonViewProjection.MapTextColor(handler, label, DefaultSystemLabelColor))
+        {
+            handler.RequestRender();
+        }
+    }
+
     public static void MapFont(MirageLabelHandler handler, ILabel label)
     {
-        if (MirageCommonViewProjection.MapFont(handler, label, DefaultFontSize))
+        if (MirageCommonViewProjection.MapFont(handler, label, DefaultFontSize, DefaultSystemFontFamily))
         {
             handler.RequestRender();
         }

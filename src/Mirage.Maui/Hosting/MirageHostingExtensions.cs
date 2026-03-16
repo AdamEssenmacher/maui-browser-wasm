@@ -5,6 +5,7 @@ using Mirage.Web.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Hosting;
 
@@ -16,6 +17,7 @@ public static class MirageHostingExtensions
     {
         var dispatcherProvider = new BrowserDispatcherProvider();
         DispatcherProvider.SetCurrent(dispatcherProvider);
+        DependencyService.Register<MirageFontNamedSizeService>();
 
         builder.ConfigureMauiHandlers(handlers =>
         {
@@ -24,12 +26,17 @@ public static class MirageHostingExtensions
             handlers.AddHandler(typeof(ContentPage), typeof(MirageContentPageHandler));
             handlers.AddHandler(typeof(ContentView), typeof(MirageContentViewHandler));
             handlers.AddHandler(typeof(ScrollView), typeof(MirageScrollViewHandler));
+            handlers.AddHandler(typeof(StackLayout), typeof(MirageLayoutHandler));
             handlers.AddHandler(typeof(VerticalStackLayout), typeof(MirageLayoutHandler));
             handlers.AddHandler(typeof(HorizontalStackLayout), typeof(MirageLayoutHandler));
             handlers.AddHandler(typeof(Grid), typeof(MirageLayoutHandler));
+            handlers.AddHandler(typeof(AbsoluteLayout), typeof(MirageLayoutHandler));
             handlers.AddHandler(typeof(Label), typeof(MirageLabelHandler));
             handlers.AddHandler(typeof(Entry), typeof(MirageEntryHandler));
             handlers.AddHandler(typeof(Button), typeof(MirageButtonHandler));
+            handlers.AddHandler(typeof(Image), typeof(MirageImageHandler));
+            handlers.AddHandler(typeof(Border), typeof(MirageBorderHandler));
+            handlers.AddHandler(typeof(BoxView), typeof(MirageBoxViewHandler));
         });
 
         builder.Services.TryAddSingleton<IDispatcherProvider>(dispatcherProvider);

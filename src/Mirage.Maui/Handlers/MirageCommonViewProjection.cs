@@ -11,6 +11,8 @@ namespace Mirage.Maui.Handlers;
 
 internal static class MirageCommonViewProjection
 {
+    internal const string DefaultSystemTextColor = "CanvasText";
+    internal const string DefaultSystemFontFamily = "system-ui";
     private const double DefaultTextFallbackFontSize = 14;
     private static readonly HashSet<string> GenericFontFamilies = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -178,7 +180,7 @@ internal static class MirageCommonViewProjection
         return SetStyleIfChanged(platformHandler, "padding", ToThickness(paddingView.Padding));
     }
 
-    public static bool MapTextColor(IViewHandler handler, IView view)
+    public static bool MapTextColor(IViewHandler handler, IView view, string? fallbackCssColor = null)
     {
         if (!TryGetPlatformHandler(handler, out var platformHandler)
             || view is not ITextStyle textStyle)
@@ -186,10 +188,15 @@ internal static class MirageCommonViewProjection
             return false;
         }
 
-        return SetStyleIfChanged(platformHandler, "color", ToCssColor(textStyle.TextColor));
+        var cssColor = ToCssColor(textStyle.TextColor) ?? fallbackCssColor;
+        return SetStyleIfChanged(platformHandler, "color", cssColor);
     }
 
-    public static bool MapFont(IViewHandler handler, IView view, double fallbackSize = DefaultTextFallbackFontSize)
+    public static bool MapFont(
+        IViewHandler handler,
+        IView view,
+        double fallbackSize = DefaultTextFallbackFontSize,
+        string? fallbackFamily = null)
     {
         if (!TryGetPlatformHandler(handler, out var platformHandler)
             || view is not ITextStyle textStyle)
@@ -201,7 +208,7 @@ internal static class MirageCommonViewProjection
         var resolvedSize = ResolveFontSize(font.Size, fallbackSize);
         var resolvedWeight = ResolveFontWeight(font.Weight);
         var resolvedStyle = ResolveFontStyle(font.Slant);
-        var resolvedFamily = ResolveFontFamily(font.Family);
+        var resolvedFamily = ResolveFontFamily(font.Family, fallbackFamily);
 
         var changed = SetStyleIfChanged(platformHandler, "fontSize", ToPx(resolvedSize));
         changed |= SetStyleIfChanged(platformHandler, "fontWeight", resolvedWeight);
@@ -254,7 +261,7 @@ internal static class MirageCommonViewProjection
             return false;
         }
 
-        var parentKind = platformHandler.MiragePlatformView.Parent?.ControlKind;
+        var parentKind = ResolveParentLayoutKind(view, platformHandler.MiragePlatformView.Parent?.ControlKind);
         if (parentKind is null)
         {
             return false;
@@ -275,6 +282,7 @@ internal static class MirageCommonViewProjection
                 changed |= SetStyleIfChanged(platformHandler, "justifySelf", null);
                 break;
             case Core.Semantics.ComponentKind.ContentContainer:
+            case Core.Semantics.ComponentKind.Border:
                 changed |= SetStyleIfChanged(platformHandler, "justifySelf", ResolveGridSelfAlignment(horizontalAlignment));
                 changed |= SetStyleIfChanged(platformHandler, "alignSelf", ResolveGridSelfAlignment(verticalAlignment));
                 break;
@@ -331,6 +339,22 @@ internal static class MirageCommonViewProjection
         }
 
         return view.VerticalLayoutAlignment;
+    }
+
+    private static Mirage.Core.Semantics.ComponentKind? ResolveParentLayoutKind(
+        IView view,
+        Mirage.Core.Semantics.ComponentKind? projectedParentKind)
+    {
+        return view.Parent switch
+        {
+            StackLayout stack => stack.Orientation == StackOrientation.Horizontal
+                ? Mirage.Core.Semantics.ComponentKind.HorizontalStack
+                : Mirage.Core.Semantics.ComponentKind.VerticalStack,
+            VerticalStackLayout => Mirage.Core.Semantics.ComponentKind.VerticalStack,
+            HorizontalStackLayout => Mirage.Core.Semantics.ComponentKind.HorizontalStack,
+            Grid => Mirage.Core.Semantics.ComponentKind.Grid,
+            _ => projectedParentKind
+        };
     }
 
     private static Microsoft.Maui.Primitives.LayoutAlignment ToPrimitivesAlignment(Microsoft.Maui.Controls.LayoutAlignment alignment)
@@ -509,17 +533,19 @@ internal static class MirageCommonViewProjection
         return null;
     }
 
-    private static string? ResolveFontFamily(string? family)
+    private static string? ResolveFontFamily(string? family, string? fallbackFamily)
     {
+        var normalizedFallback = NormalizeFallbackFontFamily(fallbackFamily);
+
         if (string.IsNullOrWhiteSpace(family))
         {
-            return null;
+            return normalizedFallback;
         }
 
         var trimmed = family.Trim();
         if (trimmed.Length == 0)
         {
-            return null;
+            return normalizedFallback;
         }
 
         if (trimmed.Contains(',', StringComparison.Ordinal) || GenericFontFamilies.Contains(trimmed))
@@ -531,7 +557,28 @@ internal static class MirageCommonViewProjection
             ? trimmed
             : $"\"{trimmed.Replace("\"", "\\\"", StringComparison.Ordinal)}\"";
 
-        return $"{quotedFamily}, sans-serif";
+        if (string.IsNullOrWhiteSpace(normalizedFallback))
+        {
+            return $"{quotedFamily}, sans-serif";
+        }
+
+        if (string.Equals(normalizedFallback, "sans-serif", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"{quotedFamily}, sans-serif";
+        }
+
+        return $"{quotedFamily}, {normalizedFallback}, sans-serif";
+    }
+
+    private static string? NormalizeFallbackFontFamily(string? fallbackFamily)
+    {
+        if (string.IsNullOrWhiteSpace(fallbackFamily))
+        {
+            return null;
+        }
+
+        var trimmed = fallbackFamily.Trim();
+        return trimmed.Length == 0 ? null : trimmed;
     }
 
     private static ClipPathProjection BuildClipPathProjection(IShape geometry)

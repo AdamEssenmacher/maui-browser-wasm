@@ -30,10 +30,10 @@ jobs:
         run: dotnet workload install maui wasm-tools
 
       - name: Restore
-        run: dotnet restore Mirage.sln
+        run: dotnet restore Mirage.CI.slnf
 
       - name: Build
-        run: dotnet build Mirage.sln --configuration Release --no-restore
+        run: dotnet build Mirage.CI.slnf --configuration Release --no-restore
 
       - name: Install Playwright browser
         run: |

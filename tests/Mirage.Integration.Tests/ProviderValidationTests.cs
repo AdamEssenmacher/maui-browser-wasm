@@ -55,6 +55,29 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentImageDescriptor_MapsSourceToImgSrcAttribute()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.Image);
+
+        Assert.Equal("img", descriptor.ElementTagName);
+        Assert.True(descriptor.PropertyMappings.ContainsKey("Source"));
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Source"].Target);
+        Assert.Equal("src", descriptor.PropertyMappings["Source"].Name);
+    }
+
+    [Fact]
+    public void FluentBorderDescriptor_MapsAutomationId()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.Border);
+
+        Assert.Equal("div", descriptor.ElementTagName);
+        Assert.True(descriptor.PropertyMappings.ContainsKey("AutomationId"));
+        Assert.True(descriptor.PropertyMappings.ContainsKey("StrokeDashOffset"));
+    }
+
+    [Fact]
     public void FluentProvider_ResolvesHorizontalStackSemanticKind()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();
@@ -84,7 +107,8 @@ public sealed class ProviderValidationTests
             ComponentKind.ContentContainer,
             ComponentKind.VerticalStack,
             ComponentKind.HorizontalStack,
-            ComponentKind.Grid
+            ComponentKind.Grid,
+            ComponentKind.AbsoluteLayout
         };
 
         foreach (var kind in layoutKinds)

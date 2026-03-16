@@ -11,8 +11,9 @@ internal abstract class MirageContentViewHandlerBase<TVirtualView> : MirageSingl
 {
     protected MirageContentViewHandlerBase(
         IPropertyMapper mapper,
-        CommandMapper? commandMapper = null)
-        : base(ComponentKind.ContentContainer, mapper, commandMapper)
+        CommandMapper? commandMapper = null,
+        ComponentKind kind = ComponentKind.ContentContainer)
+        : base(kind, mapper, commandMapper)
     {
         DefaultDisplayStyle = "grid";
     }

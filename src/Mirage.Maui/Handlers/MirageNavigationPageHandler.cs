@@ -711,7 +711,8 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         _navigationBar.SetStyle("gridColumnEnd", "2");
         _navigationBar.SetStyle("gridRowStart", "1");
         _navigationBar.SetStyle("gridRowEnd", "2");
-        _navigationBar.SetStyle("gridTemplateColumns", "auto minmax(0, 1fr) auto");
+        // Keep left/right columns symmetric so title stays centered on the full page width.
+        _navigationBar.SetStyle("gridTemplateColumns", "minmax(0, 1fr) auto minmax(0, 1fr)");
         _navigationBar.SetStyle("alignItems", "center");
         _navigationBar.SetStyle("columnGap", "10px");
         _navigationBar.SetStyle("boxSizing", "border-box");
@@ -728,10 +729,15 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
 
         _titleSlot.SetStyle("display", "grid");
         _titleSlot.SetStyle("alignItems", "center");
+        _titleSlot.SetStyle("justifyItems", "stretch");
         _titleSlot.SetStyle("overflow", "hidden");
         _titleSlot.SetStyle("minWidth", "0");
 
         _titleNode.SetStyle("fontWeight", "600");
+        _titleNode.SetStyle("fontFamily", MirageCommonViewProjection.DefaultSystemFontFamily);
+        _titleNode.SetStyle("textAlign", "center");
+        _titleNode.SetStyle("width", "100%");
+        _titleNode.SetStyle("justifySelf", "stretch");
         _titleNode.SetStyle("overflow", "hidden");
         _titleNode.SetStyle("textOverflow", "ellipsis");
         _titleNode.SetStyle("whiteSpace", "nowrap");
@@ -742,6 +748,7 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         _toolbarSlot.SetStyle("alignItems", "center");
         _toolbarSlot.SetStyle("gap", "8px");
         _toolbarSlot.SetStyle("justifyContent", "flex-end");
+        _toolbarSlot.SetStyle("justifySelf", "stretch");
         _toolbarSlot.SetStyle("minWidth", "0");
 
         _backButtonNode.SetStyle("minWidth", "68px");
@@ -794,7 +801,7 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         _navigationBarVisible = navigationBarVisible;
 
         var barBackground = MirageCommonViewProjection.ToCssColor(VirtualView.BarBackgroundColor) ?? "rgba(241,245,249,1)";
-        var barForeground = MirageCommonViewProjection.ToCssColor(VirtualView.BarTextColor) ?? "rgba(15,23,42,1)";
+        var barForeground = MirageCommonViewProjection.ToCssColor(VirtualView.BarTextColor) ?? MirageCommonViewProjection.DefaultSystemTextColor;
 
         changed |= SetStyleIfChanged(_navigationBar, "backgroundColor", barBackground);
         changed |= SetStyleIfChanged(_titleNode, "color", barForeground);

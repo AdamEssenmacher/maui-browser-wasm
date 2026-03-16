@@ -47,6 +47,11 @@ bld/
 samples/*/wwwroot/_framework/
 samples/*/wwwroot/_hotreload/
 src/Maui.Browser.Sample/wwwroot/_framework/
+samples/ControlsSample.Fluent/wwwroot/*.png
+samples/ControlsSample.Fluent/wwwroot/*.jpg
+samples/ControlsSample.Fluent/wwwroot/*.jpeg
+samples/ControlsSample.Fluent/wwwroot/*.gif
+samples/ControlsSample.Fluent/wwwroot/*.svg
 
 # Visual Studio 2017 auto generated files
 Generated\ Files/

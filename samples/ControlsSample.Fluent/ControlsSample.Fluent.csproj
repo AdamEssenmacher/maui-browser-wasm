@@ -1,0 +1,82 @@
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <MirageBrowserApp>true</MirageBrowserApp>
+    <TargetFramework>net10.0-browser</TargetFramework>
+    <RuntimeIdentifier>browser-wasm</RuntimeIdentifier>
+    <DefaultWasmHostConfig>browser</DefaultWasmHostConfig>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <WasmEnableJSImport>true</WasmEnableJSImport>
+    <WasmBuildAppBundle>true</WasmBuildAppBundle>
+    <MauiXamlInflator>SourceGen</MauiXamlInflator>
+    <ControlsSampleVendorRoot>..\..\vendor\upstream\controls-sample\</ControlsSampleVendorRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HostConfig Include="browser">
+      <host>browser</host>
+      <html-path>index.html</html-path>
+    </HostConfig>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Mirage.Maui\Mirage.Maui.csproj" />
+    <ProjectReference Include="..\..\src\Mirage.Provider.Fluent\Mirage.Provider.Fluent.csproj" />
+    <ProjectReference Include="..\..\src\Mirage.Web\Mirage.Web.csproj" />
+    <ProjectReference Include="..\..\src\Mirage.Core\Mirage.Core.csproj" />
+    <ProjectReference Include="..\ControlsSample.Shared\ControlsSample.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <MirageHotReloadXaml Include="..\ControlsSample.Shared\App\**\*.xaml">
+      <HotReloadAssemblyName>ControlsSample.Shared</HotReloadAssemblyName>
+      <HotReloadRelativePath>App/$([System.String]::Copy('%(RecursiveDir)%(Filename)%(Extension)').Replace('\\', '/'))</HotReloadRelativePath>
+    </MirageHotReloadXaml>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiPackageVersion)" />
+    <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiPackageVersion)" />
+    <PackageReference Include="Microsoft.Maui.Controls.Xaml" Version="$(MauiPackageVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <MauiFont Include="$(ControlsSampleVendorRoot)Resources\Fonts\*.ttf" />
+    <MauiImage Include="$(ControlsSampleVendorRoot)Resources\Images\*" />
+    <MauiAsset Include="$(ControlsSampleVendorRoot)Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ControlsSampleBrowserImage Include="$(ControlsSampleVendorRoot)Resources\Images\*" />
+    <ControlsSampleBrowserImage Include="$(ControlsSampleVendorRoot)Resources\Embedded\dotnet_bot.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ControlsSampleBrowserImageMirror Include="@(ControlsSampleBrowserImage)">
+      <MirrorPath>$(MSBuildProjectDirectory)/wwwroot/%(Filename)%(Extension)</MirrorPath>
+      <MirrorDir>$([System.IO.Path]::GetDirectoryName('%(MirrorPath)'))</MirrorDir>
+    </_ControlsSampleBrowserImageMirror>
+  </ItemGroup>
+
+  <ItemGroup>
+    <WasmExtraFilesToDeploy Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*">
+      <TargetPath>%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+    </WasmExtraFilesToDeploy>
+  </ItemGroup>
+
+  <Target Name="ControlsSampleMirrorBrowserImages"
+          BeforeTargets="PrepareForBuild"
+          Condition="'@(_ControlsSampleBrowserImageMirror)' != ''">
+    <MakeDir Directories="@(_ControlsSampleBrowserImageMirror->'%(MirrorDir)')" />
+    <Copy SourceFiles="@(_ControlsSampleBrowserImageMirror)"
+          DestinationFiles="@(_ControlsSampleBrowserImageMirror->'%(MirrorPath)')"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+  </Target>
+</Project>

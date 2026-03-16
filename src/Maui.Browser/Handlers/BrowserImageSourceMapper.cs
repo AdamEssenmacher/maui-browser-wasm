@@ -90,16 +90,22 @@ internal static class BrowserImageSourceMapper
             return null;
         }
 
-        var trimmed = file.Trim();
+        var trimmed = file.Trim().Replace('\\', '/');
         if (trimmed.StartsWith("data:", StringComparison.OrdinalIgnoreCase) ||
             trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
             trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
-            trimmed.StartsWith("blob:", StringComparison.OrdinalIgnoreCase))
+            trimmed.StartsWith("blob:", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.StartsWith("/", StringComparison.Ordinal))
         {
             return trimmed;
         }
 
-        return trimmed;
+        if (trimmed.StartsWith("./", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[2..];
+        }
+
+        return $"/{trimmed}";
     }
 
     private static bool TryBuildFontImageDataUri(FontImageSource fontImageSource, out string dataUri)

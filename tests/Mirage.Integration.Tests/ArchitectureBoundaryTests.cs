@@ -47,7 +47,10 @@ public sealed class ArchitectureBoundaryTests
         {
             "MirageButtonHandler.cs",
             "MirageEntryHandler.cs",
+            "MirageImageHandler.cs",
+            "MirageBorderHandler.cs",
             "MirageLabelHandler.cs",
+            "MirageBoxViewHandler.cs",
             "MirageContentViewHandler.cs",
             "MirageContentPageHandler.cs",
             "MirageNavigationPageHandler.cs",
@@ -259,6 +262,21 @@ public sealed class ArchitectureBoundaryTests
         var text = File.ReadAllText(hostingPath);
         Assert.Contains("typeof(ScrollView)", text, StringComparison.Ordinal);
         Assert.Contains("typeof(MirageScrollViewHandler)", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BrowserPlatform_RegistersStackLayoutImageAndBorderHandlers()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var text = File.ReadAllText(hostingPath);
+        Assert.Contains("typeof(StackLayout)", text, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageLayoutHandler)", text, StringComparison.Ordinal);
+        Assert.Contains("typeof(Image)", text, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageImageHandler)", text, StringComparison.Ordinal);
+        Assert.Contains("typeof(Border)", text, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageBorderHandler)", text, StringComparison.Ordinal);
     }
 
     [Fact]

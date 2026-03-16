@@ -1,0 +1,20 @@
+{
+  "solution": {
+    "path": "Mirage.sln",
+    "projects": [
+      "samples/ControlsSample.Fluent/ControlsSample.Fluent.csproj",
+      "samples/ControlsSample.Shared/ControlsSample.Shared.csproj",
+      "samples/Counter.Fluent/Counter.Fluent.csproj",
+      "samples/Counter.Shared/Counter.Shared.csproj",
+      "samples/Showcase.Fluent/Showcase.Fluent.csproj",
+      "samples/Showcase.Shared/Showcase.Shared.csproj",
+      "src/Mirage.Core/Mirage.Core.csproj",
+      "src/Mirage.Maui/Mirage.Maui.csproj",
+      "src/Mirage.Provider.Fluent/Mirage.Provider.Fluent.csproj",
+      "src/Mirage.Web/Mirage.Web.csproj",
+      "tests/Mirage.Core.Tests/Mirage.Core.Tests.csproj",
+      "tests/Mirage.E2E.Tests/Mirage.E2E.Tests.csproj",
+      "tests/Mirage.Integration.Tests/Mirage.Integration.Tests.csproj"
+    ]
+  }
+}
