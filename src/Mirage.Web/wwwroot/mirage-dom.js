@@ -90,6 +90,19 @@ input[data-mirage-kind="Slider"][type="range"][data-maui-slider-thumb-image-stat
   background-size: contain;
 }
 
+input[data-mirage-kind="Slider"][type="range"]:focus-visible {
+  outline: 2px solid rgba(59,130,246,0.95);
+  outline-offset: 2px;
+}
+
+input[data-mirage-kind="Slider"][type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.35);
+}
+
+input[data-mirage-kind="Slider"][type="range"]:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.35);
+}
+
 input[data-mirage-kind="Slider"][type="range"]:disabled {
   cursor: default;
 }

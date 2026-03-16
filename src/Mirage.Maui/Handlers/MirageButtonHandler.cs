@@ -63,8 +63,8 @@ internal sealed class MirageButtonHandler : MirageViewHandler<Button>, IMirageRu
         PlatformView.SetStyle("boxSizing", "border-box");
         PlatformView.SetStyle("cursor", VirtualView.IsEnabled ? "pointer" : "default");
         PlatformView.SetEvent("click", enabled: true);
-        UpdateProjectedText(VirtualView);
         UpdateImageProjection(VirtualView);
+        UpdateProjectedText(VirtualView);
         UpdateContentLayoutProjection(VirtualView);
         UpdatePaddingProjection(VirtualView);
         UpdateBackgroundStyles(VirtualView);
@@ -114,8 +114,8 @@ internal sealed class MirageButtonHandler : MirageViewHandler<Button>, IMirageRu
 
     public static void MapText(MirageButtonHandler handler, Button button)
     {
-        var changed = handler.UpdateProjectedText(button);
-        changed |= handler.UpdateImageProjection(button);
+        var changed = handler.UpdateImageProjection(button);
+        changed |= handler.UpdateProjectedText(button);
         changed |= handler.UpdateContentLayoutProjection(button);
         changed |= handler.UpdateToolTipProjection(button);
         if (!changed)
@@ -423,7 +423,7 @@ internal sealed class MirageButtonHandler : MirageViewHandler<Button>, IMirageRu
     private bool UpdateProjectedText(Button button)
     {
         var text = button.Text ?? string.Empty;
-        var hasImage = button.ImageSource is not null;
+        var hasImage = string.Equals(PlatformView.GetPropertyString("ImageDisplay"), "block", StringComparison.Ordinal);
         var projectedText = text;
 
         if (text.Length > 0 && IsTruncationMode(button.LineBreakMode))

@@ -508,6 +508,37 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void ButtonHandler_UnresolvedImage_DoesNotReduceTruncationBudget()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new RejectingImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageButtonHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var button = new Button
+        {
+            Text = "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            ImageSource = "missing.png",
+            WidthRequest = 140,
+            Padding = new Thickness(0),
+            LineBreakMode = LineBreakMode.TailTruncation
+        };
+
+        ((IElementHandler)handler).SetVirtualView(button);
+        Assert.Equal("none", handler.PlatformView.GetPropertyString("ImageDisplay"));
+        var unresolvedProjected = handler.PlatformView.GetPropertyString("Text");
+
+        button.ImageSource = null;
+        MirageButtonHandler.Mapper.UpdateProperty(handler, button, nameof(Button.ImageSource));
+        var noImageProjected = handler.PlatformView.GetPropertyString("Text");
+
+        Assert.Equal(noImageProjected, unresolvedProjected);
+    }
+
+    [Fact]
     public void CheckBoxHandler_ProjectsColorAliasesCheckedAndDisabledSemantics()
     {
         var services = new ServiceCollection().BuildServiceProvider();
