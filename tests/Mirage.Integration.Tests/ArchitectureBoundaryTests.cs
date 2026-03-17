@@ -430,15 +430,21 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("nameof(IView.Background)", mapperText, StringComparison.Ordinal);
         Assert.Contains("nameof(IView.Opacity)", mapperText, StringComparison.Ordinal);
         Assert.Contains("nameof(IView.Clip)", mapperText, StringComparison.Ordinal);
+        Assert.Contains("nameof(ITransform.ScaleX)", mapperText, StringComparison.Ordinal);
+        Assert.Contains("nameof(ITransform.ScaleY)", mapperText, StringComparison.Ordinal);
+        Assert.Contains("nameof(ITransform.TranslationX)", mapperText, StringComparison.Ordinal);
         Assert.Contains("nameof(ITextStyle.TextColor)", mapperText, StringComparison.Ordinal);
         Assert.Contains("nameof(ITextStyle.Font)", mapperText, StringComparison.Ordinal);
         Assert.Contains("nameof(ITextStyle.CharacterSpacing)", mapperText, StringComparison.Ordinal);
         Assert.Contains("MapSizeRequests", mapperText, StringComparison.Ordinal);
         Assert.Contains("MapLayoutAlignment", mapperText, StringComparison.Ordinal);
+        Assert.Contains("MapTransform", mapperText, StringComparison.Ordinal);
 
         Assert.Contains("MapBackground", projectionText, StringComparison.Ordinal);
         Assert.Contains("MapOpacity", projectionText, StringComparison.Ordinal);
         Assert.Contains("MapClip", projectionText, StringComparison.Ordinal);
+        Assert.Contains("MapTransform", projectionText, StringComparison.Ordinal);
+        Assert.Contains("SetLayoutTransformFragment", projectionText, StringComparison.Ordinal);
         Assert.Contains("MapTextColor", projectionText, StringComparison.Ordinal);
         Assert.Contains("MapFont", projectionText, StringComparison.Ordinal);
         Assert.Contains("MapCharacterSpacing", projectionText, StringComparison.Ordinal);

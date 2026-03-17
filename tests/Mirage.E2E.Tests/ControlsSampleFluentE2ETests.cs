@@ -32,6 +32,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stepperpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-transformationspage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-layoutisenabledpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
@@ -747,6 +748,52 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
+    public async Task TransformationsPage_IsRunnable_AndAppliesSliderAndStepperTransforms()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1000, height: 1200);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-transformationspage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-transformationspage']");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-transformationspage-target']");
+            });
+
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-transformationspage-scale-slider']", 2);
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-transformationspage-scalex-slider']", 1.5);
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-transformationspage-scaley-slider']", 0.5);
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-transformationspage-rotation-slider']", 90);
+        await page.Locator("[data-automation-id='controls-sample-transformationspage-anchorx-stepper'] [data-mirage-secondary-element='true']").ClickAsync();
+        await page.Locator("[data-automation-id='controls-sample-transformationspage-anchory-stepper'] [data-mirage-value-element='true']").ClickAsync();
+        await page.WaitForTimeoutAsync(120);
+
+        var targetTransformSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const target = document.querySelector("[data-automation-id='controls-sample-transformationspage-target']");
+                if (!(target instanceof HTMLElement)) {
+                    return ["__missing__", "", ""];
+                }
+
+                return [
+                    "ok",
+                    target.style.transform ?? "",
+                    target.style.transformOrigin ?? ""
+                ];
+            }
+            """);
+
+        Assert.Equal("ok", targetTransformSnapshot[0]);
+        Assert.Contains("rotate(90deg)", targetTransformSnapshot[1], StringComparison.Ordinal);
+        Assert.Contains("scale(3, 1)", targetTransformSnapshot[1], StringComparison.Ordinal);
+        Assert.Equal("0% 100%", targetTransformSnapshot[2]);
+    }
+
+    [Fact]
     public async Task StepperPage_IsRunnable_AndSupportsEnablementValueAndRangeScenarios()
     {
         await using var context = await _fixture.NewContextAsync(width: 900, height: 1080);
@@ -982,6 +1029,31 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 $"{ex.Message}\nBody text snapshot: {bodyText}\nHost logs:\n{hostLogs}\nPage diagnostics:\n{diagnosticsSnapshot}",
                 ex);
         }
+    }
+
+    private static async Task SetInputValueAsync(IPage page, string selector, double value)
+    {
+        var result = await page.EvaluateAsync<string>(
+            """
+            (payload) => {
+                const control = document.querySelector(payload.selector);
+                if (!(control instanceof HTMLInputElement)) {
+                    return "__missing__";
+                }
+
+                control.value = payload.value;
+                control.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+                control.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+                return control.value;
+            }
+            """,
+            new
+            {
+                selector,
+                value = value.ToString("G17", CultureInfo.InvariantCulture)
+            });
+
+        Assert.NotEqual("__missing__", result);
     }
 
     private static async Task<bool> HasDisabledAttributeAsync(IPage page, string selector)

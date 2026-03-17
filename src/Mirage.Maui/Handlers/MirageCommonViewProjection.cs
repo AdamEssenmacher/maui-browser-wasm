@@ -30,6 +30,7 @@ internal static class MirageCommonViewProjection
     };
 
     private static readonly ConditionalWeakTable<MiragePlatformView, RequestedSizeState> RequestedSizeStates = new();
+    private static readonly ConditionalWeakTable<MiragePlatformView, TransformCompositionState> TransformCompositionStates = new();
 
     public static bool MapAutomationId(IViewHandler handler, IView view)
     {
@@ -188,6 +189,66 @@ internal static class MirageCommonViewProjection
             platformHandler,
             "boxShadow",
             $"{ToPxNoClamp(offsetX)} {ToPxNoClamp(offsetY)} {ToPx(blur)} {shadowColor}");
+    }
+
+    public static bool MapTransform(IViewHandler handler, IView view)
+    {
+        if (!TryGetPlatformHandler(handler, out var platformHandler)
+            || view is not ITransform transform)
+        {
+            return false;
+        }
+
+        var translationX = NormalizeFinite(transform.TranslationX, 0);
+        var translationY = NormalizeFinite(transform.TranslationY, 0);
+
+        var baseScale = NormalizeFinite(transform.Scale, 1);
+        var scaleX = baseScale * NormalizeFinite(transform.ScaleX, 1);
+        var scaleY = baseScale * NormalizeFinite(transform.ScaleY, 1);
+
+        var rotation = NormalizeFinite(transform.Rotation, 0);
+        var rotationX = NormalizeFinite(transform.RotationX, 0);
+        var rotationY = NormalizeFinite(transform.RotationY, 0);
+
+        var anchorX = Math.Clamp(NormalizeFinite(transform.AnchorX, 0.5), 0, 1);
+        var anchorY = Math.Clamp(NormalizeFinite(transform.AnchorY, 0.5), 0, 1);
+        var transformOrigin = $"{CssNumber(anchorX * 100)}% {CssNumber(anchorY * 100)}%";
+
+        var changed = SetStyleIfChanged(platformHandler, "transformOrigin", transformOrigin);
+
+        var isIdentity =
+            Math.Abs(translationX) < 0.0001 &&
+            Math.Abs(translationY) < 0.0001 &&
+            Math.Abs(scaleX - 1) < 0.0001 &&
+            Math.Abs(scaleY - 1) < 0.0001 &&
+            Math.Abs(rotation) < 0.0001 &&
+            Math.Abs(rotationX) < 0.0001 &&
+            Math.Abs(rotationY) < 0.0001;
+
+        var viewTransform = isIdentity
+            ? null
+            : string.Create(
+                CultureInfo.InvariantCulture,
+                $"translate({ToPxNoClamp(translationX)}, {ToPxNoClamp(translationY)}) " +
+                $"rotate({CssNumber(rotation)}deg) " +
+                $"rotateX({CssNumber(rotationX)}deg) " +
+                $"rotateY({CssNumber(rotationY)}deg) " +
+                $"scale({CssNumber(scaleX)}, {CssNumber(scaleY)})");
+
+        changed |= SetViewTransformFragment(platformHandler.MiragePlatformView, viewTransform);
+        return changed;
+    }
+
+    internal static bool SetLayoutTransformFragment(MiragePlatformView platformView, string? layoutTransform)
+    {
+        var state = TransformCompositionStates.GetValue(platformView, static _ => new TransformCompositionState());
+        if (string.Equals(state.LayoutTransform, layoutTransform, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        state.LayoutTransform = layoutTransform;
+        return ApplyComposedTransformStyle(platformView, state);
     }
 
     public static bool MapLayoutClipsToBounds(IViewHandler handler, Microsoft.Maui.ILayout layout)
@@ -523,6 +584,53 @@ internal static class MirageCommonViewProjection
 
         platformHandler.MiragePlatformView.SetStyle(name, value);
         return true;
+    }
+
+    private static bool SetViewTransformFragment(MiragePlatformView platformView, string? viewTransform)
+    {
+        var state = TransformCompositionStates.GetValue(platformView, static _ => new TransformCompositionState());
+        if (string.Equals(state.ViewTransform, viewTransform, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        state.ViewTransform = viewTransform;
+        return ApplyComposedTransformStyle(platformView, state);
+    }
+
+    private static bool ApplyComposedTransformStyle(MiragePlatformView platformView, TransformCompositionState state)
+    {
+        var composed = ComposeTransform(state.LayoutTransform, state.ViewTransform);
+        if (string.Equals(platformView.GetStyleValue("transform"), composed, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        platformView.SetStyle("transform", composed);
+        return true;
+    }
+
+    private static string? ComposeTransform(string? layoutTransform, string? viewTransform)
+    {
+        var hasLayoutTransform = !string.IsNullOrWhiteSpace(layoutTransform);
+        var hasViewTransform = !string.IsNullOrWhiteSpace(viewTransform);
+
+        if (!hasLayoutTransform && !hasViewTransform)
+        {
+            return null;
+        }
+
+        if (!hasLayoutTransform)
+        {
+            return viewTransform;
+        }
+
+        if (!hasViewTransform)
+        {
+            return layoutTransform;
+        }
+
+        return $"{layoutTransform} {viewTransform}";
     }
 
     private static bool TryGetPlatformHandler(IElementHandler handler, out IMiragePlatformHandler platformHandler)
@@ -1157,6 +1265,13 @@ internal static class MirageCommonViewProjection
         public bool MaxWidthApplied { get; set; }
 
         public bool MaxHeightApplied { get; set; }
+    }
+
+    private sealed class TransformCompositionState
+    {
+        public string? LayoutTransform { get; set; }
+
+        public string? ViewTransform { get; set; }
     }
 
     private enum RequestedLength
