@@ -724,6 +724,8 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
 
         Assert.Equal("-", (await page.Locator(enableStepperDecrementSelector).InnerTextAsync()).Trim());
         Assert.Equal("+", (await page.Locator(enableStepperIncrementSelector).InnerTextAsync()).Trim());
+        Assert.Equal("button", await page.Locator(enableStepperDecrementSelector).GetAttributeAsync("type"));
+        Assert.Equal("button", await page.Locator(enableStepperIncrementSelector).GetAttributeAsync("type"));
 
         Assert.True(await HasDisabledAttributeAsync(page, enableStepperDecrementSelector));
         Assert.True(await HasDisabledAttributeAsync(page, enableStepperIncrementSelector));

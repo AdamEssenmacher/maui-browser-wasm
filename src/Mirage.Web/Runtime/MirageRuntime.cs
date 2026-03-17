@@ -236,6 +236,10 @@ public sealed class MirageRuntime : IMirageRuntime
         {
             valueElement = DomElement.Create(descriptor.ValueElementTagName!);
             valueElement.Attr(ValueElementMarker, "true");
+            if (string.Equals(descriptor.ValueElementTagName, "button", StringComparison.OrdinalIgnoreCase))
+            {
+                valueElement.Attr("type", "button");
+            }
             valueElement.Style("boxSizing", "border-box");
             if (descriptor.StretchValueElementWidth)
             {
@@ -248,6 +252,10 @@ public sealed class MirageRuntime : IMirageRuntime
         {
             secondaryElement = DomElement.Create(descriptor.SecondaryElementTagName!);
             secondaryElement.Attr("data-mirage-secondary-element", "true");
+            if (string.Equals(descriptor.SecondaryElementTagName, "button", StringComparison.OrdinalIgnoreCase))
+            {
+                secondaryElement.Attr("type", "button");
+            }
             secondaryElement.Style("boxSizing", "border-box");
         }
 
