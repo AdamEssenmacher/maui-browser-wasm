@@ -34,7 +34,7 @@ Visual legend:
 | `ScrollToFromConstructorPage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollToFromConstructorPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ScrollViewOrientationPage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollViewOrientationPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ScrollViewTemplatePage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollViewTemplatePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `StackLayoutPage.xaml` | `Pages/Layouts/StackLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `StackLayoutPage.xaml` | `Pages/Layouts/StackLayoutPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `TemplatedViewPage.xaml` | `Pages/Layouts/TemplatedViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `VerticalStackLayoutPage.xaml` | `Pages/Layouts/VerticalStackLayoutPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ZIndexPage.xaml` | `Pages/Layouts/ZIndexPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
