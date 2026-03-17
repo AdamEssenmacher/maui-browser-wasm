@@ -119,6 +119,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
     private void RebuildItems()
     {
         using var _ = BeginRenderBatch();
+        var selectionSnapshot = CaptureSelectionSnapshot();
 
         DetachObservedCollection();
         ClearItems();
@@ -159,7 +160,11 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
 
         ApplyContainerStyles();
         ApplySelectionInteractivity();
-        SyncSelectionStateFromVirtualView();
+        if (!TryRestoreSelectionSnapshot(selectionSnapshot))
+        {
+            SyncSelectionStateFromVirtualView();
+        }
+
         UpdateSelectionStyles();
         RequestRender();
     }
@@ -430,6 +435,155 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         return false;
     }
 
+    private SelectionSnapshot CaptureSelectionSnapshot()
+    {
+        if (_realizedItems.Count == 0)
+        {
+            return SelectionSnapshot.Empty;
+        }
+
+        return VirtualView.SelectionMode switch
+        {
+            SelectionMode.Single => CaptureSingleSelectionSnapshot(),
+            SelectionMode.Multiple => CaptureMultipleSelectionSnapshot(),
+            _ => SelectionSnapshot.Empty
+        };
+    }
+
+    private SelectionSnapshot CaptureSingleSelectionSnapshot()
+    {
+        if (!_selectedSingleIndex.HasValue
+            || _selectedSingleIndex.Value < 0
+            || _selectedSingleIndex.Value >= _realizedItems.Count)
+        {
+            return SelectionSnapshot.Empty;
+        }
+
+        return SelectionSnapshot.FromSingleToken(CreateSelectionToken(_selectedSingleIndex.Value));
+    }
+
+    private SelectionSnapshot CaptureMultipleSelectionSnapshot()
+    {
+        if (_selectedIndexes.Count == 0)
+        {
+            return SelectionSnapshot.Empty;
+        }
+
+        var selectedTokens = _selectedIndexes
+            .Where(index => index >= 0 && index < _realizedItems.Count)
+            .OrderBy(index => index)
+            .Select(CreateSelectionToken)
+            .ToList();
+
+        return selectedTokens.Count == 0
+            ? SelectionSnapshot.Empty
+            : SelectionSnapshot.FromMultipleTokens(selectedTokens);
+    }
+
+    private SelectionToken CreateSelectionToken(int itemIndex)
+    {
+        var selectedItem = _realizedItems[itemIndex].Item;
+        var occurrence = 0;
+        for (var i = 0; i <= itemIndex; i++)
+        {
+            if (AreItemsEquivalent(_realizedItems[i].Item, selectedItem))
+            {
+                occurrence++;
+            }
+        }
+
+        return new SelectionToken(selectedItem, occurrence);
+    }
+
+    private bool TryRestoreSelectionSnapshot(SelectionSnapshot snapshot)
+    {
+        if (snapshot.IsEmpty || snapshot.Mode != VirtualView.SelectionMode)
+        {
+            return false;
+        }
+
+        return snapshot.Mode switch
+        {
+            SelectionMode.Single => TryRestoreSingleSelectionSnapshot(snapshot),
+            SelectionMode.Multiple => TryRestoreMultipleSelectionSnapshot(snapshot),
+            _ => false
+        };
+    }
+
+    private bool TryRestoreSingleSelectionSnapshot(SelectionSnapshot snapshot)
+    {
+        if (!snapshot.SingleToken.HasValue
+            || !TryFindIndexBySelectionToken(snapshot.SingleToken.Value, usedIndexes: null, out var selectedIndex))
+        {
+            return false;
+        }
+
+        _selectedIndexes.Clear();
+        _selectedSingleIndex = selectedIndex;
+        SetSelectedItemFromHandler(_realizedItems[selectedIndex].Item);
+        return true;
+    }
+
+    private bool TryRestoreMultipleSelectionSnapshot(SelectionSnapshot snapshot)
+    {
+        if (snapshot.MultipleTokens.Count == 0)
+        {
+            return false;
+        }
+
+        _selectedSingleIndex = null;
+        _selectedIndexes.Clear();
+
+        var usedIndexes = new HashSet<int>();
+        var selectedItems = new List<object>();
+        foreach (var token in snapshot.MultipleTokens)
+        {
+            if (!TryFindIndexBySelectionToken(token, usedIndexes, out var selectedIndex))
+            {
+                continue;
+            }
+
+            usedIndexes.Add(selectedIndex);
+            _selectedIndexes.Add(selectedIndex);
+            selectedItems.Add(_realizedItems[selectedIndex].Item);
+        }
+
+        if (selectedItems.Count == 0)
+        {
+            return false;
+        }
+
+        SetSelectedItemsFromHandler(selectedItems);
+        return true;
+    }
+
+    private bool TryFindIndexBySelectionToken(SelectionToken token, HashSet<int>? usedIndexes, out int index)
+    {
+        var matchesSeen = 0;
+        for (var i = 0; i < _realizedItems.Count; i++)
+        {
+            if (usedIndexes?.Contains(i) == true)
+            {
+                continue;
+            }
+
+            if (!AreItemsEquivalent(_realizedItems[i].Item, token.Item))
+            {
+                continue;
+            }
+
+            matchesSeen++;
+            if (matchesSeen == token.Occurrence)
+            {
+                index = i;
+                return true;
+            }
+        }
+
+        index = -1;
+        return false;
+    }
+
     private void SyncSelectionStateFromVirtualView()
     {
         _selectedIndexes.Clear();
@@ -452,6 +606,10 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
             {
                 _selectedSingleIndex = selectedIndex;
             }
+            else
+            {
+                SetSelectedItemFromHandler(null);
+            }
 
             return;
         }
@@ -462,6 +620,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         }
 
         var matchedIndexes = new HashSet<int>();
+        var normalizedSelection = new List<object>();
         foreach (var selectedItem in VirtualView.SelectedItems)
         {
             if (selectedItem is null
@@ -472,6 +631,12 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
 
             matchedIndexes.Add(index);
             _selectedIndexes.Add(index);
+            normalizedSelection.Add(_realizedItems[index].Item);
+        }
+
+        if (!SelectionListsEquivalent(VirtualView.SelectedItems, normalizedSelection))
+        {
+            SetSelectedItemsFromHandler(normalizedSelection);
         }
     }
 
@@ -606,6 +771,44 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         public MiragePlatformView Node { get; }
 
         public IElementHandler? ContentHandler { get; }
+    }
+
+    private readonly record struct SelectionToken(object Item, int Occurrence);
+
+    private sealed class SelectionSnapshot
+    {
+        public static SelectionSnapshot Empty { get; } = new();
+
+        private SelectionSnapshot()
+        {
+            Mode = SelectionMode.None;
+            MultipleTokens = [];
+        }
+
+        private SelectionSnapshot(SelectionMode mode, SelectionToken? singleToken, List<SelectionToken> multipleTokens)
+        {
+            Mode = mode;
+            SingleToken = singleToken;
+            MultipleTokens = multipleTokens;
+        }
+
+        public SelectionMode Mode { get; }
+
+        public SelectionToken? SingleToken { get; }
+
+        public IReadOnlyList<SelectionToken> MultipleTokens { get; }
+
+        public bool IsEmpty => Mode == SelectionMode.None;
+
+        public static SelectionSnapshot FromSingleToken(SelectionToken token)
+        {
+            return new SelectionSnapshot(SelectionMode.Single, token, []);
+        }
+
+        public static SelectionSnapshot FromMultipleTokens(List<SelectionToken> tokens)
+        {
+            return new SelectionSnapshot(SelectionMode.Multiple, null, tokens);
+        }
     }
 
     private sealed class ItemEventTarget : IMirageRuntimeEventTarget
