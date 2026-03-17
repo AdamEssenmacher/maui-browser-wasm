@@ -25,6 +25,16 @@ public static class MirageViewMapper
         ["BackgroundColor"] = MapBackground,
         [nameof(IView.Clip)] = MapClip,
         [nameof(IView.Shadow)] = MapShadow,
+        [nameof(ITransform.TranslationX)] = MapTransform,
+        [nameof(ITransform.TranslationY)] = MapTransform,
+        [nameof(ITransform.Scale)] = MapTransform,
+        [nameof(ITransform.ScaleX)] = MapTransform,
+        [nameof(ITransform.ScaleY)] = MapTransform,
+        [nameof(ITransform.Rotation)] = MapTransform,
+        [nameof(ITransform.RotationX)] = MapTransform,
+        [nameof(ITransform.RotationY)] = MapTransform,
+        [nameof(ITransform.AnchorX)] = MapTransform,
+        [nameof(ITransform.AnchorY)] = MapTransform,
         [nameof(VisualElement.WidthRequest)] = MapSizeRequestsAndLayoutAlignment,
         [nameof(VisualElement.HeightRequest)] = MapSizeRequestsAndLayoutAlignment,
         [nameof(VisualElement.MinimumWidthRequest)] = MapSizeRequests,
@@ -149,6 +159,16 @@ public static class MirageViewMapper
         ((IMiragePlatformHandler)handler).RequestRender();
     }
 
+    public static void MapTransform(IViewHandler handler, IView view)
+    {
+        if (!MirageCommonViewProjection.MapTransform(handler, view))
+        {
+            return;
+        }
+
+        ((IMiragePlatformHandler)handler).RequestRender();
+    }
+
     public static void MapSizeRequests(IViewHandler handler, IView view)
     {
         if (!MirageCommonViewProjection.MapSizeRequests(handler, view))
@@ -187,6 +207,16 @@ public static class MirageViewMapper
         handler.UpdateValue(nameof(IView.Background));
         handler.UpdateValue("BackgroundColor");
         handler.UpdateValue(nameof(IView.Shadow));
+        handler.UpdateValue(nameof(ITransform.TranslationX));
+        handler.UpdateValue(nameof(ITransform.TranslationY));
+        handler.UpdateValue(nameof(ITransform.Scale));
+        handler.UpdateValue(nameof(ITransform.ScaleX));
+        handler.UpdateValue(nameof(ITransform.ScaleY));
+        handler.UpdateValue(nameof(ITransform.Rotation));
+        handler.UpdateValue(nameof(ITransform.RotationX));
+        handler.UpdateValue(nameof(ITransform.RotationY));
+        handler.UpdateValue(nameof(ITransform.AnchorX));
+        handler.UpdateValue(nameof(ITransform.AnchorY));
         handler.UpdateValue(nameof(IView.Margin));
         handler.UpdateValue(nameof(IView.Visibility));
         handler.UpdateValue("IsVisible");

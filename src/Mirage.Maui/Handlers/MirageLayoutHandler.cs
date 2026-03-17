@@ -393,6 +393,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", "0");
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", "0");
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", "auto");
+                changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", null);
@@ -410,6 +411,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", "0");
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", "0");
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", "auto");
+                changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", null);
@@ -427,6 +429,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
+                changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
                 var (row, column, rowSpan, columnSpan) = GetGridPlacement(childView);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", (row + 1).ToString(CultureInfo.InvariantCulture));
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", $"span {rowSpan.ToString(CultureInfo.InvariantCulture)}");
@@ -451,6 +454,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
+                changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
                 break;
         }
 
@@ -481,7 +485,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
             changed |= SetChildStyleIfChanged(childPlatformView, "top", "0px");
             changed |= SetChildStyleIfChanged(childPlatformView, "width", null);
             changed |= SetChildStyleIfChanged(childPlatformView, "height", null);
-            changed |= SetChildStyleIfChanged(childPlatformView, "transform", null);
+            changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
             return changed;
         }
 
@@ -506,7 +510,9 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         changed |= SetChildStyleIfChanged(childPlatformView, "width", ResolveAbsoluteLayoutSize(childView, bounds.Width, widthProportional, isWidth: true));
         changed |= SetChildStyleIfChanged(childPlatformView, "height", ResolveAbsoluteLayoutSize(childView, bounds.Height, heightProportional, isWidth: false));
 
-        changed |= SetChildStyleIfChanged(childPlatformView, "transform", ResolveAbsoluteLayoutTranslate(xProportional ? x : null, yProportional ? y : null));
+        changed |= MirageCommonViewProjection.SetLayoutTransformFragment(
+            childPlatformView,
+            ResolveAbsoluteLayoutTranslate(xProportional ? x : null, yProportional ? y : null));
         return changed;
     }
 

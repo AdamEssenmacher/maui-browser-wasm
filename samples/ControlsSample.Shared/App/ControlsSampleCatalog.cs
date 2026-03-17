@@ -38,6 +38,14 @@ public static class ControlsSampleCatalog
             pageType: typeof(VerticalStackLayoutPage),
             description: "Runnable in Mirage today: exercises VerticalStackLayout column flow with Label and BoxView children."),
         new(
+            id: "transformationspage",
+            title: "TransformationsPage",
+            upstreamPath: "Pages/Core/TransformationsPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(TransformationsPage),
+            description: "Runnable in Mirage today: exercises MAUI view transform properties with slider/stepper-driven updates.",
+            pageFactory: CreateTransformationsPage),
+        new(
             id: "clippingpage",
             title: "ClippingPage",
             upstreamPath: "Pages/Layouts/ClippingPage.xaml",
@@ -329,6 +337,24 @@ public static class ControlsSampleCatalog
         {
             valueLabel.AutomationId = "controls-sample-stepperpage-value-label";
         }
+
+        return page;
+    }
+
+    private static Page CreateTransformationsPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new TransformationsPage();
+
+        SetNamedElementAutomationId(page, "_label", "controls-sample-transformationspage-target");
+        SetNamedElementAutomationId(page, "_sliderScale", "controls-sample-transformationspage-scale-slider");
+        SetNamedElementAutomationId(page, "_sliderScaleX", "controls-sample-transformationspage-scalex-slider");
+        SetNamedElementAutomationId(page, "_sliderScaleY", "controls-sample-transformationspage-scaley-slider");
+        SetNamedElementAutomationId(page, "_sliderRotation", "controls-sample-transformationspage-rotation-slider");
+        SetNamedElementAutomationId(page, "_sliderRotationX", "controls-sample-transformationspage-rotationx-slider");
+        SetNamedElementAutomationId(page, "_sliderRotationY", "controls-sample-transformationspage-rotationy-slider");
+        SetNamedElementAutomationId(page, "_stepperAnchorX", "controls-sample-transformationspage-anchorx-stepper");
+        SetNamedElementAutomationId(page, "_stepperAnchorY", "controls-sample-transformationspage-anchory-stepper");
 
         return page;
     }

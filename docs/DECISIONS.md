@@ -7,6 +7,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added provider/runtime secondary-element event targeting to route decrement and increment clicks without handler-side DOM assumptions.
 - Chose compact Android-like split button chrome as the default web Stepper style while preserving common MAUI background/brush projection on the host.
 
+## 2026-03-16 (TransformationsPage runnable + shared transform composition)
+- Enabled `TransformationsPage` as a runnable ControlsSample page with deterministic automation IDs for target label, sliders, and anchor steppers.
+- Added full `ITransform` mapping to the shared Mirage view mapper/projection path (`Translation*`, `Scale*`, `Rotation*`, `Anchor*`) instead of page-specific transform logic.
+- Introduced internal transform fragment composition so layout-authored transforms (for example AbsoluteLayout proportional translate) compose with view-authored transforms in deterministic order (`layout` then `view`) without overwriting each other.
+
 ## 2026-03-04
 - DOM is the platform UI for the Browser backend. No canvas renderer.
 - No MAUI fork initially; build an external Browser platform package using handlers + DI.

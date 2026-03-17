@@ -83,7 +83,7 @@ Visual legend:
 | `SwipeGestureGalleryPage.cs` | `Pages/Core/SwipeGestureGalleryPage.cs` | `[ ]` | `[ ]` | `[ ]` |
 | `TapGestureGalleryPage.cs` | `Pages/Core/TapGestureGalleryPage.cs` | `[ ]` | `[ ]` | `[ ]` |
 | `ToolbarPage.xaml` | `Pages/Core/ToolbarPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `TransformationsPage.xaml` | `Pages/Core/TransformationsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `TransformationsPage.xaml` | `Pages/Core/TransformationsPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `WindowTitleBar.xaml` | `Pages/Core/WindowTitleBar.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `CorePage.xaml` | `Pages/CorePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `HitTestingPage.xaml` | `Pages/HitTestingPage.xaml` | `[ ]` | `[ ]` | `[ ]` |

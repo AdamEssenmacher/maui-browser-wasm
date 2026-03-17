@@ -280,6 +280,90 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CommonMapper_MapTransform_ProjectsAndClearsDeterministically()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var view = new BoxView
+        {
+            TranslationX = 12,
+            TranslationY = -7,
+            Scale = 1.5,
+            ScaleX = 0.8,
+            ScaleY = 0.5,
+            Rotation = 10,
+            RotationX = 3,
+            RotationY = -2,
+            AnchorX = 0.25,
+            AnchorY = 0.75
+        };
+
+        MirageViewMapper.MapTransform(handler, view);
+
+        Assert.Equal("25% 75%", handler.Node.GetStyleValue("transformOrigin"));
+        var projected = handler.Node.GetStyleValue("transform");
+        Assert.NotNull(projected);
+        Assert.Contains("translate(12px, -7px)", projected, StringComparison.Ordinal);
+        Assert.Contains("rotate(10deg)", projected, StringComparison.Ordinal);
+        Assert.Contains("rotateX(3deg)", projected, StringComparison.Ordinal);
+        Assert.Contains("rotateY(-2deg)", projected, StringComparison.Ordinal);
+        Assert.Contains("scale(1.2, 0.75)", projected, StringComparison.Ordinal);
+
+        view.TranslationX = 0;
+        view.TranslationY = 0;
+        view.Scale = 1;
+        view.ScaleX = 1;
+        view.ScaleY = 1;
+        view.Rotation = 0;
+        view.RotationX = 0;
+        view.RotationY = 0;
+        view.AnchorX = 0.5;
+        view.AnchorY = 0.5;
+
+        MirageViewMapper.MapTransform(handler, view);
+
+        Assert.Equal("50% 50%", handler.Node.GetStyleValue("transformOrigin"));
+        Assert.Null(handler.Node.GetStyleValue("transform"));
+    }
+
+    [Fact]
+    public void CommonMapper_MapTransform_PreservesOutOfRangeAnchors()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var view = new BoxView
+        {
+            AnchorX = -1,
+            AnchorY = 2
+        };
+
+        MirageViewMapper.MapTransform(handler, view);
+
+        Assert.Equal("-100% 200%", handler.Node.GetStyleValue("transformOrigin"));
+        Assert.Null(handler.Node.GetStyleValue("transform"));
+    }
+
+    [Fact]
+    public void CommonMapper_MapStyle_ReappliesTransformProperties()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageBoxViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var boxView = new BoxView
+        {
+            ScaleX = 0.6
+        };
+
+        ((IElementHandler)handler).SetVirtualView(boxView);
+        MirageViewMapper.MapStyle(handler, boxView);
+
+        Assert.Equal("50% 50%", handler.PlatformView.GetStyleValue("transformOrigin"));
+        var projected = handler.PlatformView.GetStyleValue("transform");
+        Assert.NotNull(projected);
+        Assert.Contains("scale(0.6, 1)", projected, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ButtonHandler_CompatibilityAliases_MapBackgroundColorAndTextColor()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -1604,6 +1688,49 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.True(changed);
         Assert.Equal("72px", childPlatformView.GetStyleValue("width"));
         Assert.Equal("24px", childPlatformView.GetStyleValue("height"));
+    }
+
+    [Fact]
+    public void LayoutHandler_AbsoluteLayoutTransform_ComposesWithViewTransform_AndClearsOutsideAbsolute()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var childPlatformView = handler.Node;
+        var child = new BoxView
+        {
+            ScaleX = 0.4
+        };
+
+        MirageViewMapper.MapTransform(handler, child);
+        Assert.Contains("scale(0.4, 1)", childPlatformView.GetStyleValue("transform"), StringComparison.Ordinal);
+
+        AbsoluteLayout.SetLayoutBounds(child, new Rect(0.2, 0.3, 160, 80));
+        AbsoluteLayout.SetLayoutFlags(child, Microsoft.Maui.Layouts.AbsoluteLayoutFlags.PositionProportional);
+
+        var applyAbsoluteMethod = typeof(MirageLayoutHandler).GetMethod(
+            "ApplyAbsoluteLayoutChildStyles",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(applyAbsoluteMethod);
+
+        var changed = (bool)applyAbsoluteMethod!.Invoke(null, [childPlatformView, child])!;
+        Assert.True(changed);
+
+        var absoluteTransform = childPlatformView.GetStyleValue("transform");
+        Assert.NotNull(absoluteTransform);
+        Assert.Contains("translate(-20%, -30%)", absoluteTransform, StringComparison.Ordinal);
+        Assert.Contains("scale(0.4, 1)", absoluteTransform, StringComparison.Ordinal);
+
+        var applyProjectionMethod = typeof(MirageLayoutHandler).GetMethod(
+            "ApplyChildProjectionStyles",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(applyProjectionMethod);
+
+        changed = (bool)applyProjectionMethod!.Invoke(null, [childPlatformView, child, ComponentKind.VerticalStack])!;
+        Assert.True(changed);
+
+        var stackedTransform = childPlatformView.GetStyleValue("transform");
+        Assert.NotNull(stackedTransform);
+        Assert.DoesNotContain("%", stackedTransform, StringComparison.Ordinal);
+        Assert.Contains("scale(0.4, 1)", stackedTransform, StringComparison.Ordinal);
     }
 
     [Fact]
