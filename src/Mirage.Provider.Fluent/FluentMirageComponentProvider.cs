@@ -173,7 +173,31 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 {
                     ["input"] = new("input", EventTarget.Self, EventPayloadKind.InputValue),
                     ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue)
-                })
+                }),
+            [ComponentKind.Stepper] = new(
+                ComponentKind.Stepper,
+                "div",
+                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
+                    ["Minimum"] = new(PropertyTarget.Attribute, "data-maui-stepper-min"),
+                    ["Maximum"] = new(PropertyTarget.Attribute, "data-maui-stepper-max"),
+                    ["Step"] = new(PropertyTarget.Attribute, "data-maui-stepper-step"),
+                    ["Value"] = new(PropertyTarget.Attribute, "data-maui-stepper-value"),
+                    ["Disabled"] = new(PropertyTarget.Attribute, "data-maui-stepper-disabled"),
+                    ["DecrementText"] = new(PropertyTarget.TextContent, ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["IncrementText"] = new(PropertyTarget.TextContent, ElementTarget: PropertyElementTarget.ValueElement),
+                    ["DecrementDisabled"] = new(PropertyTarget.Attribute, "disabled", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["IncrementDisabled"] = new(PropertyTarget.Attribute, "disabled", ElementTarget: PropertyElementTarget.ValueElement)
+                },
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["decrement"] = new("click", EventTarget.SecondaryElement),
+                    ["increment"] = new("click", EventTarget.ValueElement)
+                },
+                valueElementTagName: "button",
+                secondaryElementTagName: "button",
+                stretchValueElementWidth: false)
         };
 
     public ProviderCapabilities Capabilities { get; } = new(

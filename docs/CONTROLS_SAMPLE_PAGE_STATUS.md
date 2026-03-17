@@ -105,7 +105,7 @@ Visual legend:
 | `SearchBarPage.xaml` | `Pages/Controls/SearchBarPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ShapesPage.xaml` | `Pages/Controls/ShapesPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `SliderPage.xaml` | `Pages/Controls/SliderPage.xaml` | `[x]` | `[x]` | `[ ]` |
-| `StepperPage.xaml` | `Pages/Controls/StepperPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `StepperPage.xaml` | `Pages/Controls/StepperPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `SwitchPage.xaml` | `Pages/Controls/SwitchPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `TimePickerPage.xaml` | `Pages/Controls/TimePickerPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `TitleBarPage.xaml` | `Pages/Controls/TitleBarPage.xaml` | `[ ]` | `[ ]` | `[ ]` |

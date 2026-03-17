@@ -112,6 +112,31 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentStepperDescriptor_MapsSplitButtonProjectionChannels()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.Stepper);
+
+        Assert.Equal("div", descriptor.ElementTagName);
+        Assert.Equal("button", descriptor.ValueElementTagName);
+        Assert.Equal("button", descriptor.SecondaryElementTagName);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Minimum"].Target);
+        Assert.Equal("data-maui-stepper-min", descriptor.PropertyMappings["Minimum"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Maximum"].Target);
+        Assert.Equal("data-maui-stepper-max", descriptor.PropertyMappings["Maximum"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Step"].Target);
+        Assert.Equal("data-maui-stepper-step", descriptor.PropertyMappings["Step"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Value"].Target);
+        Assert.Equal("data-maui-stepper-value", descriptor.PropertyMappings["Value"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Disabled"].Target);
+        Assert.Equal("data-maui-stepper-disabled", descriptor.PropertyMappings["Disabled"].Name);
+        Assert.Equal(PropertyElementTarget.SecondaryElement, descriptor.PropertyMappings["DecrementText"].ElementTarget);
+        Assert.Equal(PropertyElementTarget.ValueElement, descriptor.PropertyMappings["IncrementText"].ElementTarget);
+        Assert.Equal(EventTarget.SecondaryElement, descriptor.EventMappings["decrement"].Target);
+        Assert.Equal(EventTarget.ValueElement, descriptor.EventMappings["increment"].Target);
+    }
+
+    [Fact]
     public void FluentProvider_ResolvesHorizontalStackSemanticKind()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();
