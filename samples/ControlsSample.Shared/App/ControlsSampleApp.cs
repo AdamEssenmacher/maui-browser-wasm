@@ -2,6 +2,7 @@ using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using Controls.Sample.Converters;
+using System.Linq;
 
 namespace ControlsSample.Shared.App;
 
@@ -32,6 +33,8 @@ public class ControlsSampleApp : Application
         SeedUpstreamThemeResources(Resources);
         SeedUpstreamStyleResources(Resources);
         SeedUpstreamConverterResources(Resources);
+        ApplyThemeAwareStyleValues(Resources, RequestedTheme);
+        RequestedThemeChanged += OnRequestedThemeChanged;
     }
 
     public ControlsSampleApp(IServiceProvider services)
@@ -129,7 +132,7 @@ public class ControlsSampleApp : Application
             galleryItemContainerStyle.Setters.Add(new Setter
             {
                 Property = Border.StrokeProperty,
-                Value = UpstreamLightBorderColor
+                Value = new SolidColorBrush(UpstreamLightBorderColor)
             });
             galleryItemContainerStyle.Setters.Add(new Setter
             {
@@ -236,4 +239,54 @@ public class ControlsSampleApp : Application
 
         resources[key] = value;
     }
+
+    private void OnRequestedThemeChanged(object? sender, AppThemeChangedEventArgs e)
+    {
+        _ = sender;
+        if (Resources is null)
+        {
+            return;
+        }
+
+        ApplyThemeAwareStyleValues(Resources, e.RequestedTheme);
+    }
+
+    private static void ApplyThemeAwareStyleValues(ResourceDictionary resources, AppTheme theme)
+    {
+        var useDarkTheme = theme == AppTheme.Dark;
+        var backgroundSecondary = useDarkTheme ? UpstreamDarkBackgroundSecondaryColor : UpstreamLightBackgroundSecondaryColor;
+        var accent = useDarkTheme ? UpstreamDarkAccentColor : UpstreamLightAccentColor;
+        var textPrimary = useDarkTheme ? UpstreamDarkTextPrimaryColor : UpstreamLightTextPrimaryColor;
+        var borderBrush = useDarkTheme
+            ? (Brush)new SolidColorBrush(UpstreamDarkBorderColor)
+            : new SolidColorBrush(UpstreamLightBorderColor);
+
+        SetStyleSetterValue(resources, "SearchBorderStyle", Frame.BackgroundColorProperty, backgroundSecondary);
+        SetStyleSetterValue(resources, "GalleryItemContainerStyle", Border.BackgroundColorProperty, backgroundSecondary);
+        SetStyleSetterValue(resources, "GalleryItemContainerStyle", Border.StrokeProperty, borderBrush);
+        SetStyleSetterValue(resources, "GalleryItemTitleStyle", Label.TextColorProperty, accent);
+        SetStyleSetterValue(resources, "GalleryItemDescriptionStyle", Label.TextColorProperty, textPrimary);
+    }
+
+    private static void SetStyleSetterValue(
+        ResourceDictionary resources,
+        string styleKey,
+        BindableProperty property,
+        object value)
+    {
+        if (!resources.TryGetValue(styleKey, out var styleResource) || styleResource is not Style style)
+        {
+            return;
+        }
+
+        var setter = style.Setters.FirstOrDefault(candidate => candidate.Property == property);
+        if (setter is null)
+        {
+            style.Setters.Add(new Setter { Property = property, Value = value });
+            return;
+        }
+
+        setter.Value = value;
+    }
+
 }

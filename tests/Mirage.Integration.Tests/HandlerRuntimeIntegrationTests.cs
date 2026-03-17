@@ -1028,6 +1028,38 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CollectionViewHandler_SelectionUsesReferenceIdentity_ForValueEqualItems()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var firstItem = new ValueComparableSelectionItem(7, "first");
+        var secondItem = new ValueComparableSelectionItem(7, "second");
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new[] { firstItem, secondItem },
+            SelectionMode = SelectionMode.Multiple,
+            ItemTemplate = new DataTemplate(() => new Label())
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        var firstRowNode = handler.PlatformView.Children[0];
+        var secondRowNode = handler.PlatformView.Children[1];
+
+        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
+        Assert.NotNull(collectionView.SelectedItems);
+        Assert.Single(collectionView.SelectedItems!);
+        Assert.Same(secondItem, collectionView.SelectedItems![0]);
+        Assert.Null(firstRowNode.GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", secondRowNode.GetStyleValue("outline"));
+    }
+
+    [Fact]
     public void CollectionViewHandler_RebuildsWhenObservableItemsSourceChanges()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -2851,6 +2883,29 @@ public sealed class HandlerRuntimeIntegrationTests
 
                 workItem.Callback(workItem.State);
             }
+        }
+    }
+
+    private sealed class ValueComparableSelectionItem
+    {
+        public ValueComparableSelectionItem(int key, string label)
+        {
+            Key = key;
+            Label = label;
+        }
+
+        public int Key { get; }
+
+        public string Label { get; }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is ValueComparableSelectionItem other && other.Key == Key;
+        }
+
+        public override int GetHashCode()
+        {
+            return Key.GetHashCode();
         }
     }
 

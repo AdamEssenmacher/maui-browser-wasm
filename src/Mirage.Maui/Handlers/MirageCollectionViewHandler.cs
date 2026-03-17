@@ -468,7 +468,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
 
     private static bool AreItemsEquivalent(object? left, object? right)
     {
-        return ReferenceEquals(left, right) || Equals(left, right);
+        return ReferenceEquals(left, right);
     }
 
     private void ClearItems()
