@@ -35,7 +35,16 @@ public class BasePage : ContentPage
     public SectionModel? SelectedItem
     {
         get => _selectedItem;
-        set => _selectedItem = value;
+        set
+        {
+            if (ReferenceEquals(_selectedItem, value))
+            {
+                return;
+            }
+
+            _selectedItem = value;
+            OnPropertyChanged(nameof(SelectedItem));
+        }
     }
 
     private async Task PreparePageAsync()
