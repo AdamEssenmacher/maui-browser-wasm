@@ -1621,6 +1621,40 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void FrameHandler_MapsCompatibilityStyles_AndHostsPresentedContent()
+    {
+#pragma warning disable CS0618 // Frame is intentionally covered for compatibility scenarios.
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageFrameHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var frame = new Frame
+        {
+            Padding = new Thickness(6),
+            CornerRadius = 12,
+            BorderColor = Colors.CadetBlue,
+            HasShadow = true
+        };
+
+        ((IElementHandler)handler).SetVirtualView(frame);
+
+        Assert.Equal("6px 6px 6px 6px", handler.PlatformView.GetStyleValue("padding"));
+        Assert.Equal("12px", handler.PlatformView.GetStyleValue("borderRadius"));
+        Assert.Equal("solid", handler.PlatformView.GetStyleValue("borderStyle"));
+        Assert.Equal("1px", handler.PlatformView.GetStyleValue("borderWidth"));
+        Assert.NotNull(handler.PlatformView.GetStyleValue("borderColor"));
+        Assert.NotNull(handler.PlatformView.GetStyleValue("boxShadow"));
+        Assert.Empty(handler.PlatformView.Children);
+
+        frame.HasShadow = false;
+        MirageFrameHandler.Mapper.UpdateProperty(handler, frame, nameof(Frame.HasShadow));
+        Assert.Null(handler.PlatformView.GetStyleValue("boxShadow"));
+#pragma warning restore CS0618
+    }
+
+    [Fact]
     public void BoxViewHandler_UsesBackgroundColorUnlessColorPropertyIsExplicitlySet()
     {
         var services = new ServiceCollection().BuildServiceProvider();

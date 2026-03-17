@@ -37,6 +37,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-transformationspage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-layoutisenabledpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-scrollviewpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
 
         await NavigateWithDiagnosticsAsync(
@@ -329,7 +330,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     [Fact]
     public async Task StackLayoutPage_IsRunnable_AndAllowsUnsizedBoxViewsToCollapse()
     {
-        await using var context = await _fixture.NewContextAsync(width: 900, height: 700);
+        await using var context = await _fixture.NewContextAsync(width: 960, height: 760);
         var (page, diagnostics) = await OpenAsync(context);
 
         await NavigateWithDiagnosticsAsync(
@@ -346,52 +347,37 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             () => {
                 const host = document.querySelector("[data-automation-id='controls-sample-page-stacklayoutpage']");
                 if (!host) {
-                    return ["__missing__", "0", "0", "0", "0", "0", "0"];
+                    return ["__missing__", "0", "0", "0", "0", "0", "0", "0"];
                 }
 
-                const labels = Array.from(host.querySelectorAll("[data-mirage-kind='Label']"));
-                const verticalLabel = labels.find(label => (label.textContent ?? "").trim() === "Vertical");
-                const horizontalLabel = labels.find(label => (label.textContent ?? "").trim() === "Horizontal");
-                const stackKinds = new Set(["StackLayout", "VerticalStack", "HorizontalStack"]);
+                const labels = Array
+                    .from(host.querySelectorAll("[data-mirage-kind='Label']"))
+                    .map(label => (label.textContent ?? "").trim());
+                const stackNodes = Array
+                    .from(host.querySelectorAll("[data-mirage-kind='VerticalStack'], [data-mirage-kind='HorizontalStack']"));
+                const sectionStacks = stackNodes
+                    .map(stack => ({
+                        kind: stack.getAttribute("data-mirage-kind") ?? "",
+                        boxes: Array.from(stack.children).filter(child => child.getAttribute?.("data-mirage-kind") === "BoxView")
+                    }))
+                    .filter(section => section.boxes.length > 0);
 
-                const findFollowingStack = (label) => {
-                    let current = label?.nextElementSibling ?? null;
-                    while (current) {
-                        const kind = current.getAttribute("data-mirage-kind");
-                        if (kind && stackKinds.has(kind)) {
-                            return current;
-                        }
-
-                        current = current.nextElementSibling;
-                    }
-
-                    return null;
-                };
-
-                const verticalStack = findFollowingStack(verticalLabel);
-                const horizontalStack = findFollowingStack(horizontalLabel);
-                if (!verticalStack || !horizontalStack) {
-                    return ["__missing_sections__", "0", "0", "0", "0", "0", "0"];
-                }
-
-                const collect = (stack) => {
-                    const boxes = Array.from(stack.querySelectorAll(":scope > [data-mirage-kind='BoxView']"));
-                    const rects = boxes.map(box => box.getBoundingClientRect());
-                    const collapsed = rects.filter(rect => rect.width <= 1 || rect.height <= 1 || (rect.width * rect.height) <= 1).length;
-                    return [boxes.length, collapsed];
-                };
-
-                const [verticalCount, verticalCollapsed] = collect(verticalStack);
-                const [horizontalCount, horizontalCollapsed] = collect(horizontalStack);
+                const verticalBoxes = sectionStacks.find(section => section.kind === "VerticalStack")?.boxes ?? [];
+                const horizontalBoxes = sectionStacks.find(section => section.kind === "HorizontalStack")?.boxes ?? [];
+                const allBoxes = sectionStacks.flatMap(section => section.boxes);
+                const boxRects = allBoxes.map(box => box.getBoundingClientRect());
+                const collapsedCount = boxRects.filter(rect => rect.width <= 1 || rect.height <= 1 || (rect.width * rect.height) <= 1).length;
+                const maxArea = boxRects.reduce((current, rect) => Math.max(current, rect.width * rect.height), 0);
 
                 return [
                     "ok",
-                    verticalLabel ? "1" : "0",
-                    horizontalLabel ? "1" : "0",
-                    verticalCount.toString(),
-                    horizontalCount.toString(),
-                    verticalCollapsed.toString(),
-                    horizontalCollapsed.toString()
+                    labels.includes("Vertical") ? "1" : "0",
+                    labels.includes("Horizontal") ? "1" : "0",
+                    sectionStacks.length.toString(),
+                    verticalBoxes.length.toString(),
+                    horizontalBoxes.length.toString(),
+                    collapsedCount.toString(),
+                    maxArea.toString()
                 ];
             }
             """);
@@ -399,10 +385,11 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal("ok", layoutSnapshot[0]);
         Assert.Equal("1", layoutSnapshot[1]);
         Assert.Equal("1", layoutSnapshot[2]);
-        Assert.Equal("6", layoutSnapshot[3]);
+        Assert.Equal("2", layoutSnapshot[3]);
         Assert.Equal("6", layoutSnapshot[4]);
         Assert.Equal("6", layoutSnapshot[5]);
-        Assert.Equal("6", layoutSnapshot[6]);
+        Assert.Equal("12", layoutSnapshot[6]);
+        Assert.True(double.Parse(layoutSnapshot[7], CultureInfo.InvariantCulture) <= 1d);
     }
 
     [Fact]
