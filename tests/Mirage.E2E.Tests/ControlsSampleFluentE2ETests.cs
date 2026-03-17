@@ -719,8 +719,8 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
 
         var enableStepperSelector = "[data-automation-id='controls-sample-stepperpage-enable-stepper']";
         var enableButtonSelector = "[data-automation-id='controls-sample-stepperpage-enable-button']";
-        var enableStepperDecrementSelector = $"{enableStepperSelector} [data-mirage-value-element='true']";
-        var enableStepperIncrementSelector = $"{enableStepperSelector} [data-mirage-secondary-element='true']";
+        var enableStepperDecrementSelector = $"{enableStepperSelector} [data-mirage-secondary-element='true']";
+        var enableStepperIncrementSelector = $"{enableStepperSelector} [data-mirage-value-element='true']";
 
         Assert.Equal("-", (await page.Locator(enableStepperDecrementSelector).InnerTextAsync()).Trim());
         Assert.Equal("+", (await page.Locator(enableStepperIncrementSelector).InnerTextAsync()).Trim());
@@ -746,8 +746,8 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         var minStepperSelector = "[data-automation-id='controls-sample-stepperpage-minmax']";
         Assert.Equal("5", await page.Locator(minStepperSelector).GetAttributeAsync("data-maui-stepper-min"));
         Assert.Equal("25", await page.Locator(minStepperSelector).GetAttributeAsync("data-maui-stepper-max"));
-        var minStepperDecrementSelector = $"{minStepperSelector} [data-mirage-value-element='true']";
-        var minStepperIncrementSelector = $"{minStepperSelector} [data-mirage-secondary-element='true']";
+        var minStepperDecrementSelector = $"{minStepperSelector} [data-mirage-secondary-element='true']";
+        var minStepperIncrementSelector = $"{minStepperSelector} [data-mirage-value-element='true']";
         Assert.True(await HasDisabledAttributeAsync(page, minStepperDecrementSelector));
         Assert.False(await HasDisabledAttributeAsync(page, minStepperIncrementSelector));
 
@@ -783,8 +783,8 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             "Expected brush background image projection on Stepper host.");
 
         var valueChangedSelector = "[data-automation-id='controls-sample-stepperpage-valuechanged-stepper']";
-        var valueChangedIncrementSelector = $"{valueChangedSelector} [data-mirage-secondary-element='true']";
-        var valueChangedDecrementSelector = $"{valueChangedSelector} [data-mirage-value-element='true']";
+        var valueChangedIncrementSelector = $"{valueChangedSelector} [data-mirage-value-element='true']";
+        var valueChangedDecrementSelector = $"{valueChangedSelector} [data-mirage-secondary-element='true']";
         Assert.True(await TryClickButtonIfEnabledAsync(page, valueChangedIncrementSelector));
         await page.WaitForTimeoutAsync(100);
 

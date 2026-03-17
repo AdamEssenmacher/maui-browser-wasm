@@ -130,10 +130,10 @@ public sealed class ProviderValidationTests
         Assert.Equal("data-maui-stepper-value", descriptor.PropertyMappings["Value"].Name);
         Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Disabled"].Target);
         Assert.Equal("data-maui-stepper-disabled", descriptor.PropertyMappings["Disabled"].Name);
-        Assert.Equal(PropertyElementTarget.ValueElement, descriptor.PropertyMappings["DecrementText"].ElementTarget);
-        Assert.Equal(PropertyElementTarget.SecondaryElement, descriptor.PropertyMappings["IncrementText"].ElementTarget);
-        Assert.Equal(EventTarget.ValueElement, descriptor.EventMappings["decrement"].Target);
-        Assert.Equal(EventTarget.SecondaryElement, descriptor.EventMappings["increment"].Target);
+        Assert.Equal(PropertyElementTarget.SecondaryElement, descriptor.PropertyMappings["DecrementText"].ElementTarget);
+        Assert.Equal(PropertyElementTarget.ValueElement, descriptor.PropertyMappings["IncrementText"].ElementTarget);
+        Assert.Equal(EventTarget.SecondaryElement, descriptor.EventMappings["decrement"].Target);
+        Assert.Equal(EventTarget.ValueElement, descriptor.EventMappings["increment"].Target);
     }
 
     [Fact]

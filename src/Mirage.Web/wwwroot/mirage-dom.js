@@ -137,14 +137,6 @@ input[data-mirage-kind="Slider"][type="range"]:disabled::-moz-range-thumb {
   padding: 4px;
 }
 
-[data-mirage-kind="Stepper"] > [data-mirage-value-element="true"] {
-  order: 0;
-}
-
-[data-mirage-kind="Stepper"] > [data-mirage-secondary-element="true"] {
-  order: 1;
-}
-
 [data-mirage-kind="Stepper"] > [data-mirage-value-element="true"],
 [data-mirage-kind="Stepper"] > [data-mirage-secondary-element="true"] {
   appearance: none;

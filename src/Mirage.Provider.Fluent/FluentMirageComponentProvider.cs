@@ -185,15 +185,15 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                     ["Step"] = new(PropertyTarget.Attribute, "data-maui-stepper-step"),
                     ["Value"] = new(PropertyTarget.Attribute, "data-maui-stepper-value"),
                     ["Disabled"] = new(PropertyTarget.Attribute, "data-maui-stepper-disabled"),
-                    ["DecrementText"] = new(PropertyTarget.TextContent, ElementTarget: PropertyElementTarget.ValueElement),
-                    ["IncrementText"] = new(PropertyTarget.TextContent, ElementTarget: PropertyElementTarget.SecondaryElement),
-                    ["DecrementDisabled"] = new(PropertyTarget.Attribute, "disabled", ElementTarget: PropertyElementTarget.ValueElement),
-                    ["IncrementDisabled"] = new(PropertyTarget.Attribute, "disabled", ElementTarget: PropertyElementTarget.SecondaryElement)
+                    ["DecrementText"] = new(PropertyTarget.TextContent, ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["IncrementText"] = new(PropertyTarget.TextContent, ElementTarget: PropertyElementTarget.ValueElement),
+                    ["DecrementDisabled"] = new(PropertyTarget.Attribute, "disabled", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["IncrementDisabled"] = new(PropertyTarget.Attribute, "disabled", ElementTarget: PropertyElementTarget.ValueElement)
                 },
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
-                    ["decrement"] = new("click", EventTarget.ValueElement),
-                    ["increment"] = new("click", EventTarget.SecondaryElement)
+                    ["decrement"] = new("click", EventTarget.SecondaryElement),
+                    ["increment"] = new("click", EventTarget.ValueElement)
                 },
                 valueElementTagName: "button",
                 secondaryElementTagName: "button",
