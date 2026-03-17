@@ -31,6 +31,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(HorizontalStackLayoutPage),
             description: "Runnable in Mirage today: exercises HorizontalStackLayout row flow with Label and BoxView children."),
         new(
+            id: "stacklayoutpage",
+            title: "StackLayoutPage",
+            upstreamPath: "Pages/Layouts/StackLayoutPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(StackLayoutPage),
+            description: "Runnable in Mirage today: exercises StackLayout orientation variants with Label and BoxView children."),
+        new(
             id: "verticalstacklayoutpage",
             title: "VerticalStackLayoutPage",
             upstreamPath: "Pages/Layouts/VerticalStackLayoutPage.xaml",

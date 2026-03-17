@@ -26,6 +26,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-contentviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-gridpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-horizontalstacklayoutpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stacklayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-verticalstacklayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-boxviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-buttonpage']").CountAsync());
@@ -322,6 +323,85 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal("VerticalStackLayout", layoutSnapshot[1]);
         Assert.Equal("6", layoutSnapshot[2]);
         Assert.Equal("6", layoutSnapshot[3]);
+    }
+
+    [Fact]
+    public async Task StackLayoutPage_IsRunnable_AndAllowsUnsizedBoxViewsToCollapse()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 900, height: 700);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-stacklayoutpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-stacklayoutpage']");
+            });
+
+        var layoutSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id='controls-sample-page-stacklayoutpage']");
+                if (!host) {
+                    return ["__missing__", "0", "0", "0", "0", "0", "0"];
+                }
+
+                const labels = Array.from(host.querySelectorAll("[data-mirage-kind='Label']"));
+                const verticalLabel = labels.find(label => (label.textContent ?? "").trim() === "Vertical");
+                const horizontalLabel = labels.find(label => (label.textContent ?? "").trim() === "Horizontal");
+                const stackKinds = new Set(["StackLayout", "VerticalStack", "HorizontalStack"]);
+
+                const findFollowingStack = (label) => {
+                    let current = label?.nextElementSibling ?? null;
+                    while (current) {
+                        const kind = current.getAttribute("data-mirage-kind");
+                        if (kind && stackKinds.has(kind)) {
+                            return current;
+                        }
+
+                        current = current.nextElementSibling;
+                    }
+
+                    return null;
+                };
+
+                const verticalStack = findFollowingStack(verticalLabel);
+                const horizontalStack = findFollowingStack(horizontalLabel);
+                if (!verticalStack || !horizontalStack) {
+                    return ["__missing_sections__", "0", "0", "0", "0", "0", "0"];
+                }
+
+                const collect = (stack) => {
+                    const boxes = Array.from(stack.querySelectorAll(":scope > [data-mirage-kind='BoxView']"));
+                    const rects = boxes.map(box => box.getBoundingClientRect());
+                    const collapsed = rects.filter(rect => rect.width <= 1 || rect.height <= 1 || (rect.width * rect.height) <= 1).length;
+                    return [boxes.length, collapsed];
+                };
+
+                const [verticalCount, verticalCollapsed] = collect(verticalStack);
+                const [horizontalCount, horizontalCollapsed] = collect(horizontalStack);
+
+                return [
+                    "ok",
+                    verticalLabel ? "1" : "0",
+                    horizontalLabel ? "1" : "0",
+                    verticalCount.toString(),
+                    horizontalCount.toString(),
+                    verticalCollapsed.toString(),
+                    horizontalCollapsed.toString()
+                ];
+            }
+            """);
+
+        Assert.Equal("ok", layoutSnapshot[0]);
+        Assert.Equal("1", layoutSnapshot[1]);
+        Assert.Equal("1", layoutSnapshot[2]);
+        Assert.Equal("6", layoutSnapshot[3]);
+        Assert.Equal("6", layoutSnapshot[4]);
+        Assert.Equal("6", layoutSnapshot[5]);
+        Assert.Equal("6", layoutSnapshot[6]);
     }
 
     [Fact]
