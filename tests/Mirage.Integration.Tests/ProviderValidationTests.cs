@@ -167,7 +167,8 @@ public sealed class ProviderValidationTests
             ComponentKind.VerticalStack,
             ComponentKind.HorizontalStack,
             ComponentKind.Grid,
-            ComponentKind.AbsoluteLayout
+            ComponentKind.AbsoluteLayout,
+            ComponentKind.Layout
         };
 
         foreach (var kind in layoutKinds)
