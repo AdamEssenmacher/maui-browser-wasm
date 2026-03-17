@@ -7,6 +7,12 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added provider/runtime secondary-element event targeting to route decrement and increment clicks without handler-side DOM assumptions.
 - Chose compact Android-like split button chrome as the default web Stepper style while preserving common MAUI background/brush projection on the host.
 
+## 2026-03-16 (ScrollView page family runnable via Frame + CollectionView handler additions)
+- Enabled upstream `ScrollViewPage` and its nested scroll scenarios in ControlsSample by adding Mirage `Frame` and `CollectionView` handlers on the MAUI handler path (no sample-side DOM hacks).
+- `CollectionView` in this wave is intentionally non-virtualized and selection-command focused, which is enough for the ScrollView catalog pattern (`SelectionMode=Single`, templated item rows, and command-based navigation).
+- Added the missing theme/style resource keys used by upstream `ScrollViewPage` so gallery cards/search surfaces render with upstream-compatible styling from MAUI resources.
+- `ScrollViewOrientationPage` remains imported but filtered from browser navigation until Picker support lands; other ScrollView subpages are runnable now.
+
 ## 2026-03-16 (TransformationsPage runnable + shared transform composition)
 - Enabled `TransformationsPage` as a runnable ControlsSample page with deterministic automation IDs for target label, sliders, and anchor steppers.
 - Added full `ITransform` mapping to the shared Mirage view mapper/projection path (`Translation*`, `Scale*`, `Rotation*`, `Anchor*`) instead of page-specific transform logic.

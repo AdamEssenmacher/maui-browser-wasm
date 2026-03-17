@@ -28,6 +28,7 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 propertyMappings: CommonProperties,
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
+                    ["click"] = new("click"),
                     ["scroll"] = new("scroll")
                 }),
             [ComponentKind.VerticalStack] = new(

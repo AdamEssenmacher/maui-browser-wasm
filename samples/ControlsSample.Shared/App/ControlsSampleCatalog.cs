@@ -1,4 +1,5 @@
 using Maui.Controls.Sample.Pages;
+using ControlsSample.Shared.App.VendorCompat;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Internals;
 using System.Reflection;
@@ -44,6 +45,14 @@ public static class ControlsSampleCatalog
             status: ControlsSampleStatus.Runnable,
             pageType: typeof(VerticalStackLayoutPage),
             description: "Runnable in Mirage today: exercises VerticalStackLayout column flow with Label and BoxView children."),
+        new(
+            id: "scrollviewpage",
+            title: "ScrollViewPage",
+            upstreamPath: "Pages/Layouts/ScrollViewPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(ScrollViewPage),
+            description: "Runnable in Mirage today: exercises ScrollView navigation scenarios across constructor scroll, scroll-to-end, template, and orientation variants.",
+            pageFactory: CreateScrollViewPage),
         new(
             id: "transformationspage",
             title: "TransformationsPage",
@@ -343,6 +352,23 @@ public static class ControlsSampleCatalog
         if (valueLabel is not null && string.IsNullOrWhiteSpace(valueLabel.AutomationId))
         {
             valueLabel.AutomationId = "controls-sample-stepperpage-value-label";
+        }
+
+        return page;
+    }
+
+    private static Page CreateScrollViewPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new ScrollViewPage();
+        page.BindingContext = new MirageScrollViewOptionsModel();
+
+        SetNamedElementAutomationId(page, "LayoutSections", "controls-sample-scrollviewpage-sections");
+
+        var firstCollectionView = FindDescendants<CollectionView>(page).FirstOrDefault();
+        if (firstCollectionView is not null && string.IsNullOrWhiteSpace(firstCollectionView.AutomationId))
+        {
+            firstCollectionView.AutomationId = "controls-sample-scrollviewpage-sections";
         }
 
         return page;

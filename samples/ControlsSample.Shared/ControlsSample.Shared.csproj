@@ -15,6 +15,11 @@
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\GridPage.xaml" Link="Vendor\Pages\Layouts\GridPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\HorizontalStackLayoutPage.xaml" Link="Vendor\Pages\Layouts\HorizontalStackLayoutPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\StackLayoutPage.xaml" Link="Vendor\Pages\Layouts\StackLayoutPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPage.xaml" Link="Vendor\Pages\Layouts\ScrollViewPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollToEndPage.xaml" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollToEndPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollToFromConstructorPage.xaml" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollToFromConstructorPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollViewOrientationPage.xaml" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollViewOrientationPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\VerticalStackLayoutPage.xaml" Link="Vendor\Pages\Layouts\VerticalStackLayoutPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\TransformationsPage.xaml" Link="Vendor\Pages\Core\TransformationsPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml" Link="Vendor\Pages\Controls\ButtonPage.xaml" />
@@ -35,6 +40,11 @@
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\GridPage.xaml.cs" Link="Vendor\Pages\Layouts\GridPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\HorizontalStackLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\HorizontalStackLayoutPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\StackLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\StackLayoutPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPage.xaml.cs" Link="Vendor\Pages\Layouts\ScrollViewPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollToEndPage.xaml.cs" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollToEndPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollToFromConstructorPage.xaml.cs" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollToFromConstructorPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollViewOrientationPage.xaml.cs" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollViewOrientationPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml.cs" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\VerticalStackLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\VerticalStackLayoutPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\TransformationsPage.xaml.cs" Link="Vendor\Pages\Core\TransformationsPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml.cs" Link="Vendor\Pages\Controls\ButtonPage.xaml.cs" />
@@ -49,6 +59,10 @@
     <Compile Include="$(ControlsSampleVendorRoot)Converters\BoolToCustomValueConverter.cs" Link="Vendor\Converters\BoolToCustomValueConverter.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Converters\NegativeConverter.cs" Link="Vendor\Converters\NegativeConverter.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Converters\ThicknessConverter.cs" Link="Vendor\Converters\ThicknessConverter.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Models\SectionModel.cs" Link="Vendor\Models\SectionModel.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)ViewModels\Base\BaseViewModel.cs" Link="Vendor\ViewModels\Base\BaseViewModel.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)ViewModels\Base\BaseGalleryViewModel.cs" Link="Vendor\ViewModels\Base\BaseGalleryViewModel.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)ViewModels\ScrollViewOptionsModel.cs" Link="Vendor\ViewModels\ScrollViewOptionsModel.cs" />
   </ItemGroup>
 
   <ItemGroup>

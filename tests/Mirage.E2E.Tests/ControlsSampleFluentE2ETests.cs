@@ -28,6 +28,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-horizontalstacklayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stacklayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-verticalstacklayoutpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-scrollviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-boxviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-buttonpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").CountAsync());
@@ -402,6 +403,52 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal("6", layoutSnapshot[4]);
         Assert.Equal("6", layoutSnapshot[5]);
         Assert.Equal("6", layoutSnapshot[6]);
+    }
+
+    [Fact]
+    public async Task ScrollViewPage_IsRunnable_AndNavigatesToConstructorScrollScenario()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1000, height: 1400);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-scrollviewpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-scrollviewpage']");
+            });
+
+        Assert.True(await page.Locator("[data-automation-id='controls-sample-scrollviewpage-sections']").CountAsync() > 0);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page
+                    .Locator("[data-automation-id='controls-sample-scrollviewpage-sections'] span")
+                    .Filter(new() { HasTextString = "Scroll To from constructor" })
+                    .First
+                    .ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-scrolltofromconstructorpage']");
+            });
+
+        var widths = await page.EvaluateAsync<double[]>(
+            """
+            () => Array
+                .from(document.querySelectorAll("[data-automation-id='controls-sample-page-scrolltofromconstructorpage'] [data-mirage-kind='BoxView']"))
+                .map(box => box.getBoundingClientRect().width)
+            """);
+
+        Assert.Equal(10, widths.Length);
+        for (var i = 1; i < widths.Length; i++)
+        {
+            Assert.True(
+                widths[i] <= widths[i - 1] - 0.5,
+                $"Expected descending widths from ScaleX projection. Previous={widths[i - 1]:0.###}, current={widths[i]:0.###}, index={i}.");
+        }
     }
 
     [Fact]

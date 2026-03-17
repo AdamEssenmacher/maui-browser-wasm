@@ -3,6 +3,7 @@ using Mirage.Maui.Handlers;
 using Mirage.Maui.Hosting;
 using Mirage.Maui.Images;
 using Mirage.Web.Runtime;
+using Maui.Controls.Sample.Models;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Shapes;
@@ -10,6 +11,7 @@ using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 using Microsoft.Extensions.DependencyInjection;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using Xunit;
 
@@ -913,6 +915,412 @@ public sealed class HandlerRuntimeIntegrationTests
 
         handler.OnRuntimeEvent("decrement", null);
         Assert.Equal(25d, stepper.Value, 3);
+    }
+
+    [Fact]
+    public void FrameHandler_ProjectsBorderCornerAndShadowStyles()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageFrameHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var frame = new Frame
+        {
+            BorderColor = Colors.Red,
+            CornerRadius = 16f,
+            HasShadow = true
+        };
+
+        ((IElementHandler)handler).SetVirtualView(frame);
+
+        Assert.Equal("solid", handler.PlatformView.GetStyleValue("borderStyle"));
+        Assert.Equal("1px", handler.PlatformView.GetStyleValue("borderWidth"));
+        Assert.Equal("rgba(255,0,0,1)", handler.PlatformView.GetStyleValue("borderColor"));
+        Assert.Equal("16px", handler.PlatformView.GetStyleValue("borderRadius"));
+        Assert.NotNull(handler.PlatformView.GetStyleValue("boxShadow"));
+
+        frame.HasShadow = false;
+        MirageFrameHandler.Mapper.UpdateProperty(handler, frame, nameof(Frame.HasShadow));
+        Assert.Null(handler.PlatformView.GetStyleValue("boxShadow"));
+
+        frame.BorderColor = Colors.Transparent;
+        MirageFrameHandler.Mapper.UpdateProperty(handler, frame, nameof(Frame.BorderColor));
+        Assert.Equal("none", handler.PlatformView.GetStyleValue("borderStyle"));
+    }
+
+    [Fact]
+    public void CollectionViewHandler_ItemClickSelectsItem_AndExecutesSelectionCommand()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var firstItem = new SectionModel(typeof(ContentPage), "First", "First item");
+        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var commandCount = 0;
+
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new[] { firstItem, secondItem },
+            SelectionMode = SelectionMode.Single,
+            ItemTemplate = new DataTemplate(() => new Label())
+        };
+        collectionView.SelectionChangedCommand = new Command(() => commandCount++);
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+
+        Assert.Equal(2, handler.PlatformView.Children.Count);
+
+        var firstRowNode = handler.PlatformView.Children[0];
+        coordinator.OnEvent(firstRowNode.NodeId, "click", null);
+
+        Assert.Same(firstItem, collectionView.SelectedItem);
+        Assert.Equal(1, commandCount);
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", firstRowNode.GetStyleValue("outline"));
+    }
+
+    [Fact]
+    public void CollectionViewHandler_ItemClickTogglesSelectedItems_WhenSelectionModeIsMultiple()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var firstItem = new SectionModel(typeof(ContentPage), "First", "First item");
+        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new[] { firstItem, secondItem },
+            SelectionMode = SelectionMode.Multiple,
+            ItemTemplate = new DataTemplate(() => new Label())
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        Assert.Equal(2, handler.PlatformView.Children.Count);
+
+        var firstRowNode = handler.PlatformView.Children[0];
+        var secondRowNode = handler.PlatformView.Children[1];
+
+        coordinator.OnEvent(firstRowNode.NodeId, "click", null);
+        Assert.NotNull(collectionView.SelectedItems);
+        Assert.Single(collectionView.SelectedItems!);
+        Assert.Same(firstItem, collectionView.SelectedItems![0]);
+
+        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
+        Assert.Equal(2, collectionView.SelectedItems!.Count);
+        Assert.Same(firstItem, collectionView.SelectedItems[0]);
+        Assert.Same(secondItem, collectionView.SelectedItems[1]);
+
+        coordinator.OnEvent(firstRowNode.NodeId, "click", null);
+        Assert.Single(collectionView.SelectedItems);
+        Assert.Same(secondItem, collectionView.SelectedItems[0]);
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", secondRowNode.GetStyleValue("outline"));
+        Assert.Null(firstRowNode.GetStyleValue("outline"));
+    }
+
+    [Fact]
+    public void CollectionViewHandler_SelectionUsesReferenceIdentity_ForValueEqualItems()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var firstItem = new ValueComparableSelectionItem(7, "first");
+        var secondItem = new ValueComparableSelectionItem(7, "second");
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new[] { firstItem, secondItem },
+            SelectionMode = SelectionMode.Multiple,
+            ItemTemplate = new DataTemplate(() => new Label())
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        var firstRowNode = handler.PlatformView.Children[0];
+        var secondRowNode = handler.PlatformView.Children[1];
+
+        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
+        Assert.NotNull(collectionView.SelectedItems);
+        Assert.Single(collectionView.SelectedItems!);
+        Assert.Same(secondItem, collectionView.SelectedItems![0]);
+        Assert.Null(firstRowNode.GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", secondRowNode.GetStyleValue("outline"));
+    }
+
+    [Fact]
+    public void CollectionViewHandler_DuplicateReferenceRows_UseClickedRowIdentity()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var sharedItem = new SectionModel(typeof(ContentPage), "Shared", "Shared item");
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new[] { sharedItem, sharedItem },
+            SelectionMode = SelectionMode.Multiple,
+            ItemTemplate = new DataTemplate(() => new Label())
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        var firstRowNode = handler.PlatformView.Children[0];
+        var secondRowNode = handler.PlatformView.Children[1];
+
+        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
+        Assert.NotNull(collectionView.SelectedItems);
+        Assert.Single(collectionView.SelectedItems!);
+        Assert.Same(sharedItem, collectionView.SelectedItems![0]);
+        Assert.Null(firstRowNode.GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", secondRowNode.GetStyleValue("outline"));
+
+        coordinator.OnEvent(firstRowNode.NodeId, "click", null);
+        Assert.Equal(2, collectionView.SelectedItems.Count);
+        Assert.Same(sharedItem, collectionView.SelectedItems[0]);
+        Assert.Same(sharedItem, collectionView.SelectedItems[1]);
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", firstRowNode.GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", secondRowNode.GetStyleValue("outline"));
+
+        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
+        Assert.Single(collectionView.SelectedItems);
+        Assert.Same(sharedItem, collectionView.SelectedItems[0]);
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", firstRowNode.GetStyleValue("outline"));
+        Assert.Null(secondRowNode.GetStyleValue("outline"));
+    }
+
+    [Fact]
+    public void CollectionViewHandler_Rebuild_RemovedSelectedItem_ClearsVirtualSelectedItem()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var firstItem = new SectionModel(typeof(ContentPage), "First", "First item");
+        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var items = new ObservableCollection<SectionModel> { firstItem, secondItem };
+
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            SelectionMode = SelectionMode.Single,
+            ItemTemplate = new DataTemplate(() => new Label())
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        var secondRowNode = handler.PlatformView.Children[1];
+        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
+
+        Assert.Same(secondItem, collectionView.SelectedItem);
+
+        items.Remove(secondItem);
+
+        Assert.Null(collectionView.SelectedItem);
+        Assert.Single(handler.PlatformView.Children);
+        Assert.Null(handler.PlatformView.Children[0].GetStyleValue("outline"));
+    }
+
+    [Fact]
+    public void CollectionViewHandler_Rebuild_PreservesDuplicateReferenceRowSelectionIdentity()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var sharedItem = new SectionModel(typeof(ContentPage), "Shared", "Shared item");
+        var items = new ObservableCollection<SectionModel> { sharedItem, sharedItem };
+
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            SelectionMode = SelectionMode.Single,
+            ItemTemplate = new DataTemplate(() => new Label())
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        var secondRowNode = handler.PlatformView.Children[1];
+        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
+
+        Assert.Same(sharedItem, collectionView.SelectedItem);
+        Assert.Null(handler.PlatformView.Children[0].GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", handler.PlatformView.Children[1].GetStyleValue("outline"));
+
+        items.Add(new SectionModel(typeof(ContentPage), "Third", "Third item"));
+
+        Assert.Equal(3, handler.PlatformView.Children.Count);
+        Assert.Same(sharedItem, collectionView.SelectedItem);
+        Assert.Null(handler.PlatformView.Children[0].GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", handler.PlatformView.Children[1].GetStyleValue("outline"));
+    }
+
+    [Fact]
+    public void CollectionViewHandler_RebuildsWhenObservableItemsSourceChanges()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var items = new ObservableCollection<SectionModel>
+        {
+            new(typeof(ContentPage), "First", "First item")
+        };
+
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            ItemTemplate = new DataTemplate(() => new Label())
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        Assert.Single(handler.PlatformView.Children);
+
+        items.Add(new SectionModel(typeof(ContentPage), "Second", "Second item"));
+        Assert.Equal(2, handler.PlatformView.Children.Count);
+    }
+
+    [Fact]
+    public void CollectionViewHandler_RealizesNullItems_AndPreservesRowClickMapping()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var firstItem = new SectionModel(typeof(ContentPage), "First", "First item");
+        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new object?[] { firstItem, null, secondItem },
+            SelectionMode = SelectionMode.Single
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        Assert.Equal(3, handler.PlatformView.Children.Count);
+
+        var thirdRowNode = handler.PlatformView.Children[2];
+        coordinator.OnEvent(thirdRowNode.NodeId, "click", null);
+        Assert.Same(secondItem, collectionView.SelectedItem);
+
+        var nullRowNode = handler.PlatformView.Children[1];
+        coordinator.OnEvent(nullRowNode.NodeId, "click", null);
+        Assert.Null(collectionView.SelectedItem);
+    }
+
+    [Fact]
+    public void CollectionViewHandler_MultipleSelection_PreservesNullSelectedItems()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new object?[] { new SectionModel(typeof(ContentPage), "First", "First item"), null, secondItem },
+            SelectionMode = SelectionMode.Multiple
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        Assert.Equal(3, handler.PlatformView.Children.Count);
+
+        var nullRowNode = handler.PlatformView.Children[1];
+        coordinator.OnEvent(nullRowNode.NodeId, "click", null);
+
+        Assert.NotNull(collectionView.SelectedItems);
+        Assert.Single(collectionView.SelectedItems!);
+        Assert.Null(collectionView.SelectedItems[0]);
+
+        var thirdRowNode = handler.PlatformView.Children[2];
+        coordinator.OnEvent(thirdRowNode.NodeId, "click", null);
+
+        Assert.Equal(2, collectionView.SelectedItems!.Count);
+        Assert.Null(collectionView.SelectedItems[0]);
+        Assert.Same(secondItem, collectionView.SelectedItems[1]);
+    }
+
+    [Fact]
+    public void CollectionViewHandler_MultipleSelection_SyncPreservesNullSelectedItems()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var selectedItems = new List<object> { null!, secondItem };
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new object?[] { null, secondItem, null },
+            SelectionMode = SelectionMode.Multiple,
+            SelectedItems = selectedItems
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+
+        Assert.NotNull(collectionView.SelectedItems);
+        Assert.Equal(2, collectionView.SelectedItems!.Count);
+        Assert.Null(collectionView.SelectedItems[0]);
+        Assert.Same(secondItem, collectionView.SelectedItems[1]);
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", handler.PlatformView.Children[0].GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", handler.PlatformView.Children[1].GetStyleValue("outline"));
+        Assert.Null(handler.PlatformView.Children[2].GetStyleValue("outline"));
+    }
+
+    [Fact]
+    public void CollectionViewHandler_UsesDataTemplateSelector_PerItem()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var firstItem = new SectionModel(typeof(ContentPage), "First", "First item");
+        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var selector = new RecordingTemplateSelector(secondItem);
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new object?[] { firstItem, secondItem },
+            ItemTemplate = selector
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+
+        Assert.True(selector.Calls.Count >= 2);
+        Assert.Contains(selector.Calls, call => ReferenceEquals(call.Item, firstItem));
+        Assert.Contains(selector.Calls, call => ReferenceEquals(call.Item, secondItem));
+        Assert.All(selector.Calls, call => Assert.Same(collectionView, call.Container));
+        Assert.True(selector.LabelTemplateCreateCount >= 1);
+        Assert.True(selector.ButtonTemplateCreateCount >= 1);
     }
 
     [Fact]
@@ -2715,6 +3123,66 @@ public sealed class HandlerRuntimeIntegrationTests
             }
         }
     }
+
+    private sealed class ValueComparableSelectionItem
+    {
+        public ValueComparableSelectionItem(int key, string label)
+        {
+            Key = key;
+            Label = label;
+        }
+
+        public int Key { get; }
+
+        public string Label { get; }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is ValueComparableSelectionItem other && other.Key == Key;
+        }
+
+        public override int GetHashCode()
+        {
+            return Key.GetHashCode();
+        }
+    }
+
+    private sealed class RecordingTemplateSelector : DataTemplateSelector
+    {
+        private readonly object _buttonTemplateItem;
+        private readonly DataTemplate _buttonTemplate;
+        private readonly DataTemplate _labelTemplate;
+
+        public RecordingTemplateSelector(object buttonTemplateItem)
+        {
+            _buttonTemplateItem = buttonTemplateItem;
+            _buttonTemplate = new DataTemplate(() =>
+            {
+                ButtonTemplateCreateCount++;
+                return new Button();
+            });
+
+            _labelTemplate = new DataTemplate(() =>
+            {
+                LabelTemplateCreateCount++;
+                return new Label();
+            });
+        }
+
+        public List<TemplateSelectionCall> Calls { get; } = [];
+
+        public int LabelTemplateCreateCount { get; private set; }
+
+        public int ButtonTemplateCreateCount { get; private set; }
+
+        protected override DataTemplate OnSelectTemplate(object item, BindableObject container)
+        {
+            Calls.Add(new TemplateSelectionCall(item, container));
+            return ReferenceEquals(item, _buttonTemplateItem) ? _buttonTemplate : _labelTemplate;
+        }
+    }
+
+    private readonly record struct TemplateSelectionCall(object Item, BindableObject Container);
 
     private sealed class EventTargetProbe : IMirageRuntimeEventTarget
     {
