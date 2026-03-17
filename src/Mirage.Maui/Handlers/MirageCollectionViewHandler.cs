@@ -250,7 +250,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
 
     private IView? CreateItemView(object? item)
     {
-        var template = VirtualView.ItemTemplate;
+        var template = ResolveTemplateForItem(item);
         if (template is null)
         {
             return new Label { Text = item?.ToString() ?? string.Empty };
@@ -263,6 +263,22 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
             ViewCell viewCell => viewCell.View,
             _ => null
         };
+    }
+
+    private DataTemplate? ResolveTemplateForItem(object? item)
+    {
+        var template = VirtualView.ItemTemplate;
+        if (template is null)
+        {
+            return null;
+        }
+
+        if (template is DataTemplateSelector selector)
+        {
+            return selector.SelectTemplate(item, VirtualView);
+        }
+
+        return template;
     }
 
     private static MiragePlatformView CreateFallbackItemPlatformView(object? item)

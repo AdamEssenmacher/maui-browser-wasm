@@ -1269,6 +1269,33 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CollectionViewHandler_UsesDataTemplateSelector_PerItem()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var firstItem = new SectionModel(typeof(ContentPage), "First", "First item");
+        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var selector = new RecordingTemplateSelector(secondItem);
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new object?[] { firstItem, secondItem },
+            ItemTemplate = selector
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+
+        Assert.True(selector.Calls.Count >= 2);
+        Assert.Contains(selector.Calls, call => ReferenceEquals(call.Item, firstItem));
+        Assert.Contains(selector.Calls, call => ReferenceEquals(call.Item, secondItem));
+        Assert.All(selector.Calls, call => Assert.Same(collectionView, call.Container));
+        Assert.True(selector.LabelTemplateCreateCount >= 1);
+        Assert.True(selector.ButtonTemplateCreateCount >= 1);
+    }
+
+    [Fact]
     public void CheckBoxHandler_ProjectsColorAliasCheckedAndDisabledSemantics()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -3091,6 +3118,43 @@ public sealed class HandlerRuntimeIntegrationTests
             return Key.GetHashCode();
         }
     }
+
+    private sealed class RecordingTemplateSelector : DataTemplateSelector
+    {
+        private readonly object _buttonTemplateItem;
+        private readonly DataTemplate _buttonTemplate;
+        private readonly DataTemplate _labelTemplate;
+
+        public RecordingTemplateSelector(object buttonTemplateItem)
+        {
+            _buttonTemplateItem = buttonTemplateItem;
+            _buttonTemplate = new DataTemplate(() =>
+            {
+                ButtonTemplateCreateCount++;
+                return new Button();
+            });
+
+            _labelTemplate = new DataTemplate(() =>
+            {
+                LabelTemplateCreateCount++;
+                return new Label();
+            });
+        }
+
+        public List<TemplateSelectionCall> Calls { get; } = [];
+
+        public int LabelTemplateCreateCount { get; private set; }
+
+        public int ButtonTemplateCreateCount { get; private set; }
+
+        protected override DataTemplate OnSelectTemplate(object item, BindableObject container)
+        {
+            Calls.Add(new TemplateSelectionCall(item, container));
+            return ReferenceEquals(item, _buttonTemplateItem) ? _buttonTemplate : _labelTemplate;
+        }
+    }
+
+    private readonly record struct TemplateSelectionCall(object Item, BindableObject Container);
 
     private sealed class EventTargetProbe : IMirageRuntimeEventTarget
     {
