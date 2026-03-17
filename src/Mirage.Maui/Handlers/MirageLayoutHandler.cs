@@ -545,8 +545,9 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
     private static bool ApplyCustomLayoutChildStyles(MiragePlatformView childPlatformView, IView childView)
     {
         var frame = childView.Frame;
-        var x = NormalizeFinite(frame.X, 0);
-        var y = NormalizeFinite(frame.Y, 0);
+        var parentPadding = ResolveCustomLayoutParentPadding(childView);
+        var x = NormalizeFinite(frame.X - parentPadding.Left, 0);
+        var y = NormalizeFinite(frame.Y - parentPadding.Top, 0);
         var width = Math.Max(0, NormalizeFinite(frame.Width, 0));
         var height = Math.Max(0, NormalizeFinite(frame.Height, 0));
 
@@ -559,6 +560,16 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         changed |= SetChildStyleIfChanged(childPlatformView, "height", MirageViewMapper.ToPx(height));
         changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
         return changed;
+    }
+
+    private static Thickness ResolveCustomLayoutParentPadding(IView childView)
+    {
+        if (childView is not IElement { Parent: Layout parentLayout })
+        {
+            return Thickness.Zero;
+        }
+
+        return parentLayout.Padding;
     }
 
     private static bool IsAbsoluteLayoutFlagSet(AbsoluteLayoutFlags flags, AbsoluteLayoutFlags flag)

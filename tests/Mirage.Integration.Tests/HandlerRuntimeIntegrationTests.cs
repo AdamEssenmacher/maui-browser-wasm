@@ -1791,6 +1791,33 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void LayoutHandler_CustomLayout_ProjectionOffsetsAbsolutePositionByParentPadding()
+    {
+        var applyMethod = typeof(MirageLayoutHandler).GetMethod(
+            "ApplyChildProjectionStyles",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(applyMethod);
+
+        var customLayout = new FixedFrameLayout
+        {
+            Padding = new Thickness(8, 6, 0, 0)
+        };
+
+        var child = new Button { Text = "Docked" };
+        customLayout.Children.Add(child);
+        ((IView)child).Arrange(new Rect(20, 18, 96, 44));
+
+        var childPlatformView = MiragePlatformView.CreateControl(ComponentKind.Button);
+        var changed = (bool)applyMethod!.Invoke(null, [childPlatformView, child, ComponentKind.Layout])!;
+
+        Assert.True(changed);
+        Assert.Equal("12px", childPlatformView.GetStyleValue("left"));
+        Assert.Equal("12px", childPlatformView.GetStyleValue("top"));
+        Assert.Equal("96px", childPlatformView.GetStyleValue("width"));
+        Assert.Equal("44px", childPlatformView.GetStyleValue("height"));
+    }
+
+    [Fact]
     public void CommonMapper_SizeRequests_ProjectsAndClearsWidthRequestDeterministically()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
