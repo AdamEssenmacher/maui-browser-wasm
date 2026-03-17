@@ -985,6 +985,49 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CollectionViewHandler_ItemClickTogglesSelectedItems_WhenSelectionModeIsMultiple()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var firstItem = new SectionModel(typeof(ContentPage), "First", "First item");
+        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new[] { firstItem, secondItem },
+            SelectionMode = SelectionMode.Multiple,
+            ItemTemplate = new DataTemplate(() => new Label())
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        Assert.Equal(2, handler.PlatformView.Children.Count);
+
+        var firstRowNode = handler.PlatformView.Children[0];
+        var secondRowNode = handler.PlatformView.Children[1];
+
+        coordinator.OnEvent(firstRowNode.NodeId, "click", null);
+        Assert.NotNull(collectionView.SelectedItems);
+        Assert.Single(collectionView.SelectedItems!);
+        Assert.Same(firstItem, collectionView.SelectedItems![0]);
+
+        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
+        Assert.Equal(2, collectionView.SelectedItems!.Count);
+        Assert.Same(firstItem, collectionView.SelectedItems[0]);
+        Assert.Same(secondItem, collectionView.SelectedItems[1]);
+
+        coordinator.OnEvent(firstRowNode.NodeId, "click", null);
+        Assert.Single(collectionView.SelectedItems);
+        Assert.Same(secondItem, collectionView.SelectedItems[0]);
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", secondRowNode.GetStyleValue("outline"));
+        Assert.Null(firstRowNode.GetStyleValue("outline"));
+    }
+
+    [Fact]
     public void CollectionViewHandler_RebuildsWhenObservableItemsSourceChanges()
     {
         var services = new ServiceCollection().BuildServiceProvider();

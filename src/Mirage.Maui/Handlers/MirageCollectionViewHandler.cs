@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Specialized;
+using System.Linq;
 using Mirage.Core.Semantics;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
@@ -22,6 +23,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
             [nameof(StructuredItemsView.ItemsLayout)] = MapItemsLayout,
             [nameof(SelectableItemsView.SelectionMode)] = MapSelectionMode,
             [nameof(SelectableItemsView.SelectedItem)] = MapSelectedItem,
+            [nameof(SelectableItemsView.SelectedItems)] = MapSelectedItems,
             [nameof(IView.IsEnabled)] = MapIsEnabled,
             ["IsEnabled"] = MapIsEnabled
         };
@@ -80,6 +82,13 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
     }
 
     public static void MapSelectedItem(MirageCollectionViewHandler handler, CollectionView collectionView)
+    {
+        _ = collectionView;
+        handler.UpdateSelectionStyles();
+        handler.RequestRender();
+    }
+
+    public static void MapSelectedItems(MirageCollectionViewHandler handler, CollectionView collectionView)
     {
         _ = collectionView;
         handler.UpdateSelectionStyles();
@@ -283,13 +292,41 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
             return;
         }
 
-        if (!ReferenceEquals(VirtualView.SelectedItem, item))
+        if (VirtualView.SelectionMode == SelectionMode.Multiple)
+        {
+            ToggleMultipleSelection(item);
+        }
+        else if (!AreItemsEquivalent(VirtualView.SelectedItem, item))
         {
             VirtualView.SelectedItem = item;
         }
 
         UpdateSelectionStyles();
         RequestRender();
+    }
+
+    private void ToggleMultipleSelection(object item)
+    {
+        var selectedIndexes = BuildSelectedIndexes();
+        if (!TryFindItemIndex(item, out var itemIndex))
+        {
+            return;
+        }
+
+        if (!selectedIndexes.Add(itemIndex))
+        {
+            selectedIndexes.Remove(itemIndex);
+        }
+
+        var normalizedSelection = selectedIndexes
+            .OrderBy(index => index)
+            .Select(index => _realizedItems[index].Item)
+            .ToList();
+
+        if (!SelectionListsEquivalent(VirtualView.SelectedItems, normalizedSelection))
+        {
+            VirtualView.SelectedItems = normalizedSelection;
+        }
     }
 
     private void ApplyContainerStyles()
@@ -329,10 +366,109 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
     {
         foreach (var realizedItem in _realizedItems)
         {
-            var isSelected = ReferenceEquals(VirtualView.SelectedItem, realizedItem.Item);
+            var isSelected = IsSelected(realizedItem.Item);
             realizedItem.Node.SetStyle("outline", isSelected ? "2px solid rgba(86,57,176,0.35)" : null);
             realizedItem.Node.SetStyle("outlineOffset", isSelected ? "1px" : null);
         }
+    }
+
+    private bool IsSelected(object item)
+    {
+        return VirtualView.SelectionMode switch
+        {
+            SelectionMode.Multiple => ContainsItem(VirtualView.SelectedItems, item),
+            SelectionMode.Single => AreItemsEquivalent(VirtualView.SelectedItem, item),
+            _ => false
+        };
+    }
+
+    private bool TryFindItemIndex(object item, out int index)
+    {
+        for (var i = 0; i < _realizedItems.Count; i++)
+        {
+            if (AreItemsEquivalent(_realizedItems[i].Item, item))
+            {
+                index = i;
+                return true;
+            }
+        }
+
+        index = -1;
+        return false;
+    }
+
+    private HashSet<int> BuildSelectedIndexes()
+    {
+        var selectedIndexes = new HashSet<int>();
+        if (VirtualView.SelectedItems is null)
+        {
+            return selectedIndexes;
+        }
+
+        foreach (var selectedItem in VirtualView.SelectedItems)
+        {
+            if (selectedItem is null || !TryFindItemIndex(selectedItem, out var index))
+            {
+                continue;
+            }
+
+            selectedIndexes.Add(index);
+        }
+
+        return selectedIndexes;
+    }
+
+    private static bool ContainsItem(IList<object>? selectedItems, object item)
+    {
+        if (selectedItems is null)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < selectedItems.Count; i++)
+        {
+            if (AreItemsEquivalent(selectedItems[i], item))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool SelectionListsEquivalent(IList<object>? left, IList<object>? right)
+    {
+        if (ReferenceEquals(left, right))
+        {
+            return true;
+        }
+
+        var leftCount = left?.Count ?? 0;
+        var rightCount = right?.Count ?? 0;
+        if (leftCount != rightCount)
+        {
+            return false;
+        }
+
+        if (leftCount == 0)
+        {
+            return true;
+        }
+
+        for (var i = 0; i < leftCount; i++)
+        {
+            if (!AreItemsEquivalent(left![i], right![i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool AreItemsEquivalent(object? left, object? right)
+    {
+        return ReferenceEquals(left, right) || Equals(left, right);
     }
 
     private void ClearItems()
