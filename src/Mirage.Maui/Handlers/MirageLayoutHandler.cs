@@ -57,7 +57,8 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
             ComponentKind.HorizontalStack => new MiragePlatformView(ComponentKind.HorizontalStack),
             ComponentKind.Grid => new MiragePlatformView(ComponentKind.Grid),
             ComponentKind.AbsoluteLayout => new MiragePlatformView(ComponentKind.AbsoluteLayout),
-            _ => throw new InvalidOperationException("MirageLayoutHandler supports stack, vertical stack, horizontal stack, grid, and absolute layout.")
+            ComponentKind.Layout => new MiragePlatformView(ComponentKind.Layout),
+            _ => throw new InvalidOperationException("MirageLayoutHandler supports stack, vertical stack, horizontal stack, grid, absolute layout, and custom Layout-derived views.")
         };
     }
 
@@ -83,6 +84,11 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
     {
         base.PlatformArrange(frame);
         VirtualView.CrossPlatformArrange(new Rect(0, 0, frame.Width, frame.Height));
+
+        if (ResolveComponentKind(VirtualView) == ComponentKind.Layout)
+        {
+            ApplyCustomLayoutArrangedFrames();
+        }
     }
 
     public void Add(IView view) => RebuildChildren();
@@ -280,6 +286,14 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 changed |= ClearGridContainerStyles();
                 changed |= SetStyleIfChanged("gap", null);
                 break;
+            case ComponentKind.Layout:
+                DefaultDisplayStyle = "block";
+                changed |= SetStyleIfChanged("display", "block");
+                changed |= SetStyleIfChanged("position", "relative");
+                changed |= ClearFlexContainerStyles();
+                changed |= ClearGridContainerStyles();
+                changed |= SetStyleIfChanged("gap", null);
+                break;
             default:
                 throw new InvalidOperationException($"Unsupported layout kind '{kind}'.");
         }
@@ -450,6 +464,18 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 changed |= SetChildStyleIfChanged(childPlatformView, "alignSelf", null);
                 changed |= ApplyAbsoluteLayoutChildStyles(childPlatformView, childView);
                 break;
+            case ComponentKind.Layout:
+                changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnEnd", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "justifySelf", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "alignSelf", null);
+                changed |= ApplyCustomLayoutChildStyles(childPlatformView, childView);
+                break;
             default:
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
@@ -513,6 +539,25 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         changed |= MirageCommonViewProjection.SetLayoutTransformFragment(
             childPlatformView,
             ResolveAbsoluteLayoutTranslate(xProportional ? x : null, yProportional ? y : null));
+        return changed;
+    }
+
+    private static bool ApplyCustomLayoutChildStyles(MiragePlatformView childPlatformView, IView childView)
+    {
+        var frame = childView.Frame;
+        var x = NormalizeFinite(frame.X, 0);
+        var y = NormalizeFinite(frame.Y, 0);
+        var width = Math.Max(0, NormalizeFinite(frame.Width, 0));
+        var height = Math.Max(0, NormalizeFinite(frame.Height, 0));
+
+        var changed = SetChildStyleIfChanged(childPlatformView, "position", "absolute");
+        changed |= SetChildStyleIfChanged(childPlatformView, "left", MirageCommonViewProjection.ToPxNoClamp(x));
+        changed |= SetChildStyleIfChanged(childPlatformView, "top", MirageCommonViewProjection.ToPxNoClamp(y));
+        changed |= SetChildStyleIfChanged(childPlatformView, "right", null);
+        changed |= SetChildStyleIfChanged(childPlatformView, "bottom", null);
+        changed |= SetChildStyleIfChanged(childPlatformView, "width", MirageViewMapper.ToPx(width));
+        changed |= SetChildStyleIfChanged(childPlatformView, "height", MirageViewMapper.ToPx(height));
+        changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
         return changed;
     }
 
@@ -661,8 +706,28 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
             HorizontalStackLayout => ComponentKind.HorizontalStack,
             Grid => ComponentKind.Grid,
             AbsoluteLayout => ComponentKind.AbsoluteLayout,
-            _ => throw new NotSupportedException($"MirageLayoutHandler supports StackLayout, VerticalStackLayout, HorizontalStackLayout, Grid, and AbsoluteLayout. '{layout.GetType().Name}' is out of scope.")
+            _ => ComponentKind.Layout
         };
+    }
+
+    private void ApplyCustomLayoutArrangedFrames()
+    {
+        var changed = false;
+        foreach (var child in VirtualView)
+        {
+            if (!_childHandlers.TryGetValue(child, out var childHandler)
+                || childHandler.PlatformView is not MiragePlatformView childPlatformView)
+            {
+                continue;
+            }
+
+            changed |= ApplyCustomLayoutChildStyles(childPlatformView, child);
+        }
+
+        if (changed)
+        {
+            RequestRender();
+        }
     }
 
     private bool SetStyleIfChanged(string styleName, string? value)

@@ -467,3 +467,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Promoted upstream `StackLayoutPage` to a runnable ControlsSample entry using existing Mirage `StackLayout` and `BoxView` support, with no new runtime/provider contracts required.
 - Imported upstream page XAML/code-behind into `ControlsSample.Shared` and extended ControlsSample E2E coverage for catalog discoverability plus page-level structure checks (`Vertical` and `Horizontal` sections with six `BoxView` children each).
 - Kept parity expectations aligned to native MAUI behavior: unsized `BoxView` children in both sections are expected to collapse rather than render with synthetic default sizes.
+
+## 2026-03-17 (ControlsSample CustomLayoutPage Enablement)
+- Promoted upstream `CustomLayoutPage` to a runnable ControlsSample entry and linked its upstream XAML/code-behind into `ControlsSample.Shared`.
+- Added a framework-level generic `Layout` realization path in Mirage (`ComponentKind.Layout`) so custom `Layout`-derived views (like upstream `DockLayout`) can run without sample-specific handler glue.
+- `MirageLayoutHandler` now falls back to generic layout mode for non-built-in layouts and projects arranged child frames as absolute child styles (`left/top/width/height`) after MAUI cross-platform arrange, preserving MAUI custom-layout manager semantics in browser host runs.
+- Extended ControlsSample E2E coverage to verify `CustomLayoutPage` docked button arrangement and updated the page status tracker to mark `CustomLayoutPage.xaml` as runnable + E2E covered.

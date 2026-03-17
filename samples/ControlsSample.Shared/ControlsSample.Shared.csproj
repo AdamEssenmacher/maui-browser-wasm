@@ -12,6 +12,7 @@
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\AbsoluteLayoutPage.xaml" Link="Vendor\Pages\Layouts\AbsoluteLayoutPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ClippingPage.xaml" Link="Vendor\Pages\Layouts\ClippingPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ContentViewPage.xaml" Link="Vendor\Pages\Layouts\ContentViewPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\CustomLayoutPage.xaml" Link="Vendor\Pages\Layouts\CustomLayoutPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\GridPage.xaml" Link="Vendor\Pages\Layouts\GridPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\HorizontalStackLayoutPage.xaml" Link="Vendor\Pages\Layouts\HorizontalStackLayoutPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\StackLayoutPage.xaml" Link="Vendor\Pages\Layouts\StackLayoutPage.xaml" />
@@ -37,6 +38,7 @@
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\AbsoluteLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\AbsoluteLayoutPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ClippingPage.xaml.cs" Link="Vendor\Pages\Layouts\ClippingPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ContentViewPage.xaml.cs" Link="Vendor\Pages\Layouts\ContentViewPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\CustomLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\CustomLayoutPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\GridPage.xaml.cs" Link="Vendor\Pages\Layouts\GridPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\HorizontalStackLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\HorizontalStackLayoutPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\StackLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\StackLayoutPage.xaml.cs" />

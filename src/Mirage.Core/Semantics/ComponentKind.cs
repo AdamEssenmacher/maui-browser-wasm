@@ -8,6 +8,7 @@ public enum ComponentKind
     HorizontalStack,
     Grid,
     AbsoluteLayout,
+    Layout,
     Label,
     Entry,
     Button,

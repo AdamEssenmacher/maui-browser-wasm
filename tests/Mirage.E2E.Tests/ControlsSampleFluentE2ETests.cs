@@ -24,6 +24,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-clippingpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-contentviewpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-customlayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-gridpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-horizontalstacklayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stacklayoutpage']").CountAsync());
@@ -226,6 +227,75 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.NotEqual("none", dividerMetrics[2]);
         Assert.True(double.Parse(dividerMetrics[3], CultureInfo.InvariantCulture) >= 1d);
         Assert.True(double.Parse(dividerMetrics[4], CultureInfo.InvariantCulture) >= 120d);
+    }
+
+    [Fact]
+    public async Task CustomLayoutPage_IsRunnable_AndAppliesDockedButtonArrangement()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1000, height: 760);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-customlayoutpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-customlayoutpage']");
+            });
+
+        var layoutSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id='controls-sample-page-customlayoutpage']");
+                if (!host) {
+                    return ["__missing__", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"];
+                }
+
+                const buttons = Array.from(host.querySelectorAll("[data-mirage-kind='Button']"));
+                const byText = text => buttons.filter(button => (button.textContent ?? "").trim() === text);
+                const top = byText("Top")[0];
+                const bottom = byText("Bottom")[0];
+                const leftButtons = byText("Left");
+                const rightButtons = byText("Right");
+                if (!top || !bottom || leftButtons.length === 0 || rightButtons.length === 0) {
+                    return ["__missing_buttons__", buttons.length.toString(), "0", "0", leftButtons.length.toString(), rightButtons.length.toString(), "0", "0", "0", "0", "0", "0", "0"];
+                }
+
+                const topRect = top.getBoundingClientRect();
+                const bottomRect = bottom.getBoundingClientRect();
+                const leftRect = leftButtons[0].getBoundingClientRect();
+                const rightRect = rightButtons[0].getBoundingClientRect();
+
+                return [
+                    "ok",
+                    buttons.length.toString(),
+                    topRect.height.toString(),
+                    bottomRect.height.toString(),
+                    leftButtons.length.toString(),
+                    rightButtons.length.toString(),
+                    leftRect.x.toString(),
+                    rightRect.x.toString(),
+                    topRect.y.toString(),
+                    leftRect.y.toString(),
+                    bottomRect.y.toString(),
+                    leftRect.width.toString(),
+                    rightRect.width.toString()
+                ];
+            }
+            """);
+
+        Assert.Equal("ok", layoutSnapshot[0]);
+        Assert.Equal("6", layoutSnapshot[1]);
+        Assert.Equal("2", layoutSnapshot[4]);
+        Assert.Equal("2", layoutSnapshot[5]);
+        Assert.True(double.Parse(layoutSnapshot[2], CultureInfo.InvariantCulture) >= 0d);
+        Assert.True(double.Parse(layoutSnapshot[3], CultureInfo.InvariantCulture) >= 0d);
+        Assert.True(double.Parse(layoutSnapshot[6], CultureInfo.InvariantCulture) < double.Parse(layoutSnapshot[7], CultureInfo.InvariantCulture));
+        Assert.True(double.Parse(layoutSnapshot[8], CultureInfo.InvariantCulture) <= double.Parse(layoutSnapshot[9], CultureInfo.InvariantCulture));
+        Assert.True(double.Parse(layoutSnapshot[10], CultureInfo.InvariantCulture) >= double.Parse(layoutSnapshot[9], CultureInfo.InvariantCulture));
+        Assert.True(double.Parse(layoutSnapshot[11], CultureInfo.InvariantCulture) >= 0d);
+        Assert.True(double.Parse(layoutSnapshot[12], CultureInfo.InvariantCulture) >= 0d);
     }
 
     [Fact]
