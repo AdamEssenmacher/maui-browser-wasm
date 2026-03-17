@@ -13,7 +13,10 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
 {
     private static long s_itemNodeIdCounter;
     private readonly List<RealizedItem> _realizedItems = [];
+    private readonly HashSet<int> _selectedIndexes = [];
     private INotifyCollectionChanged? _observedCollection;
+    private bool _updatingSelectionFromHandler;
+    private int? _selectedSingleIndex;
 
     public static IPropertyMapper<CollectionView, MirageCollectionViewHandler> Mapper =
         new PropertyMapper<CollectionView, MirageCollectionViewHandler>(MirageViewMapper.CommonViewMapper)
@@ -77,6 +80,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
     {
         _ = collectionView;
         handler.ApplySelectionInteractivity();
+        handler.SyncSelectionStateFromVirtualView();
         handler.UpdateSelectionStyles();
         handler.RequestRender();
     }
@@ -84,6 +88,11 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
     public static void MapSelectedItem(MirageCollectionViewHandler handler, CollectionView collectionView)
     {
         _ = collectionView;
+        if (!handler._updatingSelectionFromHandler)
+        {
+            handler.SyncSelectionStateFromVirtualView();
+        }
+
         handler.UpdateSelectionStyles();
         handler.RequestRender();
     }
@@ -91,6 +100,11 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
     public static void MapSelectedItems(MirageCollectionViewHandler handler, CollectionView collectionView)
     {
         _ = collectionView;
+        if (!handler._updatingSelectionFromHandler)
+        {
+            handler.SyncSelectionStateFromVirtualView();
+        }
+
         handler.UpdateSelectionStyles();
         handler.RequestRender();
     }
@@ -145,6 +159,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
 
         ApplyContainerStyles();
         ApplySelectionInteractivity();
+        SyncSelectionStateFromVirtualView();
         UpdateSelectionStyles();
         RequestRender();
     }
@@ -165,7 +180,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
             return false;
         }
 
-        var itemRoot = CreateItemRootNode(item);
+        var itemRoot = CreateItemRootNode();
         var contentView = CreateItemView(item);
         if (contentView is null)
         {
@@ -208,7 +223,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         return true;
     }
 
-    private MiragePlatformView CreateItemRootNode(object item)
+    private MiragePlatformView CreateItemRootNode()
     {
         var itemNode = MiragePlatformView.CreateControl(ComponentKind.ContentContainer);
         itemNode.SetStyle("display", "block");
@@ -224,7 +239,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
                 return;
             }
 
-            OnItemClicked(item);
+            OnItemClicked(itemNode);
         });
 
         RegisterItemNode(itemNode, itemTarget);
@@ -285,48 +300,49 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         itemNode.AssignNodeId($"collection-item-{localId:D4}");
     }
 
-    private void OnItemClicked(object item)
+    private void OnItemClicked(MiragePlatformView itemNode)
     {
         if (!VirtualView.IsEnabled || VirtualView.SelectionMode == SelectionMode.None)
         {
             return;
         }
 
+        if (!TryFindItemIndex(itemNode, out var itemIndex))
+        {
+            return;
+        }
+
         if (VirtualView.SelectionMode == SelectionMode.Multiple)
         {
-            ToggleMultipleSelection(item);
+            ToggleMultipleSelection(itemIndex);
         }
-        else if (!AreItemsEquivalent(VirtualView.SelectedItem, item))
+        else
         {
-            VirtualView.SelectedItem = item;
+            _selectedIndexes.Clear();
+            _selectedSingleIndex = itemIndex;
+
+            var clickedItem = _realizedItems[itemIndex].Item;
+            SetSelectedItemFromHandler(clickedItem);
         }
 
         UpdateSelectionStyles();
         RequestRender();
     }
 
-    private void ToggleMultipleSelection(object item)
+    private void ToggleMultipleSelection(int itemIndex)
     {
-        var selectedIndexes = BuildSelectedIndexes();
-        if (!TryFindItemIndex(item, out var itemIndex))
+        _selectedSingleIndex = null;
+        if (!_selectedIndexes.Add(itemIndex))
         {
-            return;
+            _selectedIndexes.Remove(itemIndex);
         }
 
-        if (!selectedIndexes.Add(itemIndex))
-        {
-            selectedIndexes.Remove(itemIndex);
-        }
-
-        var normalizedSelection = selectedIndexes
+        var normalizedSelection = _selectedIndexes
             .OrderBy(index => index)
             .Select(index => _realizedItems[index].Item)
             .ToList();
 
-        if (!SelectionListsEquivalent(VirtualView.SelectedItems, normalizedSelection))
-        {
-            VirtualView.SelectedItems = normalizedSelection;
-        }
+        SetSelectedItemsFromHandler(normalizedSelection);
     }
 
     private void ApplyContainerStyles()
@@ -364,28 +380,45 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
 
     private void UpdateSelectionStyles()
     {
-        foreach (var realizedItem in _realizedItems)
+        for (var index = 0; index < _realizedItems.Count; index++)
         {
-            var isSelected = IsSelected(realizedItem.Item);
-            realizedItem.Node.SetStyle("outline", isSelected ? "2px solid rgba(86,57,176,0.35)" : null);
-            realizedItem.Node.SetStyle("outlineOffset", isSelected ? "1px" : null);
+            var isSelected = VirtualView.SelectionMode switch
+            {
+                SelectionMode.Multiple => _selectedIndexes.Contains(index),
+                SelectionMode.Single => _selectedSingleIndex == index,
+                _ => false
+            };
+
+            var node = _realizedItems[index].Node;
+            node.SetStyle("outline", isSelected ? "2px solid rgba(86,57,176,0.35)" : null);
+            node.SetStyle("outlineOffset", isSelected ? "1px" : null);
         }
     }
 
-    private bool IsSelected(object item)
-    {
-        return VirtualView.SelectionMode switch
-        {
-            SelectionMode.Multiple => ContainsItem(VirtualView.SelectedItems, item),
-            SelectionMode.Single => AreItemsEquivalent(VirtualView.SelectedItem, item),
-            _ => false
-        };
-    }
-
-    private bool TryFindItemIndex(object item, out int index)
+    private bool TryFindItemIndex(MiragePlatformView node, out int index)
     {
         for (var i = 0; i < _realizedItems.Count; i++)
         {
+            if (ReferenceEquals(_realizedItems[i].Node, node))
+            {
+                index = i;
+                return true;
+            }
+        }
+
+        index = -1;
+        return false;
+    }
+
+    private bool TryFindNextMatchingItemIndex(object item, HashSet<int> usedIndexes, out int index)
+    {
+        for (var i = 0; i < _realizedItems.Count; i++)
+        {
+            if (usedIndexes.Contains(i))
+            {
+                continue;
+            }
+
             if (AreItemsEquivalent(_realizedItems[i].Item, item))
             {
                 index = i;
@@ -397,43 +430,49 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         return false;
     }
 
-    private HashSet<int> BuildSelectedIndexes()
+    private void SyncSelectionStateFromVirtualView()
     {
-        var selectedIndexes = new HashSet<int>();
-        if (VirtualView.SelectedItems is null)
+        _selectedIndexes.Clear();
+        _selectedSingleIndex = null;
+
+        if (VirtualView.SelectionMode == SelectionMode.None)
         {
-            return selectedIndexes;
+            return;
         }
 
+        if (VirtualView.SelectionMode == SelectionMode.Single)
+        {
+            if (VirtualView.SelectedItem is null)
+            {
+                return;
+            }
+
+            var usedIndexes = new HashSet<int>();
+            if (TryFindNextMatchingItemIndex(VirtualView.SelectedItem, usedIndexes, out var selectedIndex))
+            {
+                _selectedSingleIndex = selectedIndex;
+            }
+
+            return;
+        }
+
+        if (VirtualView.SelectedItems is null)
+        {
+            return;
+        }
+
+        var matchedIndexes = new HashSet<int>();
         foreach (var selectedItem in VirtualView.SelectedItems)
         {
-            if (selectedItem is null || !TryFindItemIndex(selectedItem, out var index))
+            if (selectedItem is null
+                || !TryFindNextMatchingItemIndex(selectedItem, matchedIndexes, out var index))
             {
                 continue;
             }
 
-            selectedIndexes.Add(index);
+            matchedIndexes.Add(index);
+            _selectedIndexes.Add(index);
         }
-
-        return selectedIndexes;
-    }
-
-    private static bool ContainsItem(IList<object>? selectedItems, object item)
-    {
-        if (selectedItems is null)
-        {
-            return false;
-        }
-
-        for (var i = 0; i < selectedItems.Count; i++)
-        {
-            if (AreItemsEquivalent(selectedItems[i], item))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private static bool SelectionListsEquivalent(IList<object>? left, IList<object>? right)
@@ -471,6 +510,42 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         return ReferenceEquals(left, right);
     }
 
+    private void SetSelectedItemFromHandler(object? selectedItem)
+    {
+        if (AreItemsEquivalent(VirtualView.SelectedItem, selectedItem))
+        {
+            return;
+        }
+
+        _updatingSelectionFromHandler = true;
+        try
+        {
+            VirtualView.SelectedItem = selectedItem;
+        }
+        finally
+        {
+            _updatingSelectionFromHandler = false;
+        }
+    }
+
+    private void SetSelectedItemsFromHandler(IList<object> selectedItems)
+    {
+        if (SelectionListsEquivalent(VirtualView.SelectedItems, selectedItems))
+        {
+            return;
+        }
+
+        _updatingSelectionFromHandler = true;
+        try
+        {
+            VirtualView.SelectedItems = selectedItems;
+        }
+        finally
+        {
+            _updatingSelectionFromHandler = false;
+        }
+    }
+
     private void ClearItems()
     {
         if (TryGetPlatformView(out var platformView))
@@ -492,6 +567,8 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         }
 
         _realizedItems.Clear();
+        _selectedIndexes.Clear();
+        _selectedSingleIndex = null;
     }
 
     private void DetachObservedCollection()

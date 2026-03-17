@@ -1060,6 +1060,50 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CollectionViewHandler_DuplicateReferenceRows_UseClickedRowIdentity()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var sharedItem = new SectionModel(typeof(ContentPage), "Shared", "Shared item");
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new[] { sharedItem, sharedItem },
+            SelectionMode = SelectionMode.Multiple,
+            ItemTemplate = new DataTemplate(() => new Label())
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        var firstRowNode = handler.PlatformView.Children[0];
+        var secondRowNode = handler.PlatformView.Children[1];
+
+        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
+        Assert.NotNull(collectionView.SelectedItems);
+        Assert.Single(collectionView.SelectedItems!);
+        Assert.Same(sharedItem, collectionView.SelectedItems![0]);
+        Assert.Null(firstRowNode.GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", secondRowNode.GetStyleValue("outline"));
+
+        coordinator.OnEvent(firstRowNode.NodeId, "click", null);
+        Assert.Equal(2, collectionView.SelectedItems.Count);
+        Assert.Same(sharedItem, collectionView.SelectedItems[0]);
+        Assert.Same(sharedItem, collectionView.SelectedItems[1]);
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", firstRowNode.GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", secondRowNode.GetStyleValue("outline"));
+
+        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
+        Assert.Single(collectionView.SelectedItems);
+        Assert.Same(sharedItem, collectionView.SelectedItems[0]);
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", firstRowNode.GetStyleValue("outline"));
+        Assert.Null(secondRowNode.GetStyleValue("outline"));
+    }
+
+    [Fact]
     public void CollectionViewHandler_RebuildsWhenObservableItemsSourceChanges()
     {
         var services = new ServiceCollection().BuildServiceProvider();
