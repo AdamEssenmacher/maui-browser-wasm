@@ -1269,6 +1269,34 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CollectionViewHandler_MultipleSelection_SyncPreservesNullSelectedItems()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var selectedItems = new List<object> { null!, secondItem };
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new object?[] { null, secondItem, null },
+            SelectionMode = SelectionMode.Multiple,
+            SelectedItems = selectedItems
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+
+        Assert.NotNull(collectionView.SelectedItems);
+        Assert.Equal(2, collectionView.SelectedItems!.Count);
+        Assert.Null(collectionView.SelectedItems[0]);
+        Assert.Same(secondItem, collectionView.SelectedItems[1]);
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", handler.PlatformView.Children[0].GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", handler.PlatformView.Children[1].GetStyleValue("outline"));
+        Assert.Null(handler.PlatformView.Children[2].GetStyleValue("outline"));
+    }
+
+    [Fact]
     public void CollectionViewHandler_UsesDataTemplateSelector_PerItem()
     {
         var services = new ServiceCollection().BuildServiceProvider();

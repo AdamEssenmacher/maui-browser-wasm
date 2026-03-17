@@ -642,8 +642,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         var normalizedSelection = new List<object>();
         foreach (var selectedItem in VirtualView.SelectedItems)
         {
-            if (selectedItem is null
-                || !TryFindNextMatchingItemIndex(selectedItem, matchedIndexes, out var index))
+            if (!TryFindNextMatchingItemIndex(selectedItem, matchedIndexes, out var index))
             {
                 continue;
             }
