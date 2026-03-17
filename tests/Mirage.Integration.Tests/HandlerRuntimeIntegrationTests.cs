@@ -3,6 +3,7 @@ using Mirage.Maui.Handlers;
 using Mirage.Maui.Hosting;
 using Mirage.Maui.Images;
 using Mirage.Web.Runtime;
+using Maui.Controls.Sample.Models;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Shapes;
@@ -10,6 +11,7 @@ using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 using Microsoft.Extensions.DependencyInjection;
+using System.Collections.ObjectModel;
 using System.Reflection;
 using Xunit;
 
@@ -913,6 +915,99 @@ public sealed class HandlerRuntimeIntegrationTests
 
         handler.OnRuntimeEvent("decrement", null);
         Assert.Equal(25d, stepper.Value, 3);
+    }
+
+    [Fact]
+    public void FrameHandler_ProjectsBorderCornerAndShadowStyles()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageFrameHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var frame = new Frame
+        {
+            BorderColor = Colors.Red,
+            CornerRadius = 16f,
+            HasShadow = true
+        };
+
+        ((IElementHandler)handler).SetVirtualView(frame);
+
+        Assert.Equal("solid", handler.PlatformView.GetStyleValue("borderStyle"));
+        Assert.Equal("1px", handler.PlatformView.GetStyleValue("borderWidth"));
+        Assert.Equal("rgba(255,0,0,1)", handler.PlatformView.GetStyleValue("borderColor"));
+        Assert.Equal("16px", handler.PlatformView.GetStyleValue("borderRadius"));
+        Assert.NotNull(handler.PlatformView.GetStyleValue("boxShadow"));
+
+        frame.HasShadow = false;
+        MirageFrameHandler.Mapper.UpdateProperty(handler, frame, nameof(Frame.HasShadow));
+        Assert.Null(handler.PlatformView.GetStyleValue("boxShadow"));
+
+        frame.BorderColor = Colors.Transparent;
+        MirageFrameHandler.Mapper.UpdateProperty(handler, frame, nameof(Frame.BorderColor));
+        Assert.Equal("none", handler.PlatformView.GetStyleValue("borderStyle"));
+    }
+
+    [Fact]
+    public void CollectionViewHandler_ItemClickSelectsItem_AndExecutesSelectionCommand()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var firstItem = new SectionModel(typeof(ContentPage), "First", "First item");
+        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var commandCount = 0;
+
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new[] { firstItem, secondItem },
+            SelectionMode = SelectionMode.Single,
+            ItemTemplate = new DataTemplate(() => new Label())
+        };
+        collectionView.SelectionChangedCommand = new Command(() => commandCount++);
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+
+        Assert.Equal(2, handler.PlatformView.Children.Count);
+
+        var firstRowNode = handler.PlatformView.Children[0];
+        coordinator.OnEvent(firstRowNode.NodeId, "click", null);
+
+        Assert.Same(firstItem, collectionView.SelectedItem);
+        Assert.Equal(1, commandCount);
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", firstRowNode.GetStyleValue("outline"));
+    }
+
+    [Fact]
+    public void CollectionViewHandler_RebuildsWhenObservableItemsSourceChanges()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var items = new ObservableCollection<SectionModel>
+        {
+            new(typeof(ContentPage), "First", "First item")
+        };
+
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            ItemTemplate = new DataTemplate(() => new Label())
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        Assert.Single(handler.PlatformView.Children);
+
+        items.Add(new SectionModel(typeof(ContentPage), "Second", "Second item"));
+        Assert.Equal(2, handler.PlatformView.Children.Count);
     }
 
     [Fact]

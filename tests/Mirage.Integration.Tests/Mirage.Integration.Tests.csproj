@@ -23,9 +23,11 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentViewHandlerBase.cs" Link="Handlers\MirageContentViewHandlerBase.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentPageHandler.cs" Link="Handlers\MirageContentPageHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentViewHandler.cs" Link="Handlers\MirageContentViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageFrameHandler.cs" Link="Handlers\MirageFrameHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageBorderHandler.cs" Link="Handlers\MirageBorderHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageButtonHandler.cs" Link="Handlers\MirageButtonHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageCheckBoxHandler.cs" Link="Handlers\MirageCheckBoxHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageCollectionViewHandler.cs" Link="Handlers\MirageCollectionViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageBoxViewHandler.cs" Link="Handlers\MirageBoxViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageLabelHandler.cs" Link="Handlers\MirageLabelHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageEntryHandler.cs" Link="Handlers\MirageEntryHandler.cs" />
