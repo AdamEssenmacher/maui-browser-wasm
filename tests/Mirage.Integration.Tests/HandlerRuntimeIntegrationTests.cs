@@ -1202,6 +1202,37 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CollectionViewHandler_RealizesNullItems_AndPreservesRowClickMapping()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var firstItem = new SectionModel(typeof(ContentPage), "First", "First item");
+        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new object?[] { firstItem, null, secondItem },
+            SelectionMode = SelectionMode.Single
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        Assert.Equal(3, handler.PlatformView.Children.Count);
+
+        var thirdRowNode = handler.PlatformView.Children[2];
+        coordinator.OnEvent(thirdRowNode.NodeId, "click", null);
+        Assert.Same(secondItem, collectionView.SelectedItem);
+
+        var nullRowNode = handler.PlatformView.Children[1];
+        coordinator.OnEvent(nullRowNode.NodeId, "click", null);
+        Assert.Null(collectionView.SelectedItem);
+    }
+
+    [Fact]
     public void CheckBoxHandler_ProjectsColorAliasCheckedAndDisabledSemantics()
     {
         var services = new ServiceCollection().BuildServiceProvider();

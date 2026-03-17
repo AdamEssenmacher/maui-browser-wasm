@@ -129,15 +129,12 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
             return;
         }
 
-        var realizedItems = new List<object>();
+        var realizedItems = new List<object?>();
         if (VirtualView.ItemsSource is IEnumerable enumerable)
         {
             foreach (var item in enumerable)
             {
-                if (item is not null)
-                {
-                    realizedItems.Add(item);
-                }
+                realizedItems.Add(item);
             }
         }
 
@@ -176,7 +173,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         RebuildItems();
     }
 
-    private bool TryCreateItem(object item, out RealizedItem realizedItem)
+    private bool TryCreateItem(object? item, out RealizedItem realizedItem)
     {
         realizedItem = null!;
 
@@ -251,12 +248,12 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         return itemNode;
     }
 
-    private IView? CreateItemView(object item)
+    private IView? CreateItemView(object? item)
     {
         var template = VirtualView.ItemTemplate;
         if (template is null)
         {
-            return new Label { Text = item.ToString() ?? string.Empty };
+            return new Label { Text = item?.ToString() ?? string.Empty };
         }
 
         var templateContent = template.CreateContent();
@@ -268,15 +265,20 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         };
     }
 
-    private static MiragePlatformView CreateFallbackItemPlatformView(object item)
+    private static MiragePlatformView CreateFallbackItemPlatformView(object? item)
     {
         var labelNode = MiragePlatformView.CreateControl(ComponentKind.Label);
         labelNode.SetProperty("Text", ResolveFallbackText(item));
         return labelNode;
     }
 
-    private static string ResolveFallbackText(object item)
+    private static string ResolveFallbackText(object? item)
     {
+        if (item is null)
+        {
+            return string.Empty;
+        }
+
         var titleProperty = item.GetType().GetProperty("Title");
         if (titleProperty?.PropertyType == typeof(string)
             && titleProperty.GetValue(item) is string title
@@ -345,6 +347,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         var normalizedSelection = _selectedIndexes
             .OrderBy(index => index)
             .Select(index => _realizedItems[index].Item)
+            .OfType<object>()
             .ToList();
 
         SetSelectedItemsFromHandler(normalizedSelection);
@@ -415,7 +418,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         return false;
     }
 
-    private bool TryFindNextMatchingItemIndex(object item, HashSet<int> usedIndexes, out int index)
+    private bool TryFindNextMatchingItemIndex(object? item, HashSet<int> usedIndexes, out int index)
     {
         for (var i = 0; i < _realizedItems.Count; i++)
         {
@@ -545,7 +548,10 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
 
             usedIndexes.Add(selectedIndex);
             _selectedIndexes.Add(selectedIndex);
-            selectedItems.Add(_realizedItems[selectedIndex].Item);
+            if (_realizedItems[selectedIndex].Item is { } selectedItem)
+            {
+                selectedItems.Add(selectedItem);
+            }
         }
 
         if (selectedItems.Count == 0)
@@ -631,7 +637,10 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
 
             matchedIndexes.Add(index);
             _selectedIndexes.Add(index);
-            normalizedSelection.Add(_realizedItems[index].Item);
+            if (_realizedItems[index].Item is { } normalizedItem)
+            {
+                normalizedSelection.Add(normalizedItem);
+            }
         }
 
         if (!SelectionListsEquivalent(VirtualView.SelectedItems, normalizedSelection))
@@ -759,21 +768,21 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
 
     private sealed class RealizedItem
     {
-        public RealizedItem(object item, MiragePlatformView node, IElementHandler? contentHandler)
+        public RealizedItem(object? item, MiragePlatformView node, IElementHandler? contentHandler)
         {
             Item = item;
             Node = node;
             ContentHandler = contentHandler;
         }
 
-        public object Item { get; }
+        public object? Item { get; }
 
         public MiragePlatformView Node { get; }
 
         public IElementHandler? ContentHandler { get; }
     }
 
-    private readonly record struct SelectionToken(object Item, int Occurrence);
+    private readonly record struct SelectionToken(object? Item, int Occurrence);
 
     private sealed class SelectionSnapshot
     {
