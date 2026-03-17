@@ -326,6 +326,22 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CommonMapper_MapTransform_PreservesOutOfRangeAnchors()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var view = new BoxView
+        {
+            AnchorX = -1,
+            AnchorY = 2
+        };
+
+        MirageViewMapper.MapTransform(handler, view);
+
+        Assert.Equal("-100% 200%", handler.Node.GetStyleValue("transformOrigin"));
+        Assert.Null(handler.Node.GetStyleValue("transform"));
+    }
+
+    [Fact]
     public void CommonMapper_MapStyle_ReappliesTransformProperties()
     {
         var services = new ServiceCollection().BuildServiceProvider();

@@ -210,8 +210,8 @@ internal static class MirageCommonViewProjection
         var rotationX = NormalizeFinite(transform.RotationX, 0);
         var rotationY = NormalizeFinite(transform.RotationY, 0);
 
-        var anchorX = Math.Clamp(NormalizeFinite(transform.AnchorX, 0.5), 0, 1);
-        var anchorY = Math.Clamp(NormalizeFinite(transform.AnchorY, 0.5), 0, 1);
+        var anchorX = NormalizeFinite(transform.AnchorX, 0.5);
+        var anchorY = NormalizeFinite(transform.AnchorY, 0.5);
         var transformOrigin = $"{CssNumber(anchorX * 100)}% {CssNumber(anchorY * 100)}%";
 
         var changed = SetStyleIfChanged(platformHandler, "transformOrigin", transformOrigin);
