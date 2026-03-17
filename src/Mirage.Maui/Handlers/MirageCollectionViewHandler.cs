@@ -347,7 +347,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
         var normalizedSelection = _selectedIndexes
             .OrderBy(index => index)
             .Select(index => _realizedItems[index].Item)
-            .OfType<object>()
+            .Select(item => item!)
             .ToList();
 
         SetSelectedItemsFromHandler(normalizedSelection);
@@ -548,10 +548,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
 
             usedIndexes.Add(selectedIndex);
             _selectedIndexes.Add(selectedIndex);
-            if (_realizedItems[selectedIndex].Item is { } selectedItem)
-            {
-                selectedItems.Add(selectedItem);
-            }
+            selectedItems.Add(_realizedItems[selectedIndex].Item!);
         }
 
         if (selectedItems.Count == 0)
@@ -637,10 +634,7 @@ internal sealed class MirageCollectionViewHandler : MirageViewHandler<Collection
 
             matchedIndexes.Add(index);
             _selectedIndexes.Add(index);
-            if (_realizedItems[index].Item is { } normalizedItem)
-            {
-                normalizedSelection.Add(normalizedItem);
-            }
+            normalizedSelection.Add(_realizedItems[index].Item!);
         }
 
         if (!SelectionListsEquivalent(VirtualView.SelectedItems, normalizedSelection))

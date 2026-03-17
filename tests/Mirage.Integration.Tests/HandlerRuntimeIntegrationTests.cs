@@ -1233,6 +1233,42 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CollectionViewHandler_MultipleSelection_PreservesNullSelectedItems()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new object?[] { new SectionModel(typeof(ContentPage), "First", "First item"), null, secondItem },
+            SelectionMode = SelectionMode.Multiple
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        Assert.Equal(3, handler.PlatformView.Children.Count);
+
+        var nullRowNode = handler.PlatformView.Children[1];
+        coordinator.OnEvent(nullRowNode.NodeId, "click", null);
+
+        Assert.NotNull(collectionView.SelectedItems);
+        Assert.Single(collectionView.SelectedItems!);
+        Assert.Null(collectionView.SelectedItems[0]);
+
+        var thirdRowNode = handler.PlatformView.Children[2];
+        coordinator.OnEvent(thirdRowNode.NodeId, "click", null);
+
+        Assert.Equal(2, collectionView.SelectedItems!.Count);
+        Assert.Null(collectionView.SelectedItems[0]);
+        Assert.Same(secondItem, collectionView.SelectedItems[1]);
+    }
+
+    [Fact]
     public void CheckBoxHandler_ProjectsColorAliasCheckedAndDisabledSemantics()
     {
         var services = new ServiceCollection().BuildServiceProvider();
