@@ -767,6 +767,71 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void StepperHandler_ProjectsRangeAndButtonRuntimeFlow()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageStepperHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var stepper = new Stepper
+        {
+            Minimum = 0,
+            Maximum = 25,
+            Increment = 2,
+            Value = 5,
+            BackgroundColor = Colors.Red
+        };
+
+        ((IElementHandler)handler).SetVirtualView(stepper);
+
+        Assert.Equal("0", handler.PlatformView.GetPropertyString("Minimum"));
+        Assert.Equal("25", handler.PlatformView.GetPropertyString("Maximum"));
+        Assert.Equal("2", handler.PlatformView.GetPropertyString("Step"));
+        Assert.Equal("5", handler.PlatformView.GetPropertyString("Value"));
+        Assert.Equal("-", handler.PlatformView.GetPropertyString("DecrementText"));
+        Assert.Equal("+", handler.PlatformView.GetPropertyString("IncrementText"));
+        Assert.Null(handler.PlatformView.GetPropertyString("DecrementDisabled"));
+        Assert.Null(handler.PlatformView.GetPropertyString("IncrementDisabled"));
+        Assert.Equal("rgba(255,0,0,1)", handler.PlatformView.GetStyleValue("backgroundColor"));
+
+        stepper.Background = new LinearGradientBrush(
+            new GradientStopCollection
+            {
+                new(Colors.Yellow, 0),
+                new(Colors.Green, 1)
+            },
+            new Point(0, 0),
+            new Point(1, 0));
+        MirageStepperHandler.Mapper.UpdateProperty(handler, stepper, nameof(IView.Background));
+        Assert.NotNull(handler.PlatformView.GetStyleValue("backgroundImage"));
+
+        handler.OnRuntimeEvent("decrement", null);
+        Assert.Equal(3d, stepper.Value, 3);
+
+        stepper.Value = 24;
+        MirageStepperHandler.Mapper.UpdateProperty(handler, stepper, nameof(IRange.Value));
+        handler.OnRuntimeEvent("increment", null);
+        Assert.Equal(25d, stepper.Value, 3);
+        MirageStepperHandler.Mapper.UpdateProperty(handler, stepper, nameof(IRange.Value));
+        Assert.Equal("disabled", handler.PlatformView.GetPropertyString("IncrementDisabled"));
+        Assert.Null(handler.PlatformView.GetPropertyString("DecrementDisabled"));
+
+        handler.OnRuntimeEvent("increment", null);
+        Assert.Equal(25d, stepper.Value, 3);
+
+        stepper.IsEnabled = false;
+        MirageStepperHandler.Mapper.UpdateProperty(handler, stepper, nameof(IView.IsEnabled));
+        Assert.Equal("disabled", handler.PlatformView.GetPropertyString("Disabled"));
+        Assert.Equal("not-allowed", handler.PlatformView.GetStyleValue("cursor"));
+        Assert.Equal("disabled", handler.PlatformView.GetPropertyString("DecrementDisabled"));
+        Assert.Equal("disabled", handler.PlatformView.GetPropertyString("IncrementDisabled"));
+
+        handler.OnRuntimeEvent("decrement", null);
+        Assert.Equal(25d, stepper.Value, 3);
+    }
+
+    [Fact]
     public void CheckBoxHandler_ProjectsColorAliasCheckedAndDisabledSemantics()
     {
         var services = new ServiceCollection().BuildServiceProvider();

@@ -30,6 +30,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-buttonpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stepperpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-layoutisenabledpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
@@ -698,6 +699,105 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
+    public async Task StepperPage_IsRunnable_AndSupportsEnablementValueAndRangeScenarios()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 900, height: 1080);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-stepperpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-stepperpage']");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-stepperpage-enable-stepper']");
+            });
+
+        var numberInputCount = await page.Locator("[data-automation-id='controls-sample-page-stepperpage'] input[type='number']").CountAsync();
+        Assert.Equal(0, numberInputCount);
+
+        var enableStepperSelector = "[data-automation-id='controls-sample-stepperpage-enable-stepper']";
+        var enableButtonSelector = "[data-automation-id='controls-sample-stepperpage-enable-button']";
+        var enableStepperDecrementSelector = $"{enableStepperSelector} [data-mirage-value-element='true']";
+        var enableStepperIncrementSelector = $"{enableStepperSelector} [data-mirage-secondary-element='true']";
+
+        Assert.Equal("-", (await page.Locator(enableStepperDecrementSelector).InnerTextAsync()).Trim());
+        Assert.Equal("+", (await page.Locator(enableStepperIncrementSelector).InnerTextAsync()).Trim());
+
+        Assert.True(await HasDisabledAttributeAsync(page, enableStepperDecrementSelector));
+        Assert.True(await HasDisabledAttributeAsync(page, enableStepperIncrementSelector));
+
+        await page.Locator(enableButtonSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+
+        Assert.True(await HasDisabledAttributeAsync(page, enableStepperDecrementSelector));
+        Assert.False(await HasDisabledAttributeAsync(page, enableStepperIncrementSelector));
+
+        var buttonTextAfterEnable = await page.Locator(enableButtonSelector).InnerTextAsync();
+        Assert.Contains("Disable Stepper", buttonTextAfterEnable, StringComparison.Ordinal);
+
+        await page.Locator(enableButtonSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+
+        Assert.True(await HasDisabledAttributeAsync(page, enableStepperDecrementSelector));
+        Assert.True(await HasDisabledAttributeAsync(page, enableStepperIncrementSelector));
+
+        var minStepperSelector = "[data-automation-id='controls-sample-stepperpage-minmax']";
+        Assert.Equal("5", await page.Locator(minStepperSelector).GetAttributeAsync("data-maui-stepper-min"));
+        Assert.Equal("25", await page.Locator(minStepperSelector).GetAttributeAsync("data-maui-stepper-max"));
+        var minStepperDecrementSelector = $"{minStepperSelector} [data-mirage-value-element='true']";
+        var minStepperIncrementSelector = $"{minStepperSelector} [data-mirage-secondary-element='true']";
+        Assert.True(await HasDisabledAttributeAsync(page, minStepperDecrementSelector));
+        Assert.False(await HasDisabledAttributeAsync(page, minStepperIncrementSelector));
+
+        Assert.True(await TryClickButtonIfEnabledAsync(page, minStepperIncrementSelector));
+        await page.WaitForTimeoutAsync(80);
+        Assert.False(await HasDisabledAttributeAsync(page, minStepperDecrementSelector));
+
+        for (var i = 0; i < 32; i++)
+        {
+            if (!await TryClickButtonIfEnabledAsync(page, minStepperIncrementSelector))
+            {
+                break;
+            }
+        }
+
+        await page.WaitForTimeoutAsync(100);
+        Assert.True(await HasDisabledAttributeAsync(page, minStepperIncrementSelector));
+
+        var incrementStepperSelector = "[data-automation-id='controls-sample-stepperpage-increment']";
+        Assert.Equal("2", await page.Locator(incrementStepperSelector).GetAttributeAsync("data-maui-stepper-step"));
+
+        var backgroundColorHost = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundColor",
+            "[data-automation-id='controls-sample-stepperpage-background-color']");
+        Assert.Contains("255,0,0", backgroundColorHost.Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+
+        var backgroundBrushHost = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundImage",
+            "[data-automation-id='controls-sample-stepperpage-background-brush']");
+        Assert.True(
+            !string.IsNullOrWhiteSpace(backgroundBrushHost)
+            && !string.Equals(backgroundBrushHost, "none", StringComparison.OrdinalIgnoreCase),
+            "Expected brush background image projection on Stepper host.");
+
+        var valueChangedSelector = "[data-automation-id='controls-sample-stepperpage-valuechanged-stepper']";
+        var valueChangedIncrementSelector = $"{valueChangedSelector} [data-mirage-secondary-element='true']";
+        var valueChangedDecrementSelector = $"{valueChangedSelector} [data-mirage-value-element='true']";
+        Assert.True(await TryClickButtonIfEnabledAsync(page, valueChangedIncrementSelector));
+        await page.WaitForTimeoutAsync(100);
+
+        var valueLabelText = await page.Locator("[data-automation-id='controls-sample-stepperpage-value-label']").InnerTextAsync();
+        Assert.Contains("1", valueLabelText, StringComparison.Ordinal);
+
+        Assert.True(await TryClickButtonIfEnabledAsync(page, valueChangedDecrementSelector));
+        await page.WaitForTimeoutAsync(100);
+        var valueLabelAfterDecrement = await page.Locator("[data-automation-id='controls-sample-stepperpage-value-label']").InnerTextAsync();
+        Assert.Contains("0", valueLabelAfterDecrement, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ClippingPage_GridFrame_RendersAtExpectedSize_AndIsHorizontallyCentered()
     {
         await using var context = await _fixture.NewContextAsync();
@@ -832,5 +932,29 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 $"{ex.Message}\nBody text snapshot: {bodyText}\nHost logs:\n{hostLogs}\nPage diagnostics:\n{diagnosticsSnapshot}",
                 ex);
         }
+    }
+
+    private static async Task<bool> HasDisabledAttributeAsync(IPage page, string selector)
+    {
+        return await page.EvaluateAsync<bool>(
+            "(targetSelector) => document.querySelector(targetSelector)?.hasAttribute('disabled') === true",
+            selector);
+    }
+
+    private static async Task<bool> TryClickButtonIfEnabledAsync(IPage page, string selector)
+    {
+        return await page.EvaluateAsync<bool>(
+            """
+            (targetSelector) => {
+                const element = document.querySelector(targetSelector);
+                if (!(element instanceof HTMLButtonElement) || element.disabled) {
+                    return false;
+                }
+
+                element.click();
+                return true;
+            }
+            """,
+            selector);
     }
 }

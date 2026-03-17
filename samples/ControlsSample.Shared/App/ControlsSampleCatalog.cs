@@ -77,6 +77,14 @@ public static class ControlsSampleCatalog
             description: "Runnable in Mirage today: exercises Slider range updates, color projections, thumb image sources, and runtime min/max changes.",
             pageFactory: CreateSliderPage),
         new(
+            id: "stepperpage",
+            title: "StepperPage",
+            upstreamPath: "Pages/Controls/StepperPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(StepperPage),
+            description: "Runnable in Mirage today: exercises Stepper range/increment/value scenarios with enabled-state and value-changed flows.",
+            pageFactory: CreateStepperPage),
+        new(
             id: "tabbedpagegallerymainpage",
             title: "TabbedPageGalleryMainPage",
             upstreamPath: "Pages/Compatibility/TabbedPageGalleryMainPage.xaml",
@@ -275,6 +283,44 @@ public static class ControlsSampleCatalog
         if (disabledSlider is not null && string.IsNullOrWhiteSpace(disabledSlider.AutomationId))
         {
             disabledSlider.AutomationId = "controls-sample-sliderpage-disabled-slider";
+        }
+
+        return page;
+    }
+
+    private static Page CreateStepperPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new StepperPage();
+
+        SetNamedElementAutomationId(page, "EnableStepper", "controls-sample-stepperpage-enable-stepper");
+        SetNamedElementAutomationId(page, "EnableButton", "controls-sample-stepperpage-enable-button");
+        SetNamedElementAutomationId(page, "ValueChangedStepper", "controls-sample-stepperpage-valuechanged-stepper");
+
+        var steppers = FindDescendants<Stepper>(page).ToArray();
+        var stepperAutomationIds = new[]
+        {
+            "controls-sample-stepperpage-default",
+            "controls-sample-stepperpage-enable-stepper",
+            "controls-sample-stepperpage-background-color",
+            "controls-sample-stepperpage-background-brush",
+            "controls-sample-stepperpage-minmax",
+            "controls-sample-stepperpage-increment",
+            "controls-sample-stepperpage-valuechanged-stepper"
+        };
+
+        for (var i = 0; i < steppers.Length && i < stepperAutomationIds.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(steppers[i].AutomationId))
+            {
+                steppers[i].AutomationId = stepperAutomationIds[i];
+            }
+        }
+
+        var valueLabel = FindDescendants<Label>(page).LastOrDefault();
+        if (valueLabel is not null && string.IsNullOrWhiteSpace(valueLabel.AutomationId))
+        {
+            valueLabel.AutomationId = "controls-sample-stepperpage-value-label";
         }
 
         return page;

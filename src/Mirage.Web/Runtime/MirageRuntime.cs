@@ -562,9 +562,12 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         var eventDescriptor = ResolveEventDescriptor(node, operation.EventName);
-        var targetElement = eventDescriptor.Target == EventTarget.ValueElement
-            ? node.GetValueElement()
-            : node.Element;
+        var targetElement = eventDescriptor.Target switch
+        {
+            EventTarget.ValueElement => node.GetValueElement(),
+            EventTarget.SecondaryElement => node.GetSecondaryElement(),
+            _ => node.Element
+        };
 
         int subscriptionId;
         if (eventDescriptor.PayloadKind == EventPayloadKind.InputValue)

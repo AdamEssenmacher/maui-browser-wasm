@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-16 (Stepper moved from numeric input to Mirage-owned +/- chrome)
+- Replaced the browser Stepper realization from `input[type=number]` with a Mirage-owned two-button control (`-` and `+`) so interaction semantics match MAUI Stepper behavior instead of free-form text entry.
+- Added provider/runtime secondary-element event targeting to route decrement and increment clicks without handler-side DOM assumptions.
+- Chose compact Android-like split button chrome as the default web Stepper style while preserving common MAUI background/brush projection on the host.
+
 ## 2026-03-04
 - DOM is the platform UI for the Browser backend. No canvas renderer.
 - No MAUI fork initially; build an external Browser platform package using handlers + DI.

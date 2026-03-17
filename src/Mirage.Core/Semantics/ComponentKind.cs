@@ -15,5 +15,6 @@ public enum ComponentKind
     Border,
     BoxView,
     CheckBox,
-    Slider
+    Slider,
+    Stepper
 }

@@ -3,7 +3,8 @@ namespace Mirage.Core.Providers;
 public enum EventTarget
 {
     Self,
-    ValueElement
+    ValueElement,
+    SecondaryElement
 }
 
 public enum EventPayloadKind
