@@ -20,17 +20,47 @@
                 Text="Built-in Map control on ControlNode path, realized by the Leaflet provider."
                 FontSize="14"
                 AutomationId="showcase-map-lab-subtitle" />
-            <HorizontalStackLayout Spacing="10">
+            <HorizontalStackLayout Spacing="8">
                 <Button
                     Text="Move Region"
                     Clicked="OnMoveRegionClicked"
                     AutomationId="showcase-map-move-button" />
+                <Button
+                    Text="Cycle MapType"
+                    Clicked="OnCycleMapTypeClicked"
+                    AutomationId="showcase-map-maptype-button" />
+                <Button
+                    Text="Toggle Scroll"
+                    Clicked="OnToggleScrollClicked"
+                    AutomationId="showcase-map-scroll-button" />
+                <Button
+                    Text="Toggle Zoom"
+                    Clicked="OnToggleZoomClicked"
+                    AutomationId="showcase-map-zoom-button" />
+            </HorizontalStackLayout>
+            <HorizontalStackLayout Spacing="8">
+                <Button
+                    Text="Toggle User"
+                    Clicked="OnToggleUserLocationClicked"
+                    AutomationId="showcase-map-user-button" />
+                <Button
+                    Text="Toggle Traffic"
+                    Clicked="OnToggleTrafficClicked"
+                    AutomationId="showcase-map-traffic-button" />
                 <Label
                     x:Name="RegionSummaryLabel"
                     VerticalOptions="Center"
                     FontSize="14"
                     AutomationId="showcase-map-region-label" />
             </HorizontalStackLayout>
+            <Label
+                x:Name="OptionsSummaryLabel"
+                FontSize="13"
+                AutomationId="showcase-map-options-label" />
+            <Label
+                x:Name="InteractionSummaryLabel"
+                FontSize="13"
+                AutomationId="showcase-map-interaction-label" />
         </VerticalStackLayout>
 
         <Border

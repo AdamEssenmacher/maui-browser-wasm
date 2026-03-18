@@ -236,12 +236,58 @@ function clearMapError(host) {
   host.removeAttribute("data-mirage-map-error");
 }
 
+function emitMirageEvent(host, eventName, payload) {
+  if (!host || typeof eventName !== "string" || eventName.length === 0) {
+    return;
+  }
+
+  try {
+    host.value = JSON.stringify(payload ?? {});
+  } catch {
+    host.value = "{}";
+  }
+
+  host.dispatchEvent(new CustomEvent(eventName));
+}
+
+function emitDiagnostic(host, code, message) {
+  if (!host) {
+    return;
+  }
+
+  host.setAttribute("data-mirage-map-last-diagnostic-code", typeof code === "string" ? code : "provider-diagnostic");
+  host.setAttribute("data-mirage-map-last-diagnostic-message", typeof message === "string" ? message : "Map provider diagnostic.");
+  emitMirageEvent(host, "mirage-map-diagnostic", {
+    code: typeof code === "string" ? code : "provider-diagnostic",
+    message: typeof message === "string" ? message : "Map provider diagnostic."
+  });
+}
+
 function toFiniteOrNull(value) {
   if (!Number.isFinite(value)) {
     return null;
   }
 
   return Number(value);
+}
+
+function toBoolean(value, defaultValue) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true" || normalized === "1" || normalized === "yes" || normalized === "on") {
+      return true;
+    }
+
+    if (normalized === "false" || normalized === "0" || normalized === "no" || normalized === "off") {
+      return false;
+    }
+  }
+
+  return !!defaultValue;
 }
 
 function setRegionTelemetry(host, region) {
@@ -263,6 +309,47 @@ function setRegionTelemetry(host, region) {
   host.setAttribute("data-mirage-map-lng-span", String(region.longitudeSpan));
 }
 
+function readRegionFromMap(map) {
+  if (!map || typeof map.getCenter !== "function" || typeof map.getBounds !== "function") {
+    return null;
+  }
+
+  const center = map.getCenter();
+  const bounds = map.getBounds();
+  if (!center || !bounds || typeof bounds.getSouthWest !== "function" || typeof bounds.getNorthEast !== "function") {
+    return null;
+  }
+
+  const southWest = bounds.getSouthWest();
+  const northEast = bounds.getNorthEast();
+  if (!southWest || !northEast) {
+    return null;
+  }
+
+  const latitudeSpan = Math.max(0.0001, Math.abs(northEast.lat - southWest.lat));
+  const longitudeSpan = Math.max(0.0001, Math.abs(northEast.lng - southWest.lng));
+  return {
+    centerLatitude: center.lat,
+    centerLongitude: center.lng,
+    latitudeSpan,
+    longitudeSpan
+  };
+}
+
+function raiseRegionChanged(entry) {
+  if (!entry || !entry.map || !entry.host) {
+    return;
+  }
+
+  const region = readRegionFromMap(entry.map);
+  if (!region) {
+    return;
+  }
+
+  setRegionTelemetry(entry.host, region);
+  emitMirageEvent(entry.host, "mirage-map-region-changed", region);
+}
+
 export function initializeMapJson(nodeId, optionsJson) {
   const host = findMapHost(nodeId);
   if (!host) {
@@ -282,8 +369,6 @@ export function initializeMapJson(nodeId, optionsJson) {
   try {
     host.setAttribute("data-mirage-map-provider", "leaflet");
     host.setAttribute("data-mirage-map-status", "ready");
-    host.style.width = "100%";
-    host.style.height = "100%";
 
     const map = window.L.map(host, {
       zoomControl: true,
@@ -297,15 +382,36 @@ export function initializeMapJson(nodeId, optionsJson) {
     });
 
     tileLayer.addTo(map);
-    mapEntries.set(nodeId, {
+    const entry = {
       host,
       map,
       tileLayer,
       markers: new Map(),
-      lastRegionRequestToken: 0
+      elements: new Map(),
+      userLocationMarker: null,
+      userLocationWatchId: null,
+      lastRegionRequestToken: 0,
+      lastDismissPopupRequestToken: 0
+    };
+    mapEntries.set(nodeId, entry);
+
+    map.on("moveend", () => {
+      raiseRegionChanged(entry);
+    });
+
+    map.on("click", (event) => {
+      if (!event || !event.latlng) {
+        return;
+      }
+
+      emitMirageEvent(host, "mirage-map-clicked", {
+        latitude: event.latlng.lat,
+        longitude: event.latlng.lng
+      });
     });
 
     map.invalidateSize(false);
+    raiseRegionChanged(entry);
     return toResultJson(toResult(true));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -357,17 +463,177 @@ function applyRegion(entry, region, animate) {
   });
 }
 
+function setLeafletHandlerState(handler, enabled) {
+  if (!handler) {
+    return;
+  }
+
+  if (enabled) {
+    if (typeof handler.enable === "function") {
+      handler.enable();
+    }
+
+    return;
+  }
+
+  if (typeof handler.disable === "function") {
+    handler.disable();
+  }
+}
+
+function applyInteractionState(entry, state) {
+  const isScrollEnabled = toBoolean(state?.isScrollEnabled, true);
+  const isZoomEnabled = toBoolean(state?.isZoomEnabled, true);
+
+  setLeafletHandlerState(entry.map.dragging, isScrollEnabled);
+  setLeafletHandlerState(entry.map.scrollWheelZoom, isZoomEnabled);
+  setLeafletHandlerState(entry.map.touchZoom, isZoomEnabled);
+  setLeafletHandlerState(entry.map.doubleClickZoom, isZoomEnabled);
+  setLeafletHandlerState(entry.map.boxZoom, isZoomEnabled);
+  setLeafletHandlerState(entry.map.keyboard, isZoomEnabled);
+}
+
+function mapGeolocationErrorCode(error) {
+  switch (error?.code) {
+    case 1:
+      return "geolocation-permission-denied";
+    case 2:
+      return "geolocation-position-unavailable";
+    case 3:
+      return "geolocation-timeout";
+    default:
+      return "geolocation-error";
+  }
+}
+
+function clearUserLocation(entry) {
+  if (!entry) {
+    return;
+  }
+
+  if (entry.userLocationWatchId != null && typeof navigator !== "undefined" && navigator.geolocation) {
+    navigator.geolocation.clearWatch(entry.userLocationWatchId);
+    entry.userLocationWatchId = null;
+  }
+
+  if (entry.userLocationMarker) {
+    try {
+      entry.map.removeLayer(entry.userLocationMarker);
+    } catch {
+      // best effort
+    }
+
+    entry.userLocationMarker = null;
+  }
+
+  entry.host.setAttribute("data-mirage-map-geolocation-status", "disabled");
+}
+
+function applyUserLocationState(entry, state) {
+  const isShowingUser = toBoolean(state?.isShowingUser, false);
+  if (!isShowingUser) {
+    clearUserLocation(entry);
+    return null;
+  }
+
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    const message = "Browser geolocation API is unavailable.";
+    entry.host.setAttribute("data-mirage-map-geolocation-status", "unavailable");
+    emitDiagnostic(entry.host, "geolocation-unavailable", message);
+    return toResult(false, "geolocation-unavailable", message);
+  }
+
+  if (entry.userLocationWatchId != null) {
+    return null;
+  }
+
+  entry.host.setAttribute("data-mirage-map-geolocation-status", "pending");
+  try {
+    entry.userLocationWatchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const latitude = toFiniteOrNull(position?.coords?.latitude);
+        const longitude = toFiniteOrNull(position?.coords?.longitude);
+        if (latitude == null || longitude == null) {
+          return;
+        }
+
+        if (!entry.userLocationMarker) {
+          entry.userLocationMarker = window.L.circleMarker([latitude, longitude], {
+            radius: 8,
+            color: "#2563eb",
+            weight: 2,
+            fillColor: "#93c5fd",
+            fillOpacity: 0.72
+          }).addTo(entry.map);
+        } else {
+          entry.userLocationMarker.setLatLng([latitude, longitude]);
+        }
+
+        entry.host.setAttribute("data-mirage-map-geolocation-status", "ready");
+      },
+      (error) => {
+        const code = mapGeolocationErrorCode(error);
+        const message = error?.message || "Unable to read current browser location.";
+        entry.host.setAttribute("data-mirage-map-geolocation-status", "error");
+        emitDiagnostic(entry.host, code, message);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 15000
+      }
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    entry.host.setAttribute("data-mirage-map-geolocation-status", "error");
+    emitDiagnostic(entry.host, "geolocation-watch-failed", message);
+    return toResult(false, "geolocation-watch-failed", message);
+  }
+
+  return null;
+}
+
+function escapeHtml(text) {
+  if (typeof text !== "string" || text.length === 0) {
+    return "";
+  }
+
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
 function buildPinPopup(pin) {
   const parts = [];
   if (typeof pin.label === "string" && pin.label.length > 0) {
-    parts.push(pin.label);
+    parts.push(escapeHtml(pin.label));
   }
 
   if (typeof pin.address === "string" && pin.address.length > 0) {
-    parts.push(pin.address);
+    parts.push(escapeHtml(pin.address));
   }
 
-  return parts.join(" — ");
+  return parts.join(" &mdash; ");
+}
+
+function wireMarkerInteraction(entry, marker, key) {
+  marker.off("click");
+  marker.on("click", () => {
+    emitMirageEvent(entry.host, "mirage-map-pin-clicked", { key });
+  });
+
+  marker.off("popupopen");
+  marker.on("popupopen", (event) => {
+    const popupElement = event?.popup?.getElement?.();
+    if (!popupElement) {
+      return;
+    }
+
+    popupElement.addEventListener("click", () => {
+      emitMirageEvent(entry.host, "mirage-map-pin-info-window-clicked", { key });
+    }, { once: true });
+  });
 }
 
 function syncPins(entry, pins) {
@@ -398,10 +664,11 @@ function syncPins(entry, pins) {
       marker.setLatLng([latitude, longitude]);
       marker.options.title = typeof rawPin.label === "string" ? rawPin.label : "";
     }
+    wireMarkerInteraction(entry, marker, key);
 
     const popup = buildPinPopup(rawPin);
     if (popup.length > 0) {
-      marker.bindPopup(popup);
+      marker.bindPopup(`<div data-mirage-map-pin-popup-key="${escapeAttributeValue(key)}">${popup}</div>`);
     } else if (marker.getPopup()) {
       marker.unbindPopup();
     }
@@ -417,6 +684,176 @@ function syncPins(entry, pins) {
   }
 
   entry.host.setAttribute("data-mirage-map-pin-count", String(seenKeys.size));
+}
+
+function normalizeCoordinates(rawCoordinates) {
+  if (!Array.isArray(rawCoordinates)) {
+    return [];
+  }
+
+  const coordinates = [];
+  for (const rawCoordinate of rawCoordinates) {
+    if (!rawCoordinate || typeof rawCoordinate !== "object") {
+      continue;
+    }
+
+    const latitude = toFiniteOrNull(rawCoordinate.latitude);
+    const longitude = toFiniteOrNull(rawCoordinate.longitude);
+    if (latitude == null || longitude == null) {
+      continue;
+    }
+
+    coordinates.push([latitude, longitude]);
+  }
+
+  return coordinates;
+}
+
+function normalizeElementKind(value) {
+  if (typeof value !== "string") {
+    return "unknown";
+  }
+
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "circle" || normalized === "polyline" || normalized === "polygon") {
+    return normalized;
+  }
+
+  return "unknown";
+}
+
+function createElementStyle(rawElement, kind) {
+  const strokeColor = typeof rawElement?.strokeColor === "string" && rawElement.strokeColor.length > 0
+    ? rawElement.strokeColor
+    : "#2563eb";
+  const fillColor = typeof rawElement?.fillColor === "string" && rawElement.fillColor.length > 0
+    ? rawElement.fillColor
+    : strokeColor;
+  const strokeThickness = toFiniteOrNull(rawElement?.strokeThickness);
+
+  if (kind === "polyline") {
+    return {
+      color: strokeColor,
+      weight: strokeThickness != null ? Math.max(0.5, strokeThickness) : 2
+    };
+  }
+
+  return {
+    color: strokeColor,
+    weight: strokeThickness != null ? Math.max(0.5, strokeThickness) : 2,
+    fillColor,
+    fillOpacity: 0.3
+  };
+}
+
+function syncElements(entry, elements) {
+  const nextElements = Array.isArray(elements) ? elements : [];
+  const seenKeys = new Set();
+
+  for (const rawElement of nextElements) {
+    if (!rawElement || typeof rawElement !== "object") {
+      continue;
+    }
+
+    const key = typeof rawElement.key === "string" && rawElement.key.length > 0 ? rawElement.key : null;
+    const kind = normalizeElementKind(rawElement.kind);
+    const coordinates = normalizeCoordinates(rawElement.coordinates);
+    if (!key || kind === "unknown" || coordinates.length === 0) {
+      continue;
+    }
+
+    seenKeys.add(key);
+    const style = createElementStyle(rawElement, kind);
+    const existing = entry.elements.get(key);
+    let layer = existing?.layer || null;
+    const existingKind = existing?.kind || null;
+
+    if (existingKind !== kind && layer) {
+      try {
+        entry.map.removeLayer(layer);
+      } catch {
+        // best effort
+      }
+
+      layer = null;
+    }
+
+    if (!layer) {
+      if (kind === "circle") {
+        const radiusMeters = toFiniteOrNull(rawElement.radiusMeters);
+        if (radiusMeters == null) {
+          continue;
+        }
+
+        layer = window.L.circle(coordinates[0], {
+          radius: Math.max(1, radiusMeters),
+          ...style
+        });
+      } else if (kind === "polygon") {
+        layer = window.L.polygon(coordinates, style);
+      } else if (kind === "polyline") {
+        layer = window.L.polyline(coordinates, style);
+      }
+
+      if (!layer) {
+        continue;
+      }
+
+      layer.addTo(entry.map);
+      entry.elements.set(key, { kind, layer });
+    } else {
+      if (kind === "circle") {
+        const radiusMeters = toFiniteOrNull(rawElement.radiusMeters);
+        if (typeof layer.setLatLng === "function") {
+          layer.setLatLng(coordinates[0]);
+        }
+
+        if (radiusMeters != null && typeof layer.setRadius === "function") {
+          layer.setRadius(Math.max(1, radiusMeters));
+        }
+      } else if (typeof layer.setLatLngs === "function") {
+        layer.setLatLngs(coordinates);
+      }
+
+      if (typeof layer.setStyle === "function") {
+        layer.setStyle(style);
+      }
+    }
+  }
+
+  for (const [key, value] of entry.elements.entries()) {
+    if (seenKeys.has(key)) {
+      continue;
+    }
+
+    try {
+      entry.map.removeLayer(value.layer);
+    } catch {
+      // best effort
+    }
+
+    entry.elements.delete(key);
+  }
+
+  entry.host.setAttribute("data-mirage-map-element-count", String(seenKeys.size));
+}
+
+function applyDismissPopupRequest(entry, state) {
+  const dismissToken = Number.isFinite(state?.dismissPopupRequestToken) ? Number(state.dismissPopupRequestToken) : 0;
+  if (dismissToken <= 0 || dismissToken === entry.lastDismissPopupRequestToken) {
+    return;
+  }
+
+  entry.lastDismissPopupRequestToken = dismissToken;
+  const dismissKey = typeof state?.dismissPopupKey === "string" ? state.dismissPopupKey : "";
+  if (dismissKey.length === 0) {
+    return;
+  }
+
+  const marker = entry.markers.get(dismissKey);
+  if (marker && typeof marker.closePopup === "function") {
+    marker.closePopup();
+  }
 }
 
 export function applyMapStateJson(nodeId, stateJson) {
@@ -437,6 +874,19 @@ export function applyMapStateJson(nodeId, stateJson) {
     warningMessage = `Leaflet provider currently falls back to street tiles for map type '${mapType}'.`;
   }
 
+  applyInteractionState(entry, state);
+  const geolocationResult = applyUserLocationState(entry, state);
+  if (geolocationResult && !geolocationResult.ok) {
+    warningCode = warningCode || geolocationResult.errorCode || "geolocation-failed";
+    warningMessage = warningMessage || geolocationResult.errorMessage || "Geolocation failed.";
+  }
+
+  if (toBoolean(state?.isTrafficEnabled, false) && !warningCode) {
+    warningCode = "traffic-unsupported";
+    warningMessage = "Leaflet provider does not provide built-in traffic overlays.";
+    emitDiagnostic(entry.host, warningCode, warningMessage);
+  }
+
   const regionRequestToken = Number.isFinite(state?.regionRequestToken) ? state.regionRequestToken : 0;
   const shouldAnimate = regionRequestToken > 0 && regionRequestToken !== entry.lastRegionRequestToken;
   entry.lastRegionRequestToken = regionRequestToken;
@@ -449,6 +899,8 @@ export function applyMapStateJson(nodeId, stateJson) {
   }
 
   syncPins(entry, state?.pins);
+  syncElements(entry, state?.elements);
+  applyDismissPopupRequest(entry, state);
   entry.map.invalidateSize(false);
   return toResultJson(toResult(true, null, null, warningCode, warningMessage));
 }
@@ -464,7 +916,13 @@ export function disposeMap(nodeId) {
       entry.map.removeLayer(marker);
     }
 
+    for (const element of entry.elements.values()) {
+      entry.map.removeLayer(element.layer);
+    }
+
     entry.markers.clear();
+    entry.elements.clear();
+    clearUserLocation(entry);
     entry.map.remove();
   } catch {
     // best effort

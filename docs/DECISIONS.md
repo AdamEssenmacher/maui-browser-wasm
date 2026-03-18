@@ -2,6 +2,13 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-18 (Map parity wave: MAUI-shaped handler split + region/event parity guardrails)
+- Split Mirage map handling into MAUI-shaped surfaces (`MirageMapHandler`, `MirageMapPinHandler`, `MirageMapElementHandler`) and registered all map-related handlers (`Map`, `Pin`, `MapElement`, `Circle`, `Polyline`, `Polygon`) through `UseMirageBrowserPlatform()`.
+- Expanded Mirage map semantic state to include MAUI map options, identity-based map elements, and popup-dismiss command tokens while keeping region/span authoritative and provider-neutral in core/runtime.
+- Added runtime-provider round-trip event flow for map click, pin click, info-window click, provider diagnostics, and visible-region updates (with feedback-loop suppression when updating `VisibleRegion` from provider events).
+- Introduced machine-readable map parity governance: `docs/parity/map-parity-contract.json` + `docs/parity/map-parity-divergences.json` with CI enforcement in `MapParityContractTests`.
+- Preserved explicit provider constraints as documented divergences (Leaflet map-type fallback, traffic overlay unsupported, and geolocation permission/capability dependence) instead of hiding them behind silent behavior drift.
+
 ## 2026-03-18 (Map hardening follow-up: provider-scoped module sync + local-mode validation + pin item updates)
 - Replaced hardcoded Leaflet module sync in `Directory.Build.targets` with provider-declared `MirageBrowserRuntimeModule` discovery/copy so browser runtime module assets are owned by referenced provider projects instead of repo-root path assumptions.
 - Hardened Leaflet local-asset mode by requiring explicit local JS/CSS URLs when `AssetMode=Local`; invalid local-mode configuration now fails fast with deterministic diagnostics (`local-assets-not-configured` / `local-assets-invalid-url`).

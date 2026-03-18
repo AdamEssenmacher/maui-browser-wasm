@@ -6,6 +6,7 @@ using Mirage.Web.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Maps;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Hosting;
@@ -46,6 +47,11 @@ public static class MirageHostingExtensions
             handlers.AddHandler(typeof(Border), typeof(MirageBorderHandler));
             handlers.AddHandler(typeof(BoxView), typeof(MirageBoxViewHandler));
             handlers.AddHandler(typeof(MauiMap), typeof(MirageMapHandler));
+            handlers.AddHandler(typeof(Pin), typeof(MirageMapPinHandler));
+            handlers.AddHandler(typeof(MapElement), typeof(MirageMapElementHandler));
+            handlers.AddHandler(typeof(Circle), typeof(MirageMapElementHandler));
+            handlers.AddHandler(typeof(Polygon), typeof(MirageMapElementHandler));
+            handlers.AddHandler(typeof(Polyline), typeof(MirageMapElementHandler));
         });
 
         builder.Services.TryAddSingleton<IDispatcherProvider>(dispatcherProvider);

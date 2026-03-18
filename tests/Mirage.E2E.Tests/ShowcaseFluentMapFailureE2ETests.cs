@@ -5,6 +5,7 @@ using Xunit;
 
 namespace Mirage.E2E.Tests;
 
+[Collection("MapE2ESerial")]
 public sealed class ShowcaseFluentMapProviderMissingE2ETests : IClassFixture<ShowcaseMapProviderDisabledFixture>
 {
     private readonly ShowcaseMapProviderDisabledFixture _fixture;
@@ -36,6 +37,7 @@ public sealed class ShowcaseFluentMapProviderMissingE2ETests : IClassFixture<Sho
     }
 }
 
+[Collection("MapE2ESerial")]
 public sealed class ShowcaseFluentMapAssetFailureE2ETests : IClassFixture<ShowcaseLeafletBrokenAssetsFixture>
 {
     private readonly ShowcaseLeafletBrokenAssetsFixture _fixture;
@@ -77,6 +79,7 @@ public sealed class ShowcaseFluentMapAssetFailureE2ETests : IClassFixture<Showca
     }
 }
 
+[Collection("MapE2ESerial")]
 public sealed class ShowcaseFluentMapLocalAssetModeValidationE2ETests : IClassFixture<ShowcaseLeafletLocalModeWithoutUrlsFixture>
 {
     private readonly ShowcaseLeafletLocalModeWithoutUrlsFixture _fixture;
@@ -103,6 +106,7 @@ public sealed class ShowcaseFluentMapLocalAssetModeValidationE2ETests : IClassFi
     }
 }
 
+[Collection("MapE2ESerial")]
 public sealed class ShowcaseFluentMapLocalAssetModeInvalidUrlE2ETests : IClassFixture<ShowcaseLeafletLocalModeInvalidUrlsFixture>
 {
     private readonly ShowcaseLeafletLocalModeInvalidUrlsFixture _fixture;

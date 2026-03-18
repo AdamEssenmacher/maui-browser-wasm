@@ -280,6 +280,10 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("using MauiMap = Microsoft.Maui.Controls.Maps.Map;", hostingText, StringComparison.Ordinal);
         Assert.Contains("typeof(MauiMap)", hostingText, StringComparison.Ordinal);
         Assert.Contains("typeof(MirageMapHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(Pin)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageMapPinHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MapElement)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageMapElementHandler)", hostingText, StringComparison.Ordinal);
         Assert.Contains("ComponentKind.Map", mapHandlerText, StringComparison.Ordinal);
         Assert.DoesNotContain("CreateWeb(", mapHandlerText, StringComparison.Ordinal);
     }

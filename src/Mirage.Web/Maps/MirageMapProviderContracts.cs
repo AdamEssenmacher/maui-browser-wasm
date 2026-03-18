@@ -19,9 +19,17 @@ public readonly record struct MirageMapProviderInitializationResult(
         ErrorMessage: errorMessage);
 }
 
+public readonly record struct MirageMapProviderCapabilities(
+    bool SupportsMultipleMapTypes,
+    bool SupportsTrafficOverlay,
+    bool SupportsUserLocation,
+    bool SupportsMapElements);
+
 public interface IMirageMapProvider
 {
     string ProviderName { get; }
+
+    MirageMapProviderCapabilities Capabilities { get; }
 
     MirageMapProviderInitializationResult Initialization { get; }
 

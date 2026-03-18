@@ -28,6 +28,12 @@ internal sealed class LeafletMapProvider : IMirageMapProvider
 
     public string ProviderName => "leaflet";
 
+    public MirageMapProviderCapabilities Capabilities { get; } = new(
+        SupportsMultipleMapTypes: false,
+        SupportsTrafficOverlay: false,
+        SupportsUserLocation: true,
+        SupportsMapElements: true);
+
     public MirageMapProviderInitializationResult Initialization
     {
         get

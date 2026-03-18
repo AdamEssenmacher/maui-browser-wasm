@@ -57,6 +57,31 @@ internal sealed class LeafletMapAdapter : IMirageMapAdapter
             });
         }
 
+        var elements = new JsonArray();
+        foreach (var element in state.Elements)
+        {
+            var coordinates = new JsonArray();
+            foreach (var coordinate in element.Coordinates)
+            {
+                coordinates.Add(new JsonObject
+                {
+                    ["latitude"] = coordinate.Latitude,
+                    ["longitude"] = coordinate.Longitude
+                });
+            }
+
+            elements.Add(new JsonObject
+            {
+                ["key"] = element.Key,
+                ["kind"] = element.Kind.ToString().ToLowerInvariant(),
+                ["coordinates"] = coordinates,
+                ["radiusMeters"] = element.RadiusMeters,
+                ["strokeColor"] = element.StrokeColor,
+                ["strokeThickness"] = element.StrokeThickness,
+                ["fillColor"] = element.FillColor
+            });
+        }
+
         JsonNode? regionNode = null;
         if (state.Region is MirageMapRegion region)
         {
@@ -72,9 +97,16 @@ internal sealed class LeafletMapAdapter : IMirageMapAdapter
         var payloadJson = new JsonObject
         {
             ["mapType"] = ToMapTypeString(state.MapType),
+            ["isShowingUser"] = state.IsShowingUser,
+            ["isScrollEnabled"] = state.IsScrollEnabled,
+            ["isZoomEnabled"] = state.IsZoomEnabled,
+            ["isTrafficEnabled"] = state.IsTrafficEnabled,
             ["regionRequestToken"] = state.RegionRequestToken,
             ["region"] = regionNode,
-            ["pins"] = pins
+            ["pins"] = pins,
+            ["elements"] = elements,
+            ["dismissPopupKey"] = state.DismissPopupKey,
+            ["dismissPopupRequestToken"] = state.DismissPopupRequestToken
         }.ToJsonString();
 
         var result = LeafletMapProvider.ParseInteropResult(LeafletMapInterop.ApplyMapStateJson(_nodeId, payloadJson));

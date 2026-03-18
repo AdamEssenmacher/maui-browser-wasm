@@ -139,12 +139,14 @@ If missing, startup fails with:
 ## Map Support (Provider Model)
 
 - `Map` is a built-in Mirage control-node path (`ComponentKind.Map`), not a generic `WebNode`.
-- Mirage core semantics are region-first (`center + span`) with identity-based pin synchronization (`add/update/remove` by stable key).
+- Mirage core semantics are region-first (`center + span`) with MAUI-shaped map options (`MapType`, `IsShowingUser`, `IsScrollEnabled`, `IsZoomEnabled`, `IsTrafficEnabled`), identity-based pins, and identity-based map elements (`Circle`/`Polyline`/`Polygon`).
 - Browser map realization is provider-owned through `IMirageMapProvider`/`IMirageMapAdapter`; Mirage core/runtime stays provider-neutral.
 - First browser map provider is Leaflet (`UseMirageLeafletMaps(...)`) in `src/Mirage.Provider.LeafletMaps`.
 - Leaflet asset policy defaults to CDN JS/CSS URLs (configurable), with explicit initialization diagnostics and visible error state on provider/asset failures.
 - `LeafletAssetMode.Local` requires explicit local JS/CSS URLs; Mirage fails fast with diagnostics when local mode is enabled without local URLs.
 - Leaflet default tile source is OpenStreetMap with attribution as a provider default policy; tile URL/attribution are configurable and not Mirage core semantics.
+- Runtime parity contract and CI guard live at `docs/parity/map-parity-contract.json` and `tests/Mirage.Integration.Tests/MapParityContractTests.cs`.
+- Explicit non-parity/constraint entries are tracked in `docs/parity/map-parity-divergences.json` with test references.
 
 ## Notes
 

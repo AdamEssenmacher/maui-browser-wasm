@@ -632,11 +632,6 @@ public sealed class MirageRuntime : IMirageRuntime
 
     private void ConfigureMapNode(string nodeId, RealizedNode node)
     {
-        node.Element.Style("position", "relative");
-        node.Element.Style("overflow", "hidden");
-        node.Element.Style("backgroundColor", "rgba(248,249,252,1)");
-        node.Element.Style("minHeight", "180px");
-
         if (_mapProvider is null)
         {
             var message = "Mirage map provider not registered. Add builder.UseMirageLeafletMaps(...).";
@@ -902,9 +897,16 @@ public sealed class MirageRuntime : IMirageRuntime
             return propertyName switch
             {
                 MirageMapPropertyNames.MapType => ApplyMapType(value.GetStringOrNull()),
+                MirageMapPropertyNames.IsShowingUser => ApplyIsShowingUser(value),
+                MirageMapPropertyNames.IsScrollEnabled => ApplyIsScrollEnabled(value),
+                MirageMapPropertyNames.IsZoomEnabled => ApplyIsZoomEnabled(value),
+                MirageMapPropertyNames.IsTrafficEnabled => ApplyIsTrafficEnabled(value),
                 MirageMapPropertyNames.RegionRequestToken => ApplyRegionRequestToken(value.GetStringOrNull()),
                 MirageMapPropertyNames.Region => ApplyRegion(value),
                 MirageMapPropertyNames.Pins => ApplyPins(value),
+                MirageMapPropertyNames.Elements => ApplyElements(value),
+                MirageMapPropertyNames.DismissPopupKey => ApplyDismissPopupKey(value.GetStringOrNull()),
+                MirageMapPropertyNames.DismissPopupRequestToken => ApplyDismissPopupRequestToken(value.GetStringOrNull()),
                 _ => false
             };
         }
@@ -914,9 +916,16 @@ public sealed class MirageRuntime : IMirageRuntime
             return propertyName switch
             {
                 MirageMapPropertyNames.MapType => ReplaceState(_state with { MapType = MirageMapType.Street }),
+                MirageMapPropertyNames.IsShowingUser => ReplaceState(_state with { IsShowingUser = false }),
+                MirageMapPropertyNames.IsScrollEnabled => ReplaceState(_state with { IsScrollEnabled = true }),
+                MirageMapPropertyNames.IsZoomEnabled => ReplaceState(_state with { IsZoomEnabled = true }),
+                MirageMapPropertyNames.IsTrafficEnabled => ReplaceState(_state with { IsTrafficEnabled = false }),
                 MirageMapPropertyNames.RegionRequestToken => ReplaceState(_state with { RegionRequestToken = 0 }),
                 MirageMapPropertyNames.Region => ReplaceState(_state with { Region = null }),
                 MirageMapPropertyNames.Pins => ReplaceState(_state with { Pins = Array.Empty<MirageMapPin>() }),
+                MirageMapPropertyNames.Elements => ReplaceState(_state with { Elements = Array.Empty<MirageMapElement>() }),
+                MirageMapPropertyNames.DismissPopupKey => ReplaceState(_state with { DismissPopupKey = null }),
+                MirageMapPropertyNames.DismissPopupRequestToken => ReplaceState(_state with { DismissPopupRequestToken = 0 }),
                 _ => false
             };
         }
@@ -925,6 +934,26 @@ public sealed class MirageRuntime : IMirageRuntime
         {
             var next = MirageMapSemanticState.ParseMapType(rawValue);
             return ReplaceState(_state with { MapType = next });
+        }
+
+        private bool ApplyIsShowingUser(MirageValue value)
+        {
+            return ReplaceState(_state with { IsShowingUser = ReadBoolean(value, defaultValue: false) });
+        }
+
+        private bool ApplyIsScrollEnabled(MirageValue value)
+        {
+            return ReplaceState(_state with { IsScrollEnabled = ReadBoolean(value, defaultValue: true) });
+        }
+
+        private bool ApplyIsZoomEnabled(MirageValue value)
+        {
+            return ReplaceState(_state with { IsZoomEnabled = ReadBoolean(value, defaultValue: true) });
+        }
+
+        private bool ApplyIsTrafficEnabled(MirageValue value)
+        {
+            return ReplaceState(_state with { IsTrafficEnabled = ReadBoolean(value, defaultValue: false) });
         }
 
         private bool ApplyRegionRequestToken(string? rawValue)
@@ -1038,10 +1067,98 @@ public sealed class MirageRuntime : IMirageRuntime
                 pins.Add(new MirageMapPin(key, latitude, longitude, label, address, type));
             }
 
-            var nextPins = pins
-                .OrderBy(static pin => pin.Key, StringComparer.Ordinal)
-                .ToArray();
+            var nextPins = pins.ToArray();
             return ReplaceState(_state with { Pins = nextPins });
+        }
+
+        private bool ApplyElements(MirageValue value)
+        {
+            JsonArray? elementsJson = null;
+            if (value.TryGetJson(out var elementNode) && elementNode is JsonArray jsonArray)
+            {
+                elementsJson = jsonArray;
+            }
+            else
+            {
+                var raw = value.GetStringOrNull();
+                if (!string.IsNullOrWhiteSpace(raw))
+                {
+                    try
+                    {
+                        elementsJson = JsonNode.Parse(raw) as JsonArray;
+                    }
+                    catch
+                    {
+                        elementsJson = null;
+                    }
+                }
+            }
+
+            if (elementsJson is null)
+            {
+                return ReplaceState(_state with { Elements = Array.Empty<MirageMapElement>() });
+            }
+
+            var elements = new List<MirageMapElement>(elementsJson.Count);
+            foreach (var item in elementsJson)
+            {
+                if (item is not JsonObject elementJson)
+                {
+                    continue;
+                }
+
+                var key = TryGetString(elementJson, "key");
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                var kind = ParseElementKind(TryGetString(elementJson, "kind"));
+                if (kind == MirageMapElementKind.Unknown)
+                {
+                    continue;
+                }
+
+                var coordinates = ParseCoordinates(elementJson["coordinates"] as JsonArray);
+                if (coordinates.Count == 0)
+                {
+                    continue;
+                }
+
+                var radiusMeters = TryGetOptionalNumber(elementJson, "radiusMeters");
+                var strokeThickness = TryGetNumber(elementJson, "strokeThickness");
+                if (!double.IsFinite(strokeThickness))
+                {
+                    strokeThickness = 0;
+                }
+
+                elements.Add(new MirageMapElement(
+                    key,
+                    kind,
+                    coordinates.ToArray(),
+                    radiusMeters,
+                    TryGetString(elementJson, "strokeColor"),
+                    strokeThickness,
+                    TryGetString(elementJson, "fillColor")));
+            }
+
+            return ReplaceState(_state with { Elements = elements.ToArray() });
+        }
+
+        private bool ApplyDismissPopupKey(string? rawValue)
+        {
+            return ReplaceState(_state with { DismissPopupKey = rawValue });
+        }
+
+        private bool ApplyDismissPopupRequestToken(string? rawValue)
+        {
+            var next = 0L;
+            if (!string.IsNullOrWhiteSpace(rawValue))
+            {
+                _ = long.TryParse(rawValue, out next);
+            }
+
+            return ReplaceState(_state with { DismissPopupRequestToken = next });
         }
 
         private bool ReplaceState(MirageMapSemanticState next)
@@ -1058,8 +1175,14 @@ public sealed class MirageRuntime : IMirageRuntime
         private static bool MapStateEquals(MirageMapSemanticState left, MirageMapSemanticState right)
         {
             if (left.MapType != right.MapType
+                || left.IsShowingUser != right.IsShowingUser
+                || left.IsScrollEnabled != right.IsScrollEnabled
+                || left.IsZoomEnabled != right.IsZoomEnabled
+                || left.IsTrafficEnabled != right.IsTrafficEnabled
                 || left.RegionRequestToken != right.RegionRequestToken
-                || left.Region != right.Region)
+                || left.Region != right.Region
+                || left.DismissPopupRequestToken != right.DismissPopupRequestToken
+                || !string.Equals(left.DismissPopupKey, right.DismissPopupKey, StringComparison.Ordinal))
             {
                 return false;
             }
@@ -1077,7 +1200,58 @@ public sealed class MirageRuntime : IMirageRuntime
                 }
             }
 
+            if (left.Elements.Count != right.Elements.Count)
+            {
+                return false;
+            }
+
+            for (var index = 0; index < left.Elements.Count; index++)
+            {
+                if (!MapElementEquals(left.Elements[index], right.Elements[index]))
+                {
+                    return false;
+                }
+            }
+
             return true;
+        }
+
+        private static bool MapElementEquals(MirageMapElement left, MirageMapElement right)
+        {
+            if (!string.Equals(left.Key, right.Key, StringComparison.Ordinal)
+                || left.Kind != right.Kind
+                || left.RadiusMeters != right.RadiusMeters
+                || !string.Equals(left.StrokeColor, right.StrokeColor, StringComparison.Ordinal)
+                || left.StrokeThickness != right.StrokeThickness
+                || !string.Equals(left.FillColor, right.FillColor, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (left.Coordinates.Count != right.Coordinates.Count)
+            {
+                return false;
+            }
+
+            for (var index = 0; index < left.Coordinates.Count; index++)
+            {
+                if (left.Coordinates[index] != right.Coordinates[index])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static bool ReadBoolean(MirageValue value, bool defaultValue)
+        {
+            if (value.TryGetBool(out var boolValue))
+            {
+                return boolValue;
+            }
+
+            return MirageMapSemanticState.ParseBoolean(value.GetStringOrNull(), defaultValue);
         }
 
         private static double TryGetNumber(JsonObject source, string propertyName)
@@ -1091,6 +1265,12 @@ public sealed class MirageRuntime : IMirageRuntime
             return double.NaN;
         }
 
+        private static double? TryGetOptionalNumber(JsonObject source, string propertyName)
+        {
+            var value = TryGetNumber(source, propertyName);
+            return double.IsFinite(value) ? value : null;
+        }
+
         private static string? TryGetString(JsonObject source, string propertyName)
         {
             if (source[propertyName] is JsonValue valueNode
@@ -1100,6 +1280,50 @@ public sealed class MirageRuntime : IMirageRuntime
             }
 
             return null;
+        }
+
+        private static MirageMapElementKind ParseElementKind(string? rawKind)
+        {
+            if (string.IsNullOrWhiteSpace(rawKind))
+            {
+                return MirageMapElementKind.Unknown;
+            }
+
+            return rawKind.Trim().ToLowerInvariant() switch
+            {
+                "circle" => MirageMapElementKind.Circle,
+                "polyline" => MirageMapElementKind.Polyline,
+                "polygon" => MirageMapElementKind.Polygon,
+                _ => MirageMapElementKind.Unknown
+            };
+        }
+
+        private static List<MirageMapCoordinate> ParseCoordinates(JsonArray? coordinatesJson)
+        {
+            if (coordinatesJson is null)
+            {
+                return [];
+            }
+
+            var coordinates = new List<MirageMapCoordinate>(coordinatesJson.Count);
+            foreach (var coordinateNode in coordinatesJson)
+            {
+                if (coordinateNode is not JsonObject coordinateJson)
+                {
+                    continue;
+                }
+
+                var latitude = TryGetNumber(coordinateJson, "latitude");
+                var longitude = TryGetNumber(coordinateJson, "longitude");
+                if (!double.IsFinite(latitude) || !double.IsFinite(longitude))
+                {
+                    continue;
+                }
+
+                coordinates.Add(new MirageMapCoordinate(latitude, longitude));
+            }
+
+            return coordinates;
         }
     }
 }

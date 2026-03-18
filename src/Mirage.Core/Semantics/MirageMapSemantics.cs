@@ -5,7 +5,14 @@ public static class MirageMapPropertyNames
     public const string Region = "MapRegion";
     public const string RegionRequestToken = "MapRegionRequestToken";
     public const string MapType = "MapType";
+    public const string IsShowingUser = "MapIsShowingUser";
+    public const string IsScrollEnabled = "MapIsScrollEnabled";
+    public const string IsZoomEnabled = "MapIsZoomEnabled";
+    public const string IsTrafficEnabled = "MapIsTrafficEnabled";
     public const string Pins = "MapPins";
+    public const string Elements = "MapElements";
+    public const string DismissPopupKey = "MapDismissPopupKey";
+    public const string DismissPopupRequestToken = "MapDismissPopupRequestToken";
 }
 
 public enum MirageMapType
@@ -14,6 +21,14 @@ public enum MirageMapType
     Satellite,
     Hybrid,
     Unknown
+}
+
+public enum MirageMapElementKind
+{
+    Unknown,
+    Circle,
+    Polyline,
+    Polygon
 }
 
 public readonly record struct MirageMapRegion(
@@ -75,18 +90,45 @@ public sealed record MirageMapPin(
     string? Address,
     string? Type);
 
+public readonly record struct MirageMapCoordinate(
+    double Latitude,
+    double Longitude);
+
+public sealed record MirageMapElement(
+    string Key,
+    MirageMapElementKind Kind,
+    IReadOnlyList<MirageMapCoordinate> Coordinates,
+    double? RadiusMeters,
+    string? StrokeColor,
+    double StrokeThickness,
+    string? FillColor);
+
 public sealed record MirageMapSemanticState(
     MirageMapRegion? Region,
     long RegionRequestToken,
     MirageMapType MapType,
-    IReadOnlyList<MirageMapPin> Pins)
+    bool IsShowingUser,
+    bool IsScrollEnabled,
+    bool IsZoomEnabled,
+    bool IsTrafficEnabled,
+    IReadOnlyList<MirageMapPin> Pins,
+    IReadOnlyList<MirageMapElement> Elements,
+    string? DismissPopupKey,
+    long DismissPopupRequestToken)
 {
     public static MirageMapSemanticState Empty { get; } =
         new(
             Region: null,
             RegionRequestToken: 0,
             MapType: MirageMapType.Street,
-            Pins: Array.Empty<MirageMapPin>());
+            IsShowingUser: false,
+            IsScrollEnabled: true,
+            IsZoomEnabled: true,
+            IsTrafficEnabled: false,
+            Pins: Array.Empty<MirageMapPin>(),
+            Elements: Array.Empty<MirageMapElement>(),
+            DismissPopupKey: null,
+            DismissPopupRequestToken: 0);
 
     public static MirageMapType ParseMapType(string? value)
     {
@@ -101,6 +143,27 @@ public sealed record MirageMapSemanticState(
             "satellite" => MirageMapType.Satellite,
             "hybrid" => MirageMapType.Hybrid,
             _ => MirageMapType.Unknown
+        };
+    }
+
+    public static bool ParseBoolean(string? value, bool defaultValue = false)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return defaultValue;
+        }
+
+        return value.Trim().ToLowerInvariant() switch
+        {
+            "1" => true,
+            "true" => true,
+            "yes" => true,
+            "on" => true,
+            "0" => false,
+            "false" => false,
+            "no" => false,
+            "off" => false,
+            _ => defaultValue
         };
     }
 }
