@@ -593,28 +593,39 @@ function applyUserLocationState(entry, state) {
   return null;
 }
 
-function escapeHtml(text) {
-  if (typeof text !== "string" || text.length === 0) {
-    return "";
+function buildPinPopupContent(pin, key) {
+  if (typeof document === "undefined" || !document.createElement) {
+    return null;
   }
 
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-}
-
-function buildPinPopup(pin) {
-  const parts = [];
-  if (typeof pin.label === "string" && pin.label.length > 0) {
-    parts.push(escapeHtml(pin.label));
+  const labelText = typeof pin?.label === "string" ? pin.label : "";
+  const addressText = typeof pin?.address === "string" ? pin.address : "";
+  if (labelText.length === 0 && addressText.length === 0) {
+    return null;
   }
 
-  if (typeof pin.address === "string" && pin.address.length > 0) {
-    parts.push(escapeHtml(pin.address));
+  const root = document.createElement("div");
+  root.setAttribute("data-mirage-map-pin-popup-key", key);
+
+  if (labelText.length > 0) {
+    const label = document.createElement("span");
+    label.textContent = labelText;
+    root.appendChild(label);
   }
 
-  return parts.join(" &mdash; ");
+  if (addressText.length > 0) {
+    if (root.childNodes.length > 0) {
+      const separator = document.createElement("span");
+      separator.textContent = " — ";
+      root.appendChild(separator);
+    }
+
+    const address = document.createElement("span");
+    address.textContent = addressText;
+    root.appendChild(address);
+  }
+
+  return root;
 }
 
 function wireMarkerInteraction(entry, marker, key) {
@@ -666,9 +677,9 @@ function syncPins(entry, pins) {
     }
     wireMarkerInteraction(entry, marker, key);
 
-    const popup = buildPinPopup(rawPin);
-    if (popup.length > 0) {
-      marker.bindPopup(`<div data-mirage-map-pin-popup-key="${escapeAttributeValue(key)}">${popup}</div>`);
+    const popupContent = buildPinPopupContent(rawPin, key);
+    if (popupContent) {
+      marker.bindPopup(popupContent);
     } else if (marker.getPopup()) {
       marker.unbindPopup();
     }

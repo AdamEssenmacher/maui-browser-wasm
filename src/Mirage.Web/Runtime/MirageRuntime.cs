@@ -659,6 +659,8 @@ public sealed class MirageRuntime : IMirageRuntime
             var adapter = _mapProvider.CreateAdapter(nodeId, node.Element);
             node.AttachMapAdapter(adapter);
             node.Element.Attr("data-mirage-map-provider", _mapProvider.ProviderName);
+            // Ensure map adapters initialize even when first projected state is all-default.
+            ApplyMapState(node);
         }
         catch (Exception error)
         {
