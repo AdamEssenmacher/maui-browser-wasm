@@ -213,6 +213,39 @@ public sealed class MirageMapHandlerTests
     }
 
     [Fact]
+    public void MapHandler_RuntimePinInfoWindowClick_DoesNotInvokeMarkerClick()
+    {
+        var handler = CreateHandler();
+        var map = new MauiMap();
+        var pin = new Pin
+        {
+            Label = "Mirage",
+            Address = "SF",
+            Location = new Location(37.78, -122.40)
+        };
+
+        map.Pins.Add(pin);
+        var markerClickCount = 0;
+        var infoWindowClickCount = 0;
+        pin.MarkerClicked += (_, _) => markerClickCount++;
+        pin.InfoWindowClicked += (_, args) =>
+        {
+            infoWindowClickCount++;
+            args.HideInfoWindow = true;
+        };
+
+        ((IElementHandler)handler).SetVirtualView(map);
+
+        var pinKey = ReadPinPayloads(handler.PlatformView).Single().Key;
+        handler.OnRuntimeEvent("pininfowindowclicked", $"{{\"key\":\"{pinKey}\"}}");
+
+        Assert.Equal(0, markerClickCount);
+        Assert.Equal(1, infoWindowClickCount);
+        Assert.Equal(pinKey, handler.PlatformView.GetPropertyString(MirageMapPropertyNames.DismissPopupKey));
+        Assert.True(ReadDismissPopupToken(handler.PlatformView) > 0);
+    }
+
+    [Fact]
     public void MapHandler_RuntimeRegionChanged_UpdatesVisibleRegionWithoutMoveTokenBump()
     {
         var handler = CreateHandler();
@@ -228,6 +261,9 @@ public sealed class MirageMapHandlerTests
         Assert.NotNull(map.VisibleRegion);
         Assert.Equal(47.6062, map.VisibleRegion!.Center.Latitude, 4);
         Assert.Equal(-122.3321, map.VisibleRegion.Center.Longitude, 4);
+        var projectedRegion = ReadRegion(handler.PlatformView);
+        Assert.Equal(47.6062, projectedRegion.CenterLatitude, 4);
+        Assert.Equal(-122.3321, projectedRegion.CenterLongitude, 4);
         Assert.Equal(baselineToken, ReadRegionRequestToken(handler.PlatformView));
     }
 

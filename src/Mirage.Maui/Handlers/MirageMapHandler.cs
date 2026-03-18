@@ -203,17 +203,17 @@ internal sealed class MirageMapHandler : MirageViewHandler<MauiMap>, IMirageRunt
 
     public static void MapVisibleRegion(MirageMapHandler handler, MauiMap map)
     {
-        if (handler._applyingRuntimeRegion)
-        {
-            return;
-        }
-
         if (map.VisibleRegion is not MapSpan visibleRegion)
         {
             return;
         }
 
         if (!handler.UpdateRegionProjection(visibleRegion, fromMoveRequest: false))
+        {
+            return;
+        }
+
+        if (handler._applyingRuntimeRegion)
         {
             return;
         }
@@ -687,11 +687,9 @@ internal sealed class MirageMapHandler : MirageViewHandler<MauiMap>, IMirageRunt
             return;
         }
 
-        var hideInfoWindow = pin.SendMarkerClick();
-        if (infoWindowClick)
-        {
-            hideInfoWindow = pin.SendInfoWindowClick();
-        }
+        var hideInfoWindow = infoWindowClick
+            ? pin.SendInfoWindowClick()
+            : pin.SendMarkerClick();
 
         if (hideInfoWindow)
         {
