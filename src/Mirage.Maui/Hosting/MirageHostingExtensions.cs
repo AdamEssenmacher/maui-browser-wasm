@@ -9,6 +9,7 @@ using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Hosting;
+using MauiMap = Microsoft.Maui.Controls.Maps.Map;
 
 namespace Mirage.Maui.Hosting;
 
@@ -44,6 +45,7 @@ public static class MirageHostingExtensions
             handlers.AddHandler(typeof(Image), typeof(MirageImageHandler));
             handlers.AddHandler(typeof(Border), typeof(MirageBorderHandler));
             handlers.AddHandler(typeof(BoxView), typeof(MirageBoxViewHandler));
+            handlers.AddHandler(typeof(MauiMap), typeof(MirageMapHandler));
         });
 
         builder.Services.TryAddSingleton<IDispatcherProvider>(dispatcherProvider);

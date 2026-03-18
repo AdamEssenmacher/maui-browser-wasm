@@ -202,7 +202,11 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 },
                 valueElementTagName: "button",
                 secondaryElementTagName: "button",
-                stretchValueElementWidth: false)
+                stretchValueElementWidth: false),
+            [ComponentKind.Map] = new(
+                ComponentKind.Map,
+                "div",
+                propertyMappings: CommonProperties)
         };
 
     public ProviderCapabilities Capabilities { get; } = new(

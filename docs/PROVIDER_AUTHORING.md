@@ -35,6 +35,7 @@ Phase-1 control kinds:
 - `VerticalStack`
 - `HorizontalStack`
 - `Grid`
+- `Map`
 - `Label`
 - `Entry`
 - `Button`
@@ -45,6 +46,17 @@ Control descriptors provide:
 - default attributes
 - property mappings
 - event mappings
+
+### Built-in Map provider seam
+
+`Map` is Mirage-owned control semantics and stays on the built-in control-node path. The browser map engine itself is provider-owned and plugs in through map-provider contracts, not `ResolveWebNode(...)`.
+
+- Mirage core semantic source of truth is region/span (`center + latitude/longitude span`), with map type and identity-keyed pin set.
+- Provider implementations receive map projection updates through `IMirageMapProvider`/`IMirageMapAdapter` and are responsible for engine initialization, region/pin projection, and deterministic disposal.
+- Ordinary map property changes must update an existing map instance; they must not recreate the underlying engine host.
+- Tile source defaults/policy (for example, Leaflet + OSM) are provider defaults, not Mirage core semantics.
+- Missing provider/assets must produce explicit diagnostics and visible failure state, not silent blank fallback.
+- If a provider exposes local-asset mode, local mode must require explicit local asset URLs and fail fast with clear diagnostics when configuration is invalid.
 
 ### Layout and visual realization expectations
 

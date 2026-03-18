@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Mirage.Maui\Mirage.Maui.csproj" />
     <ProjectReference Include="..\..\src\Mirage.Provider.Fluent\Mirage.Provider.Fluent.csproj" />
+    <ProjectReference Include="..\..\src\Mirage.Provider.LeafletMaps\Mirage.Provider.LeafletMaps.csproj" />
     <ProjectReference Include="..\..\src\Mirage.Web\Mirage.Web.csproj" />
     <ProjectReference Include="..\..\src\Mirage.Core\Mirage.Core.csproj" />
     <ProjectReference Include="..\Showcase.Shared\Showcase.Shared.csproj" />
@@ -50,11 +51,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*;wwwroot\_mirage\assets\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*;wwwroot\_mirage\assets\**\*.*;wwwroot\_framework\mirage-*.js" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
-    <WasmExtraFilesToDeploy Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*;wwwroot\_mirage\assets\**\*.*">
+    <WasmExtraFilesToDeploy Include="wwwroot\**\*.*" Exclude="wwwroot\_hotreload\**\*.*;wwwroot\_mirage\assets\**\*.*;wwwroot\_framework\mirage-*.js">
       <TargetPath>%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
     </WasmExtraFilesToDeploy>
   </ItemGroup>

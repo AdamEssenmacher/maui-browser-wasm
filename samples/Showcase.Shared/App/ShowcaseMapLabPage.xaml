@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:maps="http://schemas.microsoft.com/dotnet/2021/maui/maps"
+    x:Class="Showcase.Shared.App.ShowcaseMapLabPage"
+    Title="Map Lab"
+    AutomationId="showcase-page-map-lab">
+    <Grid
+        RowDefinitions="Auto,*"
+        Padding="20"
+        RowSpacing="14">
+        <VerticalStackLayout Grid.Row="0" Spacing="10">
+            <Label
+                Text="Mirage Map Lab"
+                FontSize="28"
+                FontAttributes="Bold"
+                AutomationId="showcase-map-lab-title" />
+            <Label
+                Text="Built-in Map control on ControlNode path, realized by the Leaflet provider."
+                FontSize="14"
+                AutomationId="showcase-map-lab-subtitle" />
+            <HorizontalStackLayout Spacing="10">
+                <Button
+                    Text="Move Region"
+                    Clicked="OnMoveRegionClicked"
+                    AutomationId="showcase-map-move-button" />
+                <Label
+                    x:Name="RegionSummaryLabel"
+                    VerticalOptions="Center"
+                    FontSize="14"
+                    AutomationId="showcase-map-region-label" />
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+
+        <Border
+            Grid.Row="1"
+            StrokeShape="RoundRectangle 8"
+            StrokeThickness="1"
+            Padding="0"
+            HeightRequest="440"
+            AutomationId="showcase-map-border">
+            <maps:Map
+                x:Name="ShowcaseMap"
+                AutomationId="showcase-map" />
+        </Border>
+    </Grid>
+</ContentPage>

@@ -33,6 +33,7 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageEntryHandler.cs" Link="Handlers\MirageEntryHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageSliderHandler.cs" Link="Handlers\MirageSliderHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageStepperHandler.cs" Link="Handlers\MirageStepperHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageMapHandler.cs" Link="Handlers\MirageMapHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Images\IMirageImageSourceResolver.cs" Link="Images\IMirageImageSourceResolver.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Images\IMirageImageManifestProvider.cs" Link="Images\IMirageImageManifestProvider.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Images\MirageManifestImageSourceResolver.cs" Link="Images\MirageManifestImageSourceResolver.cs" />
@@ -63,6 +64,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
     <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiPackageVersion)" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiPackageVersion)" />
+    <PackageReference Include="Microsoft.Maui.Controls.Maps" Version="$(MauiPackageVersion)" />
     <PackageReference Include="Microsoft.Maui.Controls.Xaml" Version="$(MauiPackageVersion)" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
     <PackageReference Include="xunit" Version="2.9.3" />

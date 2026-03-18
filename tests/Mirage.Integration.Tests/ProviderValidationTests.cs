@@ -137,6 +137,17 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentMapDescriptor_MapsToMirageOwnedMapHost()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.Map);
+
+        Assert.Equal("div", descriptor.ElementTagName);
+        Assert.True(descriptor.PropertyMappings.ContainsKey("AutomationId"));
+        Assert.Empty(descriptor.EventMappings);
+    }
+
+    [Fact]
     public void FluentProvider_ResolvesHorizontalStackSemanticKind()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();

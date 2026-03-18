@@ -13,5 +13,8 @@
 
   <ItemGroup>
     <None Include="wwwroot\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+    <MirageBrowserRuntimeModule Include="wwwroot\mirage-dom.js">
+      <TargetPath>_framework/mirage-dom.js</TargetPath>
+    </MirageBrowserRuntimeModule>
   </ItemGroup>
 </Project>

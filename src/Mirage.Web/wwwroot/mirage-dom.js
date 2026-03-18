@@ -172,6 +172,29 @@ input[data-mirage-kind="Slider"][type="range"]:disabled::-moz-range-thumb {
   box-shadow: none;
   cursor: default;
 }
+
+[data-mirage-kind="Map"] {
+  position: relative;
+  overflow: hidden;
+  min-height: 180px;
+}
+
+[data-mirage-kind="Map"][data-mirage-map-status="error"]::before {
+  content: attr(data-mirage-map-error);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+  color: rgba(71, 5, 22, 0.92);
+  background: rgba(255, 240, 246, 0.96);
+  z-index: 1000;
+  pointer-events: none;
+}
 `;
 
   document.head.appendChild(styleElement);

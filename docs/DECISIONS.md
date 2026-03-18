@@ -2,6 +2,21 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-18 (Map hardening follow-up: provider-scoped module sync + local-mode validation + pin item updates)
+- Replaced hardcoded Leaflet module sync in `Directory.Build.targets` with provider-declared `MirageBrowserRuntimeModule` discovery/copy so browser runtime module assets are owned by referenced provider projects instead of repo-root path assumptions.
+- Hardened Leaflet local-asset mode by requiring explicit local JS/CSS URLs when `AssetMode=Local`; invalid local-mode configuration now fails fast with deterministic diagnostics (`local-assets-not-configured` / `local-assets-invalid-url`).
+- Extended map handler behavior to subscribe to individual `Pin` property changes so label/location updates on existing pin instances project without requiring explicit mapper calls.
+- Tightened local-asset validation to reject protocol-relative and absolute URLs in `AssetMode=Local` so the local-mode contract is strict and deterministic.
+- Removed runtime-side unconditional map-error clearing after adapter apply; provider/adapter status now remains authoritative and failed apply operations cannot be masked as ready.
+- Updated Leaflet host registration to explicitly replace any prior `IMirageMapProvider` registration so `UseMirageLeafletMaps(...)` is deterministic in host composition order.
+
+## 2026-03-17 (Built-in Map ControlNode + Leaflet provider architecture)
+- Added first-class `Map` support on the built-in control-node path (`ComponentKind.Map`) with Mirage-owned, provider-neutral semantic state (`region/span` as authority, map type, and identity-keyed pins).
+- Introduced map provider contracts (`IMirageMapProvider`, `IMirageMapAdapter`) so map engine lifecycle is provider-owned (create once per host, update many times, dispose deterministically) while handlers remain the MAUI mapping boundary.
+- Added `Mirage.Provider.LeafletMaps` as the first browser map provider with CDN-default asset loading, explicit readiness diagnostics, deterministic error states for missing provider/assets, and configurable tile policy (default OSM + attribution).
+- Added `Showcase` map proof surface (`/map-lab`) and integration/E2E coverage for ControlNode projection, provider-required behavior, region updates, and identity-based pin synchronization.
+- E2E host fixtures now serialize sample-host startup and run browser samples with `--configuration Release --no-build` to prevent static-web-assets/MSBuild contention during parallel fixture initialization.
+
 ## 2026-03-16 (Stepper moved from numeric input to Mirage-owned +/- chrome)
 - Replaced the browser Stepper realization from `input[type=number]` with a Mirage-owned two-button control (`-` and `+`) so interaction semantics match MAUI Stepper behavior instead of free-form text entry.
 - Added provider/runtime secondary-element event targeting to route decrement and increment clicks without handler-side DOM assumptions.

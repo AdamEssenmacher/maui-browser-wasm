@@ -360,8 +360,6 @@ return !Log.HasLoggedErrors;
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MirageBrowserHostApp)' == 'true'">
-    <MirageDomSourcePath>$(MSBuildThisFileDirectory)src/Mirage.Web/wwwroot/mirage-dom.js</MirageDomSourcePath>
-    <MirageDomDestinationPath>$(MSBuildProjectDirectory)/wwwroot/_framework/mirage-dom.js</MirageDomDestinationPath>
     <MirageBundledImageManifestPath>$(MSBuildProjectDirectory)/wwwroot/_mirage/assets/images.manifest.v1.json</MirageBundledImageManifestPath>
   </PropertyGroup>
 
@@ -459,13 +457,115 @@ return !Log.HasLoggedErrors;
         WriteOnlyWhenDifferent="true" />
   </Target>
 
-  <Target Name="MirageSyncDomModuleForBrowserApps"
+  <Target Name="MirageCollectBrowserRuntimeModules"
+          Returns="@(_MirageCollectedBrowserRuntimeModule)">
+    <ItemGroup>
+      <_MirageLocalBrowserRuntimeModule Include="@(MirageBrowserRuntimeModule)"
+                                        Condition="'%(MirageBrowserRuntimeModule.Identity)' != ''">
+        <SourceFullPath>$([System.IO.Path]::GetFullPath('%(MirageBrowserRuntimeModule.FullPath)'))</SourceFullPath>
+        <TargetPath>$([System.String]::Copy('%(MirageBrowserRuntimeModule.TargetPath)').Replace('\\', '/').Trim().TrimStart('/'))</TargetPath>
+      </_MirageLocalBrowserRuntimeModule>
+    </ItemGroup>
+
+    <ItemGroup>
+      <_MirageBrowserRuntimeModuleMissingTargetPath Include="@(_MirageLocalBrowserRuntimeModule->WithMetadataValue('TargetPath', ''))" />
+    </ItemGroup>
+
+    <Error Condition="'@(_MirageBrowserRuntimeModuleMissingTargetPath)' != ''"
+           Text="MirageBrowserRuntimeModule item '%(_MirageBrowserRuntimeModuleMissingTargetPath.Identity)' is missing required metadata 'TargetPath'." />
+
+    <MSBuild Projects="@(ProjectReference)"
+             Targets="MirageCollectBrowserRuntimeModules"
+             BuildInParallel="true"
+             Condition="'@(ProjectReference)' != ''">
+      <Output TaskParameter="TargetOutputs" ItemName="_MirageTransitiveBrowserRuntimeModule" />
+    </MSBuild>
+
+    <ItemGroup>
+      <_MirageCollectedBrowserRuntimeModule Include="%(_MirageLocalBrowserRuntimeModule.SourceFullPath)|%(_MirageLocalBrowserRuntimeModule.TargetPath)">
+        <SourceFullPath>%(_MirageLocalBrowserRuntimeModule.SourceFullPath)</SourceFullPath>
+        <TargetPath>%(_MirageLocalBrowserRuntimeModule.TargetPath)</TargetPath>
+      </_MirageCollectedBrowserRuntimeModule>
+      <_MirageCollectedBrowserRuntimeModule Include="%(_MirageTransitiveBrowserRuntimeModule.SourceFullPath)|%(_MirageTransitiveBrowserRuntimeModule.TargetPath)">
+        <SourceFullPath>%(_MirageTransitiveBrowserRuntimeModule.SourceFullPath)</SourceFullPath>
+        <TargetPath>%(_MirageTransitiveBrowserRuntimeModule.TargetPath)</TargetPath>
+      </_MirageCollectedBrowserRuntimeModule>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="MirageSyncBrowserRuntimeModulesForBrowserApps"
           BeforeTargets="PrepareForBuild"
-          Condition="'$(MirageBrowserHostApp)' == 'true' and Exists('$(MirageDomSourcePath)')">
-    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(MirageDomDestinationPath)'))" />
-    <Copy SourceFiles="$(MirageDomSourcePath)"
-          DestinationFiles="$(MirageDomDestinationPath)"
-          SkipUnchangedFiles="true" />
+          Condition="'$(MirageBrowserHostApp)' == 'true'">
+    <CallTarget Targets="MirageCollectBrowserRuntimeModules">
+      <Output TaskParameter="TargetOutputs" ItemName="_MirageDiscoveredBrowserRuntimeModule" />
+    </CallTarget>
+
+    <RemoveDuplicates Inputs="@(_MirageDiscoveredBrowserRuntimeModule)">
+      <Output TaskParameter="Filtered" ItemName="_MirageUniqueDiscoveredBrowserRuntimeModule" />
+    </RemoveDuplicates>
+
+    <ItemGroup>
+      <_MirageBrowserRuntimeModulePathKey Include="@(_MirageUniqueDiscoveredBrowserRuntimeModule->'%(TargetPath)')"
+                                          Condition="'%(_MirageUniqueDiscoveredBrowserRuntimeModule.TargetPath)' != ''" />
+      <_MirageBrowserRuntimeModulePathSourceKey Include="@(_MirageUniqueDiscoveredBrowserRuntimeModule->'%(TargetPath)|%(SourceFullPath)')"
+                                                Condition="'%(_MirageUniqueDiscoveredBrowserRuntimeModule.TargetPath)' != '' and '%(_MirageUniqueDiscoveredBrowserRuntimeModule.SourceFullPath)' != ''" />
+    </ItemGroup>
+
+    <RemoveDuplicates Inputs="@(_MirageBrowserRuntimeModulePathKey)">
+      <Output TaskParameter="Filtered" ItemName="_MirageUniqueBrowserRuntimeModulePathKey" />
+    </RemoveDuplicates>
+    <RemoveDuplicates Inputs="@(_MirageBrowserRuntimeModulePathSourceKey)">
+      <Output TaskParameter="Filtered" ItemName="_MirageUniqueBrowserRuntimeModulePathSourceKey" />
+    </RemoveDuplicates>
+
+    <Error Condition="'@(_MirageUniqueBrowserRuntimeModulePathSourceKey)' != '' and '@(_MirageUniqueBrowserRuntimeModulePathSourceKey-&gt;Count())' != '@(_MirageUniqueBrowserRuntimeModulePathKey-&gt;Count())'"
+           Text="Mirage browser runtime module target-path collision detected. Ensure each TargetPath maps to exactly one source file. Current mappings: @(_MirageBrowserRuntimeModulePathSourceKey, '; ')." />
+
+    <ItemGroup>
+      <_MirageBrowserRuntimeModuleMissingSource Include="@(_MirageUniqueDiscoveredBrowserRuntimeModule)"
+                                                Condition="'%(_MirageUniqueDiscoveredBrowserRuntimeModule.SourceFullPath)' != '' and !Exists('%(_MirageUniqueDiscoveredBrowserRuntimeModule.SourceFullPath)')">
+        <MissingSourceFullPath>%(_MirageUniqueDiscoveredBrowserRuntimeModule.SourceFullPath)</MissingSourceFullPath>
+        <MissingTargetPath>%(_MirageUniqueDiscoveredBrowserRuntimeModule.TargetPath)</MissingTargetPath>
+      </_MirageBrowserRuntimeModuleMissingSource>
+    </ItemGroup>
+
+    <Error Condition="'@(_MirageBrowserRuntimeModuleMissingSource)' != ''"
+           Text="MirageBrowserRuntimeModule source file '%(_MirageBrowserRuntimeModuleMissingSource.MissingSourceFullPath)' for TargetPath '%(_MirageBrowserRuntimeModuleMissingSource.MissingTargetPath)' does not exist." />
+
+    <ItemGroup>
+      <_MirageBrowserRuntimeModuleMirror Include="@(_MirageUniqueDiscoveredBrowserRuntimeModule)"
+                                         Condition="'%(_MirageUniqueDiscoveredBrowserRuntimeModule.SourceFullPath)' != '' and '%(_MirageUniqueDiscoveredBrowserRuntimeModule.TargetPath)' != ''">
+        <SourceFullPath>%(_MirageUniqueDiscoveredBrowserRuntimeModule.SourceFullPath)</SourceFullPath>
+        <TargetPath>%(_MirageUniqueDiscoveredBrowserRuntimeModule.TargetPath)</TargetPath>
+        <DestinationPath>$(IntermediateOutputPath)Mirage.RuntimeModules/%(_MirageUniqueDiscoveredBrowserRuntimeModule.TargetPath)</DestinationPath>
+        <DestinationDir>$([System.IO.Path]::GetDirectoryName('$(IntermediateOutputPath)Mirage.RuntimeModules/%(_MirageUniqueDiscoveredBrowserRuntimeModule.TargetPath)'))</DestinationDir>
+      </_MirageBrowserRuntimeModuleMirror>
+    </ItemGroup>
+
+    <MakeDir Directories="@(_MirageBrowserRuntimeModuleMirror->'%(DestinationDir)')"
+             Condition="'@(_MirageBrowserRuntimeModuleMirror)' != ''" />
+    <Copy SourceFiles="@(_MirageBrowserRuntimeModuleMirror->'%(SourceFullPath)')"
+          DestinationFiles="@(_MirageBrowserRuntimeModuleMirror->'%(DestinationPath)')"
+          SkipUnchangedFiles="true"
+          Condition="'@(_MirageBrowserRuntimeModuleMirror)' != ''" />
+
+    <ItemGroup Condition="'@(_MirageBrowserRuntimeModuleMirror)' != ''">
+      <_MirageBrowserRuntimeModuleContent Include="%(_MirageBrowserRuntimeModuleMirror.SourceFullPath)">
+        <TargetPath>%(_MirageBrowserRuntimeModuleMirror.TargetPath)</TargetPath>
+      </_MirageBrowserRuntimeModuleContent>
+
+      <Content Include="@(_MirageBrowserRuntimeModuleContent)">
+        <Link>wwwroot/%(_MirageBrowserRuntimeModuleContent.TargetPath)</Link>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </Content>
+      <Watch Include="@(_MirageBrowserRuntimeModuleContent)">
+        <StaticWebAssetPath>%(_MirageBrowserRuntimeModuleContent.TargetPath)</StaticWebAssetPath>
+      </Watch>
+      <WasmExtraFilesToDeploy Include="@(_MirageBrowserRuntimeModuleContent)">
+        <TargetPath>%(_MirageBrowserRuntimeModuleContent.TargetPath)</TargetPath>
+      </WasmExtraFilesToDeploy>
+    </ItemGroup>
   </Target>
 
   <Target Name="MirageSyncHotReloadXamlMirrors"

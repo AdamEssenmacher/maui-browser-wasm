@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Mirage.E2E.Tests;
 
-public sealed class ShowcaseHostFixture : IAsyncLifetime
+public class ShowcaseHostFixture : IAsyncLifetime
 {
     private static readonly bool s_echoDiagnostics = ParseFlag("MIRAGE_DIAGNOSTICS");
     private static readonly bool s_enableDiagnosticsQuery = ParseFlag("MIRAGE_DIAGNOSTICS");
@@ -79,54 +79,63 @@ public sealed class ShowcaseHostFixture : IAsyncLifetime
 
     private async Task<Uri> StartSampleHostAsync()
     {
-        var repoRoot = FindRepoRoot();
-        var sampleProjectPath = Path.Combine(repoRoot, "samples", "Showcase.Fluent", "Showcase.Fluent.csproj");
-        var urlSource = new TaskCompletionSource<Uri>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        var startInfo = new ProcessStartInfo
+        await SampleHostStartupGate.WaitAsync();
+        try
         {
-            FileName = "dotnet",
-            Arguments = $"run --project \"{sampleProjectPath}\" --no-launch-profile",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            WorkingDirectory = repoRoot
-        };
+            var repoRoot = FindRepoRoot();
+            var sampleProjectPath = Path.Combine(repoRoot, "samples", "Showcase.Fluent", "Showcase.Fluent.csproj");
+            var urlSource = new TaskCompletionSource<Uri>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        var process = new Process
-        {
-            StartInfo = startInfo,
-            EnableRaisingEvents = true
-        };
-
-        process.OutputDataReceived += (_, args) => ProcessHostLine(args.Data, urlSource);
-        process.ErrorDataReceived += (_, args) => ProcessHostLine(args.Data, urlSource);
-        process.Exited += (_, _) =>
-        {
-            if (urlSource.Task.IsCompleted)
+            var startInfo = new ProcessStartInfo
             {
-                return;
+                FileName = "dotnet",
+                Arguments = $"run --project \"{sampleProjectPath}\" --configuration Release --no-build --no-launch-profile",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                WorkingDirectory = repoRoot
+            };
+            ConfigureProcessStartInfo(startInfo);
+
+            var process = new Process
+            {
+                StartInfo = startInfo,
+                EnableRaisingEvents = true
+            };
+
+            process.OutputDataReceived += (_, args) => ProcessHostLine(args.Data, urlSource);
+            process.ErrorDataReceived += (_, args) => ProcessHostLine(args.Data, urlSource);
+            process.Exited += (_, _) =>
+            {
+                if (urlSource.Task.IsCompleted)
+                {
+                    return;
+                }
+
+                urlSource.TrySetException(new InvalidOperationException(
+                    $"Showcase.Fluent host exited before publishing app URL. ExitCode={process.ExitCode}.\n{RenderHostLogs()}"));
+            };
+
+            if (!process.Start())
+            {
+                throw new InvalidOperationException("Failed to start Showcase.Fluent host process.");
             }
 
-            urlSource.TrySetException(new InvalidOperationException(
-                $"Showcase.Fluent host exited before publishing app URL. ExitCode={process.ExitCode}.\n{RenderHostLogs()}"));
-        };
+            _sampleProcess = process;
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
 
-        if (!process.Start())
-        {
-            throw new InvalidOperationException("Failed to start Showcase.Fluent host process.");
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+            using var _ = timeout.Token.Register(() =>
+                urlSource.TrySetException(new TimeoutException($"Timed out waiting for Showcase.Fluent URL.\n{RenderHostLogs()}")));
+
+            var appUrl = await urlSource.Task;
+            return ConfigureAppUrl(MaybeAppendDiagnosticsQuery(appUrl));
         }
-
-        _sampleProcess = process;
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
-        using var _ = timeout.Token.Register(() =>
-            urlSource.TrySetException(new TimeoutException($"Timed out waiting for Showcase.Fluent URL.\n{RenderHostLogs()}")));
-
-        var appUrl = await urlSource.Task;
-        return MaybeAppendDiagnosticsQuery(appUrl);
+        finally
+        {
+            SampleHostStartupGate.Release();
+        }
     }
 
     private void ProcessHostLine(string? line, TaskCompletionSource<Uri> urlSource)
@@ -254,5 +263,15 @@ public sealed class ShowcaseHostFixture : IAsyncLifetime
         {
             // Diagnostics file output is best-effort and must not disrupt test execution.
         }
+    }
+
+    protected virtual void ConfigureProcessStartInfo(ProcessStartInfo startInfo)
+    {
+        _ = startInfo;
+    }
+
+    protected virtual Uri ConfigureAppUrl(Uri appUrl)
+    {
+        return appUrl;
     }
 }

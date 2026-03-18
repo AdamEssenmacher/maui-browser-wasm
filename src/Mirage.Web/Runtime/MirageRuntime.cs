@@ -3,6 +3,9 @@ using Mirage.Core.Diagnostics;
 using Mirage.Core.Providers;
 using Mirage.Core.Semantics;
 using Mirage.Web.Dom;
+using Mirage.Web.Maps;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace Mirage.Web.Runtime;
 
@@ -12,6 +15,7 @@ public sealed class MirageRuntime : IMirageRuntime
 
     private readonly DomElement _mountRoot;
     private readonly IMirageComponentProvider _provider;
+    private readonly IMirageMapProvider? _mapProvider;
     private readonly SemanticDiffEngine _diffEngine = new();
     private readonly Dictionary<string, RealizedNode> _nodes = new(StringComparer.Ordinal);
     private readonly Dictionary<(string NodeId, string EventName), int> _eventSubscriptions = new();
@@ -19,10 +23,11 @@ public sealed class MirageRuntime : IMirageRuntime
     private NodeBase? _currentRoot;
     private IMirageEventSink? _eventSink;
 
-    public MirageRuntime(DomElement mountRoot, IMirageComponentProvider provider)
+    public MirageRuntime(DomElement mountRoot, IMirageComponentProvider provider, IMirageMapProvider? mapProvider = null)
     {
         _mountRoot = mountRoot;
         _provider = provider;
+        _mapProvider = mapProvider;
 
         _mountRoot.Style("position", "relative");
         _mountRoot.Style("overflow", "hidden");
@@ -126,6 +131,7 @@ public sealed class MirageRuntime : IMirageRuntime
 
         foreach (var node in _nodes.Values.ToArray())
         {
+            node.DisposeMapAdapter();
             node.Element.Release();
         }
 
@@ -269,7 +275,13 @@ public sealed class MirageRuntime : IMirageRuntime
             element.Append(valueElement);
         }
 
-        return RealizedNode.ForControl(element, descriptor, valueElement, secondaryElement);
+        var realized = RealizedNode.ForControl(element, descriptor, valueElement, secondaryElement);
+        if (kind == ComponentKind.Map)
+        {
+            ConfigureMapNode(operation.NodeId, realized);
+        }
+
+        return realized;
     }
 
     private RealizedNode CreateWebNode(CreateNodeOperation operation)
@@ -341,6 +353,7 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         RemoveEventSubscriptionsForNode(operation.NodeId);
+        node.DisposeMapAdapter();
         node.Element.Release();
         _nodes.Remove(operation.NodeId);
     }
@@ -350,6 +363,11 @@ public sealed class MirageRuntime : IMirageRuntime
         if (!_nodes.TryGetValue(operation.NodeId, out var node))
         {
             return;
+        }
+
+        if (node.ApplyMapProperty(operation.PropertyName, operation.Value))
+        {
+            ApplyMapState(node);
         }
 
         if (node.TryGetControlDescriptor(out var controlDescriptor))
@@ -418,6 +436,11 @@ public sealed class MirageRuntime : IMirageRuntime
         if (!_nodes.TryGetValue(operation.NodeId, out var node))
         {
             return;
+        }
+
+        if (node.RemoveMapProperty(operation.PropertyName))
+        {
+            ApplyMapState(node);
         }
 
         if (node.TryGetControlDescriptor(out var controlDescriptor))
@@ -607,6 +630,77 @@ public sealed class MirageRuntime : IMirageRuntime
         _eventSubscriptions[(operation.NodeId, operation.EventName)] = subscriptionId;
     }
 
+    private void ConfigureMapNode(string nodeId, RealizedNode node)
+    {
+        node.Element.Style("position", "relative");
+        node.Element.Style("overflow", "hidden");
+        node.Element.Style("backgroundColor", "rgba(248,249,252,1)");
+        node.Element.Style("minHeight", "180px");
+
+        if (_mapProvider is null)
+        {
+            var message = "Mirage map provider not registered. Add builder.UseMirageLeafletMaps(...).";
+            ShowMapFailure(node, "provider-not-registered", message);
+            MirageDiagnostics.Log("map.provider", $"node={nodeId} code=provider-not-registered message={message}");
+            return;
+        }
+
+        var initialization = _mapProvider.Initialization;
+        if (!initialization.IsReady)
+        {
+            var code = string.IsNullOrWhiteSpace(initialization.ErrorCode)
+                ? "provider-not-ready"
+                : initialization.ErrorCode!;
+            var message = string.IsNullOrWhiteSpace(initialization.ErrorMessage)
+                ? "Map provider initialization failed."
+                : initialization.ErrorMessage!;
+            ShowMapFailure(node, code, message);
+            MirageDiagnostics.Log("map.provider", $"node={nodeId} provider={_mapProvider.ProviderName} code={code} message={message}");
+            return;
+        }
+
+        try
+        {
+            var adapter = _mapProvider.CreateAdapter(nodeId, node.Element);
+            node.AttachMapAdapter(adapter);
+            node.Element.Attr("data-mirage-map-provider", _mapProvider.ProviderName);
+        }
+        catch (Exception error)
+        {
+            ShowMapFailure(node, "adapter-create-failed", error.Message);
+            MirageDiagnostics.Log(
+                "map.provider",
+                $"node={nodeId} provider={_mapProvider.ProviderName} code=adapter-create-failed message={error.Message}");
+        }
+    }
+
+    private static void ApplyMapState(RealizedNode node)
+    {
+        if (!node.TryGetMapAdapter(out var adapter))
+        {
+            return;
+        }
+
+        try
+        {
+            adapter.ApplyState(node.MapState);
+        }
+        catch (Exception error)
+        {
+            var message = $"Map apply failed: {error.Message}";
+            ShowMapFailure(node, "adapter-apply-failed", message);
+            adapter.ShowError("adapter-apply-failed", message);
+            MirageDiagnostics.Log("map.provider", $"node={node.NodeId} code=adapter-apply-failed message={error.Message}");
+        }
+    }
+
+    private static void ShowMapFailure(RealizedNode node, string errorCode, string message)
+    {
+        node.Element.Attr("data-mirage-map-status", "error");
+        node.Element.Attr("data-mirage-map-error-code", errorCode);
+        node.Element.Attr("data-mirage-map-error", message);
+    }
+
     private ProviderEventDescriptor ResolveEventDescriptor(RealizedNode node, string eventName)
     {
         if (node.TryGetControlDescriptor(out var controlDescriptor))
@@ -656,6 +750,9 @@ public sealed class MirageRuntime : IMirageRuntime
 
     private sealed class RealizedNode
     {
+        private readonly MapSemanticProjection _mapProjection = new();
+        private IMirageMapAdapter? _mapAdapter;
+
         private RealizedNode(
             string nodeId,
             DomElement element,
@@ -683,6 +780,8 @@ public sealed class MirageRuntime : IMirageRuntime
         private ControlComponentDescriptor? ControlDescriptor { get; }
 
         private WebComponentDescriptor? WebDescriptor { get; }
+
+        public MirageMapSemanticState MapState => _mapProjection.State;
 
         public static RealizedNode ForControl(
             DomElement element,
@@ -718,6 +817,53 @@ public sealed class MirageRuntime : IMirageRuntime
             return false;
         }
 
+        public void AttachMapAdapter(IMirageMapAdapter adapter)
+        {
+            _mapAdapter = adapter;
+        }
+
+        public bool TryGetMapAdapter(out IMirageMapAdapter adapter)
+        {
+            if (_mapAdapter is not null)
+            {
+                adapter = _mapAdapter;
+                return true;
+            }
+
+            adapter = null!;
+            return false;
+        }
+
+        public void DisposeMapAdapter()
+        {
+            try
+            {
+                _mapAdapter?.Dispose();
+            }
+            catch
+            {
+                // best effort cleanup
+            }
+            finally
+            {
+                _mapAdapter = null;
+            }
+        }
+
+        public bool ApplyMapProperty(string propertyName, MirageValue value)
+        {
+            return TryGetControlDescriptor(out var descriptor)
+                && descriptor.Kind == ComponentKind.Map
+                && _mapProjection.ApplySet(propertyName, value);
+        }
+
+        public bool RemoveMapProperty(string propertyName)
+        {
+            return TryGetControlDescriptor(out var descriptor)
+                && descriptor.Kind == ComponentKind.Map
+                && _mapProjection.ApplyRemove(propertyName);
+        }
+
         public DomElement GetValueElement()
         {
             return ValueElement ?? Element;
@@ -742,6 +888,218 @@ public sealed class MirageRuntime : IMirageRuntime
         {
             NodeId = nodeId;
             return this;
+        }
+    }
+
+    private sealed class MapSemanticProjection
+    {
+        private MirageMapSemanticState _state = MirageMapSemanticState.Empty;
+
+        public MirageMapSemanticState State => _state;
+
+        public bool ApplySet(string propertyName, MirageValue value)
+        {
+            return propertyName switch
+            {
+                MirageMapPropertyNames.MapType => ApplyMapType(value.GetStringOrNull()),
+                MirageMapPropertyNames.RegionRequestToken => ApplyRegionRequestToken(value.GetStringOrNull()),
+                MirageMapPropertyNames.Region => ApplyRegion(value),
+                MirageMapPropertyNames.Pins => ApplyPins(value),
+                _ => false
+            };
+        }
+
+        public bool ApplyRemove(string propertyName)
+        {
+            return propertyName switch
+            {
+                MirageMapPropertyNames.MapType => ReplaceState(_state with { MapType = MirageMapType.Street }),
+                MirageMapPropertyNames.RegionRequestToken => ReplaceState(_state with { RegionRequestToken = 0 }),
+                MirageMapPropertyNames.Region => ReplaceState(_state with { Region = null }),
+                MirageMapPropertyNames.Pins => ReplaceState(_state with { Pins = Array.Empty<MirageMapPin>() }),
+                _ => false
+            };
+        }
+
+        private bool ApplyMapType(string? rawValue)
+        {
+            var next = MirageMapSemanticState.ParseMapType(rawValue);
+            return ReplaceState(_state with { MapType = next });
+        }
+
+        private bool ApplyRegionRequestToken(string? rawValue)
+        {
+            var next = 0L;
+            if (!string.IsNullOrWhiteSpace(rawValue))
+            {
+                _ = long.TryParse(rawValue, out next);
+            }
+
+            return ReplaceState(_state with { RegionRequestToken = next });
+        }
+
+        private bool ApplyRegion(MirageValue value)
+        {
+            JsonObject? regionJson = null;
+            if (value.TryGetJson(out var regionNode) && regionNode is JsonObject jsonObject)
+            {
+                regionJson = jsonObject;
+            }
+            else
+            {
+                var raw = value.GetStringOrNull();
+                if (!string.IsNullOrWhiteSpace(raw))
+                {
+                    try
+                    {
+                        regionJson = JsonNode.Parse(raw) as JsonObject;
+                    }
+                    catch
+                    {
+                        regionJson = null;
+                    }
+                }
+            }
+
+            if (regionJson is null)
+            {
+                return ReplaceState(_state with { Region = null });
+            }
+
+            var centerLatitude = TryGetNumber(regionJson, "centerLatitude");
+            var centerLongitude = TryGetNumber(regionJson, "centerLongitude");
+            var latitudeSpan = TryGetNumber(regionJson, "latitudeSpan");
+            var longitudeSpan = TryGetNumber(regionJson, "longitudeSpan");
+            if (!MirageMapRegion.TryCreate(
+                    centerLatitude,
+                    centerLongitude,
+                    latitudeSpan,
+                    longitudeSpan,
+                    out var region))
+            {
+                return false;
+            }
+
+            return ReplaceState(_state with { Region = region });
+        }
+
+        private bool ApplyPins(MirageValue value)
+        {
+            JsonArray? pinsJson = null;
+            if (value.TryGetJson(out var pinNode) && pinNode is JsonArray jsonArray)
+            {
+                pinsJson = jsonArray;
+            }
+            else
+            {
+                var raw = value.GetStringOrNull();
+                if (!string.IsNullOrWhiteSpace(raw))
+                {
+                    try
+                    {
+                        pinsJson = JsonNode.Parse(raw) as JsonArray;
+                    }
+                    catch
+                    {
+                        pinsJson = null;
+                    }
+                }
+            }
+
+            if (pinsJson is null)
+            {
+                return ReplaceState(_state with { Pins = Array.Empty<MirageMapPin>() });
+            }
+
+            var pins = new List<MirageMapPin>(pinsJson.Count);
+            foreach (var item in pinsJson)
+            {
+                if (item is not JsonObject pinJson)
+                {
+                    continue;
+                }
+
+                var key = TryGetString(pinJson, "key");
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                var latitude = TryGetNumber(pinJson, "latitude");
+                var longitude = TryGetNumber(pinJson, "longitude");
+                if (!double.IsFinite(latitude) || !double.IsFinite(longitude))
+                {
+                    continue;
+                }
+
+                var label = TryGetString(pinJson, "label");
+                var address = TryGetString(pinJson, "address");
+                var type = TryGetString(pinJson, "type");
+                pins.Add(new MirageMapPin(key, latitude, longitude, label, address, type));
+            }
+
+            var nextPins = pins
+                .OrderBy(static pin => pin.Key, StringComparer.Ordinal)
+                .ToArray();
+            return ReplaceState(_state with { Pins = nextPins });
+        }
+
+        private bool ReplaceState(MirageMapSemanticState next)
+        {
+            if (MapStateEquals(_state, next))
+            {
+                return false;
+            }
+
+            _state = next;
+            return true;
+        }
+
+        private static bool MapStateEquals(MirageMapSemanticState left, MirageMapSemanticState right)
+        {
+            if (left.MapType != right.MapType
+                || left.RegionRequestToken != right.RegionRequestToken
+                || left.Region != right.Region)
+            {
+                return false;
+            }
+
+            if (left.Pins.Count != right.Pins.Count)
+            {
+                return false;
+            }
+
+            for (var index = 0; index < left.Pins.Count; index++)
+            {
+                if (left.Pins[index] != right.Pins[index])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static double TryGetNumber(JsonObject source, string propertyName)
+        {
+            if (source[propertyName] is JsonValue valueNode
+                && valueNode.TryGetValue<double>(out var number))
+            {
+                return number;
+            }
+
+            return double.NaN;
+        }
+
+        private static string? TryGetString(JsonObject source, string propertyName)
+        {
+            if (source[propertyName] is JsonValue valueNode
+                && valueNode.TryGetValue<string>(out var text))
+            {
+                return text;
+            }
+
+            return null;
         }
     }
 }

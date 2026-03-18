@@ -72,53 +72,61 @@ public sealed class ControlsSampleHostFixture : IAsyncLifetime
 
     private async Task<Uri> StartSampleHostAsync()
     {
-        var repoRoot = FindRepoRoot();
-        var sampleProjectPath = Path.Combine(repoRoot, "samples", "ControlsSample.Fluent", "ControlsSample.Fluent.csproj");
-        var urlSource = new TaskCompletionSource<Uri>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        var startInfo = new ProcessStartInfo
+        await SampleHostStartupGate.WaitAsync();
+        try
         {
-            FileName = "dotnet",
-            Arguments = $"run --project \"{sampleProjectPath}\" --no-launch-profile",
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            WorkingDirectory = repoRoot
-        };
+            var repoRoot = FindRepoRoot();
+            var sampleProjectPath = Path.Combine(repoRoot, "samples", "ControlsSample.Fluent", "ControlsSample.Fluent.csproj");
+            var urlSource = new TaskCompletionSource<Uri>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        var process = new Process
-        {
-            StartInfo = startInfo,
-            EnableRaisingEvents = true
-        };
-
-        process.OutputDataReceived += (_, args) => ProcessHostLine(args.Data, urlSource);
-        process.ErrorDataReceived += (_, args) => ProcessHostLine(args.Data, urlSource);
-        process.Exited += (_, _) =>
-        {
-            if (urlSource.Task.IsCompleted)
+            var startInfo = new ProcessStartInfo
             {
-                return;
+                FileName = "dotnet",
+                Arguments = $"run --project \"{sampleProjectPath}\" --configuration Release --no-build --no-launch-profile",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                WorkingDirectory = repoRoot
+            };
+
+            var process = new Process
+            {
+                StartInfo = startInfo,
+                EnableRaisingEvents = true
+            };
+
+            process.OutputDataReceived += (_, args) => ProcessHostLine(args.Data, urlSource);
+            process.ErrorDataReceived += (_, args) => ProcessHostLine(args.Data, urlSource);
+            process.Exited += (_, _) =>
+            {
+                if (urlSource.Task.IsCompleted)
+                {
+                    return;
+                }
+
+                urlSource.TrySetException(new InvalidOperationException(
+                    $"ControlsSample.Fluent host exited before publishing app URL. ExitCode={process.ExitCode}.\n{RenderHostLogs()}"));
+            };
+
+            if (!process.Start())
+            {
+                throw new InvalidOperationException("Failed to start ControlsSample.Fluent host process.");
             }
 
-            urlSource.TrySetException(new InvalidOperationException(
-                $"ControlsSample.Fluent host exited before publishing app URL. ExitCode={process.ExitCode}.\n{RenderHostLogs()}"));
-        };
+            _sampleProcess = process;
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
 
-        if (!process.Start())
-        {
-            throw new InvalidOperationException("Failed to start ControlsSample.Fluent host process.");
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
+            using var _ = timeout.Token.Register(() =>
+                urlSource.TrySetException(new TimeoutException($"Timed out waiting for ControlsSample.Fluent URL.\n{RenderHostLogs()}")));
+
+            return await urlSource.Task;
         }
-
-        _sampleProcess = process;
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(90));
-        using var _ = timeout.Token.Register(() =>
-            urlSource.TrySetException(new TimeoutException($"Timed out waiting for ControlsSample.Fluent URL.\n{RenderHostLogs()}")));
-
-        return await urlSource.Task;
+        finally
+        {
+            SampleHostStartupGate.Release();
+        }
     }
 
     private void ProcessHostLine(string? line, TaskCompletionSource<Uri> urlSource)

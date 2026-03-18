@@ -49,6 +49,7 @@ public sealed class ArchitectureBoundaryTests
             "MirageEntryHandler.cs",
             "MirageImageHandler.cs",
             "MirageBorderHandler.cs",
+            "MirageMapHandler.cs",
             "MirageLabelHandler.cs",
             "MirageBoxViewHandler.cs",
             "MirageContentViewHandler.cs",
@@ -265,6 +266,25 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void BrowserPlatform_RegistersMapHandlerAsBuiltInControlNode()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var mapHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageMapHandler.cs");
+        Assert.True(File.Exists(mapHandlerPath), $"Expected map handler file not found: {mapHandlerPath}");
+
+        var hostingText = File.ReadAllText(hostingPath);
+        var mapHandlerText = File.ReadAllText(mapHandlerPath);
+
+        Assert.Contains("using MauiMap = Microsoft.Maui.Controls.Maps.Map;", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MauiMap)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageMapHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.Map", mapHandlerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("CreateWeb(", mapHandlerText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BrowserPlatform_RegistersStackLayoutImageAndBorderHandlers()
     {
         var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
@@ -355,6 +375,49 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("IMirageNavigationStartupResolver", text, StringComparison.Ordinal);
         Assert.Contains("ApplyInitialRouteAsync(window, mauiApp.Services)", text, StringComparison.Ordinal);
         Assert.Contains("IsEnabledForAssembly", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BrowserRuntimeModuleSync_UsesProviderDeclaredModuleItems()
+    {
+        var targetsPath = Path.Combine(GetRepositoryRoot(), "Directory.Build.targets");
+        Assert.True(File.Exists(targetsPath), $"Expected targets file not found: {targetsPath}");
+
+        var text = File.ReadAllText(targetsPath);
+        Assert.Contains("MirageCollectBrowserRuntimeModules", text, StringComparison.Ordinal);
+        Assert.Contains("MirageBrowserRuntimeModule", text, StringComparison.Ordinal);
+        Assert.Contains("MirageBrowserRuntimeModuleMissingSource", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("MirageLeafletProviderModuleSourcePath", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("src/Mirage.Provider.LeafletMaps/wwwroot/mirage-leaflet-provider.js", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MapRuntime_DoesNotUnconditionallyClearFailureStateAfterAdapterApply()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var text = File.ReadAllText(runtimePath);
+        Assert.Contains("adapter.ApplyState(node.MapState);", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("ClearMapFailure(node);", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LeafletHostingExtension_ReplacesMapProviderRegistration()
+    {
+        var hostingExtensionsPath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "MirageLeafletMapHostingExtensions.cs");
+        Assert.True(File.Exists(hostingExtensionsPath), $"Expected hosting extension file not found: {hostingExtensionsPath}");
+
+        var text = File.ReadAllText(hostingExtensionsPath);
+        Assert.Contains(
+            "Services.Replace(ServiceDescriptor.Singleton<IMirageMapProvider, LeafletMapProvider>())",
+            text,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain("TryAddSingleton<IMirageMapProvider", text, StringComparison.Ordinal);
     }
 
     [Fact]

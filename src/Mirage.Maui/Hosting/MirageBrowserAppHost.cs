@@ -5,6 +5,7 @@ using Mirage.Maui.Handlers;
 using Mirage.Maui.Images;
 using Mirage.Maui.Navigation;
 using Mirage.Web.Dom;
+using Mirage.Web.Maps;
 using Mirage.Web.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
@@ -41,13 +42,29 @@ public static class MirageBrowserAppHost
             await imageSourceResolver.EnsureInitializedAsync();
         }
 
+        var mapProvider = mauiApp.Services.GetService<IMirageMapProvider>();
+        if (mapProvider is not null)
+        {
+            var mapInitialization = await mapProvider.EnsureInitializedAsync();
+            if (!mapInitialization.IsReady)
+            {
+                var code = string.IsNullOrWhiteSpace(mapInitialization.ErrorCode)
+                    ? "provider-not-ready"
+                    : mapInitialization.ErrorCode!;
+                var message = string.IsNullOrWhiteSpace(mapInitialization.ErrorMessage)
+                    ? "Map provider initialization failed."
+                    : mapInitialization.ErrorMessage!;
+                MirageDiagnostics.Log("map.provider", $"provider={mapProvider.ProviderName} code={code} message={message}");
+            }
+        }
+
         var provider = MirageProviderValidation.GetRequiredProvider(mauiApp.Services);
         var rootDomElement = DomElement.RootById(rootElementId);
 
         ClearActiveHostState(rootDomElement);
         rootDomElement.ClearChildren();
 
-        var runtime = new MirageRuntime(rootDomElement, provider);
+        var runtime = new MirageRuntime(rootDomElement, provider, mapProvider);
         var renderCoordinator = mauiApp.Services.GetRequiredService<IMirageRenderCoordinator>();
         var dispatcher = mauiApp.Services.GetRequiredService<IDispatcher>();
         var pageNavigator = mauiApp.Services.GetService<BrowserPageNavigator>();
