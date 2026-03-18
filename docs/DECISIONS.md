@@ -15,7 +15,7 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Introduced map provider contracts (`IMirageMapProvider`, `IMirageMapAdapter`) so map engine lifecycle is provider-owned (create once per host, update many times, dispose deterministically) while handlers remain the MAUI mapping boundary.
 - Added `Mirage.Provider.LeafletMaps` as the first browser map provider with CDN-default asset loading, explicit readiness diagnostics, deterministic error states for missing provider/assets, and configurable tile policy (default OSM + attribution).
 - Added `Showcase` map proof surface (`/map-lab`) and integration/E2E coverage for ControlNode projection, provider-required behavior, region updates, and identity-based pin synchronization.
-- E2E host fixtures now serialize sample-host startup and run browser samples with `--configuration Release --no-build` to prevent static-web-assets/MSBuild contention during parallel fixture initialization.
+- E2E host fixtures now serialize sample-host startup and run browser samples with `--configuration Release --no-launch-profile`, allowing test-invoked builds from clean checkouts while still avoiding parallel startup contention.
 
 ## 2026-03-16 (Stepper moved from numeric input to Mirage-owned +/- chrome)
 - Replaced the browser Stepper realization from `input[type=number]` with a Mirage-owned two-button control (`-` and `+`) so interaction semantics match MAUI Stepper behavior instead of free-form text entry.

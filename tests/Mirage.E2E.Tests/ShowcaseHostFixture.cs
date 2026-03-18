@@ -89,7 +89,7 @@ public class ShowcaseHostFixture : IAsyncLifetime
             var startInfo = new ProcessStartInfo
             {
                 FileName = "dotnet",
-                Arguments = $"run --project \"{sampleProjectPath}\" --configuration Release --no-build --no-launch-profile",
+                Arguments = $"run --project \"{sampleProjectPath}\" --configuration Release --no-launch-profile",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
