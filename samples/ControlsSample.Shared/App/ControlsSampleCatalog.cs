@@ -1,4 +1,5 @@
 using Maui.Controls.Sample.Pages;
+using Maui.Controls.Sample.Pages.MapsGalleries;
 using ControlsSample.Shared.App.VendorCompat;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Internals;
@@ -178,13 +179,11 @@ public static class ControlsSampleCatalog
         new(
             id: "mapsgallery",
             title: "MapsGallery",
-            upstreamPath: "Pages/Controls/MapsGalleries",
-            status: ControlsSampleStatus.HiddenPlatformSpecific,
-            pageType: typeof(ControlsSamplePlaceholderPage),
-            description: "Platform-specific dependencies are treated as blocked in browser host.",
-            pageFactory: _ => new ControlsSamplePlaceholderPage(
-                title: "MapsGallery",
-                message: "Maps and other platform-specific galleries are imported but hidden in this wrapper unless host dependencies are wired."))
+            upstreamPath: "Pages/Controls/MapsGalleries/MapsGallery.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(MapsGallery),
+            description: "Runnable in Mirage today: exercises map gallery navigation with map options, pins, item source, and shape overlays.",
+            pageFactory: CreateMapsGallery)
     ];
 
     private static Page CreateButtonPage(IServiceProvider services)
@@ -427,6 +426,21 @@ public static class ControlsSampleCatalog
         return new BorderPage();
     }
 
+    private static Page CreateMapsGallery(IServiceProvider services)
+    {
+        _ = services;
+        var page = new MapsGallery();
+
+        SetButtonAutomationIdByText(page, "Basic Map", "controls-sample-mapsgallery-open-basic-map");
+        SetButtonAutomationIdByText(page, "Map Type", "controls-sample-mapsgallery-open-map-type");
+        SetButtonAutomationIdByText(page, "Map Pins", "controls-sample-mapsgallery-open-map-pins");
+        SetButtonAutomationIdByText(page, "Pins ItemsSource", "controls-sample-mapsgallery-open-pins-itemssource");
+        SetButtonAutomationIdByText(page, "Circle", "controls-sample-mapsgallery-open-circle");
+        SetButtonAutomationIdByText(page, "Polygon", "controls-sample-mapsgallery-open-polygon");
+
+        return page;
+    }
+
     private static void SetNamedElementAutomationId(Page page, string fieldName, string automationId)
     {
         var field = page.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -436,6 +450,21 @@ public static class ControlsSampleCatalog
             {
                 visualElement.AutomationId = automationId;
             }
+        }
+    }
+
+    private static void SetButtonAutomationIdByText(Page page, string buttonText, string automationId)
+    {
+        var button = FindDescendants<Button>(page)
+            .FirstOrDefault(candidate => string.Equals(candidate.Text, buttonText, StringComparison.Ordinal));
+        if (button is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(button.AutomationId))
+        {
+            button.AutomationId = automationId;
         }
     }
 

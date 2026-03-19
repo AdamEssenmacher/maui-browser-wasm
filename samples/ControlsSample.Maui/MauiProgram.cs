@@ -1,5 +1,6 @@
 using ControlsSample.Shared.App;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Controls.Hosting;
 
 namespace ControlsSample.Maui;
 
@@ -10,6 +11,7 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
+            .UseMauiMaps()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("Dokdo-Regular.ttf", "Dokdo");

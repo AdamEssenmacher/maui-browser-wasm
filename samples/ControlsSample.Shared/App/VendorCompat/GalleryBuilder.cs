@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text;
+using Maui.Controls.Sample.Pages.MapsGalleries;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Internals;
 
@@ -14,10 +15,11 @@ public static class GalleryBuilder
         ArgumentNullException.ThrowIfNull(nav);
 
         var slug = ToSlug(galleryName);
+        var automationId = BuildNavButtonAutomationId(galleryName, slug);
         var button = new Button
         {
             Text = galleryName,
-            AutomationId = $"controls-sample-borderpage-open-{slug}",
+            AutomationId = automationId,
             FontSize = 10,
             HeightRequest = 36,
             HorizontalOptions = LayoutOptions.Fill,
@@ -34,14 +36,38 @@ public static class GalleryBuilder
                 page.AutomationId = $"controls-sample-page-{pageId}";
             }
 
-            InstrumentBorderGalleryPage(page);
+            InstrumentGalleryPage(page);
             await nav.PushAsync(page, animated: false);
         };
 
         return button;
     }
 
-    private static void InstrumentBorderGalleryPage(Page page)
+    private static string BuildNavButtonAutomationId(string galleryName, string slug)
+    {
+        if (IsMapsGalleryButton(galleryName))
+        {
+            return $"controls-sample-mapsgallery-open-{slug}";
+        }
+
+        return $"controls-sample-borderpage-open-{slug}";
+    }
+
+    private static bool IsMapsGalleryButton(string galleryName)
+    {
+        return galleryName switch
+        {
+            "Basic Map" => true,
+            "Map Type" => true,
+            "Map Pins" => true,
+            "Pins ItemsSource" => true,
+            "Circle" => true,
+            "Polygon" => true,
+            _ => false
+        };
+    }
+
+    private static void InstrumentGalleryPage(Page page)
     {
         switch (page)
         {
@@ -88,6 +114,39 @@ public static class GalleryBuilder
             case BorderAlignment borderAlignment:
                 SetBorderAutomationIdsByOrder(borderAlignment, "controls-sample-borderalignment-border");
                 break;
+            case BasicMapGallery basicMapGallery:
+                SetNamedElementAutomationId(basicMapGallery, "ShowUserLocationSwitch", "controls-sample-basicmapgallery-show-user-switch");
+                SetNamedElementAutomationId(basicMapGallery, "ShowTrafficSwitch", "controls-sample-basicmapgallery-show-traffic-switch");
+                SetNamedElementAutomationId(basicMapGallery, "ZoomEnabledSwitch", "controls-sample-basicmapgallery-zoom-enabled-switch");
+                SetNamedElementAutomationId(basicMapGallery, "ScrollEnabledSwitch", "controls-sample-basicmapgallery-scroll-enabled-switch");
+                SetNamedElementAutomationId(basicMapGallery, "basicMap", "controls-sample-basicmapgallery-map");
+                break;
+            case MapTypeGallery mapTypeGallery:
+                SetNamedElementAutomationId(mapTypeGallery, "MapTypePicker", "controls-sample-maptypegallery-type-picker");
+                SetNamedElementAutomationId(mapTypeGallery, "mapTypeMap", "controls-sample-maptypegallery-map");
+                SetSliderAutomationIdByOrder(mapTypeGallery, "controls-sample-maptypegallery-zoom-slider");
+                break;
+            case MapPinsGallery mapPinsGallery:
+                SetNamedElementAutomationId(mapPinsGallery, "pinsMap", "controls-sample-mappinsgallery-map");
+                SetButtonAutomationIdByText(mapPinsGallery, "Add Pin", "controls-sample-mappinsgallery-add-pin");
+                SetButtonAutomationIdByText(mapPinsGallery, "Remove Pin", "controls-sample-mappinsgallery-remove-pin");
+                SetButtonAutomationIdByText(mapPinsGallery, "Add 10 Pins", "controls-sample-mappinsgallery-add-ten-pins");
+                break;
+            case PinItemsSourceGallery pinItemsSourceGallery:
+                SetNamedElementAutomationId(pinItemsSourceGallery, "map", "controls-sample-pinitemssourcegallery-map");
+                SetButtonAutomationIdByText(pinItemsSourceGallery, "Add", "controls-sample-pinitemssourcegallery-add");
+                SetButtonAutomationIdByText(pinItemsSourceGallery, "Remove", "controls-sample-pinitemssourcegallery-remove");
+                SetButtonAutomationIdByText(pinItemsSourceGallery, "Clear", "controls-sample-pinitemssourcegallery-clear");
+                SetButtonAutomationIdByText(pinItemsSourceGallery, "Update", "controls-sample-pinitemssourcegallery-update");
+                SetButtonAutomationIdByText(pinItemsSourceGallery, "Replace", "controls-sample-pinitemssourcegallery-replace");
+                break;
+            case CircleGallery circleGallery:
+                SetMapAutomationIdByOrder(circleGallery, "controls-sample-circlegallery-map");
+                break;
+            case PolygonsGallery polygonsGallery:
+                SetNamedElementAutomationId(polygonsGallery, "MapElementsMap", "controls-sample-polygonsgallery-map");
+                SetButtonAutomationIdByText(polygonsGallery, "Clear MapElements", "controls-sample-polygonsgallery-clear-map-elements");
+                break;
         }
     }
 
@@ -131,6 +190,28 @@ public static class GalleryBuilder
                 borders[index].AutomationId = $"{prefix}-{index + 1}";
             }
         }
+    }
+
+    private static void SetSliderAutomationIdByOrder(Page page, string automationId)
+    {
+        var slider = FindDescendants<Slider>(page).FirstOrDefault();
+        if (slider is null || !string.IsNullOrWhiteSpace(slider.AutomationId))
+        {
+            return;
+        }
+
+        slider.AutomationId = automationId;
+    }
+
+    private static void SetMapAutomationIdByOrder(Page page, string automationId)
+    {
+        var map = FindDescendants<Microsoft.Maui.Controls.Maps.Map>(page).FirstOrDefault();
+        if (map is null || !string.IsNullOrWhiteSpace(map.AutomationId))
+        {
+            return;
+        }
+
+        map.AutomationId = automationId;
     }
 
     private static IEnumerable<TElement> FindDescendants<TElement>(Element root)

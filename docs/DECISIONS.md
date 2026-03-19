@@ -2,6 +2,12 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (ControlsSample MapsGallery runnable + Switch dependency on Mirage path)
+- Promoted `MapsGallery` from hidden placeholder to runnable in ControlsSample, with Leaflet provider registration in `ControlsSample.Fluent` and `UseMauiMaps()` wiring in `ControlsSample.Maui` so browser and native hosts share the same upstream page set.
+- Added framework-level `Switch` support (`ComponentKind.Switch`, `MirageSwitchHandler`, Fluent descriptor, runtime CSS) because `BasicMapGallery` depends on `Switch` and must run through normal MAUI handler mapping.
+- Extended wrapper compatibility instrumentation to cover Maps galleries (root nav buttons, sub-page hosts, map hosts, and key controls) so E2E selectors stay deterministic without sample-specific DOM hacks.
+- Kept map divergence policy unchanged for this wave (map-type fallback, traffic overlay limitations, geolocation permission dependency); this slice focuses on runnable gallery coverage through the existing Mirage + Leaflet architecture.
+
 ## 2026-03-19 (Map resiliency follow-up: transient-only provider retries + geolocation watch recovery)
 - `MirageRuntime` now retries map-provider non-ready results only for transient failure codes (`*-timeout`, `leaflet-global-missing`, `readiness-exception`, `initialization-exception`, `provider-not-ready`) instead of retrying deterministic asset/config failures.
 - This preserves recovery behavior for intermittent startup issues while allowing deterministic broken-asset scenarios to fail fast with stable error projection.

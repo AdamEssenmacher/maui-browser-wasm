@@ -114,6 +114,42 @@ public sealed class MirageMapHandlerTests
     }
 
     [Fact]
+    public void MapHandler_MapElementsCollectionChanges_AreProjectedWithoutExplicitMapperCalls()
+    {
+        var handler = CreateHandler();
+        var map = new MauiMap();
+
+        map.MapElements.Add(new Circle
+        {
+            Center = new Location(37.78, -122.40),
+            Radius = Distance.FromKilometers(0.8),
+            StrokeColor = Colors.DodgerBlue
+        });
+
+        map.MapElements.Add(new Polygon
+        {
+            StrokeColor = Colors.MediumSeaGreen,
+            FillColor = Colors.PaleGreen,
+            Geopath =
+            {
+                new Location(37.80, -122.42),
+                new Location(37.81, -122.41),
+                new Location(37.79, -122.40)
+            }
+        });
+
+        ((IElementHandler)handler).SetVirtualView(map);
+
+        var initialElements = ReadElementPayloads(handler.PlatformView);
+        Assert.Equal(2, initialElements.Count);
+
+        map.MapElements.Clear();
+
+        var afterClear = ReadElementPayloads(handler.PlatformView);
+        Assert.Empty(afterClear);
+    }
+
+    [Fact]
     public void MapHandler_PinProjection_UsesStableIdentityAndDeterministicSync_WithoutExplicitMapperCalls()
     {
         var handler = CreateHandler();

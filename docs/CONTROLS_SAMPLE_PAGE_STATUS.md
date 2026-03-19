@@ -291,13 +291,13 @@ Visual legend:
 | `TriggersPage.xaml` | `Pages/UserInterface/TriggersPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `VisualStatesPage.xaml` | `Pages/UserInterface/VisualStatesPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `UserInterfacePage.xaml` | `Pages/UserInterfacePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `BasicMapGallery.xaml` | `Pages/Controls/MapsGalleries/BasicMapGallery.xaml` | `[P]` | `[ ]` | `[ ]` |
-| `CircleGallery.xaml` | `Pages/Controls/MapsGalleries/CircleGallery.xaml` | `[P]` | `[ ]` | `[ ]` |
-| `MapPinsGallery.xaml` | `Pages/Controls/MapsGalleries/MapPinsGallery.xaml` | `[P]` | `[ ]` | `[ ]` |
-| `MapTypeGallery.xaml` | `Pages/Controls/MapsGalleries/MapTypeGallery.xaml` | `[P]` | `[ ]` | `[ ]` |
-| `MapsGallery.cs` | `Pages/Controls/MapsGalleries/MapsGallery.cs` | `[P]` | `[ ]` | `[ ]` |
-| `PinItemsSourceGallery.xaml` | `Pages/Controls/MapsGalleries/PinItemsSourceGallery.xaml` | `[P]` | `[ ]` | `[ ]` |
-| `PolygonsGallery.xaml` | `Pages/Controls/MapsGalleries/PolygonsGallery.xaml` | `[P]` | `[ ]` | `[ ]` |
+| `BasicMapGallery.xaml` | `Pages/Controls/MapsGalleries/BasicMapGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `CircleGallery.xaml` | `Pages/Controls/MapsGalleries/CircleGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `MapPinsGallery.xaml` | `Pages/Controls/MapsGalleries/MapPinsGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `MapTypeGallery.xaml` | `Pages/Controls/MapsGalleries/MapTypeGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `MapsGallery.cs` | `Pages/Controls/MapsGalleries/MapsGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `PinItemsSourceGallery.xaml` | `Pages/Controls/MapsGalleries/PinItemsSourceGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `PolygonsGallery.xaml` | `Pages/Controls/MapsGalleries/PolygonsGallery.xaml` | `[x]` | `[x]` | `[ ]` |
 | `PlatformSpecificsPage.xaml` | `Pages/PlatformSpecificsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `BlazorPage.xaml` | `Pages/Blazor/BlazorPage.xaml` | `[R]` | `[ ]` | `[ ]` |
 | `Index.razor` | `Pages/Blazor/Index.razor` | `[R]` | `[ ]` | `[ ]` |
