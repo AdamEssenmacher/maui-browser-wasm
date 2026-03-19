@@ -34,6 +34,7 @@ public static class MirageHostingExtensions
             handlers.AddHandler(typeof(HorizontalStackLayout), typeof(MirageLayoutHandler));
             handlers.AddHandler(typeof(Grid), typeof(MirageLayoutHandler));
             handlers.AddHandler(typeof(AbsoluteLayout), typeof(MirageLayoutHandler));
+            handlers.AddHandler(typeof(Layout), typeof(MirageLayoutHandler));
             handlers.AddHandler(typeof(Label), typeof(MirageLabelHandler));
             handlers.AddHandler(typeof(Entry), typeof(MirageEntryHandler));
             handlers.AddHandler(typeof(Button), typeof(MirageButtonHandler));

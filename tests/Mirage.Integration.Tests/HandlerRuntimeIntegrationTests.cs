@@ -1944,6 +1944,65 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void LayoutHandler_CustomLayout_UsesGenericLayoutKind_AndProjectsArrangedFrames()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageLayoutHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var customLayout = new FixedFrameLayout();
+
+        ((IElementHandler)handler).SetVirtualView(customLayout);
+        Assert.Equal(ComponentKind.Layout, handler.PlatformView.ControlKind);
+        
+        var applyMethod = typeof(MirageLayoutHandler).GetMethod(
+            "ApplyChildProjectionStyles",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(applyMethod);
+
+        var childPlatformView = MiragePlatformView.CreateControl(ComponentKind.Button);
+        var child = new Button { Text = "Docked" };
+        ((IView)child).Arrange(new Rect(12, 18, 96, 44));
+
+        var changed = (bool)applyMethod!.Invoke(null, [childPlatformView, child, ComponentKind.Layout])!;
+        Assert.True(changed);
+        Assert.Equal("absolute", childPlatformView.GetStyleValue("position"));
+        Assert.Equal("12px", childPlatformView.GetStyleValue("left"));
+        Assert.Equal("18px", childPlatformView.GetStyleValue("top"));
+        Assert.Equal("96px", childPlatformView.GetStyleValue("width"));
+        Assert.Equal("44px", childPlatformView.GetStyleValue("height"));
+    }
+
+    [Fact]
+    public void LayoutHandler_CustomLayout_ProjectionOffsetsAbsolutePositionByParentPadding()
+    {
+        var applyMethod = typeof(MirageLayoutHandler).GetMethod(
+            "ApplyChildProjectionStyles",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(applyMethod);
+
+        var customLayout = new FixedFrameLayout
+        {
+            Padding = new Thickness(8, 6, 0, 0)
+        };
+
+        var child = new Button { Text = "Docked" };
+        customLayout.Children.Add(child);
+        ((IView)child).Arrange(new Rect(20, 18, 96, 44));
+
+        var childPlatformView = MiragePlatformView.CreateControl(ComponentKind.Button);
+        var changed = (bool)applyMethod!.Invoke(null, [childPlatformView, child, ComponentKind.Layout])!;
+
+        Assert.True(changed);
+        Assert.Equal("12px", childPlatformView.GetStyleValue("left"));
+        Assert.Equal("12px", childPlatformView.GetStyleValue("top"));
+        Assert.Equal("96px", childPlatformView.GetStyleValue("width"));
+        Assert.Equal("44px", childPlatformView.GetStyleValue("height"));
+    }
+
+    [Fact]
     public void CommonMapper_SizeRequests_ProjectsAndClearsWidthRequestDeterministically()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
@@ -3329,6 +3388,47 @@ public sealed class HandlerRuntimeIntegrationTests
         public override int GetHashCode()
         {
             return Key.GetHashCode();
+        }
+    }
+
+    private sealed class FixedFrameLayout : Layout
+    {
+        protected override Microsoft.Maui.Layouts.ILayoutManager CreateLayoutManager()
+        {
+            return new FixedFrameLayoutManager(this);
+        }
+
+        private sealed class FixedFrameLayoutManager : Microsoft.Maui.Layouts.LayoutManager
+        {
+            private readonly FixedFrameLayout _layout;
+
+            public FixedFrameLayoutManager(FixedFrameLayout layout)
+                : base(layout)
+            {
+                _layout = layout;
+            }
+
+            public override Size ArrangeChildren(Rect bounds)
+            {
+                foreach (View child in _layout)
+                {
+                    if (!child.IsVisible)
+                    {
+                        continue;
+                    }
+
+                    ((IView)child).Arrange(new Rect(12, 18, 96, 44));
+                }
+
+                return bounds.Size;
+            }
+
+            public override Size Measure(double widthConstraint, double heightConstraint)
+            {
+                var width = double.IsFinite(widthConstraint) ? Math.Max(0, widthConstraint) : 320;
+                var height = double.IsFinite(heightConstraint) ? Math.Max(0, heightConstraint) : 200;
+                return new Size(width, height);
+            }
         }
     }
 

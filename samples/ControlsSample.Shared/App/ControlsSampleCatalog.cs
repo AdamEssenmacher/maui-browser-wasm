@@ -84,6 +84,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(ContentViewPage),
             description: "Runnable in Mirage today: exercises ContentView composition with Border + Image content."),
         new(
+            id: "customlayoutpage",
+            title: "CustomLayoutPage",
+            upstreamPath: "Pages/Layouts/CustomLayoutPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(CustomLayoutPage),
+            description: "Runnable in Mirage today: exercises custom DockLayout arrangement with top/bottom/left/right button docking."),
+        new(
             id: "boxviewpage",
             title: "BoxViewPage",
             upstreamPath: "Pages/Controls/BoxViewPage.xaml",

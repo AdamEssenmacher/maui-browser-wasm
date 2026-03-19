@@ -47,6 +47,10 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 ComponentKind.AbsoluteLayout,
                 "div",
                 propertyMappings: CommonProperties),
+            [ComponentKind.Layout] = new(
+                ComponentKind.Layout,
+                "div",
+                propertyMappings: CommonProperties),
             [ComponentKind.Label] = new(
                 ComponentKind.Label,
                 "span",
