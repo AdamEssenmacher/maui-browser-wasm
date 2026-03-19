@@ -23,6 +23,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Startup option parsing now treats `mirageLeafletTileAttribution` as trusted configuration only (`MIRAGE_LEAFLET_TILE_ATTRIBUTION` environment variable); URL query values are ignored because Leaflet attribution renders HTML.
 - Added a map security E2E fixture/test that injects a malicious attribution query value and asserts it is not rendered in the Leaflet attribution surface.
 
+## 2026-03-19 (Leaflet provider retry semantics after failed initialization)
+- `LeafletMapProvider.EnsureInitializedAsync` now treats failed/completed-non-ready initialization tasks as retryable instead of permanently memoizing the first failed attempt for the app lifetime.
+- In-flight initialization tasks are still shared across callers, but once a task completes with non-ready/faulted/canceled status, the next `EnsureInitializedAsync` call starts a fresh initialization attempt.
+- Added architecture-boundary coverage to lock the retry gate behavior in `LeafletMapProvider` and guard against regressions back to one-shot failure memoization.
+
 ## 2026-03-18 (Map parity wave: MAUI-shaped handler split + region/event parity guardrails)
 - Split Mirage map handling into MAUI-shaped surfaces (`MirageMapHandler`, `MirageMapPinHandler`, `MirageMapElementHandler`) and registered all map-related handlers (`Map`, `Pin`, `MapElement`, `Circle`, `Polyline`, `Polygon`) through `UseMirageBrowserPlatform()`.
 - Expanded Mirage map semantic state to include MAUI map options, identity-based map elements, and popup-dismiss command tokens while keeping region/span authoritative and provider-neutral in core/runtime.

@@ -442,6 +442,22 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void LeafletMapProvider_AllowsRetryAfterFailedInitializationAttempts()
+    {
+        var providerPath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "LeafletMapProvider.cs");
+        Assert.True(File.Exists(providerPath), $"Expected provider file not found: {providerPath}");
+
+        var text = File.ReadAllText(providerPath);
+        Assert.Contains("ShouldStartNewInitializationTask", text, StringComparison.Ordinal);
+        Assert.Contains("_initializationTask = EnsureInitializedCoreAsync();", text, StringComparison.Ordinal);
+        Assert.Contains("return !task.Result.IsReady;", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ScrollViewHandler_MapsExplicitRequestScrollToThroughRuntimeBridge()
     {
         var handlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageScrollViewHandler.cs");
