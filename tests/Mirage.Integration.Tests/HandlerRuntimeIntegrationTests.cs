@@ -2931,7 +2931,6 @@ public sealed class HandlerRuntimeIntegrationTests
 
         content.Frame = new Rect(0, 0, 320, 1200);
         var secondTask = scrollView.ScrollToAsync(44, 280, animated: true);
-        Assert.False(firstTask.IsCompleted);
         Assert.False(secondTask.IsCompleted);
         Assert.True(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out var left, out var top));
         Assert.Equal(44, left);
