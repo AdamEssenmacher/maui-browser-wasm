@@ -301,16 +301,25 @@ function normalizeRegion(region) {
   };
 }
 
+function approximatelyEqual(left, right, absoluteTolerance, relativeTolerance = 0.002) {
+  const diff = Math.abs(left - right);
+  if (diff <= absoluteTolerance) {
+    return true;
+  }
+
+  const scale = Math.max(Math.abs(left), Math.abs(right), 1);
+  return diff <= (scale * relativeTolerance);
+}
+
 function areRegionsEquivalent(left, right) {
   if (!left || !right) {
     return false;
   }
 
-  const epsilon = 0.000001;
-  return Math.abs(left.centerLatitude - right.centerLatitude) <= epsilon
-    && Math.abs(left.centerLongitude - right.centerLongitude) <= epsilon
-    && Math.abs(left.latitudeSpan - right.latitudeSpan) <= epsilon
-    && Math.abs(left.longitudeSpan - right.longitudeSpan) <= epsilon;
+  return approximatelyEqual(left.centerLatitude, right.centerLatitude, 0.0001, 0.001)
+    && approximatelyEqual(left.centerLongitude, right.centerLongitude, 0.0001, 0.001)
+    && approximatelyEqual(left.latitudeSpan, right.latitudeSpan, 0.0005, 0.01)
+    && approximatelyEqual(left.longitudeSpan, right.longitudeSpan, 0.0005, 0.01);
 }
 
 function toBoolean(value, defaultValue) {
@@ -433,6 +442,7 @@ export function initializeMapJson(nodeId, optionsJson) {
       elements: new Map(),
       userLocationMarker: null,
       userLocationWatchId: null,
+      lastProjectedRegion: null,
       lastAppliedRegion: null,
       lastRegionRequestToken: 0,
       lastDismissPopupRequestToken: 0
@@ -503,7 +513,7 @@ function applyRegion(entry, region, animate) {
     duration: animate ? 0.25 : undefined
   });
 
-  return normalizedRegion;
+  return readRegionFromMap(entry.map) ?? normalizedRegion;
 }
 
 function setLeafletHandlerState(handler, enabled) {
@@ -956,7 +966,10 @@ export function applyMapStateJson(nodeId, stateJson) {
   if (state?.region && typeof state.region === "object") {
     const normalizedRequestedRegion = normalizeRegion(state.region);
     if (normalizedRequestedRegion) {
-      const shouldApplyRegion = shouldAnimate || !areRegionsEquivalent(entry.lastAppliedRegion, normalizedRequestedRegion);
+      const projectedRegionChanged = !areRegionsEquivalent(entry.lastProjectedRegion, normalizedRequestedRegion);
+      const regionMatchesViewport = areRegionsEquivalent(entry.lastAppliedRegion, normalizedRequestedRegion);
+      const shouldApplyRegion = shouldAnimate || (projectedRegionChanged && !regionMatchesViewport);
+      entry.lastProjectedRegion = normalizedRequestedRegion;
       if (shouldApplyRegion) {
         const appliedRegion = applyRegion(entry, normalizedRequestedRegion, shouldAnimate);
         if (appliedRegion) {
@@ -967,9 +980,11 @@ export function applyMapStateJson(nodeId, stateJson) {
       const telemetryRegion = shouldApplyRegion ? normalizedRequestedRegion : readRegionFromMap(entry.map);
       setRegionTelemetry(entry.host, telemetryRegion ?? normalizedRequestedRegion);
     } else {
+      entry.lastProjectedRegion = null;
       setRegionTelemetry(entry.host, null);
     }
   } else {
+    entry.lastProjectedRegion = null;
     entry.lastAppliedRegion = null;
     setRegionTelemetry(entry.host, null);
   }

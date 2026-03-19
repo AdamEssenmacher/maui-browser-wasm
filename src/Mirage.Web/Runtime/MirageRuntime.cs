@@ -583,17 +583,22 @@ public sealed class MirageRuntime : IMirageRuntime
 
     private void ApplyAttachEvent(AttachEventOperation operation)
     {
-        if (_eventSubscriptions.ContainsKey((operation.NodeId, operation.EventName)))
-        {
-            return;
-        }
-
         if (!_nodes.TryGetValue(operation.NodeId, out var node))
         {
             return;
         }
 
-        var eventDescriptor = ResolveEventDescriptor(node, operation.EventName);
+        EnsureEventSubscription(operation.NodeId, operation.EventName, node);
+    }
+
+    private void EnsureEventSubscription(string nodeId, string eventName, RealizedNode node)
+    {
+        if (_eventSubscriptions.ContainsKey((nodeId, eventName)))
+        {
+            return;
+        }
+
+        var eventDescriptor = ResolveEventDescriptor(node, eventName);
         var targetElement = eventDescriptor.Target switch
         {
             EventTarget.ValueElement => node.GetValueElement(),
@@ -607,7 +612,7 @@ public sealed class MirageRuntime : IMirageRuntime
             subscriptionId = targetElement.On(eventDescriptor.DomEventName, () =>
             {
                 var value = targetElement.GetInputValue();
-                _eventSink?.OnEvent(operation.NodeId, operation.EventName, value);
+                _eventSink?.OnEvent(nodeId, eventName, value);
             });
         }
         else if (eventDescriptor.PayloadKind == EventPayloadKind.InputChecked)
@@ -615,8 +620,8 @@ public sealed class MirageRuntime : IMirageRuntime
             subscriptionId = targetElement.On(eventDescriptor.DomEventName, () =>
             {
                 _eventSink?.OnEvent(
-                    operation.NodeId,
-                    operation.EventName,
+                    nodeId,
+                    eventName,
                     targetElement.GetInputChecked() ? "true" : "false");
             });
         }
@@ -624,11 +629,11 @@ public sealed class MirageRuntime : IMirageRuntime
         {
             subscriptionId = targetElement.On(eventDescriptor.DomEventName, () =>
             {
-                _eventSink?.OnEvent(operation.NodeId, operation.EventName, null);
+                _eventSink?.OnEvent(nodeId, eventName, null);
             });
         }
 
-        _eventSubscriptions[(operation.NodeId, operation.EventName)] = subscriptionId;
+        _eventSubscriptions[(nodeId, eventName)] = subscriptionId;
     }
 
     private void ConfigureMapNode(string nodeId, RealizedNode node)
@@ -657,6 +662,16 @@ public sealed class MirageRuntime : IMirageRuntime
 
         try
         {
+            if (node.TryGetControlDescriptor(out var descriptor))
+            {
+                // Map providers can emit initial runtime events (for example the first region) during adapter initialization.
+                // Ensure subscriptions are active before provider state is applied so those events are not dropped.
+                foreach (var eventName in descriptor.EventMappings.Keys)
+                {
+                    EnsureEventSubscription(nodeId, eventName, node);
+                }
+            }
+
             var adapter = _mapProvider.CreateAdapter(nodeId, node.Element);
             node.AttachMapAdapter(adapter);
             node.Element.Attr("data-mirage-map-provider", _mapProvider.ProviderName);

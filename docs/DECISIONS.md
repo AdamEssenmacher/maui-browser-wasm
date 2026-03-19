@@ -7,6 +7,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Map entries now track the last applied/read runtime region so unrelated state updates (`pins`, `elements`, traffic/user toggles) do not snap the viewport back to stale coordinates during interaction.
 - Added an E2E regression (`MapLab_TrafficToggle_DoesNotReapplyRegionWithoutMoveRequest`) that instruments Leaflet `fitBounds` and asserts non-region updates do not invoke recentering.
 
+## 2026-03-19 (Map runtime event ordering: subscribe before provider initialization apply)
+- `MirageRuntime.ConfigureMapNode` now pre-subscribes map runtime events using provider event mappings before creating/applying the map adapter.
+- This prevents first-frame provider events (especially initial `mapregionchanged` emitted during Leaflet initialization) from being dropped when create/property operations precede explicit attach-event operations in patch order.
+- Runtime event attachment now flows through a shared idempotent subscription helper so early map subscriptions and later `AttachEventOperation` execution stay consistent.
+
 ## 2026-03-18 (Map parity wave: MAUI-shaped handler split + region/event parity guardrails)
 - Split Mirage map handling into MAUI-shaped surfaces (`MirageMapHandler`, `MirageMapPinHandler`, `MirageMapElementHandler`) and registered all map-related handlers (`Map`, `Pin`, `MapElement`, `Circle`, `Polyline`, `Polygon`) through `UseMirageBrowserPlatform()`.
 - Expanded Mirage map semantic state to include MAUI map options, identity-based map elements, and popup-dismiss command tokens while keeping region/span authoritative and provider-neutral in core/runtime.

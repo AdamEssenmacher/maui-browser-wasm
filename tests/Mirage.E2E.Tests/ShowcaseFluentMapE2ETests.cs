@@ -93,9 +93,20 @@ public sealed class ShowcaseFluentMapE2ETests : IClassFixture<ShowcaseHostFixtur
                         return proto.__mirageOriginalFitBounds.call(this, bounds, options);
                     };
                 }
-
-                window.__mirageFitBoundsCallCount = 0;
             }");
+
+        var baselineFitBoundsCount = await page.EvaluateAsync<int>("() => Number(window.__mirageFitBoundsCallCount || 0)");
+        for (var i = 0; i < 5; i++)
+        {
+            await page.WaitForTimeoutAsync(150);
+            var nextCount = await page.EvaluateAsync<int>("() => Number(window.__mirageFitBoundsCallCount || 0)");
+            if (nextCount == baselineFitBoundsCount)
+            {
+                break;
+            }
+
+            baselineFitBoundsCount = nextCount;
+        }
 
         await page.Locator("[data-automation-id='showcase-map-traffic-button']").ClickAsync();
         await page.WaitForFunctionAsync(
@@ -111,7 +122,7 @@ public sealed class ShowcaseFluentMapE2ETests : IClassFixture<ShowcaseHostFixtur
 
         await page.WaitForTimeoutAsync(250);
         var fitBoundsCallCount = await page.EvaluateAsync<int>("() => Number(window.__mirageFitBoundsCallCount || 0)");
-        Assert.Equal(0, fitBoundsCallCount);
+        Assert.Equal(baselineFitBoundsCount, fitBoundsCallCount);
     }
 
     [Fact]
