@@ -1165,7 +1165,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
 
                 const elements = ids.map(id => document.querySelector(`[data-automation-id='${id}']`));
                 if (!(host instanceof HTMLElement) || elements.some(element => !(element instanceof HTMLElement))) {
-                    return ["__missing__", "0", "", "", "", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "", "", "0", ""];
+                    return ["__missing__", "0", "", "", "", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "", "", "0", "", ""];
                 }
 
                 const themed = elements[1];
@@ -1184,7 +1184,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 const smallCenterX = smallRect.left + (smallRect.width / 2);
                 const smallCenterDelta = Math.abs(smallCenterX - hostCenterX);
                 const defaultPseudo = getComputedStyle(defaultSpinner, "::before");
-                const stoppedPseudoOpacity = getComputedStyle(stopped, "::before").opacity ?? "";
+                const stoppedStyle = getComputedStyle(stopped);
 
                 return [
                     "ok",
@@ -1205,7 +1205,8 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                     smallCenterDelta.toString(),
                     stopped.getAttribute("data-maui-activity-running") ?? "",
                     stopped.getAttribute("aria-busy") ?? "",
-                    stoppedPseudoOpacity,
+                    stoppedStyle.display ?? "",
+                    stoppedStyle.visibility ?? "",
                     getComputedStyle(background).backgroundColor
                 ];
             }
@@ -1245,10 +1246,10 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
 
         Assert.Equal("false", snapshot[16]);
         Assert.Equal("false", snapshot[17]);
-        var stoppedPseudoOpacity = double.Parse(snapshot[18], CultureInfo.InvariantCulture);
-        Assert.True(stoppedPseudoOpacity <= 0.01d, $"Expected stopped spinner pseudo-element opacity near 0, but found {stoppedPseudoOpacity:0.###}.");
+        Assert.Equal("none", snapshot[18]);
+        Assert.Equal("hidden", snapshot[19]);
 
-        Assert.Contains("255,255,0", snapshot[19].Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+        Assert.Contains("255,255,0", snapshot[20].Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
     }
 
     [Fact]

@@ -2,6 +2,7 @@ using Mirage.Core.Semantics;
 using Microsoft.Maui;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Controls;
 
 namespace Mirage.Maui.Handlers;
 
@@ -12,6 +13,8 @@ internal sealed class MirageActivityIndicatorHandler : MirageViewHandler<IActivi
     public static IPropertyMapper<IActivityIndicator, MirageActivityIndicatorHandler> Mapper =
         new PropertyMapper<IActivityIndicator, MirageActivityIndicatorHandler>(MirageViewMapper.CommonViewMapper)
         {
+            [nameof(IView.Visibility)] = MapVisibility,
+            ["IsVisible"] = MapVisibility,
             [nameof(IActivityIndicator.Color)] = MapColor,
             [nameof(IActivityIndicator.IsRunning)] = MapIsRunning
         };
@@ -24,7 +27,7 @@ internal sealed class MirageActivityIndicatorHandler : MirageViewHandler<IActivi
 
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
-        PlatformView.SetStyle("display", "inline-flex");
+        PlatformView.SetStyle("display", DefaultDisplayStyle);
         PlatformView.SetStyle("alignItems", "center");
         PlatformView.SetStyle("justifyContent", "center");
         PlatformView.SetStyle("boxSizing", "border-box");
@@ -32,9 +35,20 @@ internal sealed class MirageActivityIndicatorHandler : MirageViewHandler<IActivi
 
         UpdateColorProjection(VirtualView);
         UpdateRunningProjection(VirtualView);
+        UpdateVisibilityProjection(VirtualView);
 
         base.ConnectHandler(platformView);
         RequestRender();
+    }
+
+    public static void MapVisibility(MirageActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
+    {
+        if (!handler.UpdateVisibilityProjection(activityIndicator))
+        {
+            return;
+        }
+
+        handler.RequestRender();
     }
 
     public static void MapColor(MirageActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
@@ -49,7 +63,9 @@ internal sealed class MirageActivityIndicatorHandler : MirageViewHandler<IActivi
 
     public static void MapIsRunning(MirageActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
     {
-        if (!handler.UpdateRunningProjection(activityIndicator))
+        var changed = handler.UpdateRunningProjection(activityIndicator);
+        changed |= handler.UpdateVisibilityProjection(activityIndicator);
+        if (!changed)
         {
             return;
         }
@@ -71,6 +87,39 @@ internal sealed class MirageActivityIndicatorHandler : MirageViewHandler<IActivi
         return changed;
     }
 
+    private bool UpdateVisibilityProjection(IActivityIndicator activityIndicator)
+    {
+        if (!activityIndicator.IsRunning)
+        {
+            var hiddenChanged = SetStyleIfChanged("display", "none");
+            hiddenChanged |= SetStyleIfChanged("visibility", "hidden");
+            return hiddenChanged;
+        }
+
+        string? display;
+        string? visibility;
+
+        switch (activityIndicator.Visibility)
+        {
+            case Visibility.Visible:
+                display = DefaultDisplayStyle;
+                visibility = "visible";
+                break;
+            case Visibility.Hidden:
+                display = DefaultDisplayStyle;
+                visibility = "hidden";
+                break;
+            default:
+                display = "none";
+                visibility = "hidden";
+                break;
+        }
+
+        var changed = SetStyleIfChanged("display", display);
+        changed |= SetStyleIfChanged("visibility", visibility);
+        return changed;
+    }
+
     private bool SetPropertyIfChanged(string propertyName, string? value)
     {
         if (string.Equals(PlatformView.GetPropertyString(propertyName), value, StringComparison.Ordinal))
@@ -79,6 +128,17 @@ internal sealed class MirageActivityIndicatorHandler : MirageViewHandler<IActivi
         }
 
         PlatformView.SetProperty(propertyName, value);
+        return true;
+    }
+
+    private bool SetStyleIfChanged(string propertyName, string? value)
+    {
+        if (string.Equals(PlatformView.GetStyleValue(propertyName), value, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        PlatformView.SetStyle(propertyName, value);
         return true;
     }
 }

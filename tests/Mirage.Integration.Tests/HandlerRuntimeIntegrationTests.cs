@@ -756,6 +756,13 @@ public sealed class HandlerRuntimeIntegrationTests
         MirageActivityIndicatorHandler.Mapper.UpdateProperty(handler, indicator, nameof(IActivityIndicator.IsRunning));
         Assert.Equal("false", handler.PlatformView.GetPropertyString("IsRunning"));
         Assert.Equal("false", handler.PlatformView.GetPropertyString("BusyState"));
+        Assert.Equal("none", handler.PlatformView.GetStyleValue("display"));
+        Assert.Equal("hidden", handler.PlatformView.GetStyleValue("visibility"));
+
+        indicator.IsRunning = true;
+        MirageActivityIndicatorHandler.Mapper.UpdateProperty(handler, indicator, nameof(IActivityIndicator.IsRunning));
+        Assert.Equal("inline-flex", handler.PlatformView.GetStyleValue("display"));
+        Assert.Equal("visible", handler.PlatformView.GetStyleValue("visibility"));
 
         indicator.Color = null;
         MirageActivityIndicatorHandler.Mapper.UpdateProperty(handler, indicator, nameof(IActivityIndicator.Color));
