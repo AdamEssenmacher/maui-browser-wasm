@@ -764,6 +764,14 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal("inline-flex", handler.PlatformView.GetStyleValue("display"));
         Assert.Equal("visible", handler.PlatformView.GetStyleValue("visibility"));
 
+        indicator.HeightRequest = 80;
+        MirageActivityIndicatorHandler.Mapper.UpdateProperty(handler, indicator, nameof(VisualElement.HeightRequest));
+        Assert.Equal("80px", handler.PlatformView.GetStyleValue("height"));
+
+        indicator.HeightRequest = -1;
+        MirageActivityIndicatorHandler.Mapper.UpdateProperty(handler, indicator, nameof(VisualElement.HeightRequest));
+        Assert.Equal("24px", handler.PlatformView.GetStyleValue("height"));
+
         indicator.Color = null;
         MirageActivityIndicatorHandler.Mapper.UpdateProperty(handler, indicator, nameof(IActivityIndicator.Color));
         Assert.Null(handler.PlatformView.GetPropertyString("SpinnerColor"));

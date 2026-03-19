@@ -15,6 +15,8 @@ internal sealed class MirageActivityIndicatorHandler : MirageViewHandler<IActivi
         {
             [nameof(IView.Visibility)] = MapVisibility,
             ["IsVisible"] = MapVisibility,
+            [nameof(VisualElement.WidthRequest)] = MapSizeRequestsAndLayoutAlignment,
+            [nameof(VisualElement.HeightRequest)] = MapSizeRequestsAndLayoutAlignment,
             [nameof(IActivityIndicator.Color)] = MapColor,
             [nameof(IActivityIndicator.IsRunning)] = MapIsRunning
         };
@@ -54,6 +56,19 @@ internal sealed class MirageActivityIndicatorHandler : MirageViewHandler<IActivi
     public static void MapColor(MirageActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
     {
         if (!handler.UpdateColorProjection(activityIndicator))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapSizeRequestsAndLayoutAlignment(MirageActivityIndicatorHandler handler, IActivityIndicator activityIndicator)
+    {
+        var changed = MirageCommonViewProjection.MapSizeRequests(handler, activityIndicator);
+        changed |= MirageCommonViewProjection.MapLayoutAlignment(handler, activityIndicator);
+        changed |= handler.ApplyDefaultHeightIfUnspecified(activityIndicator);
+        if (!changed)
         {
             return;
         }
@@ -118,6 +133,18 @@ internal sealed class MirageActivityIndicatorHandler : MirageViewHandler<IActivi
         var changed = SetStyleIfChanged("display", display);
         changed |= SetStyleIfChanged("visibility", visibility);
         return changed;
+    }
+
+    private bool ApplyDefaultHeightIfUnspecified(IActivityIndicator activityIndicator)
+    {
+        if (activityIndicator is VisualElement visualElement
+            && double.IsFinite(visualElement.HeightRequest)
+            && visualElement.HeightRequest >= 0)
+        {
+            return false;
+        }
+
+        return SetStyleIfChanged("height", DefaultSpinnerHeight);
     }
 
     private bool SetPropertyIfChanged(string propertyName, string? value)
