@@ -517,6 +517,50 @@ public sealed class MirageLayoutHandlerTests
     }
 
     [Fact]
+    public void FlexLayout_AbsoluteNestedChild_ArrangeClearsCustomFlexItemStyles()
+    {
+        var layout = new TestFlexLayout
+        {
+            Direction = FlexDirection.Row,
+            WidthRequest = 420,
+            HeightRequest = 260
+        };
+
+        var relativeChild = new Label { Text = "Relative" };
+        var absoluteChild = new TestFlexLayout { Position = FlexPosition.Absolute };
+        absoluteChild.Children.Add(new Label { Text = "Nested" });
+        FlexLayout.SetOrder(absoluteChild, 4);
+        FlexLayout.SetGrow(absoluteChild, 2f);
+        FlexLayout.SetShrink(absoluteChild, 0.5f);
+        FlexLayout.SetBasis(absoluteChild, new FlexBasis(0.4f, true));
+        FlexLayout.SetAlignSelf(absoluteChild, FlexAlignSelf.End);
+
+        layout.Children.Add(relativeChild);
+        layout.Children.Add(absoluteChild);
+
+        var handler = CreateHandler(out var mauiContext);
+        AttachLayoutChildHandlers(layout, mauiContext);
+        ((IElementHandler)handler).SetVirtualView(layout);
+
+        handler.PlatformArrange(new Rect(0, 0, 420, 260));
+
+        var relativePlatform = GetPlatformView(relativeChild);
+        var absolutePlatform = GetPlatformView(absoluteChild);
+        Assert.Equal("relative", relativePlatform.GetStyleValue("position"));
+        Assert.Equal("absolute", absolutePlatform.GetStyleValue("position"));
+        Assert.Equal("82px", absolutePlatform.GetStyleValue("left"));
+        Assert.Equal("0px", absolutePlatform.GetStyleValue("top"));
+        Assert.Equal("80px", absolutePlatform.GetStyleValue("width"));
+        Assert.Equal("40px", absolutePlatform.GetStyleValue("height"));
+        Assert.Null(absolutePlatform.GetStyleValue("margin"));
+        Assert.Null(absolutePlatform.GetStyleValue("alignSelf"));
+        Assert.Null(absolutePlatform.GetStyleValue("order"));
+        Assert.Null(absolutePlatform.GetStyleValue("flexGrow"));
+        Assert.Null(absolutePlatform.GetStyleValue("flexShrink"));
+        Assert.Null(absolutePlatform.GetStyleValue("flexBasis"));
+    }
+
+    [Fact]
     public void FlexLayout_NestedChildPositionToggle_ReprojectsAbsoluteAndRelativeStyles()
     {
         var layout = new TestFlexLayout
@@ -555,6 +599,58 @@ public sealed class MirageLayoutHandlerTests
         Assert.Equal("0", childPlatform.GetStyleValue("flexGrow"));
         Assert.Equal("1", childPlatform.GetStyleValue("flexShrink"));
         Assert.Equal("auto", childPlatform.GetStyleValue("flexBasis"));
+    }
+
+    [Fact]
+    public void FlexLayout_NestedChildPositionToggle_ReappliesCustomFlexItemStyles()
+    {
+        var layout = new TestFlexLayout
+        {
+            Direction = FlexDirection.Row,
+            WidthRequest = 420,
+            HeightRequest = 260
+        };
+
+        var child = new TestFlexLayout { Position = FlexPosition.Absolute };
+        child.Children.Add(new Label { Text = "Nested" });
+        FlexLayout.SetOrder(child, 4);
+        FlexLayout.SetGrow(child, 1.5f);
+        FlexLayout.SetShrink(child, 0.25f);
+        FlexLayout.SetBasis(child, new FlexBasis(0.4f, true));
+        FlexLayout.SetAlignSelf(child, FlexAlignSelf.Start);
+        layout.Children.Add(child);
+
+        var handler = CreateHandler(out var mauiContext);
+        AttachLayoutChildHandlers(layout, mauiContext);
+        ((IElementHandler)handler).SetVirtualView(layout);
+        handler.PlatformArrange(new Rect(0, 0, 420, 260));
+
+        var childPlatform = GetPlatformView(child);
+        Assert.Equal("absolute", childPlatform.GetStyleValue("position"));
+        Assert.Equal("0px", childPlatform.GetStyleValue("left"));
+        Assert.Equal("0px", childPlatform.GetStyleValue("top"));
+        Assert.Equal("80px", childPlatform.GetStyleValue("width"));
+        Assert.Equal("40px", childPlatform.GetStyleValue("height"));
+        Assert.Null(childPlatform.GetStyleValue("alignSelf"));
+        Assert.Null(childPlatform.GetStyleValue("order"));
+        Assert.Null(childPlatform.GetStyleValue("flexGrow"));
+        Assert.Null(childPlatform.GetStyleValue("flexShrink"));
+        Assert.Null(childPlatform.GetStyleValue("flexBasis"));
+
+        child.Position = FlexPosition.Relative;
+
+        Assert.Equal("relative", childPlatform.GetStyleValue("position"));
+        Assert.Null(childPlatform.GetStyleValue("left"));
+        Assert.Null(childPlatform.GetStyleValue("top"));
+        Assert.Null(childPlatform.GetStyleValue("right"));
+        Assert.Null(childPlatform.GetStyleValue("bottom"));
+        Assert.Null(childPlatform.GetStyleValue("width"));
+        Assert.Null(childPlatform.GetStyleValue("height"));
+        Assert.Equal("flex-start", childPlatform.GetStyleValue("alignSelf"));
+        Assert.Equal("4", childPlatform.GetStyleValue("order"));
+        Assert.Equal("1.5", childPlatform.GetStyleValue("flexGrow"));
+        Assert.Equal("0.25", childPlatform.GetStyleValue("flexShrink"));
+        Assert.Equal("40%", childPlatform.GetStyleValue("flexBasis"));
     }
 
     [Fact]
