@@ -171,7 +171,6 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
     public static void MapContent(MirageScrollViewHandler handler, IScrollView scrollView)
     {
         handler.SetPresentedContent(ResolvePresentedContent(scrollView));
-        handler.TryApplyPendingScrollToRequest(scrollView);
     }
 
     public static void MapPadding(MirageScrollViewHandler handler, IScrollView scrollView)

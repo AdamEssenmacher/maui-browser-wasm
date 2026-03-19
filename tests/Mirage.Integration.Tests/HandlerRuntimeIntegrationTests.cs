@@ -2909,6 +2909,62 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public async Task ScrollView_ScrollToAsync_DeferredRequest_RemainsPendingAcrossContentRemapUntilArrange()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var firstContent = new Label
+        {
+            Text = "First content",
+            WidthRequest = 640,
+            HeightRequest = 1200
+        };
+        var firstContentHandler = new MirageLabelHandler();
+        ((IElementHandler)firstContentHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)firstContentHandler).SetVirtualView(firstContent);
+
+        var scrollView = new ScrollView
+        {
+            Content = firstContent
+        };
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        var pendingScrollTask = scrollView.ScrollToAsync(32, 96, animated: true);
+        Assert.False(pendingScrollTask.IsCompleted);
+
+        var secondContent = new Label
+        {
+            Text = "Second content",
+            WidthRequest = 800,
+            HeightRequest = 1600
+        };
+        var secondContentHandler = new MirageLabelHandler();
+        ((IElementHandler)secondContentHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)secondContentHandler).SetVirtualView(secondContent);
+
+        scrollView.Content = secondContent;
+        Assert.False(pendingScrollTask.IsCompleted);
+        Assert.False(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out _, out _));
+
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        await pendingScrollTask.WaitAsync(TimeSpan.FromSeconds(1));
+
+        Assert.True(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out var left, out var top));
+        Assert.Equal(32, left);
+        Assert.Equal(96, top);
+    }
+
+    [Fact]
     public void ScrollViewHandler_RequestScrollTo_DefersUntilArrangeWhenContentIsUnmeasured()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
