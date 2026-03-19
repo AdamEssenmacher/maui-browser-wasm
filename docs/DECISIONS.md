@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (FlexLayout position parity follow-up: MAUI-shape constraint + custom-item toggle coverage)
+- Confirmed and locked the upstream MAUI shape for `FlexLayout.Position`: absolute-position flow applies to nested `FlexLayout` children (via `IFlexLayout.Position`), not arbitrary child controls.
+- Added integration coverage for absolute nested flex children carrying non-default flex-item properties (`Order`, `Grow`, `Shrink`, `Basis`, `AlignSelf`) to verify styles are cleared in absolute mode and deterministically restored when toggling back to relative mode.
+- Kept handler organization unchanged (semantic-flex container with targeted absolute-frame reprojection for absolute nested flex children), and documented the MAUI-aligned constraint in parity gaps.
+
 ## 2026-03-19 (FlexLayout position parity slice: absolute nested flex children)
 - Added explicit FlexLayout absolute-child handling to the semantic arrange path: when a flex child is itself a `FlexLayout` with `Position=Absolute`, Mirage now reapplies frame-driven geometry (`left`/`top`/`width`/`height`) after arrange without switching the whole container to frame-driven layout mode.
 - Relative flex children remain semantic CSS-flex projected, preserving the layout invariant for normal items while matching MAUI behavior for absolute-positioned nested flex items.

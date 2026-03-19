@@ -311,6 +311,7 @@ internal static class MirageLayoutProjection
 
     private static bool IsAbsoluteFlexLayoutChild(IView childView)
     {
+        // Upstream MAUI FlexLayout.Position is an instance property on IFlexLayout children.
         return childView is IFlexLayout { Position: FlexPosition.Absolute };
     }
 

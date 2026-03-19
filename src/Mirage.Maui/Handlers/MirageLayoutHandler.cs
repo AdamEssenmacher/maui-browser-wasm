@@ -1110,6 +1110,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
 
     private static bool IsAbsoluteFlexLayoutChild(IView child)
     {
+        // Upstream MAUI FlexLayout.Position is an instance property on IFlexLayout children.
         return child is IFlexLayout { Position: FlexPosition.Absolute };
     }
 
