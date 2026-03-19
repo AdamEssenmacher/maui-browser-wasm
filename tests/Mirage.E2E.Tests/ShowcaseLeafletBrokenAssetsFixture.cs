@@ -6,7 +6,7 @@ public sealed class ShowcaseLeafletBrokenAssetsFixture : ShowcaseHostFixture
     {
         return ShowcaseFixtureUrlQuery.Append(
             appUrl,
-            ("mirageLeafletJsUrl", "https://invalid.localhost.example/leaflet.js"),
-            ("mirageLeafletCssUrl", "https://invalid.localhost.example/leaflet.css"));
+            ("mirageLeafletJsUrl", "/__missing__/leaflet.js"),
+            ("mirageLeafletCssUrl", "/__missing__/leaflet.css"));
     }
 }
