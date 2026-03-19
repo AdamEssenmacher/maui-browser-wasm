@@ -93,13 +93,21 @@ public static class Program
             ? string.Equals(providerMode, "none", StringComparison.OrdinalIgnoreCase)
             : IsDisabled("MIRAGE_DISABLE_MAP_PROVIDER");
 
-        var javaScriptUrl = queryOptions.TryGetValue("mirageLeafletJsUrl", out var jsFromQuery)
-            ? jsFromQuery
-            : GetEnvironmentOrNull("MIRAGE_LEAFLET_JS_URL");
+        var assetMode = queryOptions.TryGetValue("mirageLeafletAssetMode", out var assetModeFromQuery)
+            ? assetModeFromQuery
+            : GetEnvironmentOrNull("MIRAGE_LEAFLET_ASSET_MODE");
 
-        var stylesheetUrl = queryOptions.TryGetValue("mirageLeafletCssUrl", out var cssFromQuery)
-            ? cssFromQuery
-            : GetEnvironmentOrNull("MIRAGE_LEAFLET_CSS_URL");
+        var localAssetModeRequested = string.Equals(assetMode, "local", StringComparison.OrdinalIgnoreCase);
+        var javaScriptUrl = ResolveStartupAssetUrl(
+            queryOptions,
+            queryName: "mirageLeafletJsUrl",
+            environmentName: "MIRAGE_LEAFLET_JS_URL",
+            allowUnvalidatedQueryForLocalMode: localAssetModeRequested);
+        var stylesheetUrl = ResolveStartupAssetUrl(
+            queryOptions,
+            queryName: "mirageLeafletCssUrl",
+            environmentName: "MIRAGE_LEAFLET_CSS_URL",
+            allowUnvalidatedQueryForLocalMode: localAssetModeRequested);
 
         var tileUrl = queryOptions.TryGetValue("mirageLeafletTileUrl", out var tileFromQuery)
             ? tileFromQuery
@@ -109,10 +117,6 @@ public static class Program
             ? attributionFromQuery
             : GetEnvironmentOrNull("MIRAGE_LEAFLET_TILE_ATTRIBUTION");
 
-        var assetMode = queryOptions.TryGetValue("mirageLeafletAssetMode", out var assetModeFromQuery)
-            ? assetModeFromQuery
-            : GetEnvironmentOrNull("MIRAGE_LEAFLET_ASSET_MODE");
-
         return new StartupMapOptions(
             DisableMapProvider: disableMapProvider,
             LeafletJavaScriptUrl: javaScriptUrl,
@@ -120,6 +124,45 @@ public static class Program
             LeafletTileUrlTemplate: tileUrl,
             LeafletTileAttribution: tileAttribution,
             LeafletAssetMode: assetMode);
+    }
+
+    private static string? ResolveStartupAssetUrl(
+        IReadOnlyDictionary<string, string> queryOptions,
+        string queryName,
+        string environmentName,
+        bool allowUnvalidatedQueryForLocalMode)
+    {
+        if (queryOptions.TryGetValue(queryName, out var queryValue))
+        {
+            var normalized = queryValue.Trim();
+            if (!string.IsNullOrWhiteSpace(normalized)
+                && (allowUnvalidatedQueryForLocalMode || IsSafeQueryAssetUrl(normalized)))
+            {
+                return normalized;
+            }
+        }
+
+        return GetEnvironmentOrNull(environmentName);
+    }
+
+    private static bool IsSafeQueryAssetUrl(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        if (value.StartsWith("//", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (value.StartsWith("/", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return !Uri.TryCreate(value, UriKind.Absolute, out _);
     }
 
     private static Dictionary<string, string> ReadQueryOptions()
