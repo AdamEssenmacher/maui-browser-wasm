@@ -2834,13 +2834,89 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.False(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out _, out _));
 
         handler.PlatformArrange(new Rect(0, 0, 320, 200));
-        await pendingScrollTask;
+        Assert.False(pendingScrollTask.IsCompleted);
+
+        handler.OnRuntimeEvent("scroll", payload: null);
+        await pendingScrollTask.WaitAsync(TimeSpan.FromSeconds(1));
 
         Assert.True(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out var left, out var top));
         Assert.Equal(22, left);
         Assert.Equal(140, top);
         Assert.Equal(22, scrollView.ScrollX);
         Assert.Equal(140, scrollView.ScrollY);
+    }
+
+    [Fact]
+    public async Task ScrollView_ScrollToAsync_ElementTarget_RoutesThroughHandlerCommandBridge()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var topSpacer = new BoxView { HeightRequest = 640 };
+        var target = new Label
+        {
+            Text = "Scroll target",
+            HeightRequest = 40
+        };
+        var bottomSpacer = new BoxView { HeightRequest = 640 };
+
+        var content = new VerticalStackLayout
+        {
+            Spacing = 0,
+            Children =
+            {
+                topSpacer,
+                target,
+                bottomSpacer
+            }
+        };
+
+        var topSpacerHandler = new MirageBoxViewHandler();
+        ((IElementHandler)topSpacerHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)topSpacerHandler).SetVirtualView(topSpacer);
+
+        var targetHandler = new MirageLabelHandler();
+        ((IElementHandler)targetHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)targetHandler).SetVirtualView(target);
+
+        var bottomSpacerHandler = new MirageBoxViewHandler();
+        ((IElementHandler)bottomSpacerHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)bottomSpacerHandler).SetVirtualView(bottomSpacer);
+
+        var contentHandler = new MirageLayoutHandler();
+        ((IElementHandler)contentHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)contentHandler).SetVirtualView(content);
+
+        var scrollView = new ScrollView
+        {
+            Content = content
+        };
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+
+        var pendingScrollTask = scrollView.ScrollToAsync(target, ScrollToPosition.Start, animated: true);
+        Assert.True(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out var left, out var top));
+        Assert.True(left >= 0, $"Expected non-negative left offset for element-targeted scroll. Actual={left}");
+        Assert.True(top >= 0, $"Expected non-negative top offset for element-targeted scroll. Actual={top}");
+
+        if (!pendingScrollTask.IsCompleted)
+        {
+            handler.OnRuntimeEvent("scroll", payload: null);
+        }
+
+        await pendingScrollTask.WaitAsync(TimeSpan.FromSeconds(1));
+
+        Assert.True(scrollView.ScrollY >= 0, $"Expected non-negative ScrollY after element-targeted scroll. Actual={scrollView.ScrollY}");
     }
 
     [Fact]
@@ -2957,6 +3033,8 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.False(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out _, out _));
 
         handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        Assert.False(pendingScrollTask.IsCompleted);
+        handler.OnRuntimeEvent("scroll", payload: null);
         await pendingScrollTask.WaitAsync(TimeSpan.FromSeconds(1));
 
         Assert.True(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out var left, out var top));

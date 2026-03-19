@@ -43,6 +43,7 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
         };
 
     private ScrollToRequest? _pendingScrollToRequest;
+    private bool _awaitingAnimatedScrollCompletion;
 
     public MirageScrollViewHandler()
         : this(Mapper, CommandMapper)
@@ -79,9 +80,10 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
     protected override void DisconnectHandler(MiragePlatformView platformView)
     {
         platformView.SetEvent("scroll", enabled: false);
-        if (_pendingScrollToRequest is not null)
+        if (_pendingScrollToRequest is not null || _awaitingAnimatedScrollCompletion)
         {
             _pendingScrollToRequest = null;
+            _awaitingAnimatedScrollCompletion = false;
             VirtualView.ScrollFinished();
         }
 
@@ -166,6 +168,11 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
 
         VirtualView.HorizontalOffset = left;
         VirtualView.VerticalOffset = top;
+        if (_awaitingAnimatedScrollCompletion)
+        {
+            _awaitingAnimatedScrollCompletion = false;
+            VirtualView.ScrollFinished();
+        }
     }
 
     public static void MapContent(MirageScrollViewHandler handler, IScrollView scrollView)
@@ -210,6 +217,13 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
 
     private void ApplyScrollRequest(IScrollView scrollView, ScrollToRequest request, bool allowDeferral)
     {
+        if (_awaitingAnimatedScrollCompletion)
+        {
+            // Keep completion semantics deterministic if a new request supersedes an in-flight animated request.
+            _awaitingAnimatedScrollCompletion = false;
+            scrollView.ScrollFinished();
+        }
+
         if (allowDeferral && ShouldDeferScrollRequest(scrollView))
         {
             _pendingScrollToRequest = request;
@@ -222,6 +236,9 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
         var verticalOffset = NormalizeOffset(request.VerticalOffset);
         var actualHorizontalOffset = horizontalOffset;
         var actualVerticalOffset = verticalOffset;
+        var previousHorizontalOffset = scrollView.HorizontalOffset;
+        var previousVerticalOffset = scrollView.VerticalOffset;
+        var appliedViaCoordinator = false;
 
         if (Coordinator is not null
             && Coordinator.TrySetNodeScrollPosition(
@@ -231,13 +248,20 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
                 out var realizedLeft,
                 out var realizedTop))
         {
+            appliedViaCoordinator = true;
             actualHorizontalOffset = realizedLeft;
             actualVerticalOffset = realizedTop;
         }
 
         scrollView.HorizontalOffset = actualHorizontalOffset;
         scrollView.VerticalOffset = actualVerticalOffset;
-        scrollView.ScrollFinished();
+        if (request.Instant || ShouldCompleteScrollRequestImmediately(scrollView, appliedViaCoordinator, previousHorizontalOffset, previousVerticalOffset, actualHorizontalOffset, actualVerticalOffset))
+        {
+            scrollView.ScrollFinished();
+            return;
+        }
+
+        _awaitingAnimatedScrollCompletion = true;
     }
 
     private static double NormalizeOffset(double value)
@@ -296,6 +320,24 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
     private static bool IsFinitePositive(double value)
     {
         return double.IsFinite(value) && value > 0;
+    }
+
+    private static bool ShouldCompleteScrollRequestImmediately(
+        IScrollView scrollView,
+        bool appliedViaCoordinator,
+        double previousHorizontalOffset,
+        double previousVerticalOffset,
+        double actualHorizontalOffset,
+        double actualVerticalOffset)
+    {
+        if (!appliedViaCoordinator || ResolvePresentedContent(scrollView) is null)
+        {
+            return true;
+        }
+
+        const double epsilon = 0.001;
+        return Math.Abs(actualHorizontalOffset - previousHorizontalOffset) < epsilon
+               && Math.Abs(actualVerticalOffset - previousVerticalOffset) < epsilon;
     }
 
     private void ApplyScrollStyles(IScrollView scrollView)

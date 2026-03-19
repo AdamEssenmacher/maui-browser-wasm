@@ -13,6 +13,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Scroll runtime events now update `IScrollView` offsets through interface semantics, and command completion flows through `IScrollView.ScrollFinished()` instead of control-type-specific calls.
 - Added explicit parity governance artifacts (`docs/parity/scrollview-parity-contract.json`, `docs/parity/scrollview-parity-divergences.json`) and integration coverage for deferred apply, runtime offset sync, and padding projection.
 
+## 2026-03-19 (ScrollView parity follow-up: animated completion timing + element-target coverage)
+- Non-instant `ScrollTo` requests now defer `ScrollFinished()` until the runtime `scroll` event arrives, matching MAUI’s completion intent more closely than immediate completion.
+- Added deterministic safety fallbacks to avoid hangs when a runtime completion signal is unavailable (no presented content, no runtime set bridge, unchanged position).
+- Added integration coverage for element-targeted `ScrollToAsync(element, ...)` command routing so this path stays locked while handler parity evolves.
+
 ## 2026-03-19 (FlexLayout position parity follow-up: MAUI-shape constraint + custom-item toggle coverage)
 - Confirmed and locked the upstream MAUI shape for `FlexLayout.Position`: absolute-position flow applies to nested `FlexLayout` children (via `IFlexLayout.Position`), not arbitrary child controls.
 - Added integration coverage for absolute nested flex children carrying non-default flex-item properties (`Order`, `Grow`, `Shrink`, `Basis`, `AlignSelf`) to verify styles are cleared in absolute mode and deterministically restored when toggling back to relative mode.
