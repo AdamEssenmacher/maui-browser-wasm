@@ -430,6 +430,54 @@ public sealed class MirageLayoutHandlerTests
     }
 
     [Fact]
+    public void FlexLayout_ContainerMapperUpdates_PreserveParentAssignedPositioning()
+    {
+        var parent = new AbsoluteLayout
+        {
+            WidthRequest = 500,
+            HeightRequest = 300
+        };
+
+        var flex = new TestFlexLayout
+        {
+            Direction = FlexDirection.Row,
+            WidthRequest = 180,
+            HeightRequest = 90
+        };
+        flex.Children.Add(new Label { Text = "Child" });
+
+        parent.Children.Add(flex);
+        AbsoluteLayout.SetLayoutBounds(flex, new Rect(25, 35, 180, 90));
+        AbsoluteLayout.SetLayoutFlags(flex, AbsoluteLayoutFlags.None);
+
+        var parentHandler = CreateHandler(out var mauiContext);
+        AttachLayoutChildHandlers(parent, mauiContext);
+        ((IElementHandler)parentHandler).SetVirtualView(parent);
+        parentHandler.PlatformArrange(new Rect(0, 0, 500, 300));
+
+        var flexPlatform = GetPlatformView(flex);
+        Assert.Equal("absolute", flexPlatform.GetStyleValue("position"));
+        var initialLeft = flexPlatform.GetStyleValue("left");
+        var initialTop = flexPlatform.GetStyleValue("top");
+        var initialWidth = flexPlatform.GetStyleValue("width");
+        var initialHeight = flexPlatform.GetStyleValue("height");
+        Assert.NotNull(initialLeft);
+        Assert.NotNull(initialTop);
+        Assert.NotNull(initialWidth);
+        Assert.NotNull(initialHeight);
+
+        flex.Direction = FlexDirection.Column;
+        flex.Wrap = FlexWrap.Wrap;
+        flex.JustifyContent = FlexJustify.SpaceBetween;
+
+        Assert.Equal("absolute", flexPlatform.GetStyleValue("position"));
+        Assert.Equal(initialLeft, flexPlatform.GetStyleValue("left"));
+        Assert.Equal(initialTop, flexPlatform.GetStyleValue("top"));
+        Assert.Equal(initialWidth, flexPlatform.GetStyleValue("width"));
+        Assert.Equal(initialHeight, flexPlatform.GetStyleValue("height"));
+    }
+
+    [Fact]
     public void CustomLayout_Arrange_StillAppliesAbsoluteArrangedFrames()
     {
         var layout = new FrameDrivenTestLayout();
@@ -504,11 +552,20 @@ public sealed class MirageLayoutHandlerTests
         {
             Label => new MirageLabelHandler(),
             BoxView => new MirageBoxViewHandler(),
+            Layout layout => CreateLayoutChildHandler(layout, mauiContext),
             _ => throw new InvalidOperationException($"No test child-handler binding registered for '{child.GetType().Name}'.")
         };
 
         ((IElementHandler)childHandler).SetMauiContext(mauiContext);
         ((IElementHandler)childHandler).SetVirtualView(element);
+    }
+
+    private static MirageLayoutHandler CreateLayoutChildHandler(Layout layout, MauiContext mauiContext)
+    {
+        var layoutHandler = new MirageLayoutHandler();
+        ((IElementHandler)layoutHandler).SetMauiContext(mauiContext);
+        AttachLayoutChildHandlers(layout, mauiContext);
+        return layoutHandler;
     }
 
     private static MiragePlatformView GetPlatformView(View view)

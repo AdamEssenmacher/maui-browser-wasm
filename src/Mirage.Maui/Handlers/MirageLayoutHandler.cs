@@ -760,7 +760,6 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
             case ComponentKind.Layout when VirtualView is FlexLayout flexLayout:
                 DefaultDisplayStyle = "flex";
                 changed |= SetStyleIfChanged("display", "flex");
-                changed |= SetStyleIfChanged("position", null);
                 changed |= SetStyleIfChanged("flexDirection", ResolveFlexDirection(flexLayout.Direction));
                 changed |= SetStyleIfChanged("flexWrap", ResolveFlexWrap(flexLayout.Wrap));
                 changed |= SetStyleIfChanged("justifyContent", ResolveFlexJustifyContent(flexLayout.JustifyContent));
