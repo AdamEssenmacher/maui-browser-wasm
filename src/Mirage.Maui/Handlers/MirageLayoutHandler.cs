@@ -161,6 +161,11 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         switch (ResolveArrangeStrategy(VirtualView))
         {
             case LayoutArrangeStrategy.SemanticCssLayout:
+                if (VirtualView is FlexLayout)
+                {
+                    ApplyFlexLayoutAbsoluteChildArrangedFrames();
+                }
+
                 break;
             case LayoutArrangeStrategy.FrameDrivenCustomLayout:
                 ApplyCustomLayoutArrangedFrames();
@@ -704,7 +709,8 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                || string.Equals(propertyName, FlexLayout.GrowProperty.PropertyName, StringComparison.Ordinal)
                || string.Equals(propertyName, FlexLayout.ShrinkProperty.PropertyName, StringComparison.Ordinal)
                || string.Equals(propertyName, FlexLayout.BasisProperty.PropertyName, StringComparison.Ordinal)
-               || string.Equals(propertyName, FlexLayout.AlignSelfProperty.PropertyName, StringComparison.Ordinal);
+               || string.Equals(propertyName, FlexLayout.AlignSelfProperty.PropertyName, StringComparison.Ordinal)
+               || string.Equals(propertyName, FlexLayout.PositionProperty.PropertyName, StringComparison.Ordinal);
     }
 
     private static bool IsFlexLayoutAlignmentRemapProperty(string? propertyName)
@@ -962,6 +968,11 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         return MirageLayoutProjection.ApplyCustomLayoutChildStyles(childPlatformView, childView);
     }
 
+    private static bool ApplyAbsoluteFlexLayoutChildStyles(MiragePlatformView childPlatformView, IView childView)
+    {
+        return MirageLayoutProjection.ApplyAbsoluteFlexLayoutChildStyles(childPlatformView, childView);
+    }
+
     private static bool TryBuildGridTrackTemplate(IEnumerable<GridLength> trackLengths, out string template)
     {
         var parts = new List<string>();
@@ -1070,6 +1081,36 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         {
             RequestRender();
         }
+    }
+
+    private void ApplyFlexLayoutAbsoluteChildArrangedFrames()
+    {
+        var changed = false;
+        foreach (var child in VirtualView)
+        {
+            if (!IsAbsoluteFlexLayoutChild(child))
+            {
+                continue;
+            }
+
+            if (!_childHandlers.TryGetValue(child, out var childHandler)
+                || childHandler.PlatformView is not MiragePlatformView childPlatformView)
+            {
+                continue;
+            }
+
+            changed |= ApplyAbsoluteFlexLayoutChildStyles(childPlatformView, child);
+        }
+
+        if (changed)
+        {
+            RequestRender();
+        }
+    }
+
+    private static bool IsAbsoluteFlexLayoutChild(IView child)
+    {
+        return child is IFlexLayout { Position: FlexPosition.Absolute };
     }
 
     private void ApplyAbsoluteLayoutArrangedFrames()

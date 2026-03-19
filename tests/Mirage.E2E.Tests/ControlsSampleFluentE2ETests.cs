@@ -1349,6 +1349,22 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderplayground-dash-offset-slider']", 1.5);
         await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderplayground-width-slider']", 7);
         await SetSelectIndexAsync(page, "[data-automation-id='controls-sample-borderplayground-shape-picker']", 2);
+        await page.WaitForFunctionAsync(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id='controls-sample-borderplayground-border']");
+                if (!(host instanceof HTMLElement)) {
+                    return false;
+                }
+
+                const clipPath = getComputedStyle(host).clipPath ?? "";
+                return clipPath.toLowerCase().includes("ellipse(");
+            }
+            """,
+            options: new()
+            {
+                Timeout = 5000
+            });
 
         var playgroundSnapshot = await page.EvaluateAsync<string[]>(
             """
