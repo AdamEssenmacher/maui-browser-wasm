@@ -2,6 +2,12 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (Map resiliency follow-up: transient-only provider retries + geolocation watch recovery)
+- `MirageRuntime` now retries map-provider non-ready results only for transient failure codes (`*-timeout`, `leaflet-global-missing`, `readiness-exception`, `initialization-exception`, `provider-not-ready`) instead of retrying deterministic asset/config failures.
+- This preserves recovery behavior for intermittent startup issues while allowing deterministic broken-asset scenarios to fail fast with stable error projection.
+- Leaflet `applyUserLocationState` now clears the failed `watchPosition` ID on geolocation error callbacks, allowing later `isShowingUser=true` renders to start a fresh watch without requiring map recreation/toggle reset.
+- Added architecture-boundary coverage for both retry-filter policy and geolocation watch-id reset behavior.
+
 ## 2026-03-19 (Map-node provider reattempt loop after non-ready init results)
 - `MirageRuntime.ConfigureMapNodeWhenProviderReadyAsync` now retries non-ready provider initialization results for already-realized map nodes, instead of projecting immediate terminal error on the first failed readiness result.
 - Retries are bounded (`MapProviderInitializationRetryLimit`) and delayed (`ConfigureMapNodeWhenProviderReadyAfterDelayAsync`) so transient CDN/network readiness failures can recover without hot-looping.

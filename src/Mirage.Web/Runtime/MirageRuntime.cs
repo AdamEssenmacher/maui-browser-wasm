@@ -692,7 +692,8 @@ public sealed class MirageRuntime : IMirageRuntime
                     ? "Map provider initialization failed."
                     : initialization.ErrorMessage!;
 
-                if (TryScheduleMapProviderInitializationRetry(nodeId, currentNode, mapProvider.ProviderName, code, message))
+                if (ShouldRetryMapProviderInitializationFailure(code)
+                    && TryScheduleMapProviderInitializationRetry(nodeId, currentNode, mapProvider.ProviderName, code, message))
                 {
                     return;
                 }
@@ -750,6 +751,21 @@ public sealed class MirageRuntime : IMirageRuntime
             $"node={nodeId} provider={providerName} code={errorCode} retryAttempt={retryAttempt} retryDelayMs={delayMs} message={message}");
         _ = ConfigureMapNodeWhenProviderReadyAfterDelayAsync(nodeId, node, delayMs);
         return true;
+    }
+
+    private static bool ShouldRetryMapProviderInitializationFailure(string errorCode)
+    {
+        return errorCode switch
+        {
+            "provider-not-ready" => true,
+            "not-initialized" => true,
+            "css-timeout" => true,
+            "js-timeout" => true,
+            "leaflet-global-missing" => true,
+            "readiness-exception" => true,
+            "initialization-exception" => true,
+            _ => false
+        };
     }
 
     private async Task ConfigureMapNodeWhenProviderReadyAfterDelayAsync(string nodeId, RealizedNode expectedNode, int delayMs)

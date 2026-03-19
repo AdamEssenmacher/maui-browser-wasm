@@ -443,6 +443,9 @@ public sealed class ArchitectureBoundaryTests
         Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
 
         var text = File.ReadAllText(runtimePath);
+        Assert.Contains("ShouldRetryMapProviderInitializationFailure", text, StringComparison.Ordinal);
+        Assert.Contains("\"js-timeout\" => true", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"js-load-failed\" => true", text, StringComparison.Ordinal);
         Assert.Contains("TryScheduleMapProviderInitializationRetry(", text, StringComparison.Ordinal);
         Assert.Contains("MapProviderInitializationRetryLimit", text, StringComparison.Ordinal);
         Assert.Contains("ConfigureMapNodeWhenProviderReadyAfterDelayAsync", text, StringComparison.Ordinal);
@@ -588,6 +591,24 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("while (span < 0)", text, StringComparison.Ordinal);
         Assert.Contains("span += 360;", text, StringComparison.Ordinal);
         Assert.Contains("const longitudeSpan = getLongitudeSpanFromBounds(southWest.lng, northEast.lng);", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LeafletRuntimeModule_ClearsFailedGeolocationWatchIdsToAllowRetry()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "wwwroot",
+            "mirage-leaflet-provider.js");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+
+        var text = File.ReadAllText(runtimeModulePath);
+        Assert.Contains("watchId = navigator.geolocation.watchPosition(", text, StringComparison.Ordinal);
+        Assert.Contains("if (entry.userLocationWatchId === watchId)", text, StringComparison.Ordinal);
+        Assert.Contains("navigator.geolocation.clearWatch(watchId);", text, StringComparison.Ordinal);
+        Assert.Contains("entry.userLocationWatchId = null;", text, StringComparison.Ordinal);
     }
 
     [Fact]

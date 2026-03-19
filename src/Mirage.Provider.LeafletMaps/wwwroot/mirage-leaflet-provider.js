@@ -822,7 +822,8 @@ function applyUserLocationState(entry, state) {
 
   entry.host.setAttribute("data-mirage-map-geolocation-status", "pending");
   try {
-    entry.userLocationWatchId = navigator.geolocation.watchPosition(
+    let watchId = null;
+    watchId = navigator.geolocation.watchPosition(
       (position) => {
         const latitude = toFiniteOrNull(position?.coords?.latitude);
         const longitude = toFiniteOrNull(position?.coords?.longitude);
@@ -845,6 +846,18 @@ function applyUserLocationState(entry, state) {
         entry.host.setAttribute("data-mirage-map-geolocation-status", "ready");
       },
       (error) => {
+        if (entry.userLocationWatchId === watchId) {
+          if (typeof navigator !== "undefined" && navigator.geolocation && typeof navigator.geolocation.clearWatch === "function") {
+            try {
+              navigator.geolocation.clearWatch(watchId);
+            } catch {
+              // best effort
+            }
+          }
+
+          entry.userLocationWatchId = null;
+        }
+
         const code = mapGeolocationErrorCode(error);
         const message = error?.message || "Unable to read current browser location.";
         entry.host.setAttribute("data-mirage-map-geolocation-status", "error");
@@ -856,7 +869,9 @@ function applyUserLocationState(entry, state) {
         timeout: 15000
       }
     );
+    entry.userLocationWatchId = watchId;
   } catch (error) {
+    entry.userLocationWatchId = null;
     const message = error instanceof Error ? error.message : String(error);
     entry.host.setAttribute("data-mirage-map-geolocation-status", "error");
     emitDiagnostic(entry.host, "geolocation-watch-failed", message);
