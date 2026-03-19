@@ -14,6 +14,7 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
     private const int SupportedManifestVersion = 1;
     private const int ManifestLoadMaxAttempts = 5;
     private const int ManifestLoadRetryDelayMilliseconds = 150;
+    private const int MaxDiagnosticKeyCount = 256;
 
     private readonly IMirageImageManifestProvider _manifestProvider;
     private readonly IMirageObjectUrlFactory? _objectUrlFactory;
@@ -66,7 +67,7 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
     {
         if (string.IsNullOrWhiteSpace(source))
         {
-            return Fail("Image source was empty.");
+            return Fail("Image source was empty.", "empty-source");
         }
 
         var trimmed = source.Trim();
@@ -79,7 +80,7 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
         {
             return Fail(
                 _degradedReason,
-                $"degraded:{trimmed.ToLowerInvariant()}");
+                "degraded");
         }
 
         if (_imagesByIdentity.TryGetValue(trimmed, out var exactIdentityUrl))
@@ -93,7 +94,7 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
         {
             return logicalLookup.IsResolved
                 ? Succeed(logicalLookup.BrowserUrl!, "logicalPath", normalizedLookup)
-                : Fail(logicalLookup.FailureReason!);
+                : Fail(logicalLookup.FailureReason!, "alias-logicalpath");
         }
 
         var fileName = Path.GetFileName(normalizedLookup);
@@ -104,7 +105,7 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
             {
                 return fileNameLookup.IsResolved
                     ? Succeed(fileNameLookup.BrowserUrl!, "fileName", fileName)
-                    : Fail(fileNameLookup.FailureReason!);
+                    : Fail(fileNameLookup.FailureReason!, "alias-filename");
             }
 
             var fileStem = Path.GetFileNameWithoutExtension(fileName);
@@ -115,12 +116,12 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
                 {
                     return fileStemLookup.IsResolved
                         ? Succeed(fileStemLookup.BrowserUrl!, "fileStem", fileStem)
-                        : Fail(fileStemLookup.FailureReason!);
+                        : Fail(fileStemLookup.FailureReason!, "alias-filestem");
                 }
             }
         }
 
-        return Fail($"Bundled image source '{trimmed}' was not found in the Mirage image manifest.");
+        return Fail($"Bundled image source '{trimmed}' was not found in the Mirage image manifest.", "not-found");
     }
 
     public MirageImageSourceProjectionResult Resolve(ImageSource? source)
@@ -312,14 +313,16 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
     private MirageImageSourceResolveResult Succeed(string browserUrl, string resolutionStage, string lookupKey)
     {
         ReportOnce(
-            $"resolve-success:{resolutionStage}:{lookupKey.ToLowerInvariant()}",
+            $"resolve-success:{resolutionStage}",
             $"Resolved bundled image source via {resolutionStage}: '{lookupKey}' -> '{browserUrl}'.");
         return MirageImageSourceResolveResult.Resolved(browserUrl);
     }
 
-    private MirageImageSourceResolveResult Fail(string reason, string? diagnosticKey = null)
+    private MirageImageSourceResolveResult Fail(string reason, string? errorCode = null)
     {
-        var normalizedDiagnosticKey = diagnosticKey ?? $"resolve-failure:{reason.ToLowerInvariant()}";
+        var normalizedDiagnosticKey = string.IsNullOrWhiteSpace(errorCode)
+            ? "resolve-failure:generic"
+            : $"resolve-failure:{errorCode}";
         ReportOnce(normalizedDiagnosticKey, reason);
         return MirageImageSourceResolveResult.Unresolved(reason);
     }
@@ -480,6 +483,11 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
     {
         lock (_diagnosticSync)
         {
+            if (_diagnosticKeys.Count >= MaxDiagnosticKeyCount)
+            {
+                _diagnosticKeys.Clear();
+            }
+
             if (!_diagnosticKeys.Add(key))
             {
                 return;
