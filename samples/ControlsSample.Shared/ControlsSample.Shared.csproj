@@ -22,6 +22,14 @@
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\VerticalStackLayoutPage.xaml" Link="Vendor\Pages\Layouts\VerticalStackLayoutPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\TransformationsPage.xaml" Link="Vendor\Pages\Core\TransformationsPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderPlayground.xaml" Link="Vendor\Pages\Core\BorderGalleries\BorderPlayground.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderClipPlayground.xaml" Link="Vendor\Pages\Core\BorderGalleries\BorderClipPlayground.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderStyles.xaml" Link="Vendor\Pages\Core\BorderGalleries\BorderStyles.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderLayout.xaml" Link="Vendor\Pages\Core\BorderGalleries\BorderLayout.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderStroke.xaml" Link="Vendor\Pages\Core\BorderGalleries\BorderStroke.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\Borderless.xaml" Link="Vendor\Pages\Core\BorderGalleries\Borderless.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderResizeContent.xaml" Link="Vendor\Pages\Core\BorderGalleries\BorderResizeContent.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderAlignment.xaml" Link="Vendor\Pages\Core\BorderGalleries\BorderAlignment.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml" Link="Vendor\Pages\Controls\ButtonPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\BoxViewPage.xaml" Link="Vendor\Pages\Controls\BoxViewPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\CheckBoxPage.xaml" Link="Vendor\Pages\Controls\CheckBoxPage.xaml" />
@@ -47,6 +55,15 @@
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml.cs" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\VerticalStackLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\VerticalStackLayoutPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\TransformationsPage.xaml.cs" Link="Vendor\Pages\Core\TransformationsPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderPage.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderPage.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderPlayground.xaml.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderPlayground.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderClipPlayground.xaml.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderClipPlayground.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderStyles.xaml.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderStyles.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderLayout.xaml.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderLayout.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderStroke.xaml.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderStroke.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\Borderless.xaml.cs" Link="Vendor\Pages\Core\BorderGalleries\Borderless.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderResizeContent.xaml.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderResizeContent.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderAlignment.xaml.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderAlignment.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml.cs" Link="Vendor\Pages\Controls\ButtonPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\BoxViewPage.xaml.cs" Link="Vendor\Pages\Controls\BoxViewPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\CheckBoxPage.xaml.cs" Link="Vendor\Pages\Controls\CheckBoxPage.xaml.cs" />

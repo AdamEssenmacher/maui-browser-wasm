@@ -42,15 +42,15 @@ Visual legend:
 | `AlertsPage.xaml` | `Pages/Core/AlertsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `AppThemeBindingPage.xaml` | `Pages/Core/AppThemeBindingPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ApplicationControlPage.xaml` | `Pages/Core/ApplicationControlPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `BorderAlignment.xaml` | `Pages/Core/BorderGalleries/BorderAlignment.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `BorderClipPlayground.xaml` | `Pages/Core/BorderGalleries/BorderClipPlayground.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `BorderLayout.xaml` | `Pages/Core/BorderGalleries/BorderLayout.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `BorderPage.cs` | `Pages/Core/BorderGalleries/BorderPage.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `BorderPlayground.xaml` | `Pages/Core/BorderGalleries/BorderPlayground.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `BorderResizeContent.xaml` | `Pages/Core/BorderGalleries/BorderResizeContent.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `BorderStroke.xaml` | `Pages/Core/BorderGalleries/BorderStroke.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `BorderStyles.xaml` | `Pages/Core/BorderGalleries/BorderStyles.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `Borderless.xaml` | `Pages/Core/BorderGalleries/Borderless.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BorderAlignment.xaml` | `Pages/Core/BorderGalleries/BorderAlignment.xaml` | `[x]` | `[x]` | `[ ]` |
+| `BorderClipPlayground.xaml` | `Pages/Core/BorderGalleries/BorderClipPlayground.xaml` | `[x]` | `[x]` | `[ ]` |
+| `BorderLayout.xaml` | `Pages/Core/BorderGalleries/BorderLayout.xaml` | `[x]` | `[x]` | `[ ]` |
+| `BorderPage.cs` | `Pages/Core/BorderGalleries/BorderPage.cs` | `[x]` | `[x]` | `[ ]` |
+| `BorderPlayground.xaml` | `Pages/Core/BorderGalleries/BorderPlayground.xaml` | `[x]` | `[x]` | `[ ]` |
+| `BorderResizeContent.xaml` | `Pages/Core/BorderGalleries/BorderResizeContent.xaml` | `[x]` | `[x]` | `[ ]` |
+| `BorderStroke.xaml` | `Pages/Core/BorderGalleries/BorderStroke.xaml` | `[x]` | `[x]` | `[ ]` |
+| `BorderStyles.xaml` | `Pages/Core/BorderGalleries/BorderStyles.xaml` | `[x]` | `[x]` | `[ ]` |
+| `Borderless.xaml` | `Pages/Core/BorderGalleries/Borderless.xaml` | `[x]` | `[x]` | `[ ]` |
 | `BrushesPage.xaml` | `Pages/Core/BrushesPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ClipPage.xaml` | `Pages/Core/ClipPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ContentPageBackgroundGallery.xaml` | `Pages/Core/ContentPageGalleries/ContentPageBackgroundGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |

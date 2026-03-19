@@ -467,3 +467,30 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Promoted upstream `StackLayoutPage` to a runnable ControlsSample entry using existing Mirage `StackLayout` and `BoxView` support, with no new runtime/provider contracts required.
 - Imported upstream page XAML/code-behind into `ControlsSample.Shared` and extended ControlsSample E2E coverage for catalog discoverability plus page-level structure checks (`Vertical` and `Horizontal` sections with six `BoxView` children each).
 - Kept parity expectations aligned to native MAUI behavior: unsized `BoxView` children in both sections are expected to collapse rather than render with synthetic default sizes.
+
+## 2026-03-17 (ControlsSample Border Galleries Enablement + Picker Support)
+- Promoted upstream `BorderPage` to a runnable ControlsSample entry and imported all Border gallery sub-pages (`BorderPlayground`, `BorderClipPlayground`, `BorderStyles`, `BorderLayout`, `BorderStroke`, `Borderless`, `BorderResizeContent`, `BorderAlignment`) behind BorderPage's internal navigation surface.
+- Added a wrapper compat `GalleryBuilder` in the upstream namespace so BorderPage nav buttons and pushed sub-pages receive deterministic automation IDs without modifying vendored upstream sources.
+- Added first-class Mirage `Picker` support (`ComponentKind.Picker`, `MiragePickerHandler`, Fluent `select` descriptor) because Border galleries depend on Picker-based shape/content/line-cap/line-join selection; this is generic framework behavior, not sample glue.
+- Upgraded `MirageBorderHandler` from CSS-border-only stroke projection to a Border-owned shape/stroke rendering path using an internal SVG overlay for stroke semantics, enabling gradient stroke brushes, dash array/offset, line cap/join, and non-rect shape paths while keeping content hosting on the MAUI control-node path.
+- Locked transform/update behavior for Border rendering to reproject on both mapper updates and arrange-time size changes, and applied shape-based clipping semantics (`RoundRectangle`, `Ellipse`, `Polygon`) through host clip styles for gallery clip parity.
+
+## 2026-03-17 (Border Stroke Rendering Fix: SVG Namespace-Correct Node Creation)
+- Border stroke visuals in browser hosts were silently missing for some pages (for example `BorderAlignment`) because Mirage created `svg`/`defs`/`path` elements via `document.createElement(...)`, which does not guarantee SVG namespace semantics for runtime-generated nodes.
+- Mirage DOM runtime now creates SVG-family elements (`svg`, `defs`, `path`, gradient/shape tags) with `document.createElementNS("http://www.w3.org/2000/svg", ...)`, ensuring stroke attributes are interpreted/rendered as actual SVG geometry.
+- Added BorderAlignment E2E assertions that validate namespace-correct stroke nodes and non-empty red stroke projection to prevent regressions where stroke attributes exist but do not paint.
+
+## 2026-03-17 (Border Stroke Aspect-Ratio Fix For Alignment Parity)
+- Border stroke overlays now set SVG `preserveAspectRatio="none"` so stroke paths scale to the host border box even when layout frame dimensions and DOM-rendered host dimensions diverge during alignment scenarios (`Start/Center/End/Fill`).
+- This avoids collapsed center-line artifacts in `BorderAlignment` where correctly generated stroke paths were being rendered under default SVG `xMidYMid meet` behavior.
+- Added E2E geometry assertions for `BorderAlignment` to ensure stroke path rendered width tracks host width for both non-fill and fill border variants.
+
+## 2026-03-18 (BorderPlayground Stroke Parity: Dash Units, Content Inset, and Corner Ordering)
+- Updated Mirage Border stroke dash projection to use MAUI-style stroke-relative units (`StrokeDashArray` / `StrokeDashOffset` values multiplied by `StrokeThickness`) instead of raw SVG unit projection, which removes the pinstripe dash artifact in `BorderPlayground`.
+- Border host padding is now projected as `Border.Padding + StrokeThickness` while a renderable stroke is active, preventing stroke geometry from overlapping/clipping hosted content text at the edge.
+- Corrected `MirageBorderHandler` round-rectangle normalization output to preserve MAUI bottom-corner semantics (`BottomLeft`/`BottomRight`) and added missing `BottomLeftCornerSlider` automation instrumentation for deterministic E2E coverage.
+
+## 2026-03-18 (BorderPlayground Geometry-Frame And Clipping Lockstep)
+- Border stroke projection now uses the arranged frame as the sole geometry authority; Mirage no longer fabricates stroke dimensions from desired/content fallback values when arranged size is unavailable.
+- When arranged width/height are not yet valid, the SVG stroke overlay remains hidden and path attributes are cleared, avoiding stale or shrunken stroke frames.
+- Round-rectangle borders now project `clip-path: inset(0 round ...)` from the same normalized corner data used by the stroke path, keeping image/content clipping and stroke geometry in lockstep.

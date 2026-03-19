@@ -62,6 +62,14 @@ public static class ControlsSampleCatalog
             description: "Runnable in Mirage today: exercises MAUI view transform properties with slider/stepper-driven updates.",
             pageFactory: CreateTransformationsPage),
         new(
+            id: "borderpage",
+            title: "BorderPage",
+            upstreamPath: "Pages/Core/BorderGalleries/BorderPage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(BorderPage),
+            description: "Runnable in Mirage today: exercises Border gallery navigation including stroke, clipping, layout, and alignment scenarios.",
+            pageFactory: CreateBorderPage),
+        new(
             id: "clippingpage",
             title: "ClippingPage",
             upstreamPath: "Pages/Layouts/ClippingPage.xaml",
@@ -390,6 +398,12 @@ public static class ControlsSampleCatalog
         SetNamedElementAutomationId(page, "_stepperAnchorY", "controls-sample-transformationspage-anchory-stepper");
 
         return page;
+    }
+
+    private static Page CreateBorderPage(IServiceProvider services)
+    {
+        _ = services;
+        return new BorderPage();
     }
 
     private static void SetNamedElementAutomationId(Page page, string fieldName, string automationId)

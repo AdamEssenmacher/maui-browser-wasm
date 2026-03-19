@@ -175,6 +175,20 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                     ["input"] = new("input", EventTarget.Self, EventPayloadKind.InputValue),
                     ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue)
                 }),
+            [ComponentKind.Picker] = new(
+                ComponentKind.Picker,
+                "select",
+                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
+                    ["Title"] = new(PropertyTarget.Attribute, "aria-label"),
+                    ["SelectedValue"] = new(PropertyTarget.InputValue),
+                    ["Disabled"] = new(PropertyTarget.Attribute, "disabled")
+                },
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue)
+                }),
             [ComponentKind.Stepper] = new(
                 ComponentKind.Stepper,
                 "div",
