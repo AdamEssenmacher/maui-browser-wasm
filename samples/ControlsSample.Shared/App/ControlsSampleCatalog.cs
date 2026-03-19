@@ -106,6 +106,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(CustomLayoutPage),
             description: "Runnable in Mirage today: exercises custom DockLayout arrangement with top/bottom/left/right button docking."),
         new(
+            id: "flexlayoutpage",
+            title: "FlexLayoutPage",
+            upstreamPath: "Pages/Layouts/FlexLayoutPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(FlexLayoutPage),
+            description: "Runnable in Mirage today: exercises FlexLayout direction plus order/grow/basis child projection in nested layout scenarios."),
+        new(
             id: "activityindicatorpage",
             title: "ActivityIndicatorPage",
             upstreamPath: "Pages/Controls/ActivityIndicatorPage.xaml",

@@ -23,7 +23,7 @@ Visual legend:
 | `ClippingPage.xaml` | `Pages/Layouts/ClippingPage.xaml` | `[x]` | `[ ]` | `[ ]` |
 | `ContentViewPage.xaml` | `Pages/Layouts/ContentViewPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `CustomLayoutPage.xaml` | `Pages/Layouts/CustomLayoutPage.xaml` | `[x]` | `[x]` | `[ ]` |
-| `FlexLayoutPage.xaml` | `Pages/Layouts/FlexLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `FlexLayoutPage.xaml` | `Pages/Layouts/FlexLayoutPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `GridPage.xaml` | `Pages/Layouts/GridPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `HorizontalStackLayoutPage.xaml` | `Pages/Layouts/HorizontalStackLayoutPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `LayoutIsEnabledPage.xaml` | `Pages/Layouts/LayoutIsEnabledPage.xaml` | `[!]` | `[ ]` | `[ ]` |
