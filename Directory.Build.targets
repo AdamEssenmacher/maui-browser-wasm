@@ -537,8 +537,8 @@ return !Log.HasLoggedErrors;
                                          Condition="'%(_MirageUniqueDiscoveredBrowserRuntimeModule.SourceFullPath)' != '' and '%(_MirageUniqueDiscoveredBrowserRuntimeModule.TargetPath)' != ''">
         <SourceFullPath>%(_MirageUniqueDiscoveredBrowserRuntimeModule.SourceFullPath)</SourceFullPath>
         <TargetPath>%(_MirageUniqueDiscoveredBrowserRuntimeModule.TargetPath)</TargetPath>
-        <DestinationPath>$(IntermediateOutputPath)Mirage.RuntimeModules/%(_MirageUniqueDiscoveredBrowserRuntimeModule.TargetPath)</DestinationPath>
-        <DestinationDir>$([System.IO.Path]::GetDirectoryName('$(IntermediateOutputPath)Mirage.RuntimeModules/%(_MirageUniqueDiscoveredBrowserRuntimeModule.TargetPath)'))</DestinationDir>
+        <DestinationPath>$(MSBuildProjectDirectory)/wwwroot/%(_MirageUniqueDiscoveredBrowserRuntimeModule.TargetPath)</DestinationPath>
+        <DestinationDir>$([System.IO.Path]::GetDirectoryName('$(MSBuildProjectDirectory)/wwwroot/%(_MirageUniqueDiscoveredBrowserRuntimeModule.TargetPath)'))</DestinationDir>
       </_MirageBrowserRuntimeModuleMirror>
     </ItemGroup>
 
@@ -550,12 +550,11 @@ return !Log.HasLoggedErrors;
           Condition="'@(_MirageBrowserRuntimeModuleMirror)' != ''" />
 
     <ItemGroup Condition="'@(_MirageBrowserRuntimeModuleMirror)' != ''">
-      <_MirageBrowserRuntimeModuleContent Include="%(_MirageBrowserRuntimeModuleMirror.SourceFullPath)">
+      <_MirageBrowserRuntimeModuleContent Include="%(_MirageBrowserRuntimeModuleMirror.DestinationPath)">
         <TargetPath>%(_MirageBrowserRuntimeModuleMirror.TargetPath)</TargetPath>
       </_MirageBrowserRuntimeModuleContent>
 
       <Content Include="@(_MirageBrowserRuntimeModuleContent)">
-        <Link>wwwroot/%(_MirageBrowserRuntimeModuleContent.TargetPath)</Link>
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       </Content>

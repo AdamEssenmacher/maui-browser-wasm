@@ -202,15 +202,22 @@ public sealed class MirageRuntime : IMirageRuntime
         {
             _mountRoot.ClearChildren();
             _mountRoot.Append(realized.Element);
-            return;
         }
-
-        if (!_nodes.TryGetValue(operation.ParentId, out var parent))
+        else
         {
-            throw new InvalidOperationException($"Cannot create node '{operation.NodeId}' because parent '{operation.ParentId}' was not found.");
+            if (!_nodes.TryGetValue(operation.ParentId, out var parent))
+            {
+                throw new InvalidOperationException($"Cannot create node '{operation.NodeId}' because parent '{operation.ParentId}' was not found.");
+            }
+
+            parent.Element.Insert(operation.Index, realized.Element);
         }
 
-        parent.Element.Insert(operation.Index, realized.Element);
+        if (realized.TryGetControlDescriptor(out var controlDescriptor)
+            && controlDescriptor.Kind == ComponentKind.Map)
+        {
+            ConfigureMapNode(operation.NodeId, realized);
+        }
     }
 
     private RealizedNode CreateControlNode(CreateNodeOperation operation)
@@ -275,13 +282,7 @@ public sealed class MirageRuntime : IMirageRuntime
             element.Append(valueElement);
         }
 
-        var realized = RealizedNode.ForControl(element, descriptor, valueElement, secondaryElement);
-        if (kind == ComponentKind.Map)
-        {
-            ConfigureMapNode(operation.NodeId, realized);
-        }
-
-        return realized;
+        return RealizedNode.ForControl(element, descriptor, valueElement, secondaryElement);
     }
 
     private RealizedNode CreateWebNode(CreateNodeOperation operation)
