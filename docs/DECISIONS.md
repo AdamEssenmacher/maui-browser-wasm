@@ -2,6 +2,12 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (Map provider startup decoupling + in-flight Leaflet script readiness)
+- `MirageBrowserAppHost.RunAsync` no longer blocks first paint on map-provider readiness checks; provider initialization now warms in the background.
+- `MirageRuntime` map-node configuration now handles provider `not-initialized` state asynchronously and completes adapter attachment/apply once provider readiness resolves, preventing map hosts from getting stuck in startup races.
+- Leaflet runtime `ensureScript(...)` now waits for pre-existing in-flight script tags to load/error (with timeout) before failing readiness, so hosts that pre-inject Leaflet do not get false permanent `leaflet-global-missing` failures.
+- Leaflet region reads now treat pre-view bounds access as non-fatal (`readRegionFromMap` catches "set center/zoom first" cases), preventing initialization-time failures before the first region projection is applied.
+
 ## 2026-03-19 (Leaflet map apply-state guard: no implicit recenter on non-region updates)
 - Leaflet `applyMapStateJson` now applies `fitBounds` only when the projected region actually changes or when `RegionRequestToken` transitions (explicit `MoveToRegion`), instead of reapplying region on every render.
 - Map entries now track the last applied/read runtime region so unrelated state updates (`pins`, `elements`, traffic/user toggles) do not snap the viewport back to stale coordinates during interaction.

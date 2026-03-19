@@ -29,11 +29,16 @@ public sealed class ShowcaseFluentMapE2ETests : IClassFixture<ShowcaseHostFixtur
         var leafletContainerCount = await page.Locator("[data-automation-id='showcase-map'].leaflet-container").CountAsync();
         var markerCount = await page.Locator("[data-automation-id='showcase-map'] .leaflet-marker-icon").CountAsync();
         var elementCount = await page.Locator("[data-automation-id='showcase-map'] path").CountAsync();
+        var mapStatus = await page.Locator("[data-automation-id='showcase-map']").GetAttributeAsync("data-mirage-map-status");
+        var mapErrorCode = await page.Locator("[data-automation-id='showcase-map']").GetAttributeAsync("data-mirage-map-error-code");
+        var mapError = await page.Locator("[data-automation-id='showcase-map']").GetAttributeAsync("data-mirage-map-error");
 
         Assert.Equal("control", nodeType);
         Assert.Equal("Map", nodeKind);
         Assert.True(leafletContainerCount > 0, "Expected the built-in map host element to be initialized as a Leaflet container.");
-        Assert.True(markerCount >= 2, $"Expected at least 2 projected pin markers. Actual marker count: {markerCount}");
+        Assert.True(
+            markerCount >= 2,
+            $"Expected at least 2 projected pin markers. Actual marker count: {markerCount}. status={mapStatus ?? "missing"} code={mapErrorCode ?? "none"} error={mapError ?? "none"}");
         Assert.True(elementCount >= 2, $"Expected projected map elements (polyline/polygon/circle). Actual SVG path count: {elementCount}");
     }
 

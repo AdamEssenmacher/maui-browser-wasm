@@ -649,6 +649,13 @@ public sealed class MirageRuntime : IMirageRuntime
         var initialization = _mapProvider.Initialization;
         if (!initialization.IsReady)
         {
+            if (string.Equals(initialization.ErrorCode, "not-initialized", StringComparison.Ordinal))
+            {
+                node.Element.Attr("data-mirage-map-status", "pending");
+                _ = ConfigureMapNodeWhenProviderReadyAsync(nodeId, node);
+                return;
+            }
+
             var code = string.IsNullOrWhiteSpace(initialization.ErrorCode)
                 ? "provider-not-ready"
                 : initialization.ErrorCode!;
@@ -657,6 +664,47 @@ public sealed class MirageRuntime : IMirageRuntime
                 : initialization.ErrorMessage!;
             ShowMapFailure(node, code, message);
             MirageDiagnostics.Log("map.provider", $"node={nodeId} provider={_mapProvider.ProviderName} code={code} message={message}");
+            return;
+        }
+
+        ConfigureMapNodeCore(nodeId, node);
+    }
+
+    private async Task ConfigureMapNodeWhenProviderReadyAsync(string nodeId, RealizedNode expectedNode)
+    {
+        if (_mapProvider is null)
+        {
+            return;
+        }
+
+        var initialization = await _mapProvider.EnsureInitializedAsync();
+        if (!_nodes.TryGetValue(nodeId, out var currentNode)
+            || !ReferenceEquals(currentNode, expectedNode)
+            || currentNode.TryGetMapAdapter(out _))
+        {
+            return;
+        }
+
+        if (!initialization.IsReady)
+        {
+            var code = string.IsNullOrWhiteSpace(initialization.ErrorCode)
+                ? "provider-not-ready"
+                : initialization.ErrorCode!;
+            var message = string.IsNullOrWhiteSpace(initialization.ErrorMessage)
+                ? "Map provider initialization failed."
+                : initialization.ErrorMessage!;
+            ShowMapFailure(currentNode, code, message);
+            MirageDiagnostics.Log("map.provider", $"node={nodeId} provider={_mapProvider.ProviderName} code={code} message={message}");
+            return;
+        }
+
+        ConfigureMapNodeCore(nodeId, currentNode);
+    }
+
+    private void ConfigureMapNodeCore(string nodeId, RealizedNode node)
+    {
+        if (_mapProvider is null)
+        {
             return;
         }
 

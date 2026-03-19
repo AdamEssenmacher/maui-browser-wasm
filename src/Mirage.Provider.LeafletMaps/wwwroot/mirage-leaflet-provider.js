@@ -128,7 +128,48 @@ function ensureScript(url, timeoutMs) {
         return;
       }
 
-      resolve(toResult(false, "leaflet-global-missing", "Leaflet script tag exists but global 'L' is unavailable."));
+      let completed = false;
+      const onComplete = (result) => {
+        if (completed) {
+          return;
+        }
+
+        completed = true;
+        clearTimeout(timer);
+        existing.removeEventListener("load", onLoad);
+        existing.removeEventListener("error", onError);
+        resolve(result);
+      };
+
+      const onLoad = () => {
+        if (typeof window !== "undefined" && window.L && typeof window.L.map === "function") {
+          onComplete(toResult(true));
+          return;
+        }
+
+        onComplete(toResult(false, "leaflet-global-missing", "Leaflet script loaded but global 'L' is unavailable."));
+      };
+
+      const onError = () => {
+        onComplete(toResult(false, "js-load-failed", `Failed to load Leaflet JavaScript from '${url}'.`));
+      };
+
+      const timer = setTimeout(() => {
+        if (typeof window !== "undefined" && window.L && typeof window.L.map === "function") {
+          onComplete(toResult(true));
+          return;
+        }
+
+        onComplete(toResult(false, "js-timeout", `Timed out while waiting for Leaflet JavaScript from '${url}'.`));
+      }, timeoutMs);
+
+      existing.addEventListener("load", onLoad);
+      existing.addEventListener("error", onError);
+
+      if (existing.readyState === "complete" || existing.readyState === "loaded") {
+        queueMicrotask(onLoad);
+      }
+
       return;
     }
 
@@ -365,26 +406,30 @@ function readRegionFromMap(map) {
     return null;
   }
 
-  const center = map.getCenter();
-  const bounds = map.getBounds();
-  if (!center || !bounds || typeof bounds.getSouthWest !== "function" || typeof bounds.getNorthEast !== "function") {
+  try {
+    const center = map.getCenter();
+    const bounds = map.getBounds();
+    if (!center || !bounds || typeof bounds.getSouthWest !== "function" || typeof bounds.getNorthEast !== "function") {
+      return null;
+    }
+
+    const southWest = bounds.getSouthWest();
+    const northEast = bounds.getNorthEast();
+    if (!southWest || !northEast) {
+      return null;
+    }
+
+    const latitudeSpan = Math.max(0.0001, Math.abs(northEast.lat - southWest.lat));
+    const longitudeSpan = Math.max(0.0001, Math.abs(northEast.lng - southWest.lng));
+    return {
+      centerLatitude: center.lat,
+      centerLongitude: center.lng,
+      latitudeSpan,
+      longitudeSpan
+    };
+  } catch {
     return null;
   }
-
-  const southWest = bounds.getSouthWest();
-  const northEast = bounds.getNorthEast();
-  if (!southWest || !northEast) {
-    return null;
-  }
-
-  const latitudeSpan = Math.max(0.0001, Math.abs(northEast.lat - southWest.lat));
-  const longitudeSpan = Math.max(0.0001, Math.abs(northEast.lng - southWest.lng));
-  return {
-    centerLatitude: center.lat,
-    centerLongitude: center.lng,
-    latitudeSpan,
-    longitudeSpan
-  };
 }
 
 function raiseRegionChanged(entry) {
