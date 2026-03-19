@@ -35,6 +35,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stepperpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-brushespage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-transformationspage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-borderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
@@ -1081,6 +1082,55 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await page.WaitForTimeoutAsync(100);
         var valueLabelAfterDecrement = await page.Locator("[data-automation-id='controls-sample-stepperpage-value-label']").InnerTextAsync();
         Assert.Contains("0", valueLabelAfterDecrement, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task BrushesPage_IsRunnable_AndRendersDefaultTabBrushScenarios()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1100, height: 1300);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-brushespage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-brushespage']");
+            });
+
+        var brushesSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id='controls-sample-page-brushespage']");
+                if (!(host instanceof HTMLElement)) {
+                    return ["__missing__", "0", "0"];
+                }
+
+                const labels = Array
+                    .from(host.querySelectorAll("[data-mirage-kind='Label']"))
+                    .map(label => (label.textContent ?? "").trim());
+
+                const hasSolidHeadline = labels.some(text => text.includes("SolidColorBrush (Predefined Brush)"));
+                const swatchCount = Array
+                    .from(host.querySelectorAll("[data-mirage-kind='ContentContainer'], [data-mirage-kind='Border']"))
+                    .filter(node => {
+                        if (!(node instanceof HTMLElement)) {
+                            return false;
+                        }
+
+                        const style = window.getComputedStyle(node);
+                        return parseFloat(style.width || "0") >= 100 && parseFloat(style.height || "0") >= 100;
+                    })
+                    .length;
+
+                return ["ok", hasSolidHeadline ? "1" : "0", swatchCount.toString()];
+            }
+            """);
+
+        Assert.Equal("ok", brushesSnapshot[0]);
+        Assert.Equal("1", brushesSnapshot[1]);
+        Assert.True(int.Parse(brushesSnapshot[2], CultureInfo.InvariantCulture) >= 1);
     }
 
     [Fact]
