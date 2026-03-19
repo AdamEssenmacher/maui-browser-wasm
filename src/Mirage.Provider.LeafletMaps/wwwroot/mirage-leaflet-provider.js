@@ -365,6 +365,7 @@ function emitDiagnostic(host, code, message) {
   host.setAttribute("data-mirage-map-last-diagnostic-code", typeof code === "string" ? code : "provider-diagnostic");
   host.setAttribute("data-mirage-map-last-diagnostic-message", typeof message === "string" ? message : "Map provider diagnostic.");
   emitMirageEvent(host, "mirage-map-diagnostic", {
+    provider: "leaflet",
     code: typeof code === "string" ? code : "provider-diagnostic",
     message: typeof message === "string" ? message : "Map provider diagnostic."
   });
