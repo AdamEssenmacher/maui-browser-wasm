@@ -793,13 +793,23 @@ function buildPinPopupContent(pin, key) {
 }
 
 function wireMarkerInteraction(entry, marker, key) {
-  marker.off("click");
-  marker.on("click", () => {
-    emitMirageEvent(entry.host, "mirage-map-pin-clicked", { key });
-  });
+  const existingPinClickHandler = marker.__miragePinClickHandler;
+  if (typeof existingPinClickHandler === "function") {
+    marker.off("click", existingPinClickHandler);
+  }
 
-  marker.off("popupopen");
-  marker.on("popupopen", (event) => {
+  const onPinClick = () => {
+    emitMirageEvent(entry.host, "mirage-map-pin-clicked", { key });
+  };
+  marker.__miragePinClickHandler = onPinClick;
+  marker.on("click", onPinClick);
+
+  const existingPopupOpenHandler = marker.__miragePinPopupOpenHandler;
+  if (typeof existingPopupOpenHandler === "function") {
+    marker.off("popupopen", existingPopupOpenHandler);
+  }
+
+  const onPopupOpen = (event) => {
     const popupElement = event?.popup?.getElement?.();
     if (!popupElement) {
       return;
@@ -816,7 +826,9 @@ function wireMarkerInteraction(entry, marker, key) {
 
     popupElement.__miragePinInfoWindowClickHandler = onPopupClick;
     popupElement.addEventListener("click", onPopupClick);
-  });
+  };
+  marker.__miragePinPopupOpenHandler = onPopupOpen;
+  marker.on("popupopen", onPopupOpen);
 }
 
 function syncPins(entry, pins) {

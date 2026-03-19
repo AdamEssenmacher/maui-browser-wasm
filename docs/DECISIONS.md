@@ -33,6 +33,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - `ensureStylesheet` now validates existing matching `<link data-mirage-leaflet-css>` elements before reporting success: loaded links succeed immediately, error-marked links fail immediately, and in-flight links are awaited with timeout/error handling.
 - Created stylesheet links now track deterministic status via `data-mirage-leaflet-css-status` (`loading`, `loaded`, `error`) so later readiness checks can distinguish healthy and failed cached link tags.
 
+## 2026-03-19 (Leaflet pin interaction rewiring preserves popup behavior)
+- Marker interaction rewiring in `syncPins` now removes only Mirage-owned click and popup handlers (stored on marker instance) instead of calling broad `marker.off("click")` / `marker.off("popupopen")`.
+- This preserves Leaflet's internal popup-open click handlers from `bindPopup(...)` across subsequent map state applies, preventing marker popup UX regressions after non-pin renders.
+- Added architecture-boundary coverage to guard against regressions back to clearing the entire marker click handler set.
+
 ## 2026-03-18 (Map parity wave: MAUI-shaped handler split + region/event parity guardrails)
 - Split Mirage map handling into MAUI-shaped surfaces (`MirageMapHandler`, `MirageMapPinHandler`, `MirageMapElementHandler`) and registered all map-related handlers (`Map`, `Pin`, `MapElement`, `Circle`, `Polyline`, `Polygon`) through `UseMirageBrowserPlatform()`.
 - Expanded Mirage map semantic state to include MAUI map options, identity-based map elements, and popup-dismiss command tokens while keeping region/span authoritative and provider-neutral in core/runtime.

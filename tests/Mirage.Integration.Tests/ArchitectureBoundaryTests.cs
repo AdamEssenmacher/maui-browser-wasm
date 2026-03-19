@@ -493,6 +493,23 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void LeafletRuntimeModule_DetachesOnlyMirageMarkerClickHandlersWhenRewiringPins()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "wwwroot",
+            "mirage-leaflet-provider.js");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+
+        var text = File.ReadAllText(runtimeModulePath);
+        Assert.Contains("const existingPinClickHandler = marker.__miragePinClickHandler;", text, StringComparison.Ordinal);
+        Assert.Contains("marker.off(\"click\", existingPinClickHandler);", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("marker.off(\"click\");", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ScrollViewHandler_MapsExplicitRequestScrollToThroughRuntimeBridge()
     {
         var handlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageScrollViewHandler.cs");
