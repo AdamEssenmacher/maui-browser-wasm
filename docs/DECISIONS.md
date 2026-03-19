@@ -8,6 +8,12 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Extended wrapper compatibility instrumentation to cover Maps galleries (root nav buttons, sub-page hosts, map hosts, and key controls) so E2E selectors stay deterministic without sample-specific DOM hacks.
 - Kept map divergence policy unchanged for this wave (map-type fallback, traffic overlay limitations, geolocation permission dependency); this slice focuses on runnable gallery coverage through the existing Mirage + Leaflet architecture.
 
+## 2026-03-19 (Layout arrange strategy split: semantic CSS vs frame-driven)
+- `MirageLayoutHandler` now resolves an explicit arrange strategy (`SemanticCssLayout`, `FrameDrivenCustomLayout`, `FrameDrivenAbsoluteLayout`) instead of inferring arrange behavior from `ComponentKind` alone.
+- `FlexLayout` is treated as semantic CSS-layout-driven through arrange and is excluded from custom arranged-frame projection, so flex container/item semantics are not overwritten by absolute child frames.
+- Generic/custom `Layout` subclasses remain frame-driven and continue to project arranged child frames as absolute positioning.
+- Invariant: a layout is either semantic-browser-layout-driven or MAUI-frame-driven within a given arrange pipeline, never both.
+
 ## 2026-03-19 (Layout parity follow-up: FlexLayout mapper and attached-item projection in MirageLayoutHandler)
 - Extended `MirageLayoutHandler` with MAUI-aligned `FlexLayout` mapper keys (`Direction`, `Wrap`, `JustifyContent`, `AlignItems`, `AlignContent`) while keeping layout command/lifecycle flow unchanged.
 - `FlexLayout` now projects as a semantic flex container on the existing `ComponentKind.Layout` path, and child attached properties (`Order`, `Grow`, `Shrink`, `Basis`, `AlignSelf`) are synchronized incrementally through child property-change tracking.

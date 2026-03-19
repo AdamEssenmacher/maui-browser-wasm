@@ -13,6 +13,13 @@ namespace Mirage.Maui.Handlers;
 
 internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayoutHandler
 {
+    private enum LayoutArrangeStrategy
+    {
+        SemanticCssLayout,
+        FrameDrivenCustomLayout,
+        FrameDrivenAbsoluteLayout
+    }
+
     internal static readonly string[] ParityPropertyKeys =
     {
         nameof(MauiLayout.Padding),
@@ -151,12 +158,14 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         base.PlatformArrange(frame);
         VirtualView.CrossPlatformArrange(new Rect(0, 0, frame.Width, frame.Height));
 
-        switch (ResolveComponentKind(VirtualView))
+        switch (ResolveArrangeStrategy(VirtualView))
         {
-            case ComponentKind.Layout:
+            case LayoutArrangeStrategy.SemanticCssLayout:
+                break;
+            case LayoutArrangeStrategy.FrameDrivenCustomLayout:
                 ApplyCustomLayoutArrangedFrames();
                 break;
-            case ComponentKind.AbsoluteLayout:
+            case LayoutArrangeStrategy.FrameDrivenAbsoluteLayout:
                 ApplyAbsoluteLayoutArrangedFrames();
                 break;
         }
@@ -1011,8 +1020,28 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         };
     }
 
+    private static LayoutArrangeStrategy ResolveArrangeStrategy(MauiLayout layout)
+    {
+        return layout switch
+        {
+            StackLayout => LayoutArrangeStrategy.SemanticCssLayout,
+            VerticalStackLayout => LayoutArrangeStrategy.SemanticCssLayout,
+            HorizontalStackLayout => LayoutArrangeStrategy.SemanticCssLayout,
+            FlexLayout => LayoutArrangeStrategy.SemanticCssLayout,
+            Grid => LayoutArrangeStrategy.SemanticCssLayout,
+            AbsoluteLayout => LayoutArrangeStrategy.FrameDrivenAbsoluteLayout,
+            _ => LayoutArrangeStrategy.FrameDrivenCustomLayout
+        };
+    }
+
     private void ApplyCustomLayoutArrangedFrames()
     {
+        if (VirtualView is FlexLayout)
+        {
+            // Defensive guard: FlexLayout is semantic CSS-layout-driven and must not take frame-driven custom arrange projection.
+            return;
+        }
+
         var changed = false;
         foreach (var child in VirtualView)
         {
