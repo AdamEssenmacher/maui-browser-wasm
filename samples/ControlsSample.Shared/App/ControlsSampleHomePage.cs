@@ -156,7 +156,10 @@ public sealed class ControlsSampleHomePage : ContentPage
     {
         var page = entry.CreatePage(_services);
         page.Title = entry.Title;
-        page.AutomationId = $"controls-sample-page-{entry.Id}";
+        if (string.IsNullOrWhiteSpace(page.AutomationId))
+        {
+            page.AutomationId = $"controls-sample-page-{entry.Id}";
+        }
 
         await Navigation.PushAsync(page, animated: false);
     }

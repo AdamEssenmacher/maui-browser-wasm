@@ -2,6 +2,12 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-18 (Layout parity wave: MAUI-shaped lifecycle + AbsoluteLayout runtime mutation coverage)
+- Refactored `MirageLayoutHandler` toward MAUI handler shape: `SetVirtualView` now performs deterministic full child sync in z-order, while command handlers (`Add/Remove/Insert/Update/UpdateZIndex`) execute incremental child operations and only fall back to full sync on invalid payloads.
+- Split layout support logic into focused internal helpers (`MirageLayoutHandlerOrdering`, `MirageLayoutProjection`) so handler orchestration is isolated from ordering/projection details and easier to keep aligned with upstream MAUI patterns.
+- Added explicit layout parity governance artifacts (`docs/parity/layout-parity-contract.json`, `docs/parity/layout-parity-divergences.json`) with integration tests enforcing contract coverage and divergence-key/test linkage.
+- AbsoluteLayout now reapplies arranged geometry during `PlatformArrange` so runtime `LayoutBounds`/`LayoutFlags` mutations project without child-handler churn; added integration tests and a runnable controls-sample parity probe page with browser E2E assertions for bounds/flags/z-order mutation behavior.
+
 ## 2026-03-18 (Map parity wave: MAUI-shaped handler split + region/event parity guardrails)
 - Split Mirage map handling into MAUI-shaped surfaces (`MirageMapHandler`, `MirageMapPinHandler`, `MirageMapElementHandler`) and registered all map-related handlers (`Map`, `Pin`, `MapElement`, `Circle`, `Polyline`, `Polygon`) through `UseMirageBrowserPlatform()`.
 - Expanded Mirage map semantic state to include MAUI map options, identity-based map elements, and popup-dismiss command tokens while keeping region/span authoritative and provider-neutral in core/runtime.
@@ -495,3 +501,8 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added a framework-level generic `Layout` realization path in Mirage (`ComponentKind.Layout`) so custom `Layout`-derived views (like upstream `DockLayout`) can run without sample-specific handler glue.
 - `MirageLayoutHandler` now falls back to generic layout mode for non-built-in layouts and projects arranged child frames as absolute child styles (`left/top/width/height`) after MAUI cross-platform arrange, preserving MAUI custom-layout manager semantics in browser host runs.
 - Extended ControlsSample E2E coverage to verify `CustomLayoutPage` docked button arrangement and updated the page status tracker to mark `CustomLayoutPage.xaml` as runnable + E2E covered.
+
+## 2026-03-19 (Showcase Map Startup Security: Query URL Override Lockdown)
+- `Showcase.Fluent` startup now treats query-driven `mirageLeafletJsUrl` / `mirageLeafletCssUrl` as restricted inputs: in normal (CDN) mode only relative/local URLs are accepted, while absolute and protocol-relative URLs are ignored.
+- This blocks crafted public links from injecting arbitrary third-party script/style URLs, while still allowing deterministic test/dogfood overrides to local app paths.
+- Local asset mode (`mirageLeafletAssetMode=local`) keeps current validation coverage paths so invalid absolute/protocol-relative URLs continue to surface deterministic `local-assets-invalid-url` errors.

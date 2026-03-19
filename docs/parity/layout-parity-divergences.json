@@ -1,0 +1,28 @@
+{
+  "entries": [
+    {
+      "id": "layout-legacy-isclippedtobounds-alias",
+      "summary": "Mirage retains the legacy IsClippedToBounds compatibility alias on layout mapper keys so existing XAML/property update flows remain deterministic.",
+      "upstreamReference": "src/Core/src/Handlers/Layout/LayoutHandler.cs",
+      "testReference": "LayoutParityContract_DivergencesCoverMirageExtensionKeys",
+      "extensionKeys": [
+        "IsClippedToBounds"
+      ]
+    },
+    {
+      "id": "layout-consolidated-specialized-layout-keys",
+      "summary": "Mirage consolidates stack/grid layout-specialized mapper keys and an explicit layout InputTransparent mapping into MirageLayoutHandler while preserving MAUI-like command/lifecycle flow.",
+      "upstreamReference": "src/Core/src/Handlers/Layout/LayoutHandler.cs",
+      "testReference": "LayoutParityContract_DivergencesCoverMirageExtensionKeys",
+      "extensionKeys": [
+        "InputTransparent",
+        "Orientation",
+        "Spacing",
+        "RowSpacing",
+        "ColumnSpacing",
+        "RowDefinitions",
+        "ColumnDefinitions"
+      ]
+    }
+  ]
+}

@@ -22,6 +22,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         var (page, diagnostics) = await OpenAsync(context);
 
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-clippingpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-contentviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-customlayoutpage']").CountAsync());
@@ -227,6 +228,45 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.NotEqual("none", dividerMetrics[2]);
         Assert.True(double.Parse(dividerMetrics[3], CultureInfo.InvariantCulture) >= 1d);
         Assert.True(double.Parse(dividerMetrics[4], CultureInfo.InvariantCulture) >= 120d);
+    }
+
+    [Fact]
+    public async Task AbsoluteLayoutParityProbe_UpdatesBoundsFlagsAndZOrderAtRuntime()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1180, height: 860);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutparitypage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-absolutelayoutparitypage']");
+            });
+
+        const string primarySelector = "[data-automation-id='controls-sample-absolutelayout-parity-a']";
+        var initialPrimaryRect = await ReadBoundingClientRectAsync(page, primarySelector);
+
+        await page.Locator("[data-automation-id='controls-sample-absolutelayout-parity-toggle-bounds']").ClickAsync();
+        var updatedPrimaryRect = await WaitForBoundingClientRectChangeAsync(page, primarySelector, initialPrimaryRect);
+
+        var boundsChanged = AnyBoundingClientRectDimensionChanged(initialPrimaryRect, updatedPrimaryRect);
+        Assert.True(boundsChanged);
+
+        await page.Locator("[data-automation-id='controls-sample-absolutelayout-parity-toggle-flags']").ClickAsync();
+        var proportionalPrimaryRect = await WaitForBoundingClientRectChangeAsync(page, primarySelector, updatedPrimaryRect);
+
+        var flagsChangedGeometry = AnyBoundingClientRectDimensionChanged(updatedPrimaryRect, proportionalPrimaryRect);
+        Assert.True(flagsChangedGeometry);
+
+        var topBeforeToggle = await ReadParityProbeOverlapTopAutomationIdAsync(page);
+
+        await page.Locator("[data-automation-id='controls-sample-absolutelayout-parity-toggle-zindex']").ClickAsync();
+        var topAfterToggle = await WaitForParityProbeOverlapTopAutomationIdChangeAsync(page, topBeforeToggle);
+
+        Assert.Equal("controls-sample-absolutelayout-parity-a", topAfterToggle);
+        Assert.NotEqual(topBeforeToggle, topAfterToggle);
     }
 
     [Fact]
@@ -1226,6 +1266,104 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 $"{ex.Message}\nBody text snapshot: {bodyText}\nHost logs:\n{hostLogs}\nPage diagnostics:\n{diagnosticsSnapshot}",
                 ex);
         }
+    }
+
+    private static async Task<double[]> WaitForBoundingClientRectChangeAsync(
+        IPage page,
+        string selector,
+        double[] baselineRect,
+        int timeoutMs = 3000,
+        int pollMs = 50)
+    {
+        var elapsedMs = 0;
+        while (elapsedMs < timeoutMs)
+        {
+            var currentRect = await ReadBoundingClientRectAsync(page, selector);
+            if (AnyBoundingClientRectDimensionChanged(baselineRect, currentRect))
+            {
+                return currentRect;
+            }
+
+            await page.WaitForTimeoutAsync(pollMs);
+            elapsedMs += pollMs;
+        }
+
+        return await ReadBoundingClientRectAsync(page, selector);
+    }
+
+    private static bool AnyBoundingClientRectDimensionChanged(double[] before, double[] after)
+    {
+        return before
+            .Zip(after, static (previous, current) => Math.Abs(previous - current) > 0.5d)
+            .Any(static changed => changed);
+    }
+
+    private static async Task<double[]> ReadBoundingClientRectAsync(IPage page, string selector)
+    {
+        return await page.EvaluateAsync<double[]>(
+            """
+            (targetSelector) => {
+                const target = document.querySelector(targetSelector);
+                if (!target) {
+                    return [0, 0, 0, 0];
+                }
+
+                const rect = target.getBoundingClientRect();
+                return [rect.left, rect.top, rect.width, rect.height];
+            }
+            """,
+            selector);
+    }
+
+    private static async Task<string> WaitForParityProbeOverlapTopAutomationIdChangeAsync(
+        IPage page,
+        string baselineTopAutomationId,
+        int timeoutMs = 3000,
+        int pollMs = 50)
+    {
+        var elapsedMs = 0;
+        while (elapsedMs < timeoutMs)
+        {
+            var currentTopAutomationId = await ReadParityProbeOverlapTopAutomationIdAsync(page);
+            if (!string.Equals(currentTopAutomationId, baselineTopAutomationId, StringComparison.Ordinal))
+            {
+                return currentTopAutomationId;
+            }
+
+            await page.WaitForTimeoutAsync(pollMs);
+            elapsedMs += pollMs;
+        }
+
+        return await ReadParityProbeOverlapTopAutomationIdAsync(page);
+    }
+
+    private static async Task<string> ReadParityProbeOverlapTopAutomationIdAsync(IPage page)
+    {
+        return await page.EvaluateAsync<string>(
+            """
+            () => {
+                const primary = document.querySelector("[data-automation-id='controls-sample-absolutelayout-parity-a']");
+                const secondary = document.querySelector("[data-automation-id='controls-sample-absolutelayout-parity-b']");
+                if (!primary || !secondary) {
+                    return "__missing__";
+                }
+
+                const firstRect = primary.getBoundingClientRect();
+                const secondRect = secondary.getBoundingClientRect();
+                const left = Math.max(firstRect.left, secondRect.left);
+                const top = Math.max(firstRect.top, secondRect.top);
+                const right = Math.min(firstRect.right, secondRect.right);
+                const bottom = Math.min(firstRect.bottom, secondRect.bottom);
+                if (!(right > left && bottom > top)) {
+                    return "__no_overlap__";
+                }
+
+                const probeX = left + Math.min(6, right - left - 1);
+                const probeY = top + Math.min(6, bottom - top - 1);
+                const topElement = document.elementFromPoint(probeX, probeY);
+                return topElement?.closest("[data-automation-id]")?.getAttribute("data-automation-id") ?? "__none__";
+            }
+            """);
     }
 
     private static async Task SetInputValueAsync(IPage page, string selector, double value)

@@ -1,10 +1,10 @@
+using System.ComponentModel;
 using System.Globalization;
 using Mirage.Core.Semantics;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
-using Microsoft.Maui.Layouts;
 using Microsoft.Maui.Platform;
 using MauiLayout = Microsoft.Maui.ILayout;
 
@@ -12,12 +12,49 @@ namespace Mirage.Maui.Handlers;
 
 internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayoutHandler
 {
+    internal static readonly string[] ParityPropertyKeys =
+    {
+        nameof(MauiLayout.Padding),
+        nameof(MauiLayout.ClipsToBounds),
+        "IsClippedToBounds",
+        nameof(IView.InputTransparent),
+        nameof(StackLayout.Orientation),
+        nameof(StackLayout.Spacing),
+        nameof(Grid.RowSpacing),
+        nameof(Grid.ColumnSpacing),
+        nameof(Grid.RowDefinitions),
+        nameof(Grid.ColumnDefinitions)
+    };
+
+    internal static readonly string[] ParityExtensionPropertyKeys =
+    {
+        "IsClippedToBounds",
+        nameof(IView.InputTransparent),
+        nameof(StackLayout.Orientation),
+        nameof(StackLayout.Spacing),
+        nameof(Grid.RowSpacing),
+        nameof(Grid.ColumnSpacing),
+        nameof(Grid.RowDefinitions),
+        nameof(Grid.ColumnDefinitions)
+    };
+
+    internal static readonly string[] ParityCommandKeys =
+    {
+        nameof(ILayoutHandler.Add),
+        nameof(ILayoutHandler.Remove),
+        nameof(ILayoutHandler.Clear),
+        nameof(ILayoutHandler.Insert),
+        nameof(ILayoutHandler.Update),
+        nameof(ILayoutHandler.UpdateZIndex)
+    };
+
     public static IPropertyMapper<MauiLayout, MirageLayoutHandler> Mapper =
         new PropertyMapper<MauiLayout, MirageLayoutHandler>(MirageViewMapper.CommonViewMapper)
         {
             [nameof(MauiLayout.Padding)] = MapPadding,
             [nameof(MauiLayout.ClipsToBounds)] = MapClipsToBounds,
             ["IsClippedToBounds"] = MapClipsToBounds,
+            [nameof(IView.InputTransparent)] = MapInputTransparent,
             [nameof(StackLayout.Orientation)] = MapStackLayoutOrientation,
             [nameof(StackLayout.Spacing)] = MapSpacing,
             [nameof(VerticalStackLayout.Spacing)] = MapSpacing,
@@ -39,6 +76,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
     };
 
     private readonly Dictionary<IView, IElementHandler> _childHandlers = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<IView, PropertyChangedEventHandler> _childPropertyChangedHandlers = new(ReferenceEqualityComparer.Instance);
 
     public MirageLayoutHandler()
         : base(ComponentKind.VerticalStack, Mapper, CommandMapper)
@@ -48,6 +86,19 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
     MauiLayout ILayoutHandler.VirtualView => VirtualView;
 
     object ILayoutHandler.PlatformView => PlatformView;
+
+    public override void SetVirtualView(IView view)
+    {
+        base.SetVirtualView(view);
+
+        if (!TryGetPlatformView(out _))
+        {
+            return;
+        }
+
+        ApplyBaseStyles();
+        SyncChildrenFromVirtualView();
+    }
 
     protected override MiragePlatformView CreatePlatformView()
     {
@@ -65,7 +116,6 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
         ApplyBaseStyles();
-        RebuildChildren();
         base.ConnectHandler(platformView);
     }
 
@@ -85,32 +135,48 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         base.PlatformArrange(frame);
         VirtualView.CrossPlatformArrange(new Rect(0, 0, frame.Width, frame.Height));
 
-        if (ResolveComponentKind(VirtualView) == ComponentKind.Layout)
+        switch (ResolveComponentKind(VirtualView))
         {
-            ApplyCustomLayoutArrangedFrames();
+            case ComponentKind.Layout:
+                ApplyCustomLayoutArrangedFrames();
+                break;
+            case ComponentKind.AbsoluteLayout:
+                ApplyAbsoluteLayoutArrangedFrames();
+                break;
         }
     }
 
-    public void Add(IView view) => RebuildChildren();
+    public void Add(IView view) => AddOrInsertChild(view, fallbackIndex: null);
 
-    public void Remove(IView view) => RebuildChildren();
+    public void Remove(IView view) => RemoveChild(view);
 
-    public void Clear() => RebuildChildren();
+    public void Clear() => ClearChildren();
 
-    public void Insert(int index, IView view) => RebuildChildren();
+    public void Insert(int index, IView view) => AddOrInsertChild(view, index);
 
-    public void Update(int index, IView view) => RebuildChildren();
+    public void Update(int index, IView view) => UpdateChild(index, view);
 
-    public void UpdateZIndex(IView view) => RebuildChildren();
+    public void UpdateZIndex(IView view) => UpdateChildZIndex(view);
 
     public static void MapPadding(MirageLayoutHandler handler, MauiLayout layout)
     {
-        MirageViewMapper.MapPadding(handler, layout);
+        _ = layout;
+        MirageViewMapper.MapPadding(handler, handler.VirtualView);
     }
 
     public static void MapClipsToBounds(MirageLayoutHandler handler, MauiLayout layout)
     {
         if (!MirageCommonViewProjection.MapLayoutClipsToBounds(handler, layout))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapInputTransparent(MirageLayoutHandler handler, MauiLayout layout)
+    {
+        if (!handler.ApplyInputTransparent(layout))
         {
             return;
         }
@@ -136,7 +202,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         }
 
         handler.ApplyBaseStyles();
-        handler.RebuildChildren();
+        handler.RefreshAllChildProjectionStyles(updateOrder: true);
     }
 
     public static void MapGridStructure(MirageLayoutHandler handler, MauiLayout layout)
@@ -146,90 +212,342 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
             return;
         }
 
-        handler.ApplyGridStyles(grid);
-        handler.RebuildChildren();
+        var changed = handler.ApplyGridStyles(grid);
+        changed |= handler.RefreshAllChildProjectionStyles(updateOrder: false);
+        if (!changed)
+        {
+            return;
+        }
+
+        handler.RequestRender();
     }
 
     public static void MapAdd(MirageLayoutHandler handler, MauiLayout layout, object? arg)
     {
         _ = layout;
-        _ = arg;
-        handler.RebuildChildren();
+
+        if (!TryResolveViewAndIndex(arg, out var view, out _))
+        {
+            handler.SyncChildrenFromVirtualView();
+            return;
+        }
+
+        handler.Add(view);
     }
 
     public static void MapRemove(MirageLayoutHandler handler, MauiLayout layout, object? arg)
     {
         _ = layout;
-        _ = arg;
-        handler.RebuildChildren();
+
+        if (!TryResolveViewAndIndex(arg, out var view, out _))
+        {
+            handler.SyncChildrenFromVirtualView();
+            return;
+        }
+
+        handler.Remove(view);
     }
 
     public static void MapClear(MirageLayoutHandler handler, MauiLayout layout, object? arg)
     {
         _ = layout;
         _ = arg;
-        handler.RebuildChildren();
+        handler.Clear();
     }
 
     public static void MapInsert(MirageLayoutHandler handler, MauiLayout layout, object? arg)
     {
         _ = layout;
-        _ = arg;
-        handler.RebuildChildren();
+
+        if (!TryResolveViewAndIndex(arg, out var view, out var index))
+        {
+            handler.SyncChildrenFromVirtualView();
+            return;
+        }
+
+        handler.Insert(index, view);
     }
 
     public static void MapUpdate(MirageLayoutHandler handler, MauiLayout layout, object? arg)
     {
         _ = layout;
-        _ = arg;
-        handler.RebuildChildren();
+
+        if (!TryResolveViewAndIndex(arg, out var view, out var index))
+        {
+            handler.SyncChildrenFromVirtualView();
+            return;
+        }
+
+        handler.Update(index, view);
     }
 
     public static void MapUpdateZIndex(MirageLayoutHandler handler, MauiLayout layout, object? arg)
     {
         _ = layout;
-        _ = arg;
-        handler.RebuildChildren();
-    }
 
-    private void RebuildChildren()
-    {
-        var kind = ResolveComponentKind(VirtualView);
-        var currentChildren = VirtualView.ToArray();
-        var currentSet = new HashSet<IView>(currentChildren, ReferenceEqualityComparer.Instance);
-
-        foreach (var existing in _childHandlers.Keys.Where(child => !currentSet.Contains(child)).ToArray())
+        if (!TryResolveViewAndIndex(arg, out var view, out _))
         {
-            DisconnectChild(existing);
+            handler.SyncChildrenFromVirtualView();
+            return;
         }
 
-        PlatformView.ClearChildren();
-        var changed = false;
-        foreach (var child in currentChildren)
+        handler.UpdateZIndex(view);
+    }
+
+    private static bool TryResolveViewAndIndex(object? arg, out IView view, out int index)
+    {
+        if (arg is LayoutHandlerUpdate update)
         {
-            if (!TryGetChild(child, out var childHandler, out var childPlatformView))
+            view = update.View;
+            index = update.Index;
+            return true;
+        }
+
+        if (arg is IView inputView)
+        {
+            view = inputView;
+            index = -1;
+            return true;
+        }
+
+        view = null!;
+        index = -1;
+        return false;
+    }
+
+    private void SyncChildrenFromVirtualView()
+    {
+        if (!TryGetPlatformView(out var platformView))
+        {
+            return;
+        }
+
+        var orderedChildren = MirageLayoutHandlerOrdering.OrderByZIndex(VirtualView);
+        var desiredChildren = new HashSet<IView>(orderedChildren, ReferenceEqualityComparer.Instance);
+        foreach (var existing in _childHandlers.Keys.Where(child => !desiredChildren.Contains(child)).ToArray())
+        {
+            DisconnectChild(existing, removeFromPlatform: false);
+        }
+
+        platformView.ClearChildren();
+
+        var kind = ResolveComponentKind(VirtualView);
+        foreach (var child in orderedChildren)
+        {
+            if (!TryGetOrCreateChild(child, out var childHandler, out var childPlatformView))
             {
                 throw new InvalidOperationException($"MirageLayoutHandler expected child handler for '{child.GetType().Name}'.");
             }
 
             _childHandlers[child] = childHandler;
-            PlatformView.AddChild(childPlatformView);
-            changed |= ApplyChildProjectionStyles(childPlatformView, child, kind);
-            changed = true;
+            EnsureChildPropertyTracking(child);
+            platformView.AddChild(childPlatformView);
+            _ = ApplyChildProjectionStyles(childPlatformView, child, kind);
         }
 
-        if (changed)
-        {
-            RequestRender();
-        }
+        RequestRender();
     }
 
-    private void DisconnectChild(IView child)
+    private void AddOrInsertChild(IView view, int? fallbackIndex)
     {
-        if (_childHandlers.Remove(child, out var handler))
+        if (!TryGetOrCreateChild(view, out var childHandler, out var childPlatformView))
         {
-            MirageHandlerDisconnect.SafeDisconnect(handler);
+            SyncChildrenFromVirtualView();
+            return;
         }
+
+        _childHandlers[view] = childHandler;
+        EnsureChildPropertyTracking(view);
+        var changed = false;
+        changed |= InsertOrMoveChild(view, childPlatformView, fallbackIndex);
+        changed |= ApplyChildProjectionStyles(childPlatformView, view, ResolveComponentKind(VirtualView));
+        if (!changed)
+        {
+            return;
+        }
+
+        RequestRender();
+    }
+
+    private void RemoveChild(IView view)
+    {
+        if (!DisconnectChild(view, removeFromPlatform: true))
+        {
+            return;
+        }
+
+        RequestRender();
+    }
+
+    private void ClearChildren()
+    {
+        if (!TryGetPlatformView(out var platformView))
+        {
+            return;
+        }
+
+        if (_childHandlers.Count == 0 && platformView.Children.Count == 0)
+        {
+            return;
+        }
+
+        DisconnectAllChildren(platformView);
+        RequestRender();
+    }
+
+    private void UpdateChild(int fallbackIndex, IView view)
+    {
+        if (!_childHandlers.TryGetValue(view, out var childHandler)
+            || childHandler.PlatformView is not MiragePlatformView childPlatformView)
+        {
+            AddOrInsertChild(view, fallbackIndex);
+            return;
+        }
+
+        var changed = false;
+        changed |= InsertOrMoveChild(view, childPlatformView, fallbackIndex);
+        changed |= ApplyChildProjectionStyles(childPlatformView, view, ResolveComponentKind(VirtualView));
+        if (!changed)
+        {
+            return;
+        }
+
+        RequestRender();
+    }
+
+    private void UpdateChildZIndex(IView view)
+    {
+        if (!_childHandlers.TryGetValue(view, out var childHandler)
+            || childHandler.PlatformView is not MiragePlatformView childPlatformView)
+        {
+            AddOrInsertChild(view, fallbackIndex: null);
+            return;
+        }
+
+        var changed = false;
+        changed |= InsertOrMoveChild(view, childPlatformView, fallbackIndex: null);
+        changed |= ApplyChildProjectionStyles(childPlatformView, view, ResolveComponentKind(VirtualView));
+        if (!changed)
+        {
+            return;
+        }
+
+        RequestRender();
+    }
+
+    private bool RefreshAllChildProjectionStyles(bool updateOrder)
+    {
+        var kind = ResolveComponentKind(VirtualView);
+        var changed = false;
+
+        var orderedChildren = updateOrder
+            ? MirageLayoutHandlerOrdering.OrderByZIndex(VirtualView)
+            : VirtualView.ToArray();
+
+        foreach (var child in orderedChildren)
+        {
+            if (!_childHandlers.TryGetValue(child, out var childHandler)
+                || childHandler.PlatformView is not MiragePlatformView childPlatformView)
+            {
+                SyncChildrenFromVirtualView();
+                return true;
+            }
+
+            changed |= ApplyChildProjectionStyles(childPlatformView, child, kind);
+            if (updateOrder)
+            {
+                changed |= InsertOrMoveChild(child, childPlatformView, fallbackIndex: null);
+            }
+        }
+
+        return changed;
+    }
+
+    private bool InsertOrMoveChild(IView view, MiragePlatformView childPlatformView, int? fallbackIndex)
+    {
+        var targetIndex = ResolveChildIndex(view, fallbackIndex);
+        return InsertOrMoveChild(targetIndex, childPlatformView);
+    }
+
+    private bool InsertOrMoveChild(int targetIndex, MiragePlatformView childPlatformView)
+    {
+        var normalizedTargetIndex = Math.Clamp(targetIndex, 0, PlatformView.Children.Count);
+        var currentIndex = GetCurrentChildIndex(childPlatformView);
+        if (currentIndex == normalizedTargetIndex)
+        {
+            return false;
+        }
+
+        if (currentIndex >= 0)
+        {
+            PlatformView.RemoveChild(childPlatformView);
+        }
+
+        PlatformView.InsertChild(normalizedTargetIndex, childPlatformView);
+        return true;
+    }
+
+    private int ResolveChildIndex(IView view, int? fallbackIndex)
+    {
+        if (ContainsVirtualChild(view))
+        {
+            return MirageLayoutHandlerOrdering.GetLayoutHandlerIndex(VirtualView, view);
+        }
+
+        return Math.Clamp(fallbackIndex ?? PlatformView.Children.Count, 0, PlatformView.Children.Count);
+    }
+
+    private bool ContainsVirtualChild(IView view)
+    {
+        return VirtualView.Any(child => ReferenceEquals(child, view));
+    }
+
+    private int GetCurrentChildIndex(MiragePlatformView childPlatformView)
+    {
+        for (var i = 0; i < PlatformView.Children.Count; i++)
+        {
+            if (ReferenceEquals(PlatformView.Children[i], childPlatformView))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private bool TryGetOrCreateChild(IView child, out IElementHandler childHandler, out MiragePlatformView childPlatformView)
+    {
+        if (_childHandlers.TryGetValue(child, out var existingHandler)
+            && existingHandler.PlatformView is MiragePlatformView existingPlatformView)
+        {
+            childHandler = existingHandler;
+            childPlatformView = existingPlatformView;
+            return true;
+        }
+
+        if (_childHandlers.Remove(child, out var staleHandler))
+        {
+            MirageHandlerDisconnect.SafeDisconnect(staleHandler);
+        }
+
+        return TryGetChild(child, out childHandler, out childPlatformView);
+    }
+
+    private bool DisconnectChild(IView child, bool removeFromPlatform)
+    {
+        if (!_childHandlers.Remove(child, out var handler))
+        {
+            return false;
+        }
+
+        if (removeFromPlatform && handler.PlatformView is MiragePlatformView childPlatformView)
+        {
+            PlatformView.RemoveChild(childPlatformView);
+        }
+
+        RemoveChildPropertyTracking(child);
+        MirageHandlerDisconnect.SafeDisconnect(handler);
+        return true;
     }
 
     private void DisconnectAllChildren(MiragePlatformView platformView)
@@ -239,8 +557,90 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
             MirageHandlerDisconnect.SafeDisconnect(handler);
         }
 
+        foreach (var child in _childPropertyChangedHandlers.Keys.ToArray())
+        {
+            RemoveChildPropertyTracking(child);
+        }
+
         _childHandlers.Clear();
         platformView.ClearChildren();
+    }
+
+    private void EnsureChildPropertyTracking(IView child)
+    {
+        if (child is not BindableObject bindable || _childPropertyChangedHandlers.ContainsKey(child))
+        {
+            return;
+        }
+
+        PropertyChangedEventHandler handler = (_, args) => OnChildPropertyChanged(child, args.PropertyName);
+        bindable.PropertyChanged += handler;
+        _childPropertyChangedHandlers[child] = handler;
+    }
+
+    private void RemoveChildPropertyTracking(IView child)
+    {
+        if (child is not BindableObject bindable || !_childPropertyChangedHandlers.Remove(child, out var handler))
+        {
+            return;
+        }
+
+        bindable.PropertyChanged -= handler;
+    }
+
+    private void OnChildPropertyChanged(IView child, string? propertyName)
+    {
+        if (!ContainsVirtualChild(child))
+        {
+            return;
+        }
+
+        if (IsZIndexProperty(propertyName))
+        {
+            UpdateChildZIndex(child);
+            return;
+        }
+
+        var kind = ResolveComponentKind(VirtualView);
+        if (kind == ComponentKind.AbsoluteLayout && IsAbsoluteLayoutProjectionProperty(propertyName))
+        {
+            UpdateChild(fallbackIndex: -1, child);
+            return;
+        }
+
+        if (kind == ComponentKind.Grid && IsGridPlacementProperty(propertyName))
+        {
+            UpdateChild(fallbackIndex: -1, child);
+        }
+    }
+
+    private static bool IsZIndexProperty(string? propertyName)
+    {
+        return string.Equals(propertyName, nameof(VisualElement.ZIndex), StringComparison.Ordinal);
+    }
+
+    private static bool IsAbsoluteLayoutProjectionProperty(string? propertyName)
+    {
+        if (string.IsNullOrEmpty(propertyName))
+        {
+            return false;
+        }
+
+        return string.Equals(propertyName, AbsoluteLayout.LayoutBoundsProperty.PropertyName, StringComparison.Ordinal)
+               || string.Equals(propertyName, AbsoluteLayout.LayoutFlagsProperty.PropertyName, StringComparison.Ordinal);
+    }
+
+    private static bool IsGridPlacementProperty(string? propertyName)
+    {
+        if (string.IsNullOrEmpty(propertyName))
+        {
+            return false;
+        }
+
+        return string.Equals(propertyName, Grid.RowProperty.PropertyName, StringComparison.Ordinal)
+               || string.Equals(propertyName, Grid.ColumnProperty.PropertyName, StringComparison.Ordinal)
+               || string.Equals(propertyName, Grid.RowSpanProperty.PropertyName, StringComparison.Ordinal)
+               || string.Equals(propertyName, Grid.ColumnSpanProperty.PropertyName, StringComparison.Ordinal);
     }
 
     private void ApplyBaseStyles()
@@ -299,6 +699,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         }
 
         changed |= ApplySpacingStyles(VirtualView);
+        changed |= ApplyInputTransparent(VirtualView);
         changed |= MirageCommonViewProjection.MapLayoutClipsToBounds(this, VirtualView);
         if (changed)
         {
@@ -318,6 +719,11 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
             Grid grid => ApplyGridGapStyles(grid),
             _ => false
         };
+    }
+
+    private bool ApplyInputTransparent(MauiLayout layout)
+    {
+        return SetStyleIfChanged("pointerEvents", layout.InputTransparent ? "none" : null);
     }
 
     private bool ApplyGridStyles(Grid grid)
@@ -391,264 +797,17 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         IView childView,
         ComponentKind parentKind)
     {
-        var horizontalAlignment = MirageCommonViewProjection.ResolveHorizontalAlignment(childView);
-        var verticalAlignment = MirageCommonViewProjection.ResolveVerticalAlignment(childView);
-
-        var changed = false;
-        changed |= SetChildStyleIfChanged(childPlatformView, "position", "relative");
-        changed |= SetChildStyleIfChanged(childPlatformView, "left", null);
-        changed |= SetChildStyleIfChanged(childPlatformView, "top", null);
-        changed |= SetChildStyleIfChanged(childPlatformView, "right", null);
-        changed |= SetChildStyleIfChanged(childPlatformView, "bottom", null);
-
-        switch (parentKind)
-        {
-            case ComponentKind.VerticalStack:
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", "0");
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", "0");
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", "auto");
-                changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnEnd", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "justifySelf", null);
-                changed |= SetChildStyleIfChanged(
-                    childPlatformView,
-                    "alignSelf",
-                    MirageCommonViewProjection.ResolveStackCrossAxisAlignment(
-                        MirageCommonViewProjection.ResolveEffectiveStackCrossAxisAlignment(
-                            childView,
-                            parentIsVerticalStack: true)));
-                break;
-            case ComponentKind.HorizontalStack:
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", "0");
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", "0");
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", "auto");
-                changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnEnd", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "justifySelf", null);
-                changed |= SetChildStyleIfChanged(
-                    childPlatformView,
-                    "alignSelf",
-                    MirageCommonViewProjection.ResolveStackCrossAxisAlignment(
-                        MirageCommonViewProjection.ResolveEffectiveStackCrossAxisAlignment(
-                            childView,
-                            parentIsVerticalStack: false)));
-                break;
-            case ComponentKind.Grid:
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
-                changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
-                var (row, column, rowSpan, columnSpan) = GetGridPlacement(childView);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", (row + 1).ToString(CultureInfo.InvariantCulture));
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", $"span {rowSpan.ToString(CultureInfo.InvariantCulture)}");
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", (column + 1).ToString(CultureInfo.InvariantCulture));
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnEnd", $"span {columnSpan.ToString(CultureInfo.InvariantCulture)}");
-                changed |= SetChildStyleIfChanged(childPlatformView, "justifySelf", MirageCommonViewProjection.ResolveGridSelfAlignment(horizontalAlignment));
-                changed |= SetChildStyleIfChanged(childPlatformView, "alignSelf", MirageCommonViewProjection.ResolveGridSelfAlignment(verticalAlignment));
-                break;
-            case ComponentKind.AbsoluteLayout:
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnEnd", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "justifySelf", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "alignSelf", null);
-                changed |= ApplyAbsoluteLayoutChildStyles(childPlatformView, childView);
-                break;
-            case ComponentKind.Layout:
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnEnd", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "justifySelf", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "alignSelf", null);
-                changed |= ApplyCustomLayoutChildStyles(childPlatformView, childView);
-                break;
-            default:
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
-                changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
-                changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
-                break;
-        }
-
-        return changed;
-    }
-
-    private static (int Row, int Column, int RowSpan, int ColumnSpan) GetGridPlacement(IView childView)
-    {
-        if (childView is not BindableObject bindable)
-        {
-            return (0, 0, 1, 1);
-        }
-
-        var row = Math.Max(0, Grid.GetRow(bindable));
-        var column = Math.Max(0, Grid.GetColumn(bindable));
-        var rowSpan = Math.Max(1, Grid.GetRowSpan(bindable));
-        var columnSpan = Math.Max(1, Grid.GetColumnSpan(bindable));
-        return (row, column, rowSpan, columnSpan);
+        return MirageLayoutProjection.ApplyChildProjectionStyles(childPlatformView, childView, parentKind);
     }
 
     private static bool ApplyAbsoluteLayoutChildStyles(MiragePlatformView childPlatformView, IView childView)
     {
-        var changed = SetChildStyleIfChanged(childPlatformView, "position", "absolute");
-
-        if (childView is not BindableObject bindable)
-        {
-            changed |= SetChildStyleIfChanged(childPlatformView, "left", "0px");
-            changed |= SetChildStyleIfChanged(childPlatformView, "top", "0px");
-            changed |= SetChildStyleIfChanged(childPlatformView, "width", null);
-            changed |= SetChildStyleIfChanged(childPlatformView, "height", null);
-            changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
-            return changed;
-        }
-
-        var bounds = AbsoluteLayout.GetLayoutBounds(bindable);
-        var flags = AbsoluteLayout.GetLayoutFlags(bindable);
-
-        var xProportional = IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.PositionProportional)
-                            || IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.XProportional);
-        var yProportional = IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.PositionProportional)
-                            || IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.YProportional);
-        var widthProportional = IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.SizeProportional)
-                                || IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.WidthProportional);
-        var heightProportional = IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.SizeProportional)
-                                 || IsAbsoluteLayoutFlagSet(flags, AbsoluteLayoutFlags.HeightProportional);
-
-        var x = NormalizeFinite(bounds.X, 0);
-        var y = NormalizeFinite(bounds.Y, 0);
-
-        changed |= SetChildStyleIfChanged(childPlatformView, "left", xProportional ? ToPercent(x) : MirageCommonViewProjection.ToPxNoClamp(x));
-        changed |= SetChildStyleIfChanged(childPlatformView, "top", yProportional ? ToPercent(y) : MirageCommonViewProjection.ToPxNoClamp(y));
-
-        changed |= SetChildStyleIfChanged(childPlatformView, "width", ResolveAbsoluteLayoutSize(childView, bounds.Width, widthProportional, isWidth: true));
-        changed |= SetChildStyleIfChanged(childPlatformView, "height", ResolveAbsoluteLayoutSize(childView, bounds.Height, heightProportional, isWidth: false));
-
-        changed |= MirageCommonViewProjection.SetLayoutTransformFragment(
-            childPlatformView,
-            ResolveAbsoluteLayoutTranslate(xProportional ? x : null, yProportional ? y : null));
-        return changed;
+        return MirageLayoutProjection.ApplyAbsoluteLayoutChildStyles(childPlatformView, childView);
     }
 
     private static bool ApplyCustomLayoutChildStyles(MiragePlatformView childPlatformView, IView childView)
     {
-        var frame = childView.Frame;
-        var parentPadding = ResolveCustomLayoutParentPadding(childView);
-        var x = NormalizeFinite(frame.X - parentPadding.Left, 0);
-        var y = NormalizeFinite(frame.Y - parentPadding.Top, 0);
-        var width = Math.Max(0, NormalizeFinite(frame.Width, 0));
-        var height = Math.Max(0, NormalizeFinite(frame.Height, 0));
-
-        var changed = SetChildStyleIfChanged(childPlatformView, "position", "absolute");
-        changed |= SetChildStyleIfChanged(childPlatformView, "left", MirageCommonViewProjection.ToPxNoClamp(x));
-        changed |= SetChildStyleIfChanged(childPlatformView, "top", MirageCommonViewProjection.ToPxNoClamp(y));
-        changed |= SetChildStyleIfChanged(childPlatformView, "right", null);
-        changed |= SetChildStyleIfChanged(childPlatformView, "bottom", null);
-        changed |= SetChildStyleIfChanged(childPlatformView, "width", MirageViewMapper.ToPx(width));
-        changed |= SetChildStyleIfChanged(childPlatformView, "height", MirageViewMapper.ToPx(height));
-        changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
-        return changed;
-    }
-
-    private static Thickness ResolveCustomLayoutParentPadding(IView childView)
-    {
-        if (childView is not IElement { Parent: Layout parentLayout })
-        {
-            return Thickness.Zero;
-        }
-
-        return parentLayout.Padding;
-    }
-
-    private static bool IsAbsoluteLayoutFlagSet(AbsoluteLayoutFlags flags, AbsoluteLayoutFlags flag)
-    {
-        return (flags & flag) == flag;
-    }
-
-    private static string? ResolveAbsoluteLayoutSize(IView childView, double value, bool proportional, bool isWidth)
-    {
-        if (value.Equals(AbsoluteLayout.AutoSize))
-        {
-            return ResolveAbsoluteLayoutAutoSizeRequestedLength(childView, isWidth);
-        }
-
-        var normalized = NormalizeFinite(value, 0);
-        if (proportional)
-        {
-            return ToPercent(Math.Max(0, normalized));
-        }
-
-        return MirageViewMapper.ToPx(Math.Max(0, normalized));
-    }
-
-    private static string? ResolveAbsoluteLayoutAutoSizeRequestedLength(IView childView, bool isWidth)
-    {
-        if (childView is not VisualElement visualElement)
-        {
-            return null;
-        }
-
-        var requestedLength = isWidth ? visualElement.WidthRequest : visualElement.HeightRequest;
-        if (!double.IsFinite(requestedLength) || requestedLength < 0)
-        {
-            return null;
-        }
-
-        return MirageViewMapper.ToPx(requestedLength);
-    }
-
-    private static string? ResolveAbsoluteLayoutTranslate(double? proportionalX, double? proportionalY)
-    {
-        if (proportionalX is null && proportionalY is null)
-        {
-            return null;
-        }
-
-        if (proportionalX is null && proportionalY is double yOnly)
-        {
-            return $"translateY({ToTranslatePercent(yOnly)})";
-        }
-
-        if (proportionalY is null && proportionalX is double xOnly)
-        {
-            return $"translateX({ToTranslatePercent(xOnly)})";
-        }
-
-        return $"translate({ToTranslatePercent(proportionalX ?? 0)}, {ToTranslatePercent(proportionalY ?? 0)})";
-    }
-
-    private static string ToTranslatePercent(double proportionalValue)
-    {
-        var value = NormalizeFinite(proportionalValue, 0) * -100d;
-        return $"{value.ToString("0.###", CultureInfo.InvariantCulture)}%";
-    }
-
-    private static string ToPercent(double value)
-    {
-        var percentValue = NormalizeFinite(value, 0) * 100d;
-        return $"{percentValue.ToString("0.###", CultureInfo.InvariantCulture)}%";
-    }
-
-    private static double NormalizeFinite(double value, double fallback)
-    {
-        if (!double.IsFinite(value))
-        {
-            return fallback;
-        }
-
-        return value;
+        return MirageLayoutProjection.ApplyCustomLayoutChildStyles(childPlatformView, childView);
     }
 
     private static bool TryBuildGridTrackTemplate(IEnumerable<GridLength> trackLengths, out string template)
@@ -741,6 +900,26 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         }
     }
 
+    private void ApplyAbsoluteLayoutArrangedFrames()
+    {
+        var changed = false;
+        foreach (var child in VirtualView)
+        {
+            if (!_childHandlers.TryGetValue(child, out var childHandler)
+                || childHandler.PlatformView is not MiragePlatformView childPlatformView)
+            {
+                continue;
+            }
+
+            changed |= MirageLayoutProjection.ApplyAbsoluteLayoutArrangedChildStyles(childPlatformView, child);
+        }
+
+        if (changed)
+        {
+            RequestRender();
+        }
+    }
+
     private bool SetStyleIfChanged(string styleName, string? value)
     {
         if (string.Equals(PlatformView.GetStyleValue(styleName), value, StringComparison.Ordinal))
@@ -749,17 +928,6 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         }
 
         PlatformView.SetStyle(styleName, value);
-        return true;
-    }
-
-    private static bool SetChildStyleIfChanged(MiragePlatformView childPlatformView, string styleName, string? value)
-    {
-        if (string.Equals(childPlatformView.GetStyleValue(styleName), value, StringComparison.Ordinal))
-        {
-            return false;
-        }
-
-        childPlatformView.SetStyle(styleName, value);
         return true;
     }
 }
