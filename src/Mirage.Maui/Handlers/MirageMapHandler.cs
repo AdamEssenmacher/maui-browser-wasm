@@ -792,7 +792,8 @@ internal sealed class MirageMapHandler : MirageViewHandler<MauiMap>, IMirageRunt
 
         var code = TryGetString(diagnosticJson, "code") ?? "provider-diagnostic";
         var message = TryGetString(diagnosticJson, "message") ?? "Map provider diagnostic event.";
-        MirageDiagnostics.Log("map.provider", $"provider=leaflet node={PlatformView.NodeId} code={code} message={message}");
+        var provider = TryGetString(diagnosticJson, "provider") ?? "unknown";
+        MirageDiagnostics.Log("map.provider", $"provider={provider} node={PlatformView.NodeId} code={code} message={message}");
     }
 
     private static double TryGetNumber(JsonObject source, string propertyName)

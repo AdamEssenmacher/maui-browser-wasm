@@ -411,6 +411,29 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void MapRuntime_GuardsSecondaryAdapterShowErrorFailures()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var text = File.ReadAllText(runtimePath);
+        Assert.Contains("adapter.ShowError(\"adapter-apply-failed\", message);", text, StringComparison.Ordinal);
+        Assert.Contains("catch (Exception showErrorException)", text, StringComparison.Ordinal);
+        Assert.Contains("code=adapter-show-error-failed", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MapHandler_DiagnosticLogging_UsesPayloadProviderIdentity()
+    {
+        var handlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageMapHandler.cs");
+        Assert.True(File.Exists(handlerPath), $"Expected map handler file not found: {handlerPath}");
+
+        var text = File.ReadAllText(handlerPath);
+        Assert.Contains("TryGetString(diagnosticJson, \"provider\") ?? \"unknown\"", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("provider=leaflet", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MapRuntime_ConvertsAsyncProviderInitExceptionsIntoDeterministicErrorState()
     {
         var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
@@ -553,6 +576,22 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("const existingPinClickHandler = marker.__miragePinClickHandler;", text, StringComparison.Ordinal);
         Assert.Contains("marker.off(\"click\", existingPinClickHandler);", text, StringComparison.Ordinal);
         Assert.DoesNotContain("marker.off(\"click\");", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LeafletRuntimeModule_DiagnosticPayloadIncludesProviderIdentity()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "wwwroot",
+            "mirage-leaflet-provider.js");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+
+        var text = File.ReadAllText(runtimeModulePath);
+        Assert.Contains("emitMirageEvent(host, \"mirage-map-diagnostic\", {", text, StringComparison.Ordinal);
+        Assert.Contains("provider: \"leaflet\"", text, StringComparison.Ordinal);
     }
 
     [Fact]

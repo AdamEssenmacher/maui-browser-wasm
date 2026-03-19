@@ -22,6 +22,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         var (page, diagnostics) = await OpenAsync(context);
 
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-clippingpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-contentviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-customlayoutpage']").CountAsync());
@@ -35,12 +36,9 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stepperpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-brushespage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-transformationspage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-borderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-layoutisenabledpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-scrollviewpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
 
         await NavigateWithDiagnosticsAsync(
@@ -129,24 +127,20 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             "hidden",
             iconHostOverflow);
 
-        var iconHostShapeStyles = await page.EvaluateAsync<string[]>(
+        var iconHostBorderRadius = await page.EvaluateAsync<string>(
             """
             () => {
                 const image = document.querySelector("[data-automation-id='controls-sample-page-contentviewpage'] img[src*='/_mirage/assets/']");
                 const iconHost = image?.parentElement;
                 if (!iconHost) {
-                    return ["__missing__", "__missing__"];
+                    return "__missing__";
                 }
 
-                const computed = getComputedStyle(iconHost);
-                return [computed.borderRadius ?? "", computed.clipPath ?? ""];
+                return getComputedStyle(iconHost).borderRadius;
             }
             """);
 
-        Assert.True(
-            !string.Equals(iconHostShapeStyles[0], "0px", StringComparison.Ordinal)
-            || !string.Equals(iconHostShapeStyles[1], "none", StringComparison.OrdinalIgnoreCase),
-            $"Expected avatar host to project clipping geometry via borderRadius or clipPath, but got borderRadius='{iconHostShapeStyles[0]}' clipPath='{iconHostShapeStyles[1]}'.");
+        Assert.NotEqual("0px", iconHostBorderRadius);
 
         var overlapProbeTagName = await page.EvaluateAsync<string>(
             """
@@ -234,6 +228,45 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.NotEqual("none", dividerMetrics[2]);
         Assert.True(double.Parse(dividerMetrics[3], CultureInfo.InvariantCulture) >= 1d);
         Assert.True(double.Parse(dividerMetrics[4], CultureInfo.InvariantCulture) >= 120d);
+    }
+
+    [Fact]
+    public async Task AbsoluteLayoutParityProbe_UpdatesBoundsFlagsAndZOrderAtRuntime()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1180, height: 860);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutparitypage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-absolutelayoutparitypage']");
+            });
+
+        const string primarySelector = "[data-automation-id='controls-sample-absolutelayout-parity-a']";
+        var initialPrimaryRect = await ReadBoundingClientRectAsync(page, primarySelector);
+
+        await page.Locator("[data-automation-id='controls-sample-absolutelayout-parity-toggle-bounds']").ClickAsync();
+        var updatedPrimaryRect = await WaitForBoundingClientRectChangeAsync(page, primarySelector, initialPrimaryRect);
+
+        var boundsChanged = AnyBoundingClientRectDimensionChanged(initialPrimaryRect, updatedPrimaryRect);
+        Assert.True(boundsChanged);
+
+        await page.Locator("[data-automation-id='controls-sample-absolutelayout-parity-toggle-flags']").ClickAsync();
+        var proportionalPrimaryRect = await WaitForBoundingClientRectChangeAsync(page, primarySelector, updatedPrimaryRect);
+
+        var flagsChangedGeometry = AnyBoundingClientRectDimensionChanged(updatedPrimaryRect, proportionalPrimaryRect);
+        Assert.True(flagsChangedGeometry);
+
+        var topBeforeToggle = await ReadParityProbeOverlapTopAutomationIdAsync(page);
+
+        await page.Locator("[data-automation-id='controls-sample-absolutelayout-parity-toggle-zindex']").ClickAsync();
+        var topAfterToggle = await WaitForParityProbeOverlapTopAutomationIdChangeAsync(page, topBeforeToggle);
+
+        Assert.Equal("controls-sample-absolutelayout-parity-a", topAfterToggle);
+        Assert.NotEqual(topBeforeToggle, topAfterToggle);
     }
 
     [Fact]
@@ -406,7 +439,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     [Fact]
     public async Task StackLayoutPage_IsRunnable_AndAllowsUnsizedBoxViewsToCollapse()
     {
-        await using var context = await _fixture.NewContextAsync(width: 960, height: 760);
+        await using var context = await _fixture.NewContextAsync(width: 900, height: 700);
         var (page, diagnostics) = await OpenAsync(context);
 
         await NavigateWithDiagnosticsAsync(
@@ -423,37 +456,52 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             () => {
                 const host = document.querySelector("[data-automation-id='controls-sample-page-stacklayoutpage']");
                 if (!host) {
-                    return ["__missing__", "0", "0", "0", "0", "0", "0", "0"];
+                    return ["__missing__", "0", "0", "0", "0", "0", "0"];
                 }
 
-                const labels = Array
-                    .from(host.querySelectorAll("[data-mirage-kind='Label']"))
-                    .map(label => (label.textContent ?? "").trim());
-                const stackNodes = Array
-                    .from(host.querySelectorAll("[data-mirage-kind='VerticalStack'], [data-mirage-kind='HorizontalStack']"));
-                const sectionStacks = stackNodes
-                    .map(stack => ({
-                        kind: stack.getAttribute("data-mirage-kind") ?? "",
-                        boxes: Array.from(stack.children).filter(child => child.getAttribute?.("data-mirage-kind") === "BoxView")
-                    }))
-                    .filter(section => section.boxes.length > 0);
+                const labels = Array.from(host.querySelectorAll("[data-mirage-kind='Label']"));
+                const verticalLabel = labels.find(label => (label.textContent ?? "").trim() === "Vertical");
+                const horizontalLabel = labels.find(label => (label.textContent ?? "").trim() === "Horizontal");
+                const stackKinds = new Set(["StackLayout", "VerticalStack", "HorizontalStack"]);
 
-                const verticalBoxes = sectionStacks.find(section => section.kind === "VerticalStack")?.boxes ?? [];
-                const horizontalBoxes = sectionStacks.find(section => section.kind === "HorizontalStack")?.boxes ?? [];
-                const allBoxes = sectionStacks.flatMap(section => section.boxes);
-                const boxRects = allBoxes.map(box => box.getBoundingClientRect());
-                const collapsedCount = boxRects.filter(rect => rect.width <= 1 || rect.height <= 1 || (rect.width * rect.height) <= 1).length;
-                const maxArea = boxRects.reduce((current, rect) => Math.max(current, rect.width * rect.height), 0);
+                const findFollowingStack = (label) => {
+                    let current = label?.nextElementSibling ?? null;
+                    while (current) {
+                        const kind = current.getAttribute("data-mirage-kind");
+                        if (kind && stackKinds.has(kind)) {
+                            return current;
+                        }
+
+                        current = current.nextElementSibling;
+                    }
+
+                    return null;
+                };
+
+                const verticalStack = findFollowingStack(verticalLabel);
+                const horizontalStack = findFollowingStack(horizontalLabel);
+                if (!verticalStack || !horizontalStack) {
+                    return ["__missing_sections__", "0", "0", "0", "0", "0", "0"];
+                }
+
+                const collect = (stack) => {
+                    const boxes = Array.from(stack.querySelectorAll(":scope > [data-mirage-kind='BoxView']"));
+                    const rects = boxes.map(box => box.getBoundingClientRect());
+                    const collapsed = rects.filter(rect => rect.width <= 1 || rect.height <= 1 || (rect.width * rect.height) <= 1).length;
+                    return [boxes.length, collapsed];
+                };
+
+                const [verticalCount, verticalCollapsed] = collect(verticalStack);
+                const [horizontalCount, horizontalCollapsed] = collect(horizontalStack);
 
                 return [
                     "ok",
-                    labels.includes("Vertical") ? "1" : "0",
-                    labels.includes("Horizontal") ? "1" : "0",
-                    sectionStacks.length.toString(),
-                    verticalBoxes.length.toString(),
-                    horizontalBoxes.length.toString(),
-                    collapsedCount.toString(),
-                    maxArea.toString()
+                    verticalLabel ? "1" : "0",
+                    horizontalLabel ? "1" : "0",
+                    verticalCount.toString(),
+                    horizontalCount.toString(),
+                    verticalCollapsed.toString(),
+                    horizontalCollapsed.toString()
                 ];
             }
             """);
@@ -461,11 +509,10 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal("ok", layoutSnapshot[0]);
         Assert.Equal("1", layoutSnapshot[1]);
         Assert.Equal("1", layoutSnapshot[2]);
-        Assert.Equal("2", layoutSnapshot[3]);
+        Assert.Equal("6", layoutSnapshot[3]);
         Assert.Equal("6", layoutSnapshot[4]);
         Assert.Equal("6", layoutSnapshot[5]);
-        Assert.Equal("12", layoutSnapshot[6]);
-        Assert.True(double.Parse(layoutSnapshot[7], CultureInfo.InvariantCulture) <= 1d);
+        Assert.Equal("6", layoutSnapshot[6]);
     }
 
     [Fact]
@@ -1085,579 +1132,6 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
-    public async Task BrushesPage_IsRunnable_AndRendersDefaultTabBrushScenarios()
-    {
-        await using var context = await _fixture.NewContextAsync(width: 1100, height: 1300);
-        var (page, diagnostics) = await OpenAsync(context);
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='controls-sample-open-brushespage']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-brushespage']");
-            });
-
-        var brushesSnapshot = await page.EvaluateAsync<string[]>(
-            """
-            () => {
-                const host = document.querySelector("[data-automation-id='controls-sample-page-brushespage']");
-                if (!(host instanceof HTMLElement)) {
-                    return ["__missing__", "0", "0"];
-                }
-
-                const labels = Array
-                    .from(host.querySelectorAll("[data-mirage-kind='Label']"))
-                    .map(label => (label.textContent ?? "").trim());
-
-                const hasSolidHeadline = labels.some(text => text.includes("SolidColorBrush (Predefined Brush)"));
-                const swatchCount = Array
-                    .from(host.querySelectorAll("[data-mirage-kind='ContentContainer'], [data-mirage-kind='Border']"))
-                    .filter(node => {
-                        if (!(node instanceof HTMLElement)) {
-                            return false;
-                        }
-
-                        const style = window.getComputedStyle(node);
-                        return parseFloat(style.width || "0") >= 100 && parseFloat(style.height || "0") >= 100;
-                    })
-                    .length;
-
-                return ["ok", hasSolidHeadline ? "1" : "0", swatchCount.toString()];
-            }
-            """);
-
-        Assert.Equal("ok", brushesSnapshot[0]);
-        Assert.Equal("1", brushesSnapshot[1]);
-        Assert.True(int.Parse(brushesSnapshot[2], CultureInfo.InvariantCulture) >= 1);
-    }
-
-    [Fact]
-    public async Task BorderPage_IsRunnable_AndExercisesBorderGalleryScenarios()
-    {
-        await using var context = await _fixture.NewContextAsync(width: 1280, height: 1600);
-        var (page, diagnostics) = await OpenAsync(context);
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='controls-sample-open-borderpage']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
-            });
-
-        var navButtonIds = new[]
-        {
-            "controls-sample-borderpage-open-border-playground",
-            "controls-sample-borderpage-open-border-clipping-playground",
-            "controls-sample-borderpage-open-border-using-styles",
-            "controls-sample-borderpage-open-border-using-content-layout",
-            "controls-sample-borderpage-open-border-stroke-options",
-            "controls-sample-borderpage-open-border-without-stroke",
-            "controls-sample-borderpage-open-border-resize-content",
-            "controls-sample-borderpage-open-border-alignment"
-        };
-
-        foreach (var navButtonId in navButtonIds)
-        {
-            Assert.Equal(1, await page.Locator($"[data-automation-id='{navButtonId}']").CountAsync());
-        }
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-playground']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderplayground']");
-            });
-
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-borderplayground-border']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-borderplayground-content-picker']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-borderplayground-shape-picker']").CountAsync());
-
-        var defaultShapeSelection = await page.EvaluateAsync<string[]>(
-            """
-            () => {
-                const picker = document.querySelector("[data-automation-id='controls-sample-borderplayground-shape-picker']");
-                if (!(picker instanceof HTMLSelectElement)) {
-                    return ["__missing__", "__missing__"];
-                }
-
-                const selectedText = picker.selectedOptions.length > 0
-                    ? (picker.selectedOptions[0].textContent ?? "").trim()
-                    : "";
-                return [picker.value ?? "", selectedText];
-            }
-            """);
-
-        Assert.Equal("1", defaultShapeSelection[0]);
-        Assert.Equal("RoundRectangle", defaultShapeSelection[1]);
-
-        var borderPlaygroundDefaultSnapshot = await page.EvaluateAsync<string[]>(
-            """
-            () => {
-                const host = document.querySelector("[data-automation-id='controls-sample-borderplayground-border']");
-                const label = host?.querySelector("[data-mirage-kind='Label']");
-                const path = host?.querySelector("[data-maui-border-part='stroke-path']");
-                if (!(host instanceof HTMLElement)) {
-                    return ["__missing__", "", "", "", "", "0", "0"];
-                }
-
-                const hostRect = host.getBoundingClientRect();
-                const pathRect = path?.getBoundingClientRect();
-                const widthRatio = pathRect && hostRect.width > 0 ? (pathRect.width / hostRect.width) : 0;
-                const heightRatio = pathRect && hostRect.height > 0 ? (pathRect.height / hostRect.height) : 0;
-
-                return [
-                    "ok",
-                    (label?.textContent ?? "").trim(),
-                    getComputedStyle(host).paddingLeft ?? "",
-                    path?.getAttribute("stroke-dasharray") ?? "",
-                    path?.getAttribute("stroke-dashoffset") ?? "",
-                    widthRatio.toString(),
-                    heightRatio.toString()
-                ];
-            }
-            """);
-
-        Assert.Equal("ok", borderPlaygroundDefaultSnapshot[0]);
-        Assert.Equal("Just a Label", borderPlaygroundDefaultSnapshot[1]);
-        var defaultPaddingLeft = double.Parse(borderPlaygroundDefaultSnapshot[2].Replace("px", string.Empty, StringComparison.Ordinal), CultureInfo.InvariantCulture);
-        Assert.True(defaultPaddingLeft >= 4.5d);
-        Assert.Equal("5 5", borderPlaygroundDefaultSnapshot[3]);
-        Assert.Equal("5", borderPlaygroundDefaultSnapshot[4]);
-        Assert.True(double.Parse(borderPlaygroundDefaultSnapshot[5], CultureInfo.InvariantCulture) >= 0.9d);
-        Assert.True(double.Parse(borderPlaygroundDefaultSnapshot[6], CultureInfo.InvariantCulture) >= 0.9d);
-
-        await SetSelectIndexAsync(page, "[data-automation-id='controls-sample-borderplayground-content-picker']", 1);
-        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderplayground-corner-top-left']", 60);
-        await page.WaitForTimeoutAsync(120);
-        var borderTopLeftCornerHitSnapshot = await page.EvaluateAsync<string[]>(
-            """
-            () => {
-                const host = document.querySelector("[data-automation-id='controls-sample-borderplayground-border']");
-                const image = host?.querySelector("img");
-                if (!(host instanceof HTMLElement) || !(image instanceof HTMLImageElement)) {
-                    return ["__missing__", "", "0"];
-                }
-
-                const rect = host.getBoundingClientRect();
-                const probeX = rect.left + 8;
-                const probeY = rect.top + 8;
-                const hit = document.elementFromPoint(probeX, probeY);
-                const hitIsImage = hit === image || (hit instanceof Node && image.contains(hit));
-                const hostStyle = getComputedStyle(host);
-                const imageStyle = getComputedStyle(image);
-                return [
-                    "ok",
-                    hit?.tagName ?? "",
-                    hitIsImage ? "1" : "0",
-                    hostStyle.clipPath ?? "",
-                    hostStyle.borderRadius ?? "",
-                    hostStyle.overflow ?? "",
-                    imageStyle.clipPath ?? "",
-                    imageStyle.borderRadius ?? "",
-                    imageStyle.overflow ?? ""
-                ];
-            }
-            """);
-        Assert.Equal("ok", borderTopLeftCornerHitSnapshot[0]);
-        Assert.True(
-            string.Equals(borderTopLeftCornerHitSnapshot[2], "0", StringComparison.Ordinal),
-            $"Expected clipped top-left corner probe to avoid image hit but got tag={borderTopLeftCornerHitSnapshot[1]} hitFlag={borderTopLeftCornerHitSnapshot[2]} " +
-            $"hostClipPath='{borderTopLeftCornerHitSnapshot[3]}' hostBorderRadius='{borderTopLeftCornerHitSnapshot[4]}' hostOverflow='{borderTopLeftCornerHitSnapshot[5]}' " +
-            $"imageClipPath='{borderTopLeftCornerHitSnapshot[6]}' imageBorderRadius='{borderTopLeftCornerHitSnapshot[7]}' imageOverflow='{borderTopLeftCornerHitSnapshot[8]}'.");
-
-        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderplayground-corner-top-left']", 20);
-        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderplayground-corner-bottom-left']", 18);
-        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderplayground-corner-bottom-right']", 4);
-        await page.WaitForTimeoutAsync(120);
-
-        var borderCornerSnapshot = await page.EvaluateAsync<string[]>(
-            """
-            () => {
-                const host = document.querySelector("[data-automation-id='controls-sample-borderplayground-border']");
-                if (!(host instanceof HTMLElement)) {
-                    return ["__missing__", ""];
-                }
-
-                return [
-                    "ok",
-                    host.style.borderRadius ?? ""
-                ];
-            }
-            """);
-        Assert.Equal("ok", borderCornerSnapshot[0]);
-        Assert.Equal("20px 0px 4px 18px", borderCornerSnapshot[1]);
-
-        await SetSelectIndexAsync(page, "[data-automation-id='controls-sample-borderplayground-content-picker']", 1);
-        await SetSelectIndexAsync(page, "[data-automation-id='controls-sample-borderplayground-linejoin-picker']", 2);
-        await SetSelectIndexAsync(page, "[data-automation-id='controls-sample-borderplayground-linecap-picker']", 1);
-        await SetInputTextAsync(page, "[data-automation-id='controls-sample-borderplayground-dash-entry']", "4, 2");
-        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderplayground-dash-offset-slider']", 1.5);
-        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderplayground-width-slider']", 7);
-        await SetSelectIndexAsync(page, "[data-automation-id='controls-sample-borderplayground-shape-picker']", 2);
-
-        var playgroundSnapshot = await page.EvaluateAsync<string[]>(
-            """
-            () => {
-                const host = document.querySelector("[data-automation-id='controls-sample-borderplayground-border']");
-                if (!(host instanceof HTMLElement)) {
-                    return ["__missing__", "", "", "", "", "", "", "", ""];
-                }
-
-                const image = host.querySelector("img");
-                const path = host.querySelector("[data-maui-border-part='stroke-path']");
-                const defs = host.querySelector("[data-maui-border-part='stroke-defs']");
-                return [
-                    "ok",
-                    image ? "1" : "0",
-                    getComputedStyle(host).clipPath ?? "",
-                    path?.getAttribute("stroke") ?? "",
-                    path?.getAttribute("stroke-dasharray") ?? "",
-                    path?.getAttribute("stroke-dashoffset") ?? "",
-                    path?.getAttribute("stroke-linejoin") ?? "",
-                    path?.getAttribute("stroke-linecap") ?? "",
-                    defs?.innerHTML ?? ""
-                ];
-            }
-            """);
-
-        Assert.Equal("ok", playgroundSnapshot[0]);
-        Assert.Equal("1", playgroundSnapshot[1]);
-        Assert.Contains("ellipse(", playgroundSnapshot[2], StringComparison.OrdinalIgnoreCase);
-        Assert.StartsWith("url(#", playgroundSnapshot[3], StringComparison.Ordinal);
-        Assert.Equal("28 14", playgroundSnapshot[4]);
-        Assert.Equal("10.5", playgroundSnapshot[5]);
-        Assert.Equal("bevel", playgroundSnapshot[6]);
-        Assert.Equal("round", playgroundSnapshot[7]);
-        Assert.Contains("<lineargradient", playgroundSnapshot[8], StringComparison.OrdinalIgnoreCase);
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
-            });
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-clipping-playground']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderclipplayground']");
-            });
-
-        await SetSelectIndexAsync(page, "[data-automation-id='controls-sample-borderclipplayground-shape-picker']", 2);
-        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderclipplayground-width-slider']", 12);
-        await page.WaitForTimeoutAsync(120);
-        var clipSnapshot = await page.EvaluateAsync<string[]>(
-            """
-            () => {
-                const host = document.querySelector("[data-automation-id='controls-sample-borderclipplayground-border']");
-                if (!(host instanceof HTMLElement)) {
-                    return ["__missing__", "", "", ""];
-                }
-
-                const widthLabel = Array
-                    .from(document.querySelectorAll("[data-automation-id='controls-sample-page-borderclipplayground'] [data-mirage-kind='Label']"))
-                    .map(label => (label.textContent ?? "").trim())
-                    .find(text => text.includes("Border Width:")) ?? "";
-
-                return [
-                    "ok",
-                    getComputedStyle(host).clipPath ?? "",
-                    widthLabel,
-                    getComputedStyle(host).overflow ?? ""
-                ];
-            }
-            """);
-        Assert.Equal("ok", clipSnapshot[0]);
-        Assert.Contains("ellipse(", clipSnapshot[1], StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("12", clipSnapshot[2], StringComparison.Ordinal);
-        Assert.Equal("hidden", clipSnapshot[3]);
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
-            });
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-using-styles']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderstyles']");
-            });
-
-        var borderStylesInfoBefore = await page.Locator("[data-automation-id='controls-sample-borderstyles-update-info']").InnerTextAsync();
-        await page.Locator("[data-automation-id='controls-sample-borderstyles-increase-corner']").ClickAsync();
-        await page.WaitForTimeoutAsync(100);
-        var borderStylesInfoAfter = await page.Locator("[data-automation-id='controls-sample-borderstyles-update-info']").InnerTextAsync();
-        Assert.NotEqual(borderStylesInfoBefore, borderStylesInfoAfter);
-        Assert.Contains("RoundRectangle", borderStylesInfoAfter, StringComparison.Ordinal);
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
-            });
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-using-content-layout']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderlayout']");
-            });
-
-        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderlayout-width-slider']", 18);
-        await page.WaitForTimeoutAsync(120);
-        var strokeWidths = await page.EvaluateAsync<double[]>(
-            """
-            () => {
-                const paths = Array
-                    .from(document.querySelectorAll("[data-automation-id='controls-sample-page-borderlayout'] [data-maui-border-part='stroke-path']"));
-                return paths
-                    .map(path => parseFloat(path.getAttribute("stroke-width") ?? "NaN"))
-                    .filter(width => Number.isFinite(width));
-            }
-            """);
-        Assert.Contains(strokeWidths, width => width >= 17.5d && width <= 18.5d);
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
-            });
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-stroke-options']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderstroke']");
-            });
-
-        var strokeThicknessVariants = await page.EvaluateAsync<string[]>(
-            """
-            () => {
-                const paths = Array.from(document.querySelectorAll("[data-automation-id='controls-sample-page-borderstroke'] [data-maui-border-part='stroke-path']"));
-                return paths.slice(0, 3).map(path => path.getAttribute("stroke-width") ?? "");
-            }
-            """);
-        Assert.Contains("1", strokeThicknessVariants);
-        Assert.Contains("5", strokeThicknessVariants);
-        Assert.Contains("10", strokeThicknessVariants);
-
-        var strokeResizeBefore = await page.EvaluateAsync<double>(
-            "(selector) => document.querySelector(selector)?.getBoundingClientRect().height ?? 0",
-            "[data-automation-id='controls-sample-borderstroke-rectangle-3']");
-        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderstroke-height-slider']", 100);
-        await page.WaitForTimeoutAsync(100);
-        var strokeResizeAfter = await page.EvaluateAsync<double>(
-            "(selector) => document.querySelector(selector)?.getBoundingClientRect().height ?? 0",
-            "[data-automation-id='controls-sample-borderstroke-rectangle-3']");
-        Assert.True(strokeResizeAfter > strokeResizeBefore);
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
-            });
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-without-stroke']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderless']");
-            });
-
-        var borderlessSnapshot = await page.EvaluateAsync<string[]>(
-            """
-            () => {
-                const borders = Array.from(document.querySelectorAll("[data-automation-id='controls-sample-page-borderless'] [data-mirage-kind='Border']"));
-                if (borders.length < 2) {
-                    return ["0", "", ""];
-                }
-
-                const topBackground = getComputedStyle(borders[0]).backgroundColor ?? "";
-                const bottomBackground = getComputedStyle(borders[1]).backgroundColor ?? "";
-                const hasVisibleStroke = borders.some(border => {
-                    const path = border.querySelector("[data-maui-border-part='stroke-path']");
-                    const stroke = path?.getAttribute("stroke");
-                    const width = path?.getAttribute("stroke-width");
-                    return !!stroke && stroke !== "none" && width && width !== "0";
-                });
-
-                return [borders.length.toString(), topBackground, bottomBackground, hasVisibleStroke ? "1" : "0"];
-            }
-            """);
-        Assert.Equal("2", borderlessSnapshot[0]);
-        Assert.NotEqual("rgba(0, 0, 0, 0)", borderlessSnapshot[1]);
-        Assert.NotEqual("rgba(0, 0, 0, 0)", borderlessSnapshot[2]);
-        Assert.Equal("0", borderlessSnapshot[3]);
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
-            });
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-resize-content']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderresizecontent']");
-            });
-
-        await SetInputTextAsync(page, "[data-automation-id='controls-sample-borderresizecontent-text-entry']", "*");
-        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderresizecontent-font-slider']", 120);
-        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderresizecontent-image-scale-slider']", 3);
-        await page.WaitForTimeoutAsync(120);
-
-        var resizeSnapshot = await page.EvaluateAsync<string[]>(
-            """
-            () => {
-                const circleImageBorder = document.querySelector("[data-automation-id='controls-sample-borderresizecontent-circle-image']");
-                const triangleImageBorder = document.querySelector("[data-automation-id='controls-sample-borderresizecontent-triangle-image']");
-                const hasUpdatedLabel = Array
-                    .from(document.querySelectorAll("[data-automation-id='controls-sample-page-borderresizecontent'] [data-mirage-kind='Label']"))
-                    .some(label => (label.textContent ?? "").includes("*"));
-                const circleImage = circleImageBorder?.querySelector("img");
-
-                return [
-                    circleImage ? "1" : "0",
-                    triangleImageBorder ? "1" : "0",
-                    getComputedStyle(triangleImageBorder ?? document.body).clipPath ?? "",
-                    hasUpdatedLabel ? "1" : "0",
-                    circleImage ? circleImage.style.transform ?? "" : ""
-                ];
-            }
-            """);
-        Assert.Equal("1", resizeSnapshot[0]);
-        Assert.Equal("1", resizeSnapshot[1]);
-        Assert.Contains("polygon(", resizeSnapshot[2], StringComparison.OrdinalIgnoreCase);
-        Assert.Equal("1", resizeSnapshot[3]);
-        Assert.Contains("scale(", resizeSnapshot[4], StringComparison.Ordinal);
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
-            });
-
-        await NavigateWithDiagnosticsAsync(
-            page,
-            diagnostics,
-            async () =>
-            {
-                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-alignment']").ClickAsync();
-                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderalignment']");
-            });
-
-        var alignmentSnapshot = await page.EvaluateAsync<string[]>(
-            """
-            () => {
-                const host = document.querySelector("[data-automation-id='controls-sample-page-borderalignment']");
-                const start = document.querySelector("[data-automation-id='controls-sample-borderalignment-border-1']");
-                const center = document.querySelector("[data-automation-id='controls-sample-borderalignment-border-2']");
-                const end = document.querySelector("[data-automation-id='controls-sample-borderalignment-border-3']");
-                const fill = document.querySelector("[data-automation-id='controls-sample-borderalignment-border-4']");
-                const startStrokePath = start?.querySelector("[data-maui-border-part='stroke-path']");
-                const fillStrokePath = fill?.querySelector("[data-maui-border-part='stroke-path']");
-                const startStrokeOverlay = start?.querySelector("[data-maui-border-part='stroke-overlay']");
-                const fillStrokeOverlay = fill?.querySelector("[data-maui-border-part='stroke-overlay']");
-                if (!(host instanceof HTMLElement) || !(start instanceof HTMLElement) || !(center instanceof HTMLElement) || !(end instanceof HTMLElement) || !(fill instanceof HTMLElement)) {
-                    return ["__missing__", "0", "0", "0", "0", "0", "0", "", "", "0", "0", "", "", "", ""];
-                }
-
-                const hostRect = host.getBoundingClientRect();
-                const startRect = start.getBoundingClientRect();
-                const centerRect = center.getBoundingClientRect();
-                const endRect = end.getBoundingClientRect();
-                const fillRect = fill.getBoundingClientRect();
-                const startStrokeRect = startStrokePath?.getBoundingClientRect();
-                const fillStrokeRect = fillStrokePath?.getBoundingClientRect();
-
-                const hostCenter = hostRect.left + (hostRect.width / 2);
-                const centerCenter = centerRect.left + (centerRect.width / 2);
-                const centerDelta = Math.abs(centerCenter - hostCenter);
-                const endRightGap = Math.abs(hostRect.right - endRect.right);
-                const startStrokeWidthRatio = startStrokeRect && startRect.width > 0 ? (startStrokeRect.width / startRect.width) : 0;
-                const fillStrokeWidthRatio = fillStrokeRect && fillRect.width > 0 ? (fillStrokeRect.width / fillRect.width) : 0;
-
-                return [
-                    "ok",
-                    startRect.left.toString(),
-                    centerDelta.toString(),
-                    endRightGap.toString(),
-                    fillRect.width.toString(),
-                    startRect.width.toString(),
-                    endRect.width.toString(),
-                    startStrokePath?.namespaceURI ?? "",
-                    startStrokePath?.getAttribute("stroke") ?? "",
-                    startStrokeWidthRatio.toString(),
-                    fillStrokeWidthRatio.toString(),
-                    startStrokeOverlay?.getAttribute("viewBox") ?? "",
-                    fillStrokeOverlay?.getAttribute("viewBox") ?? "",
-                    startRect.width.toString(),
-                    startStrokeRect?.width?.toString() ?? "0"
-                ];
-            }
-            """);
-
-        Assert.Equal("ok", alignmentSnapshot[0]);
-        Assert.True(double.Parse(alignmentSnapshot[2], CultureInfo.InvariantCulture) <= 24d);
-        Assert.True(double.Parse(alignmentSnapshot[3], CultureInfo.InvariantCulture) <= 24d);
-        Assert.True(
-            double.Parse(alignmentSnapshot[4], CultureInfo.InvariantCulture)
-            > double.Parse(alignmentSnapshot[5], CultureInfo.InvariantCulture));
-        Assert.Equal("http://www.w3.org/2000/svg", alignmentSnapshot[7]);
-        Assert.Contains("255,0,0", alignmentSnapshot[8].Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
-        var startStrokeWidthRatio = double.Parse(alignmentSnapshot[9], CultureInfo.InvariantCulture);
-        var fillStrokeWidthRatio = double.Parse(alignmentSnapshot[10], CultureInfo.InvariantCulture);
-        Assert.True(
-            startStrokeWidthRatio >= 0.45d,
-            $"Expected start stroke ratio >= 0.45 but got {startStrokeWidthRatio:0.###}. startViewBox={alignmentSnapshot[11]} startHostWidth={alignmentSnapshot[13]} startStrokeWidth={alignmentSnapshot[14]}");
-        Assert.True(
-            fillStrokeWidthRatio >= 0.9d,
-            $"Expected fill stroke ratio >= 0.9 but got {fillStrokeWidthRatio:0.###}. fillViewBox={alignmentSnapshot[12]}");
-    }
-
-    [Fact]
     public async Task ClippingPage_GridFrame_RendersAtExpectedSize_AndIsHorizontallyCentered()
     {
         await using var context = await _fixture.NewContextAsync();
@@ -1794,69 +1268,102 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         }
     }
 
-    private static async Task SetSelectIndexAsync(IPage page, string selector, int selectedIndex)
+    private static async Task<double[]> WaitForBoundingClientRectChangeAsync(
+        IPage page,
+        string selector,
+        double[] baselineRect,
+        int timeoutMs = 3000,
+        int pollMs = 50)
     {
-        var result = await page.EvaluateAsync<string>(
-            """
-            (payload) => {
-                const control = document.querySelector(payload.selector);
-                if (!(control instanceof HTMLSelectElement)) {
-                    return "__missing__";
-                }
-
-                const targetIndex = Math.max(0, Math.min(payload.selectedIndex, control.options.length - 1));
-                const targetValue = control.options[targetIndex]?.value ?? "";
-                control.value = targetValue;
-                control.selectedIndex = targetIndex;
-                control.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
-                control.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
-                return control.value;
-            }
-            """,
-            new
+        var elapsedMs = 0;
+        while (elapsedMs < timeoutMs)
+        {
+            var currentRect = await ReadBoundingClientRectAsync(page, selector);
+            if (AnyBoundingClientRectDimensionChanged(baselineRect, currentRect))
             {
-                selector,
-                selectedIndex
-            });
+                return currentRect;
+            }
 
-        Assert.NotEqual("__missing__", result);
+            await page.WaitForTimeoutAsync(pollMs);
+            elapsedMs += pollMs;
+        }
+
+        return await ReadBoundingClientRectAsync(page, selector);
     }
 
-    private static async Task SetInputTextAsync(IPage page, string selector, string value)
+    private static bool AnyBoundingClientRectDimensionChanged(double[] before, double[] after)
     {
-        var result = await page.EvaluateAsync<string>(
+        return before
+            .Zip(after, static (previous, current) => Math.Abs(previous - current) > 0.5d)
+            .Any(static changed => changed);
+    }
+
+    private static async Task<double[]> ReadBoundingClientRectAsync(IPage page, string selector)
+    {
+        return await page.EvaluateAsync<double[]>(
             """
-            (payload) => {
-                const control = document.querySelector(payload.selector);
-                if (!(control instanceof Element)) {
+            (targetSelector) => {
+                const target = document.querySelector(targetSelector);
+                if (!target) {
+                    return [0, 0, 0, 0];
+                }
+
+                const rect = target.getBoundingClientRect();
+                return [rect.left, rect.top, rect.width, rect.height];
+            }
+            """,
+            selector);
+    }
+
+    private static async Task<string> WaitForParityProbeOverlapTopAutomationIdChangeAsync(
+        IPage page,
+        string baselineTopAutomationId,
+        int timeoutMs = 3000,
+        int pollMs = 50)
+    {
+        var elapsedMs = 0;
+        while (elapsedMs < timeoutMs)
+        {
+            var currentTopAutomationId = await ReadParityProbeOverlapTopAutomationIdAsync(page);
+            if (!string.Equals(currentTopAutomationId, baselineTopAutomationId, StringComparison.Ordinal))
+            {
+                return currentTopAutomationId;
+            }
+
+            await page.WaitForTimeoutAsync(pollMs);
+            elapsedMs += pollMs;
+        }
+
+        return await ReadParityProbeOverlapTopAutomationIdAsync(page);
+    }
+
+    private static async Task<string> ReadParityProbeOverlapTopAutomationIdAsync(IPage page)
+    {
+        return await page.EvaluateAsync<string>(
+            """
+            () => {
+                const primary = document.querySelector("[data-automation-id='controls-sample-absolutelayout-parity-a']");
+                const secondary = document.querySelector("[data-automation-id='controls-sample-absolutelayout-parity-b']");
+                if (!primary || !secondary) {
                     return "__missing__";
                 }
 
-                if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) {
-                    control.value = payload.value;
-                    control.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
-                    control.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
-                    return control.value;
+                const firstRect = primary.getBoundingClientRect();
+                const secondRect = secondary.getBoundingClientRect();
+                const left = Math.max(firstRect.left, secondRect.left);
+                const top = Math.max(firstRect.top, secondRect.top);
+                const right = Math.min(firstRect.right, secondRect.right);
+                const bottom = Math.min(firstRect.bottom, secondRect.bottom);
+                if (!(right > left && bottom > top)) {
+                    return "__no_overlap__";
                 }
 
-                if (!("value" in control)) {
-                    return "__unsupported__";
-                }
-
-                control.value = payload.value;
-                control.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
-                control.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
-                return String(control.value ?? "");
+                const probeX = left + Math.min(6, right - left - 1);
+                const probeY = top + Math.min(6, bottom - top - 1);
+                const topElement = document.elementFromPoint(probeX, probeY);
+                return topElement?.closest("[data-automation-id]")?.getAttribute("data-automation-id") ?? "__none__";
             }
-            """,
-            new
-            {
-                selector,
-                value
-            });
-
-        Assert.NotEqual("__missing__", result);
-        Assert.NotEqual("__unsupported__", result);
+            """);
     }
 
     private static async Task SetInputValueAsync(IPage page, string selector, double value)

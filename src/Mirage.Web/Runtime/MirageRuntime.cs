@@ -831,7 +831,17 @@ public sealed class MirageRuntime : IMirageRuntime
         {
             var message = $"Map apply failed: {error.Message}";
             ShowMapFailure(node, "adapter-apply-failed", message);
-            adapter.ShowError("adapter-apply-failed", message);
+            try
+            {
+                adapter.ShowError("adapter-apply-failed", message);
+            }
+            catch (Exception showErrorException)
+            {
+                MirageDiagnostics.Log(
+                    "map.provider",
+                    $"node={node.NodeId} code=adapter-show-error-failed message={showErrorException.Message}");
+            }
+
             MirageDiagnostics.Log("map.provider", $"node={node.NodeId} code=adapter-apply-failed message={error.Message}");
         }
     }
