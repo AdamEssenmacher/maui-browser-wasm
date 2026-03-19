@@ -26,6 +26,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-clippingpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-contentviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-customlayoutpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-flexlayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-gridpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-horizontalstacklayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stacklayoutpage']").CountAsync());
@@ -388,6 +389,104 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal("HorizontalStackLayout", layoutSnapshot[1]);
         Assert.Equal("6", layoutSnapshot[2]);
         Assert.Equal("6", layoutSnapshot[3]);
+    }
+
+    [Fact]
+    public async Task FlexLayoutPage_IsRunnable_AndProjectsOrderGrowAndBasisSemantics()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1100, height: 800);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-flexlayoutpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-flexlayoutpage']");
+            });
+
+        var layoutSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id='controls-sample-page-flexlayoutpage']");
+                const root = host?.querySelector(":scope > [data-mirage-kind='Layout']");
+                if (!host || !root) {
+                    return ["__missing__", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"];
+                }
+
+                const header = Array.from(root.querySelectorAll(":scope > [data-mirage-kind='Label']"))
+                    .find(label => (label.textContent ?? "").trim() === "HEADER");
+                const footer = Array.from(root.querySelectorAll(":scope > [data-mirage-kind='Label']"))
+                    .find(label => (label.textContent ?? "").trim() === "FOOTER");
+                const body = root.querySelector(":scope > [data-mirage-kind='Layout']");
+                const content = body
+                    ? Array.from(body.querySelectorAll(":scope > [data-mirage-kind='Label']"))
+                        .find(label => (label.textContent ?? "").trim() === "CONTENT")
+                    : null;
+
+                const bodyChildren = body ? Array.from(body.querySelectorAll(":scope > *")) : [];
+                const boxViews = bodyChildren.filter(element => element.getAttribute("data-mirage-kind") === "BoxView");
+                const sortedBoxes = boxViews
+                    .map(element => ({
+                        element,
+                        rect: element.getBoundingClientRect(),
+                        color: getComputedStyle(element).backgroundColor
+                    }))
+                    .sort((a, b) => a.rect.left - b.rect.left);
+
+                if (!header || !footer || !body || !content || sortedBoxes.length < 2) {
+                    return ["__missing_expected_nodes__", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0"];
+                }
+
+                const rootStyle = getComputedStyle(root);
+                const bodyStyle = getComputedStyle(body);
+                const contentRect = content.getBoundingClientRect();
+                const firstBoxRect = sortedBoxes[0].rect;
+                const secondBoxRect = sortedBoxes[1].rect;
+                const contentCenterX = contentRect.left + (contentRect.width / 2);
+                const bodyCenterY = contentRect.top + (contentRect.height / 2);
+
+                return [
+                    "ok",
+                    rootStyle.flexDirection,
+                    bodyStyle.flexDirection,
+                    boxViews.length.toString(),
+                    firstBoxRect.width.toString(),
+                    firstBoxRect.height.toString(),
+                    secondBoxRect.width.toString(),
+                    secondBoxRect.height.toString(),
+                    contentRect.width.toString(),
+                    (firstBoxRect.left < contentCenterX).toString(),
+                    (secondBoxRect.left > contentCenterX).toString(),
+                    sortedBoxes[0].color,
+                    sortedBoxes[1].color,
+                    (Math.abs(firstBoxRect.top - bodyCenterY) < contentRect.height).toString()
+                ];
+            }
+            """);
+
+        Assert.Equal("ok", layoutSnapshot[0]);
+        Assert.Equal("column", layoutSnapshot[1]);
+        Assert.Equal("row", layoutSnapshot[2]);
+        Assert.Equal("2", layoutSnapshot[3]);
+
+        var firstWidth = double.Parse(layoutSnapshot[4], CultureInfo.InvariantCulture);
+        var firstHeight = double.Parse(layoutSnapshot[5], CultureInfo.InvariantCulture);
+        var secondWidth = double.Parse(layoutSnapshot[6], CultureInfo.InvariantCulture);
+        var secondHeight = double.Parse(layoutSnapshot[7], CultureInfo.InvariantCulture);
+        var contentWidth = double.Parse(layoutSnapshot[8], CultureInfo.InvariantCulture);
+
+        Assert.InRange(firstWidth, 40d, 70d);
+        Assert.InRange(secondWidth, 40d, 70d);
+        Assert.True(firstHeight > 30d);
+        Assert.True(secondHeight > 30d);
+        Assert.True(contentWidth > 150d);
+        Assert.Equal("true", layoutSnapshot[9]);
+        Assert.Equal("true", layoutSnapshot[10]);
+        Assert.Equal("true", layoutSnapshot[13]);
+        Assert.Contains("0, 0, 255", layoutSnapshot[11], StringComparison.Ordinal);
+        Assert.Contains("0, 128, 0", layoutSnapshot[12], StringComparison.Ordinal);
     }
 
     [Fact]

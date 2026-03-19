@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (ControlsSample FlexLayoutPage Enablement)
+- Promoted upstream `FlexLayoutPage` to a runnable ControlsSample catalog entry and linked its XAML/code-behind into `ControlsSample.Shared`.
+- This page now runs on existing Mirage FlexLayout behavior (semantic container projection plus attached item-property support) without adding sample-specific wrapper logic.
+- Added ControlsSample E2E coverage for catalog visibility and page-level flex semantics (`Direction=Column`, nested row body, `Order=-1`, fixed `Basis`, and content `Grow` behavior).
+
 ## 2026-03-19 (FlexLayout position parity follow-up: MAUI-shape constraint + custom-item toggle coverage)
 - Confirmed and locked the upstream MAUI shape for `FlexLayout.Position`: absolute-position flow applies to nested `FlexLayout` children (via `IFlexLayout.Position`), not arbitrary child controls.
 - Added integration coverage for absolute nested flex children carrying non-default flex-item properties (`Order`, `Grow`, `Shrink`, `Basis`, `AlignSelf`) to verify styles are cleared in absolute mode and deterministically restored when toggling back to relative mode.
