@@ -271,6 +271,48 @@ function toFiniteOrNull(value) {
   return Number(value);
 }
 
+function normalizeLongitude(value) {
+  let normalized = value;
+  while (normalized < -180) {
+    normalized += 360;
+  }
+
+  while (normalized > 180) {
+    normalized -= 360;
+  }
+
+  return normalized;
+}
+
+function normalizeRegion(region) {
+  const centerLatitude = toFiniteOrNull(region?.centerLatitude);
+  const centerLongitude = toFiniteOrNull(region?.centerLongitude);
+  const latitudeSpan = toFiniteOrNull(region?.latitudeSpan);
+  const longitudeSpan = toFiniteOrNull(region?.longitudeSpan);
+  if (centerLatitude == null || centerLongitude == null || latitudeSpan == null || longitudeSpan == null) {
+    return null;
+  }
+
+  return {
+    centerLatitude: Math.max(-90, Math.min(90, centerLatitude)),
+    centerLongitude: normalizeLongitude(centerLongitude),
+    latitudeSpan: Math.max(0.0001, Math.abs(latitudeSpan)),
+    longitudeSpan: Math.max(0.0001, Math.abs(longitudeSpan))
+  };
+}
+
+function areRegionsEquivalent(left, right) {
+  if (!left || !right) {
+    return false;
+  }
+
+  const epsilon = 0.000001;
+  return Math.abs(left.centerLatitude - right.centerLatitude) <= epsilon
+    && Math.abs(left.centerLongitude - right.centerLongitude) <= epsilon
+    && Math.abs(left.latitudeSpan - right.latitudeSpan) <= epsilon
+    && Math.abs(left.longitudeSpan - right.longitudeSpan) <= epsilon;
+}
+
 function toBoolean(value, defaultValue) {
   if (typeof value === "boolean") {
     return value;
@@ -346,6 +388,7 @@ function raiseRegionChanged(entry) {
     return;
   }
 
+  entry.lastAppliedRegion = region;
   setRegionTelemetry(entry.host, region);
   emitMirageEvent(entry.host, "mirage-map-region-changed", region);
 }
@@ -390,6 +433,7 @@ export function initializeMapJson(nodeId, optionsJson) {
       elements: new Map(),
       userLocationMarker: null,
       userLocationWatchId: null,
+      lastAppliedRegion: null,
       lastRegionRequestToken: 0,
       lastDismissPopupRequestToken: 0
     };
@@ -433,24 +477,21 @@ function normalizeMapType(value) {
 }
 
 function applyRegion(entry, region, animate) {
-  if (!entry || !region) {
-    return;
+  if (!entry) {
+    return null;
   }
 
-  const centerLatitude = toFiniteOrNull(region.centerLatitude);
-  const centerLongitude = toFiniteOrNull(region.centerLongitude);
-  const latitudeSpan = toFiniteOrNull(region.latitudeSpan);
-  const longitudeSpan = toFiniteOrNull(region.longitudeSpan);
-  if (centerLatitude == null || centerLongitude == null || latitudeSpan == null || longitudeSpan == null) {
-    return;
+  const normalizedRegion = normalizeRegion(region);
+  if (!normalizedRegion) {
+    return null;
   }
 
-  const halfLat = Math.max(0.00005, Math.abs(latitudeSpan) / 2);
-  const halfLng = Math.max(0.00005, Math.abs(longitudeSpan) / 2);
-  const south = Math.max(-90, centerLatitude - halfLat);
-  const north = Math.min(90, centerLatitude + halfLat);
-  const west = centerLongitude - halfLng;
-  const east = centerLongitude + halfLng;
+  const halfLat = Math.max(0.00005, normalizedRegion.latitudeSpan / 2);
+  const halfLng = Math.max(0.00005, normalizedRegion.longitudeSpan / 2);
+  const south = Math.max(-90, normalizedRegion.centerLatitude - halfLat);
+  const north = Math.min(90, normalizedRegion.centerLatitude + halfLat);
+  const west = normalizedRegion.centerLongitude - halfLng;
+  const east = normalizedRegion.centerLongitude + halfLng;
 
   const bounds = [
     [south, west],
@@ -461,6 +502,8 @@ function applyRegion(entry, region, animate) {
     animate: !!animate,
     duration: animate ? 0.25 : undefined
   });
+
+  return normalizedRegion;
 }
 
 function setLeafletHandlerState(handler, enabled) {
@@ -911,9 +954,23 @@ export function applyMapStateJson(nodeId, stateJson) {
   entry.lastRegionRequestToken = regionRequestToken;
 
   if (state?.region && typeof state.region === "object") {
-    applyRegion(entry, state.region, shouldAnimate);
-    setRegionTelemetry(entry.host, state.region);
+    const normalizedRequestedRegion = normalizeRegion(state.region);
+    if (normalizedRequestedRegion) {
+      const shouldApplyRegion = shouldAnimate || !areRegionsEquivalent(entry.lastAppliedRegion, normalizedRequestedRegion);
+      if (shouldApplyRegion) {
+        const appliedRegion = applyRegion(entry, normalizedRequestedRegion, shouldAnimate);
+        if (appliedRegion) {
+          entry.lastAppliedRegion = appliedRegion;
+        }
+      }
+
+      const telemetryRegion = shouldApplyRegion ? normalizedRequestedRegion : readRegionFromMap(entry.map);
+      setRegionTelemetry(entry.host, telemetryRegion ?? normalizedRequestedRegion);
+    } else {
+      setRegionTelemetry(entry.host, null);
+    }
   } else {
+    entry.lastAppliedRegion = null;
     setRegionTelemetry(entry.host, null);
   }
 

@@ -73,6 +73,48 @@ public sealed class ShowcaseFluentMapE2ETests : IClassFixture<ShowcaseHostFixtur
     }
 
     [Fact]
+    public async Task MapLab_TrafficToggle_DoesNotReapplyRegionWithoutMoveRequest()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1320, height: 860);
+        var page = await OpenMapLabAsync(context);
+        await WaitForMapReadyAsync(page);
+
+        await page.EvaluateAsync(
+            @"() => {
+                const proto = window.L && window.L.Map && window.L.Map.prototype;
+                if (!proto || typeof proto.fitBounds !== 'function') {
+                    return;
+                }
+
+                if (!proto.__mirageOriginalFitBounds) {
+                    proto.__mirageOriginalFitBounds = proto.fitBounds;
+                    proto.fitBounds = function(bounds, options) {
+                        window.__mirageFitBoundsCallCount = (window.__mirageFitBoundsCallCount || 0) + 1;
+                        return proto.__mirageOriginalFitBounds.call(this, bounds, options);
+                    };
+                }
+
+                window.__mirageFitBoundsCallCount = 0;
+            }");
+
+        await page.Locator("[data-automation-id='showcase-map-traffic-button']").ClickAsync();
+        await page.WaitForFunctionAsync(
+            @"() => {
+                const summary = document.querySelector('[data-automation-id=""showcase-map-options-label""]');
+                return !!summary && (summary.textContent || '').includes('Traffic=True');
+            }",
+            null,
+            new PageWaitForFunctionOptions
+            {
+                Timeout = 10000
+            });
+
+        await page.WaitForTimeoutAsync(250);
+        var fitBoundsCallCount = await page.EvaluateAsync<int>("() => Number(window.__mirageFitBoundsCallCount || 0)");
+        Assert.Equal(0, fitBoundsCallCount);
+    }
+
+    [Fact]
     public async Task MapLab_TrafficToggle_ReportsUnsupportedDiagnostic()
     {
         await using var context = await _fixture.NewContextAsync(width: 1320, height: 860);
