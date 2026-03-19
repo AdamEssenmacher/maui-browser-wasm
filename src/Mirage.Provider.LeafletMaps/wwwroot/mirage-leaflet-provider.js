@@ -498,6 +498,95 @@ function readRegionFromMap(map) {
   }
 }
 
+function clearScheduledInvalidateSize(entry) {
+  if (!entry) {
+    return;
+  }
+
+  if (entry.pendingInvalidateFrame != null && typeof cancelAnimationFrame === "function") {
+    cancelAnimationFrame(entry.pendingInvalidateFrame);
+  }
+
+  if (entry.pendingInvalidateTimeout != null) {
+    clearTimeout(entry.pendingInvalidateTimeout);
+  }
+
+  entry.pendingInvalidateFrame = null;
+  entry.pendingInvalidateTimeout = null;
+}
+
+function scheduleInvalidateSize(entry) {
+  if (!entry || !entry.map) {
+    return;
+  }
+
+  if (entry.pendingInvalidateFrame != null || entry.pendingInvalidateTimeout != null) {
+    return;
+  }
+
+  const runInvalidateSize = () => {
+    entry.pendingInvalidateFrame = null;
+    entry.pendingInvalidateTimeout = null;
+    if (!entry.map) {
+      return;
+    }
+
+    try {
+      entry.map.invalidateSize(false);
+    } catch {
+      // best effort
+    }
+  };
+
+  if (typeof requestAnimationFrame === "function") {
+    entry.pendingInvalidateFrame = requestAnimationFrame(runInvalidateSize);
+    return;
+  }
+
+  entry.pendingInvalidateTimeout = setTimeout(runInvalidateSize, 0);
+}
+
+function subscribeHostResize(entry) {
+  if (!entry || !entry.host) {
+    return;
+  }
+
+  if (typeof ResizeObserver === "function") {
+    entry.resizeObserver = new ResizeObserver(() => {
+      scheduleInvalidateSize(entry);
+    });
+    entry.resizeObserver.observe(entry.host);
+    return;
+  }
+
+  if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+    entry.windowResizeHandler = () => {
+      scheduleInvalidateSize(entry);
+    };
+    window.addEventListener("resize", entry.windowResizeHandler);
+  }
+}
+
+function unsubscribeHostResize(entry) {
+  if (!entry) {
+    return;
+  }
+
+  if (entry.resizeObserver && typeof entry.resizeObserver.disconnect === "function") {
+    entry.resizeObserver.disconnect();
+  }
+  entry.resizeObserver = null;
+
+  if (entry.windowResizeHandler
+    && typeof window !== "undefined"
+    && typeof window.removeEventListener === "function") {
+    window.removeEventListener("resize", entry.windowResizeHandler);
+  }
+  entry.windowResizeHandler = null;
+
+  clearScheduledInvalidateSize(entry);
+}
+
 function raiseRegionChanged(entry) {
   if (!entry || !entry.map || !entry.host) {
     return;
@@ -553,12 +642,17 @@ export function initializeMapJson(nodeId, optionsJson) {
       elements: new Map(),
       userLocationMarker: null,
       userLocationWatchId: null,
+      resizeObserver: null,
+      windowResizeHandler: null,
+      pendingInvalidateFrame: null,
+      pendingInvalidateTimeout: null,
       lastProjectedRegion: null,
       lastAppliedRegion: null,
       lastRegionRequestToken: 0,
       lastDismissPopupRequestToken: 0
     };
     mapEntries.set(nodeId, entry);
+    subscribeHostResize(entry);
 
     map.on("moveend", () => {
       raiseRegionChanged(entry);
@@ -1115,7 +1209,7 @@ export function applyMapStateJson(nodeId, stateJson) {
   syncPins(entry, state?.pins);
   syncElements(entry, state?.elements);
   applyDismissPopupRequest(entry, state);
-  entry.map.invalidateSize(false);
+  scheduleInvalidateSize(entry);
   return toResultJson(toResult(true, null, null, warningCode, warningMessage));
 }
 
@@ -1137,6 +1231,7 @@ export function disposeMap(nodeId) {
     entry.markers.clear();
     entry.elements.clear();
     clearUserLocation(entry);
+    unsubscribeHostResize(entry);
     entry.map.remove();
   } catch {
     // best effort

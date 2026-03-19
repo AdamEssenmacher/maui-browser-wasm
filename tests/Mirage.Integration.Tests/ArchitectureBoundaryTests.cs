@@ -510,6 +510,25 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void LeafletRuntimeModule_ObservesHostResizesAndInvalidatesMapSize()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "wwwroot",
+            "mirage-leaflet-provider.js");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+
+        var text = File.ReadAllText(runtimeModulePath);
+        Assert.Contains("function subscribeHostResize(entry)", text, StringComparison.Ordinal);
+        Assert.Contains("new ResizeObserver(() =>", text, StringComparison.Ordinal);
+        Assert.Contains("scheduleInvalidateSize(entry);", text, StringComparison.Ordinal);
+        Assert.Contains("function unsubscribeHostResize(entry)", text, StringComparison.Ordinal);
+        Assert.Contains("entry.resizeObserver.disconnect();", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ScrollViewHandler_MapsExplicitRequestScrollToThroughRuntimeBridge()
     {
         var handlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageScrollViewHandler.cs");

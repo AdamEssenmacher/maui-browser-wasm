@@ -38,6 +38,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - This preserves Leaflet's internal popup-open click handlers from `bindPopup(...)` across subsequent map state applies, preventing marker popup UX regressions after non-pin renders.
 - Added architecture-boundary coverage to guard against regressions back to clearing the entire marker click handler set.
 
+## 2026-03-19 (Leaflet host resize handling via observer-driven invalidate)
+- Leaflet map entries now subscribe to host resize changes (via `ResizeObserver`, with window-resize fallback) and schedule `invalidateSize(false)` so layout-only container size changes refresh Leaflet pixel bounds without requiring map-state reapply.
+- Map state application now routes through `scheduleInvalidateSize(...)` instead of directly calling `invalidateSize(...)`, coalescing rapid updates and avoiding redundant synchronous invalidations.
+- Added architecture-boundary and E2E coverage to lock this behavior (`LeafletRuntimeModule_ObservesHostResizesAndInvalidatesMapSize`, `MapLab_HostStyleResize_TriggersLeafletInvalidateSize`).
+
 ## 2026-03-18 (Map parity wave: MAUI-shaped handler split + region/event parity guardrails)
 - Split Mirage map handling into MAUI-shaped surfaces (`MirageMapHandler`, `MirageMapPinHandler`, `MirageMapElementHandler`) and registered all map-related handlers (`Map`, `Pin`, `MapElement`, `Circle`, `Polyline`, `Polygon`) through `UseMirageBrowserPlatform()`.
 - Expanded Mirage map semantic state to include MAUI map options, identity-based map elements, and popup-dismiss command tokens while keeping region/span authoritative and provider-neutral in core/runtime.

@@ -131,6 +131,53 @@ public sealed class ShowcaseFluentMapE2ETests : IClassFixture<ShowcaseHostFixtur
     }
 
     [Fact]
+    public async Task MapLab_HostStyleResize_TriggersLeafletInvalidateSize()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1320, height: 860);
+        var page = await OpenMapLabAsync(context);
+        await WaitForMapReadyAsync(page);
+
+        await page.EvaluateAsync(
+            @"() => {
+                const proto = window.L && window.L.Map && window.L.Map.prototype;
+                if (!proto || typeof proto.invalidateSize !== 'function') {
+                    return;
+                }
+
+                if (!proto.__mirageOriginalInvalidateSize) {
+                    proto.__mirageOriginalInvalidateSize = proto.invalidateSize;
+                    proto.invalidateSize = function(...args) {
+                        window.__mirageInvalidateSizeCallCount = (window.__mirageInvalidateSizeCallCount || 0) + 1;
+                        return proto.__mirageOriginalInvalidateSize.apply(this, args);
+                    };
+                }
+
+                window.__mirageInvalidateSizeCallCount = 0;
+            }");
+
+        await page.EvaluateAsync(
+            @"() => {
+                const map = document.querySelector('[data-automation-id=""showcase-map""]');
+                if (!map) {
+                    return;
+                }
+
+                map.style.height = '320px';
+            }");
+
+        await page.WaitForFunctionAsync(
+            "() => Number(window.__mirageInvalidateSizeCallCount || 0) > 0",
+            null,
+            new PageWaitForFunctionOptions
+            {
+                Timeout = 8000
+            });
+
+        var invalidateCalls = await page.EvaluateAsync<int>("() => Number(window.__mirageInvalidateSizeCallCount || 0)");
+        Assert.True(invalidateCalls > 0, $"Expected Leaflet invalidateSize to run after host resize. Calls={invalidateCalls}");
+    }
+
+    [Fact]
     public async Task MapLab_TrafficToggle_ReportsUnsupportedDiagnostic()
     {
         await using var context = await _fixture.NewContextAsync(width: 1320, height: 860);
