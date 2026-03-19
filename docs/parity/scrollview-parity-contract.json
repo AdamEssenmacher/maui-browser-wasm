@@ -1,0 +1,21 @@
+{
+  "mauiBaselineCommit": "fc1dadc4d68a809a9c14a7d33ff1289037040471",
+  "handlers": [
+    {
+      "name": "ScrollViewHandler",
+      "mirageType": "MirageScrollViewHandler",
+      "propertyMapperKeys": [
+        "Content",
+        "HorizontalScrollBarVisibility",
+        "VerticalScrollBarVisibility",
+        "Orientation"
+      ],
+      "commandMapperKeys": [
+        "RequestScrollTo"
+      ],
+      "mirageExtensionPropertyMapperKeys": [
+        "Padding"
+      ]
+    }
+  ]
+}

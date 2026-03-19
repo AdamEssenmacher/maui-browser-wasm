@@ -1,0 +1,13 @@
+{
+  "entries": [
+    {
+      "id": "scrollview-padding-explicit-mapper-key",
+      "summary": "Mirage adds an explicit ScrollView Padding mapper key so browser host styles update deterministically on runtime padding changes.",
+      "upstreamReference": "src/Core/src/Handlers/ScrollView/ScrollViewHandler.cs",
+      "testReference": "ScrollViewParityContract_DivergencesCoverMirageExtensionKeys",
+      "extensionKeys": [
+        "Padding"
+      ]
+    }
+  ]
+}

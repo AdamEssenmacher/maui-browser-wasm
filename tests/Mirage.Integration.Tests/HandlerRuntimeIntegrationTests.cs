@@ -2772,10 +2772,25 @@ public sealed class HandlerRuntimeIntegrationTests
         var handler = new MirageScrollViewHandler();
         ((IElementHandler)handler).SetMauiContext(mauiContext);
 
-        var scrollView = new ScrollView();
+        var content = new Label
+        {
+            Text = "Scrollable content",
+            WidthRequest = 640,
+            HeightRequest = 1200
+        };
+        var contentHandler = new MirageLabelHandler();
+        ((IElementHandler)contentHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)contentHandler).SetVirtualView(content);
+
+        var scrollView = new ScrollView
+        {
+            Content = content
+        };
         ((IElementHandler)handler).SetVirtualView(scrollView);
 
         handler.Invoke(nameof(IScrollView.RequestScrollTo), new ScrollToRequest(14, 96, true));
+        Assert.False(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out _, out _));
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
 
         Assert.True(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out var left, out var top));
         Assert.Equal(14, left);
@@ -2799,16 +2814,124 @@ public sealed class HandlerRuntimeIntegrationTests
         var handler = new MirageScrollViewHandler();
         ((IElementHandler)handler).SetMauiContext(mauiContext);
 
-        var scrollView = new ScrollView();
-        ((IElementHandler)handler).SetVirtualView(scrollView);
+        var content = new Label
+        {
+            Text = "Scrollable content",
+            WidthRequest = 640,
+            HeightRequest = 1200
+        };
+        var contentHandler = new MirageLabelHandler();
+        ((IElementHandler)contentHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)contentHandler).SetVirtualView(content);
 
-        await scrollView.ScrollToAsync(22, 140, animated: true);
+        var scrollView = new ScrollView
+        {
+            Content = content
+        };
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+        var pendingScrollTask = scrollView.ScrollToAsync(22, 140, animated: true);
+        Assert.False(pendingScrollTask.IsCompleted);
+        Assert.False(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out _, out _));
+
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        await pendingScrollTask;
 
         Assert.True(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out var left, out var top));
         Assert.Equal(22, left);
         Assert.Equal(140, top);
         Assert.Equal(22, scrollView.ScrollX);
         Assert.Equal(140, scrollView.ScrollY);
+    }
+
+    [Fact]
+    public void ScrollViewHandler_RequestScrollTo_DefersUntilArrangeWhenContentIsUnmeasured()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var content = new Label
+        {
+            Text = "Scrollable content",
+            WidthRequest = 640,
+            HeightRequest = 1200
+        };
+        var contentHandler = new MirageLabelHandler();
+        ((IElementHandler)contentHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)contentHandler).SetVirtualView(content);
+
+        var scrollView = new ScrollView
+        {
+            Content = content
+        };
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        handler.Invoke(nameof(IScrollView.RequestScrollTo), new ScrollToRequest(18, 220, Instant: true));
+        handler.Invoke(nameof(IScrollView.RequestScrollTo), new ScrollToRequest(44, 360, Instant: true));
+
+        Assert.False(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out _, out _));
+        Assert.Equal(0, scrollView.ScrollX);
+        Assert.Equal(0, scrollView.ScrollY);
+
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+
+        Assert.True(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out var left, out var top));
+        Assert.Equal(44, left);
+        Assert.Equal(360, top);
+        Assert.Equal(44, scrollView.ScrollX);
+        Assert.Equal(360, scrollView.ScrollY);
+    }
+
+    [Fact]
+    public void ScrollViewHandler_RuntimeScrollEvent_UpdatesVirtualOffsets()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        var scrollView = new ScrollView();
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        runtime.TrySetNodeScrollPosition(handler.PlatformView.NodeId, 36, 88, out _, out _);
+
+        handler.OnRuntimeEvent("scroll", payload: null);
+
+        Assert.Equal(36, scrollView.ScrollX);
+        Assert.Equal(88, scrollView.ScrollY);
+    }
+
+    [Fact]
+    public void ScrollViewHandler_PaddingMapper_ProjectsPaddingStyles()
+    {
+        var handler = new MirageScrollViewHandler();
+        var scrollView = new ScrollView
+        {
+            Padding = new Thickness(12, 8, 6, 4),
+            Content = new Label { Text = "Padding test" }
+        };
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        Assert.Equal("8px 6px 4px 12px", handler.PlatformView.GetStyleValue("padding"));
+
+        scrollView.Padding = new Thickness(2);
+        MirageScrollViewHandler.Mapper.UpdateProperty(handler, scrollView, nameof(ScrollView.Padding));
+
+        Assert.Equal("2px 2px 2px 2px", handler.PlatformView.GetStyleValue("padding"));
     }
 
     [Fact]

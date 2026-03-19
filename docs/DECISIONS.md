@@ -7,6 +7,12 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - This page now runs on existing Mirage FlexLayout behavior (semantic container projection plus attached item-property support) without adding sample-specific wrapper logic.
 - Added ControlsSample E2E coverage for catalog visibility and page-level flex semantics (`Direction=Column`, nested row body, `Order=-1`, fixed `Basis`, and content `Grow` behavior).
 
+## 2026-03-19 (ScrollView parity wave: MAUI-shaped mapper/command + deferred request apply)
+- Refactored `MirageScrollViewHandler` toward MAUI handler shape: mapper keys now track MAUI `ScrollViewHandler` surface (`Content`, scrollbar visibility, `Orientation`) with a documented Mirage extension key for `Padding`.
+- `RequestScrollTo` now follows MAUI-style typed command flow (`ScrollToRequest`), with deferred request buffering when scroll requests arrive before content is arranged and deterministic apply during `PlatformArrange`.
+- Scroll runtime events now update `IScrollView` offsets through interface semantics, and command completion flows through `IScrollView.ScrollFinished()` instead of control-type-specific calls.
+- Added explicit parity governance artifacts (`docs/parity/scrollview-parity-contract.json`, `docs/parity/scrollview-parity-divergences.json`) and integration coverage for deferred apply, runtime offset sync, and padding projection.
+
 ## 2026-03-19 (FlexLayout position parity follow-up: MAUI-shape constraint + custom-item toggle coverage)
 - Confirmed and locked the upstream MAUI shape for `FlexLayout.Position`: absolute-position flow applies to nested `FlexLayout` children (via `IFlexLayout.Position`), not arbitrary child controls.
 - Added integration coverage for absolute nested flex children carrying non-default flex-item properties (`Order`, `Grow`, `Shrink`, `Basis`, `AlignSelf`) to verify styles are cleared in absolute mode and deterministically restored when toggling back to relative mode.
