@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (FlexLayout position parity slice: absolute nested flex children)
+- Added explicit FlexLayout absolute-child handling to the semantic arrange path: when a flex child is itself a `FlexLayout` with `Position=Absolute`, Mirage now reapplies frame-driven geometry (`left`/`top`/`width`/`height`) after arrange without switching the whole container to frame-driven layout mode.
+- Relative flex children remain semantic CSS-flex projected, preserving the layout invariant for normal items while matching MAUI behavior for absolute-positioned nested flex items.
+- Added integration regressions for absolute nested flex-child geometry projection and runtime `Position` toggling (`Absolute` -> `Relative`) to prevent style-state drift.
+
 ## 2026-03-19 (ControlsSample MapsGallery runnable + Switch dependency on Mirage path)
 - Promoted `MapsGallery` from hidden placeholder to runnable in ControlsSample, with Leaflet provider registration in `ControlsSample.Fluent` and `UseMauiMaps()` wiring in `ControlsSample.Maui` so browser and native hosts share the same upstream page set.
 - Added framework-level `Switch` support (`ComponentKind.Switch`, `MirageSwitchHandler`, Fluent descriptor, runtime CSS) because `BasicMapGallery` depends on `Switch` and must run through normal MAUI handler mapping.

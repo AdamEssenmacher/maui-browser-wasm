@@ -253,6 +253,18 @@ internal static class MirageLayoutProjection
 
     private static bool ApplyFlexLayoutChildStyles(MiragePlatformView childPlatformView, IView childView)
     {
+        if (IsAbsoluteFlexLayoutChild(childView))
+        {
+            var absoluteChanged = SetChildStyleIfChanged(childPlatformView, "margin", null);
+            absoluteChanged |= SetChildStyleIfChanged(childPlatformView, "alignSelf", null);
+            absoluteChanged |= SetChildStyleIfChanged(childPlatformView, "order", null);
+            absoluteChanged |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
+            absoluteChanged |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
+            absoluteChanged |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
+            absoluteChanged |= ApplyCustomLayoutChildStyles(childPlatformView, childView);
+            return absoluteChanged;
+        }
+
         var changed = SetChildStyleIfChanged(childPlatformView, "position", "relative");
         changed |= SetChildStyleIfChanged(childPlatformView, "left", null);
         changed |= SetChildStyleIfChanged(childPlatformView, "top", null);
@@ -282,8 +294,19 @@ internal static class MirageLayoutProjection
         changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", grow.ToString("0.###", CultureInfo.InvariantCulture));
         changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", shrink.ToString("0.###", CultureInfo.InvariantCulture));
         changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", basis);
+        if (childView is IFlexLayout && childView is VisualElement visualElement)
+        {
+            changed |= SetChildStyleIfChanged(childPlatformView, "width", ResolveRequestedLength(visualElement.WidthRequest));
+            changed |= SetChildStyleIfChanged(childPlatformView, "height", ResolveRequestedLength(visualElement.HeightRequest));
+        }
+
         changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
         return changed;
+    }
+
+    private static bool IsAbsoluteFlexLayoutChild(IView childView)
+    {
+        return childView is IFlexLayout { Position: FlexPosition.Absolute };
     }
 
     private static (int Row, int Column, int RowSpan, int ColumnSpan) GetGridPlacement(IView childView)
@@ -455,6 +478,16 @@ internal static class MirageLayoutProjection
         }
 
         return value;
+    }
+
+    private static string? ResolveRequestedLength(double requestedLength)
+    {
+        if (!double.IsFinite(requestedLength) || requestedLength < 0)
+        {
+            return null;
+        }
+
+        return MirageViewMapper.ToPx(requestedLength);
     }
 
     private static bool SetChildStyleIfChanged(MiragePlatformView childPlatformView, string styleName, string? value)

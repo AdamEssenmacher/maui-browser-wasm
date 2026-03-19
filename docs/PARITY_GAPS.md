@@ -55,7 +55,8 @@ Every gap listed here must have deterministic behavior and regression tests.
 
 13. FlexLayout parity depth
 - Current behavior: semantic CSS flex projection is implemented for container properties (`Direction`, `Wrap`, `JustifyContent`, `AlignItems`, `AlignContent`) and item attached properties (`Order`, `Grow`, `Shrink`, `Basis`, `AlignSelf`).
-- Deferred: full `FlexLayout.Position` parity and advanced edge semantics across mixed absolute/relative flex children remain partial.
+- Current behavior: nested `FlexLayout` children with `Position=Absolute` are projected through frame-driven geometry (`left`/`top`/`width`/`height`) during arrange, while relative flex children stay semantic.
+- Deferred: advanced mixed absolute/relative edge semantics remain partial (including deeper compatibility expectations beyond nested `FlexLayout` children).
 
 14. Font-load synchronized measurement
 - Current behavior: text measurement is canvas-based with deterministic fallback.
