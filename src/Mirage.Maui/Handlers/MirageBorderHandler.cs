@@ -955,20 +955,11 @@ internal sealed class MirageBorderHandler : MirageContentViewHandlerBase<Border>
 
     private bool ApplyPresentedContentClipProjection(ShapeProjection projection)
     {
-        if (!TryGetPresentedContentPlatformView(out var contentPlatformView))
-        {
-            return false;
-        }
-
         _ = projection;
 
-        // Border host projection owns clipping. Applying clip styles to the presented content
-        // can desync geometry when content uses a different local size than the border frame.
-        var changed = SetStyleIfChanged(contentPlatformView, "borderRadius", null);
-        changed |= SetStyleIfChanged(contentPlatformView, "clipPath", null);
-        changed |= SetStyleIfChanged(contentPlatformView, "-webkit-clip-path", null);
-        changed |= SetStyleIfChanged(contentPlatformView, "overflow", null);
-        return changed;
+        // Border host projection owns clipping. We intentionally avoid mutating presented-content
+        // clip/border/overflow styles so child handlers retain ownership of their own style surface.
+        return false;
     }
 
     private static bool SetPropertyIfChanged(MiragePlatformView view, string propertyName, string? propertyValue)
