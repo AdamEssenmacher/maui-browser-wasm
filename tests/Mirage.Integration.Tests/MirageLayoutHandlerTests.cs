@@ -1,3 +1,4 @@
+using Mirage.Core.Semantics;
 using Mirage.Maui.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
@@ -240,6 +241,81 @@ public sealed class MirageLayoutHandlerTests
         layout.InputTransparent = false;
         MirageLayoutHandler.Mapper.UpdateProperty(handler, layout, nameof(IView.InputTransparent));
         Assert.Null(handler.PlatformView.GetStyleValue("pointerEvents"));
+    }
+
+    [Fact]
+    public void LayoutHandler_FlexLayout_ProjectsContainerAndAttachedItemStylesIncrementally()
+    {
+        var layout = new FlexLayout
+        {
+            Direction = FlexDirection.Row,
+            Wrap = FlexWrap.Wrap,
+            JustifyContent = FlexJustify.SpaceBetween,
+            AlignItems = FlexAlignItems.Center,
+            AlignContent = FlexAlignContent.SpaceAround
+        };
+
+        var first = new Label { Text = "First" };
+        var second = new Label { Text = "Second" };
+        layout.Children.Add(first);
+        layout.Children.Add(second);
+
+        FlexLayout.SetOrder(second, 3);
+        FlexLayout.SetGrow(second, 2f);
+        FlexLayout.SetShrink(second, 4f);
+        FlexLayout.SetBasis(second, new FlexBasis(0.5f, true));
+        FlexLayout.SetAlignSelf(second, FlexAlignSelf.End);
+
+        var handler = CreateHandler(out var mauiContext);
+        AttachLayoutChildHandlers(layout, mauiContext);
+        ((IElementHandler)handler).SetVirtualView(layout);
+
+        Assert.Equal(ComponentKind.Layout, handler.PlatformView.ControlKind);
+        Assert.Equal("flex", handler.PlatformView.GetStyleValue("display"));
+        Assert.Equal("row", handler.PlatformView.GetStyleValue("flexDirection"));
+        Assert.Equal("wrap", handler.PlatformView.GetStyleValue("flexWrap"));
+        Assert.Equal("space-between", handler.PlatformView.GetStyleValue("justifyContent"));
+        Assert.Equal("center", handler.PlatformView.GetStyleValue("alignItems"));
+        Assert.Equal("space-around", handler.PlatformView.GetStyleValue("alignContent"));
+
+        var secondPlatform = GetPlatformView(second);
+        Assert.Equal("3", secondPlatform.GetStyleValue("order"));
+        Assert.Equal("2", secondPlatform.GetStyleValue("flexGrow"));
+        Assert.Equal("4", secondPlatform.GetStyleValue("flexShrink"));
+        Assert.Equal("50%", secondPlatform.GetStyleValue("flexBasis"));
+        Assert.Equal("flex-end", secondPlatform.GetStyleValue("alignSelf"));
+
+        layout.Direction = FlexDirection.ColumnReverse;
+        layout.Wrap = FlexWrap.Reverse;
+        layout.JustifyContent = FlexJustify.SpaceEvenly;
+        layout.AlignItems = FlexAlignItems.End;
+        layout.AlignContent = FlexAlignContent.Start;
+
+        MirageLayoutHandler.Mapper.UpdateProperty(handler, layout, nameof(FlexLayout.Direction));
+        MirageLayoutHandler.Mapper.UpdateProperty(handler, layout, nameof(FlexLayout.Wrap));
+        MirageLayoutHandler.Mapper.UpdateProperty(handler, layout, nameof(FlexLayout.JustifyContent));
+        MirageLayoutHandler.Mapper.UpdateProperty(handler, layout, nameof(FlexLayout.AlignItems));
+        MirageLayoutHandler.Mapper.UpdateProperty(handler, layout, nameof(FlexLayout.AlignContent));
+
+        Assert.Equal("column-reverse", handler.PlatformView.GetStyleValue("flexDirection"));
+        Assert.Equal("wrap-reverse", handler.PlatformView.GetStyleValue("flexWrap"));
+        Assert.Equal("space-evenly", handler.PlatformView.GetStyleValue("justifyContent"));
+        Assert.Equal("flex-end", handler.PlatformView.GetStyleValue("alignItems"));
+        Assert.Equal("flex-start", handler.PlatformView.GetStyleValue("alignContent"));
+
+        var beforeRevision = handler.PlatformView.LocalStructureRevision;
+        FlexLayout.SetOrder(second, 1);
+        FlexLayout.SetGrow(second, 0.5f);
+        FlexLayout.SetShrink(second, 0.25f);
+        FlexLayout.SetBasis(second, FlexBasis.Auto);
+        FlexLayout.SetAlignSelf(second, FlexAlignSelf.Auto);
+
+        Assert.Equal(beforeRevision, handler.PlatformView.LocalStructureRevision);
+        Assert.Equal("1", secondPlatform.GetStyleValue("order"));
+        Assert.Equal("0.5", secondPlatform.GetStyleValue("flexGrow"));
+        Assert.Equal("0.25", secondPlatform.GetStyleValue("flexShrink"));
+        Assert.Equal("auto", secondPlatform.GetStyleValue("flexBasis"));
+        Assert.Null(secondPlatform.GetStyleValue("alignSelf"));
     }
 
     [Fact]

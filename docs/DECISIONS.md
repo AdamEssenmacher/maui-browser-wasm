@@ -8,6 +8,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Extended wrapper compatibility instrumentation to cover Maps galleries (root nav buttons, sub-page hosts, map hosts, and key controls) so E2E selectors stay deterministic without sample-specific DOM hacks.
 - Kept map divergence policy unchanged for this wave (map-type fallback, traffic overlay limitations, geolocation permission dependency); this slice focuses on runnable gallery coverage through the existing Mirage + Leaflet architecture.
 
+## 2026-03-19 (Layout parity follow-up: FlexLayout mapper and attached-item projection in MirageLayoutHandler)
+- Extended `MirageLayoutHandler` with MAUI-aligned `FlexLayout` mapper keys (`Direction`, `Wrap`, `JustifyContent`, `AlignItems`, `AlignContent`) while keeping layout command/lifecycle flow unchanged.
+- `FlexLayout` now projects as a semantic flex container on the existing `ComponentKind.Layout` path, and child attached properties (`Order`, `Grow`, `Shrink`, `Basis`, `AlignSelf`) are synchronized incrementally through child property-change tracking.
+- Added explicit handler registration for `FlexLayout` in `UseMirageBrowserPlatform()`, updated layout parity contract/divergence artifacts, and added integration coverage for both container style projection and incremental attached-property updates without structure rebuild churn.
+
 ## 2026-03-19 (Map resiliency follow-up: transient-only provider retries + geolocation watch recovery)
 - `MirageRuntime` now retries map-provider non-ready results only for transient failure codes (`*-timeout`, `leaflet-global-missing`, `readiness-exception`, `initialization-exception`, `provider-not-ready`) instead of retrying deterministic asset/config failures.
 - This preserves recovery behavior for intermittent startup issues while allowing deterministic broken-asset scenarios to fail fast with stable error projection.
