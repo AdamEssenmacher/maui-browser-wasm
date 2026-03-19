@@ -2758,6 +2758,53 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void ScrollViewHandler_GetDesiredSize_WithoutContent_ResolvesExplicitMinMaxConstraints()
+    {
+        var scrollView = new ScrollView
+        {
+            Padding = new Thickness(12, 8, 6, 4),
+            WidthRequest = 80,
+            MinimumWidthRequest = 120,
+            MaximumWidthRequest = 100,
+            HeightRequest = 50,
+            MinimumHeightRequest = 70,
+            MaximumHeightRequest = 60
+        };
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        var desired = handler.GetDesiredSize(40, 30);
+
+        Assert.Equal(120, desired.Width);
+        Assert.Equal(70, desired.Height);
+    }
+
+    [Fact]
+    public void ScrollViewHandler_GetDesiredSize_WithContent_ResolvesExplicitMinMaxConstraints()
+    {
+        var probe = new MeasureProbeContentView();
+        var scrollView = new ScrollView
+        {
+            Orientation = ScrollOrientation.Vertical,
+            Content = probe,
+            WidthRequest = 280,
+            MaximumWidthRequest = 260,
+            HeightRequest = 260,
+            MinimumHeightRequest = 280
+        };
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        var desired = handler.GetDesiredSize(320, 180);
+
+        Assert.True(probe.MeasureCount > 0, "Expected probe content to be measured.");
+        Assert.Equal(260, desired.Width);
+        Assert.Equal(280, desired.Height);
+    }
+
+    [Fact]
     public void ScrollViewHandler_RequestScrollTo_ExecutesThroughCoordinatorRuntimeBridge()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
@@ -2844,6 +2891,57 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal(140, top);
         Assert.Equal(22, scrollView.ScrollX);
         Assert.Equal(140, scrollView.ScrollY);
+    }
+
+    [Fact]
+    public async Task ScrollView_ScrollToAsync_SupersededAnimatedRequest_WaitsForRuntimeCompletion()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var content = new Label
+        {
+            Text = "Scrollable content",
+            WidthRequest = 640,
+            HeightRequest = 1200
+        };
+        var contentHandler = new MirageLabelHandler();
+        ((IElementHandler)contentHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)contentHandler).SetVirtualView(content);
+
+        var scrollView = new ScrollView
+        {
+            Content = content
+        };
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        content.Frame = new Rect(0, 0, 320, 1200);
+
+        var firstTask = scrollView.ScrollToAsync(16, 120, animated: true);
+        Assert.False(firstTask.IsCompleted);
+
+        content.Frame = new Rect(0, 0, 320, 1200);
+        var secondTask = scrollView.ScrollToAsync(44, 280, animated: true);
+        Assert.False(firstTask.IsCompleted);
+        Assert.False(secondTask.IsCompleted);
+        Assert.True(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out var left, out var top));
+        Assert.Equal(44, left);
+        Assert.Equal(280, top);
+
+        handler.OnRuntimeEvent("scroll", payload: null);
+        await secondTask.WaitAsync(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(44, scrollView.ScrollX);
+        Assert.Equal(280, scrollView.ScrollY);
     }
 
     [Fact]

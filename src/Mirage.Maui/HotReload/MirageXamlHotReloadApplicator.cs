@@ -13,6 +13,7 @@ internal static class MirageXamlHotReloadApplicator
 
     private static readonly MethodInfo? XamlLoaderLoadMethod = FindXamlLoaderLoadMethod();
     private static readonly MethodInfo? GetNameScopeMethod = FindGetNameScopeMethod();
+    private static int s_resourceDictionaryHotReloadInitialized;
 
     public static bool TryApplyElementXaml(Element element, string xaml, out Exception? error, Window? hostWindow = null)
     {
@@ -73,6 +74,7 @@ internal static class MirageXamlHotReloadApplicator
 
     private static void ApplyResourceDictionaryXaml(ResourceDictionary dictionary, string xaml)
     {
+        EnsureResourceDictionaryHotReloadHelperInitialized();
         dictionary.Clear();
         LoadXaml(dictionary, xaml);
     }
@@ -789,6 +791,27 @@ internal static class MirageXamlHotReloadApplicator
             Type.EmptyTypes,
             modifiers: null);
         clearMethod?.Invoke(value, null);
+    }
+
+    private static void EnsureResourceDictionaryHotReloadHelperInitialized()
+    {
+        if (Interlocked.Exchange(ref s_resourceDictionaryHotReloadInitialized, 1) == 1)
+        {
+            return;
+        }
+
+        var helperType = FindType(
+            "Microsoft.Maui.Controls.Xaml.Diagnostics.ResourceDictionaryHotReloadHelper",
+            "Microsoft.Maui.Controls.HotReload.ResourceDictionaryHotReloadHelper",
+            "ResourceDictionaryHotReloadHelper");
+
+        var initMethod = helperType?.GetMethod(
+            "Init",
+            StaticFlags,
+            binder: null,
+            Type.EmptyTypes,
+            modifiers: null);
+        initMethod?.Invoke(null, null);
     }
 
     private static MethodInfo? FindXamlLoaderLoadMethod()

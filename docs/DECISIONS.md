@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (ScrollView parity follow-up: superseded animated completion + explicit constraint resolution)
+- `MirageScrollViewHandler` no longer calls `ScrollFinished()` when a new scroll request supersedes an in-flight animated request; completion now tracks the active request and remains runtime-signal-driven for non-instant scrolls.
+- `GetDesiredSize` now resolves measured size in two phases (constraint clamp, then explicit/min/max resolution), matching MAUI constraint intent for both content-present and no-content (padding baseline) paths.
+- Added integration regressions covering superseded animated `ScrollToAsync` completion timing and explicit/min/max behavior in both measure branches.
+
 ## 2026-03-19 (ControlsSample FlexLayoutPage Enablement)
 - Promoted upstream `FlexLayoutPage` to a runnable ControlsSample catalog entry and linked its XAML/code-behind into `ControlsSample.Shared`.
 - This page now runs on existing Mirage FlexLayout behavior (semantic container projection plus attached item-property support) without adding sample-specific wrapper logic.

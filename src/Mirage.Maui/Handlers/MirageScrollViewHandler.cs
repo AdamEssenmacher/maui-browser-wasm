@@ -95,11 +95,11 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
     {
         var padding = ResolvePadding(VirtualView);
         var content = ResolvePresentedContent(VirtualView);
+        var measuredWidth = Math.Max(0, padding.HorizontalThickness);
+        var measuredHeight = Math.Max(0, padding.VerticalThickness);
         if (content is null)
         {
-            return new Size(
-                ResolveDesiredDimension(widthConstraint, padding.HorizontalThickness),
-                ResolveDesiredDimension(heightConstraint, padding.VerticalThickness));
+            return ResolveMeasuredSizeWithConstraints(VirtualView, widthConstraint, heightConstraint, measuredWidth, measuredHeight);
         }
 
         var orientation = VirtualView.Orientation;
@@ -113,9 +113,9 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
             : innerHeightConstraint;
 
         var contentSize = content.Measure(horizontalConstraint, verticalConstraint);
-        return new Size(
-            ResolveDesiredDimension(widthConstraint, contentSize.Width + padding.HorizontalThickness),
-            ResolveDesiredDimension(heightConstraint, contentSize.Height + padding.VerticalThickness));
+        measuredWidth = contentSize.Width + padding.HorizontalThickness;
+        measuredHeight = contentSize.Height + padding.VerticalThickness;
+        return ResolveMeasuredSizeWithConstraints(VirtualView, widthConstraint, heightConstraint, measuredWidth, measuredHeight);
     }
 
     public override void PlatformArrange(Rect frame)
@@ -225,9 +225,9 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
     {
         if (_awaitingAnimatedScrollCompletion)
         {
-            // Keep completion semantics deterministic if a new request supersedes an in-flight animated request.
+            // A new request supersedes any in-flight animation completion for prior requests.
+            // The current request must complete only when its own runtime signal arrives.
             _awaitingAnimatedScrollCompletion = false;
-            scrollView.ScrollFinished();
         }
 
         if (allowDeferral && ShouldDeferScrollRequest(scrollView))
@@ -288,6 +288,55 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
         }
 
         return Math.Max(0, Math.Min(constraint, contentDimension));
+    }
+
+    private static Size ResolveMeasuredSizeWithConstraints(
+        IScrollView scrollView,
+        double widthConstraint,
+        double heightConstraint,
+        double measuredWidth,
+        double measuredHeight)
+    {
+        var clampedWidth = ResolveDesiredDimension(widthConstraint, measuredWidth);
+        var clampedHeight = ResolveDesiredDimension(heightConstraint, measuredHeight);
+        return new Size(
+            ResolveConstraints(clampedWidth, scrollView.Width, scrollView.MinimumWidth, scrollView.MaximumWidth),
+            ResolveConstraints(clampedHeight, scrollView.Height, scrollView.MinimumHeight, scrollView.MaximumHeight));
+    }
+
+    private static double ResolveConstraints(double measured, double exact, double min, double max)
+    {
+        var resolved = measured;
+        var resolvedMin = ResolveMinimum(min);
+
+        if (IsExplicitSet(exact))
+        {
+            resolved = exact;
+        }
+
+        if (resolved > max)
+        {
+            resolved = max;
+        }
+
+        if (resolved < resolvedMin)
+        {
+            resolved = resolvedMin;
+        }
+
+        return resolved;
+    }
+
+    private static double ResolveMinimum(double value)
+    {
+        return IsExplicitSet(value)
+            ? value
+            : 0;
+    }
+
+    private static bool IsExplicitSet(double value)
+    {
+        return !double.IsNaN(value);
     }
 
     private static IView? ResolvePresentedContent(IScrollView scrollView)
