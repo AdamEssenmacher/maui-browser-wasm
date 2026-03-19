@@ -86,18 +86,17 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     {
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenAsync(context);
+        const string selector = "[data-automation-id='hero-headline']";
+        const string propertyName = "color";
 
         await page.EmulateMediaAsync(new() { ColorScheme = ColorScheme.Light });
-        await page.WaitForTimeoutAsync(140);
-        var lightHeadlineColor = await ReadCssPropertyAsync(page, "[data-automation-id='hero-headline']", "color");
+        var lightHeadlineColor = await ReadCssPropertyAsync(page, selector, propertyName);
 
         await page.EmulateMediaAsync(new() { ColorScheme = ColorScheme.Dark });
-        await page.WaitForTimeoutAsync(140);
-        var darkHeadlineColor = await ReadCssPropertyAsync(page, "[data-automation-id='hero-headline']", "color");
+        var darkHeadlineColor = await WaitForCssPropertyToDifferAsync(page, selector, propertyName, lightHeadlineColor);
 
         await page.EmulateMediaAsync(new() { ColorScheme = ColorScheme.Light });
-        await page.WaitForTimeoutAsync(140);
-        var lightHeadlineColorAfter = await ReadCssPropertyAsync(page, "[data-automation-id='hero-headline']", "color");
+        var lightHeadlineColorAfter = await WaitForCssPropertyToEqualAsync(page, selector, propertyName, lightHeadlineColor);
 
         Assert.NotEqual(lightHeadlineColor, darkHeadlineColor);
         Assert.Equal(lightHeadlineColor, lightHeadlineColorAfter);
@@ -1147,6 +1146,40 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
                 return window.getComputedStyle(element).getPropertyValue(propertyName).trim();
             }",
             new { selector, propertyName });
+    }
+
+    private static async Task<string> WaitForCssPropertyToEqualAsync(IPage page, string selector, string propertyName, string expectedValue)
+    {
+        await page.WaitForFunctionAsync(
+            @"({ selector, propertyName, expectedValue }) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return false;
+                }
+
+                const value = window.getComputedStyle(element).getPropertyValue(propertyName).trim();
+                return value.length > 0 && value === expectedValue;
+            }",
+            new { selector, propertyName, expectedValue });
+
+        return await ReadCssPropertyAsync(page, selector, propertyName);
+    }
+
+    private static async Task<string> WaitForCssPropertyToDifferAsync(IPage page, string selector, string propertyName, string expectedValue)
+    {
+        await page.WaitForFunctionAsync(
+            @"({ selector, propertyName, expectedValue }) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return false;
+                }
+
+                const value = window.getComputedStyle(element).getPropertyValue(propertyName).trim();
+                return value.length > 0 && value !== expectedValue;
+            }",
+            new { selector, propertyName, expectedValue });
+
+        return await ReadCssPropertyAsync(page, selector, propertyName);
     }
 
     private static async Task<double> ReadTopDeltaAsync(IPage page, string firstSelector, string secondSelector)
