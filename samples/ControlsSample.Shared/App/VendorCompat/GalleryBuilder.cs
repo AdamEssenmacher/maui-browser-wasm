@@ -15,7 +15,7 @@ public static class GalleryBuilder
         ArgumentNullException.ThrowIfNull(nav);
 
         var slug = ToSlug(galleryName);
-        var automationId = BuildNavButtonAutomationId(gallery, slug);
+        var automationId = BuildNavButtonAutomationId(galleryName, slug);
         var button = new Button
         {
             Text = galleryName,
@@ -43,29 +43,28 @@ public static class GalleryBuilder
         return button;
     }
 
-    private static string BuildNavButtonAutomationId(Func<Page> gallery, string slug)
+    private static string BuildNavButtonAutomationId(string galleryName, string slug)
     {
-        var returnType = gallery.Method.ReturnType;
-        if (returnType == typeof(Page))
-        {
-            try
-            {
-                returnType = gallery().GetType();
-            }
-            catch
-            {
-                // Keep fallback behavior deterministic if factory inspection fails.
-            }
-        }
-
-        var @namespace = returnType.Namespace ?? string.Empty;
-
-        if (@namespace.Contains(".MapsGalleries", StringComparison.Ordinal))
+        if (IsMapsGalleryButton(galleryName))
         {
             return $"controls-sample-mapsgallery-open-{slug}";
         }
 
         return $"controls-sample-borderpage-open-{slug}";
+    }
+
+    private static bool IsMapsGalleryButton(string galleryName)
+    {
+        return galleryName switch
+        {
+            "Basic Map" => true,
+            "Map Type" => true,
+            "Map Pins" => true,
+            "Pins ItemsSource" => true,
+            "Circle" => true,
+            "Polygon" => true,
+            _ => false
+        };
     }
 
     private static void InstrumentGalleryPage(Page page)
