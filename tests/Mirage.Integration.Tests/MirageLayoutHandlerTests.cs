@@ -380,6 +380,56 @@ public sealed class MirageLayoutHandlerTests
     }
 
     [Fact]
+    public void FlexLayout_ChildLayoutAlignmentRemaps_ReapplyFlexItemProjection()
+    {
+        var layout = new TestFlexLayout
+        {
+            Direction = FlexDirection.Row,
+            Wrap = FlexWrap.Wrap,
+            JustifyContent = FlexJustify.SpaceBetween,
+            AlignItems = FlexAlignItems.Center,
+            AlignContent = FlexAlignContent.SpaceAround,
+            WidthRequest = 420,
+            HeightRequest = 260
+        };
+
+        var child = new Label
+        {
+            Text = "Child",
+            HorizontalOptions = LayoutOptions.Fill,
+            VerticalOptions = LayoutOptions.Fill,
+            WidthRequest = 80,
+            HeightRequest = 40
+        };
+
+        layout.Children.Add(child);
+        FlexLayout.SetAlignSelf(child, FlexAlignSelf.End);
+
+        var handler = CreateHandler(out var mauiContext);
+        AttachLayoutChildHandlers(layout, mauiContext);
+        ((IElementHandler)handler).SetVirtualView(layout);
+
+        var childPlatform = GetPlatformView(child);
+        Assert.Equal("flex-end", childPlatform.GetStyleValue("alignSelf"));
+
+        var beforeRevision = handler.PlatformView.LocalStructureRevision;
+
+        child.WidthRequest = 120;
+        Assert.Equal("flex-end", childPlatform.GetStyleValue("alignSelf"));
+
+        child.HeightRequest = 64;
+        Assert.Equal("flex-end", childPlatform.GetStyleValue("alignSelf"));
+
+        child.HorizontalOptions = LayoutOptions.Center;
+        Assert.Equal("flex-end", childPlatform.GetStyleValue("alignSelf"));
+
+        child.VerticalOptions = LayoutOptions.End;
+        Assert.Equal("flex-end", childPlatform.GetStyleValue("alignSelf"));
+
+        Assert.Equal(beforeRevision, handler.PlatformView.LocalStructureRevision);
+    }
+
+    [Fact]
     public void CustomLayout_Arrange_StillAppliesAbsoluteArrangedFrames()
     {
         var layout = new FrameDrivenTestLayout();

@@ -658,7 +658,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
 
         if (kind == ComponentKind.Layout
             && VirtualView is FlexLayout
-            && IsFlexLayoutProjectionProperty(propertyName))
+            && (IsFlexLayoutProjectionProperty(propertyName) || IsFlexLayoutAlignmentRemapProperty(propertyName)))
         {
             UpdateChild(fallbackIndex: -1, child);
         }
@@ -705,6 +705,19 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                || string.Equals(propertyName, FlexLayout.ShrinkProperty.PropertyName, StringComparison.Ordinal)
                || string.Equals(propertyName, FlexLayout.BasisProperty.PropertyName, StringComparison.Ordinal)
                || string.Equals(propertyName, FlexLayout.AlignSelfProperty.PropertyName, StringComparison.Ordinal);
+    }
+
+    private static bool IsFlexLayoutAlignmentRemapProperty(string? propertyName)
+    {
+        if (string.IsNullOrEmpty(propertyName))
+        {
+            return false;
+        }
+
+        return string.Equals(propertyName, nameof(VisualElement.WidthRequest), StringComparison.Ordinal)
+               || string.Equals(propertyName, nameof(VisualElement.HeightRequest), StringComparison.Ordinal)
+               || string.Equals(propertyName, nameof(View.HorizontalOptions), StringComparison.Ordinal)
+               || string.Equals(propertyName, nameof(View.VerticalOptions), StringComparison.Ordinal);
     }
 
     private void ApplyBaseStyles()

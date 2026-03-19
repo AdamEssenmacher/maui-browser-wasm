@@ -355,6 +355,13 @@ internal static class MirageCommonViewProjection
             return false;
         }
 
+        if (view.Parent is FlexLayout)
+        {
+            // Flex item alignment is projected by MirageLayoutProjection from FlexLayout attached properties.
+            // Common layout alignment mapping must not clear flex-item alignSelf/justifySelf styles.
+            return false;
+        }
+
         var parentKind = ResolveParentLayoutKind(view, platformHandler.MiragePlatformView.Parent?.ControlKind);
         if (parentKind is null)
         {
