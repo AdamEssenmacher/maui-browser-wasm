@@ -458,6 +458,23 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void LeafletMapInterop_ClearsFailedModuleImportTaskForRetries()
+    {
+        var interopPath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "LeafletMapInterop.cs");
+        Assert.True(File.Exists(interopPath), $"Expected interop file not found: {interopPath}");
+
+        var text = File.ReadAllText(interopPath);
+        Assert.Contains("existing.IsFaulted", text, StringComparison.Ordinal);
+        Assert.Contains("existing.IsCanceled", text, StringComparison.Ordinal);
+        Assert.Contains("Interlocked.CompareExchange(ref s_moduleImportTask, null, existing)", text, StringComparison.Ordinal);
+        Assert.Contains("Interlocked.CompareExchange(ref s_moduleImportTask, null, createdTask);", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void LeafletRuntimeModule_ClearsReadinessPromiseAfterFailedInitialization()
     {
         var runtimeModulePath = Path.Combine(

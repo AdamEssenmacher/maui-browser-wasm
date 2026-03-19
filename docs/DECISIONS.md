@@ -43,6 +43,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Map state application now routes through `scheduleInvalidateSize(...)` instead of directly calling `invalidateSize(...)`, coalescing rapid updates and avoiding redundant synchronous invalidations.
 - Added architecture-boundary and E2E coverage to lock this behavior (`LeafletRuntimeModule_ObservesHostResizesAndInvalidatesMapSize`, `MapLab_HostStyleResize_TriggersLeafletInvalidateSize`).
 
+## 2026-03-19 (Leaflet interop import retry after transient module-load failure)
+- `LeafletMapInterop.EnsureModuleLoadedAsync` now treats faulted/canceled cached module-import tasks as retryable and clears the cached task before attempting a fresh `JSHost.ImportAsync(...)`.
+- Import tasks created by the interop layer now clear their own cache entry on failure, preventing a permanently faulted module task from blocking all subsequent map-provider initialization retries.
+- Added architecture-boundary coverage to guard this retry/reset behavior in `LeafletMapInterop`.
+
 ## 2026-03-18 (Map parity wave: MAUI-shaped handler split + region/event parity guardrails)
 - Split Mirage map handling into MAUI-shaped surfaces (`MirageMapHandler`, `MirageMapPinHandler`, `MirageMapElementHandler`) and registered all map-related handlers (`Map`, `Pin`, `MapElement`, `Circle`, `Polyline`, `Polygon`) through `UseMirageBrowserPlatform()`.
 - Expanded Mirage map semantic state to include MAUI map options, identity-based map elements, and popup-dismiss command tokens while keeping region/span authoritative and provider-neutral in core/runtime.
