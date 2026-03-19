@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Reflection;
 using Mirage.Core.Semantics;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
@@ -9,6 +10,10 @@ namespace Mirage.Maui.Handlers;
 
 internal static class MirageLayoutProjection
 {
+    private static readonly MethodInfo? FlexBasisIsRelativeGetter = typeof(FlexBasis)
+        .GetProperty("IsRelative", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?
+        .GetMethod;
+
     public static bool ApplyChildProjectionStyles(
         MiragePlatformView childPlatformView,
         IView childView,
@@ -37,6 +42,7 @@ internal static class MirageLayoutProjection
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", "0");
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", "0");
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", "auto");
+                changed |= SetChildStyleIfChanged(childPlatformView, "order", null);
                 changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", null);
@@ -55,6 +61,7 @@ internal static class MirageLayoutProjection
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", "0");
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", "0");
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", "auto");
+                changed |= SetChildStyleIfChanged(childPlatformView, "order", null);
                 changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", null);
@@ -73,6 +80,7 @@ internal static class MirageLayoutProjection
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "order", null);
                 changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
                 var (row, column, rowSpan, columnSpan) = GetGridPlacement(childView);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", (row + 1).ToString(CultureInfo.InvariantCulture));
@@ -86,6 +94,7 @@ internal static class MirageLayoutProjection
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "order", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", null);
@@ -95,9 +104,21 @@ internal static class MirageLayoutProjection
                 changed |= ApplyAbsoluteLayoutChildStyles(childPlatformView, childView);
                 break;
             case ComponentKind.Layout:
+                if (IsFlexLayoutParent(childView))
+                {
+                    changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", null);
+                    changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", null);
+                    changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", null);
+                    changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnEnd", null);
+                    changed |= SetChildStyleIfChanged(childPlatformView, "justifySelf", null);
+                    changed |= ApplyFlexLayoutChildStyles(childPlatformView, childView);
+                    break;
+                }
+
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "order", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowStart", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridRowEnd", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "gridColumnStart", null);
@@ -110,6 +131,7 @@ internal static class MirageLayoutProjection
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
                 changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
+                changed |= SetChildStyleIfChanged(childPlatformView, "order", null);
                 changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
                 break;
         }
@@ -224,6 +246,46 @@ internal static class MirageLayoutProjection
         return changed;
     }
 
+    private static bool IsFlexLayoutParent(IView childView)
+    {
+        return childView is IElement { Parent: FlexLayout };
+    }
+
+    private static bool ApplyFlexLayoutChildStyles(MiragePlatformView childPlatformView, IView childView)
+    {
+        var changed = SetChildStyleIfChanged(childPlatformView, "position", "relative");
+        changed |= SetChildStyleIfChanged(childPlatformView, "left", null);
+        changed |= SetChildStyleIfChanged(childPlatformView, "top", null);
+        changed |= SetChildStyleIfChanged(childPlatformView, "right", null);
+        changed |= SetChildStyleIfChanged(childPlatformView, "bottom", null);
+        changed |= SetChildStyleIfChanged(childPlatformView, "margin", MirageCommonViewProjection.ToMarginThickness(childView.Margin));
+
+        if (childView is not BindableObject bindableObject)
+        {
+            changed |= SetChildStyleIfChanged(childPlatformView, "alignSelf", null);
+            changed |= SetChildStyleIfChanged(childPlatformView, "order", "0");
+            changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", "0");
+            changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", "1");
+            changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", "auto");
+            changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
+            return changed;
+        }
+
+        var order = FlexLayout.GetOrder(bindableObject);
+        var grow = NormalizeNonNegative(FlexLayout.GetGrow(bindableObject));
+        var shrink = NormalizeNonNegative(FlexLayout.GetShrink(bindableObject), fallback: 1);
+        var alignSelf = ResolveFlexAlignSelf(FlexLayout.GetAlignSelf(bindableObject));
+        var basis = ResolveFlexBasis(FlexLayout.GetBasis(bindableObject));
+
+        changed |= SetChildStyleIfChanged(childPlatformView, "alignSelf", alignSelf);
+        changed |= SetChildStyleIfChanged(childPlatformView, "order", order.ToString(CultureInfo.InvariantCulture));
+        changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", grow.ToString("0.###", CultureInfo.InvariantCulture));
+        changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", shrink.ToString("0.###", CultureInfo.InvariantCulture));
+        changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", basis);
+        changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
+        return changed;
+    }
+
     private static (int Row, int Column, int RowSpan, int ColumnSpan) GetGridPlacement(IView childView)
     {
         if (childView is not BindableObject bindable)
@@ -321,6 +383,68 @@ internal static class MirageLayoutProjection
     {
         var percentValue = NormalizeFinite(value, 0) * 100d;
         return $"{percentValue.ToString("0.###", CultureInfo.InvariantCulture)}%";
+    }
+
+    private static double NormalizeNonNegative(float value, double fallback = 0)
+    {
+        if (float.IsNaN(value) || float.IsInfinity(value))
+        {
+            return fallback;
+        }
+
+        return Math.Max(0, value);
+    }
+
+    private static string? ResolveFlexAlignSelf(FlexAlignSelf alignSelf)
+    {
+        return alignSelf switch
+        {
+            FlexAlignSelf.Start => "flex-start",
+            FlexAlignSelf.Center => "center",
+            FlexAlignSelf.End => "flex-end",
+            FlexAlignSelf.Stretch => "stretch",
+            _ => null
+        };
+    }
+
+    private static string ResolveFlexBasis(FlexBasis basis)
+    {
+        if (basis == FlexBasis.Auto)
+        {
+            return "auto";
+        }
+
+        if (TryResolveRelativeFlexBasisPercent(basis, out var percent))
+        {
+            return $"{percent.ToString("0.###", CultureInfo.InvariantCulture)}%";
+        }
+
+        var length = (double)basis.Length;
+        if (!double.IsFinite(length))
+        {
+            return "auto";
+        }
+
+        return MirageViewMapper.ToPx(Math.Max(0, length));
+    }
+
+    private static bool TryResolveRelativeFlexBasisPercent(FlexBasis basis, out double percent)
+    {
+        percent = 0;
+
+        if (FlexBasisIsRelativeGetter?.Invoke(basis, null) is not bool isRelative || !isRelative)
+        {
+            return false;
+        }
+
+        var relativeLength = (double)basis.Length;
+        if (!double.IsFinite(relativeLength))
+        {
+            return false;
+        }
+
+        percent = Math.Max(0, relativeLength * 100d);
+        return true;
     }
 
     private static double NormalizeFinite(double value, double fallback)

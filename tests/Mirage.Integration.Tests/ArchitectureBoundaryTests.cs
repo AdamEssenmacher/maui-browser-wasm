@@ -300,6 +300,7 @@ public sealed class ArchitectureBoundaryTests
 
         var text = File.ReadAllText(hostingPath);
         Assert.Contains("typeof(StackLayout)", text, StringComparison.Ordinal);
+        Assert.Contains("typeof(FlexLayout)", text, StringComparison.Ordinal);
         Assert.Contains("typeof(MirageLayoutHandler)", text, StringComparison.Ordinal);
         Assert.Contains("typeof(Image)", text, StringComparison.Ordinal);
         Assert.Contains("typeof(MirageImageHandler)", text, StringComparison.Ordinal);

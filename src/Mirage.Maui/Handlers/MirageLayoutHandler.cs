@@ -5,6 +5,7 @@ using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
+using Microsoft.Maui.Layouts;
 using Microsoft.Maui.Platform;
 using MauiLayout = Microsoft.Maui.ILayout;
 
@@ -12,6 +13,13 @@ namespace Mirage.Maui.Handlers;
 
 internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayoutHandler
 {
+    private enum LayoutArrangeStrategy
+    {
+        SemanticCssLayout,
+        FrameDrivenCustomLayout,
+        FrameDrivenAbsoluteLayout
+    }
+
     internal static readonly string[] ParityPropertyKeys =
     {
         nameof(MauiLayout.Padding),
@@ -20,6 +28,11 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         nameof(IView.InputTransparent),
         nameof(StackLayout.Orientation),
         nameof(StackLayout.Spacing),
+        nameof(FlexLayout.Direction),
+        nameof(FlexLayout.Wrap),
+        nameof(FlexLayout.JustifyContent),
+        nameof(FlexLayout.AlignItems),
+        nameof(FlexLayout.AlignContent),
         nameof(Grid.RowSpacing),
         nameof(Grid.ColumnSpacing),
         nameof(Grid.RowDefinitions),
@@ -32,6 +45,11 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         nameof(IView.InputTransparent),
         nameof(StackLayout.Orientation),
         nameof(StackLayout.Spacing),
+        nameof(FlexLayout.Direction),
+        nameof(FlexLayout.Wrap),
+        nameof(FlexLayout.JustifyContent),
+        nameof(FlexLayout.AlignItems),
+        nameof(FlexLayout.AlignContent),
         nameof(Grid.RowSpacing),
         nameof(Grid.ColumnSpacing),
         nameof(Grid.RowDefinitions),
@@ -59,6 +77,11 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
             [nameof(StackLayout.Spacing)] = MapSpacing,
             [nameof(VerticalStackLayout.Spacing)] = MapSpacing,
             [nameof(HorizontalStackLayout.Spacing)] = MapSpacing,
+            [nameof(FlexLayout.Direction)] = MapFlexLayoutProperties,
+            [nameof(FlexLayout.Wrap)] = MapFlexLayoutProperties,
+            [nameof(FlexLayout.JustifyContent)] = MapFlexLayoutProperties,
+            [nameof(FlexLayout.AlignItems)] = MapFlexLayoutProperties,
+            [nameof(FlexLayout.AlignContent)] = MapFlexLayoutProperties,
             [nameof(Grid.RowSpacing)] = MapGridStructure,
             [nameof(Grid.ColumnSpacing)] = MapGridStructure,
             [nameof(Grid.RowDefinitions)] = MapGridStructure,
@@ -109,7 +132,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
             ComponentKind.Grid => new MiragePlatformView(ComponentKind.Grid),
             ComponentKind.AbsoluteLayout => new MiragePlatformView(ComponentKind.AbsoluteLayout),
             ComponentKind.Layout => new MiragePlatformView(ComponentKind.Layout),
-            _ => throw new InvalidOperationException("MirageLayoutHandler supports stack, vertical stack, horizontal stack, grid, absolute layout, and custom Layout-derived views.")
+            _ => throw new InvalidOperationException("MirageLayoutHandler supports stack, vertical stack, horizontal stack, flex layout, grid, absolute layout, and custom Layout-derived views.")
         };
     }
 
@@ -135,12 +158,14 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         base.PlatformArrange(frame);
         VirtualView.CrossPlatformArrange(new Rect(0, 0, frame.Width, frame.Height));
 
-        switch (ResolveComponentKind(VirtualView))
+        switch (ResolveArrangeStrategy(VirtualView))
         {
-            case ComponentKind.Layout:
+            case LayoutArrangeStrategy.SemanticCssLayout:
+                break;
+            case LayoutArrangeStrategy.FrameDrivenCustomLayout:
                 ApplyCustomLayoutArrangedFrames();
                 break;
-            case ComponentKind.AbsoluteLayout:
+            case LayoutArrangeStrategy.FrameDrivenAbsoluteLayout:
                 ApplyAbsoluteLayoutArrangedFrames();
                 break;
         }
@@ -214,6 +239,23 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
 
         var changed = handler.ApplyGridStyles(grid);
         changed |= handler.RefreshAllChildProjectionStyles(updateOrder: false);
+        if (!changed)
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapFlexLayoutProperties(MirageLayoutHandler handler, MauiLayout layout)
+    {
+        if (layout is not FlexLayout)
+        {
+            return;
+        }
+
+        handler.ApplyBaseStyles();
+        var changed = handler.RefreshAllChildProjectionStyles(updateOrder: false);
         if (!changed)
         {
             return;
@@ -611,6 +653,14 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         if (kind == ComponentKind.Grid && IsGridPlacementProperty(propertyName))
         {
             UpdateChild(fallbackIndex: -1, child);
+            return;
+        }
+
+        if (kind == ComponentKind.Layout
+            && VirtualView is FlexLayout
+            && (IsFlexLayoutProjectionProperty(propertyName) || IsFlexLayoutAlignmentRemapProperty(propertyName)))
+        {
+            UpdateChild(fallbackIndex: -1, child);
         }
     }
 
@@ -643,6 +693,33 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                || string.Equals(propertyName, Grid.ColumnSpanProperty.PropertyName, StringComparison.Ordinal);
     }
 
+    private static bool IsFlexLayoutProjectionProperty(string? propertyName)
+    {
+        if (string.IsNullOrEmpty(propertyName))
+        {
+            return false;
+        }
+
+        return string.Equals(propertyName, FlexLayout.OrderProperty.PropertyName, StringComparison.Ordinal)
+               || string.Equals(propertyName, FlexLayout.GrowProperty.PropertyName, StringComparison.Ordinal)
+               || string.Equals(propertyName, FlexLayout.ShrinkProperty.PropertyName, StringComparison.Ordinal)
+               || string.Equals(propertyName, FlexLayout.BasisProperty.PropertyName, StringComparison.Ordinal)
+               || string.Equals(propertyName, FlexLayout.AlignSelfProperty.PropertyName, StringComparison.Ordinal);
+    }
+
+    private static bool IsFlexLayoutAlignmentRemapProperty(string? propertyName)
+    {
+        if (string.IsNullOrEmpty(propertyName))
+        {
+            return false;
+        }
+
+        return string.Equals(propertyName, nameof(VisualElement.WidthRequest), StringComparison.Ordinal)
+               || string.Equals(propertyName, nameof(VisualElement.HeightRequest), StringComparison.Ordinal)
+               || string.Equals(propertyName, nameof(View.HorizontalOptions), StringComparison.Ordinal)
+               || string.Equals(propertyName, nameof(View.VerticalOptions), StringComparison.Ordinal);
+    }
+
     private void ApplyBaseStyles()
     {
         var kind = ResolveComponentKind(VirtualView);
@@ -657,6 +734,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 changed |= SetStyleIfChanged("flexWrap", "nowrap");
                 changed |= SetStyleIfChanged("justifyContent", "flex-start");
                 changed |= SetStyleIfChanged("alignItems", "stretch");
+                changed |= SetStyleIfChanged("alignContent", "stretch");
                 changed |= ClearGridContainerStyles();
                 break;
             case ComponentKind.HorizontalStack:
@@ -666,17 +744,29 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 changed |= SetStyleIfChanged("flexWrap", "nowrap");
                 changed |= SetStyleIfChanged("justifyContent", "flex-start");
                 changed |= SetStyleIfChanged("alignItems", "stretch");
+                changed |= SetStyleIfChanged("alignContent", "stretch");
                 changed |= ClearGridContainerStyles();
                 break;
             case ComponentKind.Grid:
+                changed |= ClearFlexContainerStyles();
                 DefaultDisplayStyle = "grid";
                 changed |= SetStyleIfChanged("display", "grid");
                 changed |= SetStyleIfChanged("justifyItems", "stretch");
                 changed |= SetStyleIfChanged("alignItems", "stretch");
                 changed |= SetStyleIfChanged("justifyContent", "start");
                 changed |= SetStyleIfChanged("alignContent", "start");
-                changed |= ClearFlexContainerStyles();
                 changed |= ApplyGridStyles((Grid)VirtualView);
+                break;
+            case ComponentKind.Layout when VirtualView is FlexLayout flexLayout:
+                DefaultDisplayStyle = "flex";
+                changed |= SetStyleIfChanged("display", "flex");
+                changed |= SetStyleIfChanged("flexDirection", ResolveFlexDirection(flexLayout.Direction));
+                changed |= SetStyleIfChanged("flexWrap", ResolveFlexWrap(flexLayout.Wrap));
+                changed |= SetStyleIfChanged("justifyContent", ResolveFlexJustifyContent(flexLayout.JustifyContent));
+                changed |= SetStyleIfChanged("alignItems", ResolveFlexAlignItems(flexLayout.AlignItems));
+                changed |= SetStyleIfChanged("alignContent", ResolveFlexAlignContent(flexLayout.AlignContent));
+                changed |= ClearGridContainerStyles();
+                changed |= SetStyleIfChanged("gap", null);
                 break;
             case ComponentKind.AbsoluteLayout:
                 DefaultDisplayStyle = "block";
@@ -716,6 +806,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
             StackLayout stack => SetStyleIfChanged("gap", MirageViewMapper.ToPx(NormalizeSpacing(stack.Spacing))),
             VerticalStackLayout vertical => SetStyleIfChanged("gap", MirageViewMapper.ToPx(NormalizeSpacing(vertical.Spacing))),
             HorizontalStackLayout horizontal => SetStyleIfChanged("gap", MirageViewMapper.ToPx(NormalizeSpacing(horizontal.Spacing))),
+            FlexLayout => SetStyleIfChanged("gap", null),
             Grid grid => ApplyGridGapStyles(grid),
             _ => false
         };
@@ -769,6 +860,8 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         var changed = SetStyleIfChanged("flexDirection", null);
         changed |= SetStyleIfChanged("flexWrap", null);
         changed |= SetStyleIfChanged("justifyContent", null);
+        changed |= SetStyleIfChanged("alignItems", null);
+        changed |= SetStyleIfChanged("alignContent", null);
         return changed;
     }
 
@@ -790,6 +883,65 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         }
 
         return Math.Max(0, spacing);
+    }
+
+    private static string ResolveFlexDirection(FlexDirection direction)
+    {
+        return direction switch
+        {
+            FlexDirection.Column => "column",
+            FlexDirection.RowReverse => "row-reverse",
+            FlexDirection.ColumnReverse => "column-reverse",
+            _ => "row"
+        };
+    }
+
+    private static string ResolveFlexWrap(FlexWrap wrap)
+    {
+        return wrap switch
+        {
+            FlexWrap.Wrap => "wrap",
+            FlexWrap.Reverse => "wrap-reverse",
+            _ => "nowrap"
+        };
+    }
+
+    private static string ResolveFlexJustifyContent(FlexJustify justifyContent)
+    {
+        return justifyContent switch
+        {
+            FlexJustify.Center => "center",
+            FlexJustify.End => "flex-end",
+            FlexJustify.SpaceBetween => "space-between",
+            FlexJustify.SpaceAround => "space-around",
+            FlexJustify.SpaceEvenly => "space-evenly",
+            _ => "flex-start"
+        };
+    }
+
+    private static string ResolveFlexAlignItems(FlexAlignItems alignItems)
+    {
+        return alignItems switch
+        {
+            FlexAlignItems.Start => "flex-start",
+            FlexAlignItems.Center => "center",
+            FlexAlignItems.End => "flex-end",
+            _ => "stretch"
+        };
+    }
+
+    private static string ResolveFlexAlignContent(FlexAlignContent alignContent)
+    {
+        return alignContent switch
+        {
+            FlexAlignContent.Start => "flex-start",
+            FlexAlignContent.Center => "center",
+            FlexAlignContent.End => "flex-end",
+            FlexAlignContent.SpaceBetween => "space-between",
+            FlexAlignContent.SpaceAround => "space-around",
+            FlexAlignContent.SpaceEvenly => "space-evenly",
+            _ => "stretch"
+        };
     }
 
     private static bool ApplyChildProjectionStyles(
@@ -880,8 +1032,28 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         };
     }
 
+    private static LayoutArrangeStrategy ResolveArrangeStrategy(MauiLayout layout)
+    {
+        return layout switch
+        {
+            StackLayout => LayoutArrangeStrategy.SemanticCssLayout,
+            VerticalStackLayout => LayoutArrangeStrategy.SemanticCssLayout,
+            HorizontalStackLayout => LayoutArrangeStrategy.SemanticCssLayout,
+            FlexLayout => LayoutArrangeStrategy.SemanticCssLayout,
+            Grid => LayoutArrangeStrategy.SemanticCssLayout,
+            AbsoluteLayout => LayoutArrangeStrategy.FrameDrivenAbsoluteLayout,
+            _ => LayoutArrangeStrategy.FrameDrivenCustomLayout
+        };
+    }
+
     private void ApplyCustomLayoutArrangedFrames()
     {
+        if (VirtualView is FlexLayout)
+        {
+            // Defensive guard: FlexLayout is semantic CSS-layout-driven and must not take frame-driven custom arrange projection.
+            return;
+        }
+
         var changed = false;
         foreach (var child in VirtualView)
         {

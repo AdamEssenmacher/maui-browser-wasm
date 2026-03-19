@@ -1,3 +1,4 @@
+using Mirage.Core.Semantics;
 using Mirage.Maui.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
@@ -243,6 +244,261 @@ public sealed class MirageLayoutHandlerTests
     }
 
     [Fact]
+    public void LayoutHandler_FlexLayout_ProjectsContainerAndAttachedItemStylesIncrementally()
+    {
+        var layout = new TestFlexLayout
+        {
+            Direction = FlexDirection.Row,
+            Wrap = FlexWrap.Wrap,
+            JustifyContent = FlexJustify.SpaceBetween,
+            AlignItems = FlexAlignItems.Center,
+            AlignContent = FlexAlignContent.SpaceAround,
+            WidthRequest = 420,
+            HeightRequest = 260
+        };
+
+        var first = new Label { Text = "First" };
+        var second = new Label { Text = "Second" };
+        layout.Children.Add(first);
+        layout.Children.Add(second);
+
+        FlexLayout.SetOrder(second, 3);
+        FlexLayout.SetGrow(second, 2f);
+        FlexLayout.SetShrink(second, 4f);
+        FlexLayout.SetBasis(second, new FlexBasis(0.5f, true));
+        FlexLayout.SetAlignSelf(second, FlexAlignSelf.End);
+
+        var handler = CreateHandler(out var mauiContext);
+        AttachLayoutChildHandlers(layout, mauiContext);
+        ((IElementHandler)handler).SetVirtualView(layout);
+
+        Assert.Equal(ComponentKind.Layout, handler.PlatformView.ControlKind);
+        Assert.Equal("flex", handler.PlatformView.GetStyleValue("display"));
+        Assert.Equal("row", handler.PlatformView.GetStyleValue("flexDirection"));
+        Assert.Equal("wrap", handler.PlatformView.GetStyleValue("flexWrap"));
+        Assert.Equal("space-between", handler.PlatformView.GetStyleValue("justifyContent"));
+        Assert.Equal("center", handler.PlatformView.GetStyleValue("alignItems"));
+        Assert.Equal("space-around", handler.PlatformView.GetStyleValue("alignContent"));
+
+        var secondPlatform = GetPlatformView(second);
+        Assert.Equal("3", secondPlatform.GetStyleValue("order"));
+        Assert.Equal("2", secondPlatform.GetStyleValue("flexGrow"));
+        Assert.Equal("4", secondPlatform.GetStyleValue("flexShrink"));
+        Assert.Equal("50%", secondPlatform.GetStyleValue("flexBasis"));
+        Assert.Equal("flex-end", secondPlatform.GetStyleValue("alignSelf"));
+
+        layout.Direction = FlexDirection.ColumnReverse;
+        layout.Wrap = FlexWrap.Reverse;
+        layout.JustifyContent = FlexJustify.SpaceEvenly;
+        layout.AlignItems = FlexAlignItems.End;
+        layout.AlignContent = FlexAlignContent.Start;
+
+        MirageLayoutHandler.Mapper.UpdateProperty(handler, layout, nameof(FlexLayout.Direction));
+        MirageLayoutHandler.Mapper.UpdateProperty(handler, layout, nameof(FlexLayout.Wrap));
+        MirageLayoutHandler.Mapper.UpdateProperty(handler, layout, nameof(FlexLayout.JustifyContent));
+        MirageLayoutHandler.Mapper.UpdateProperty(handler, layout, nameof(FlexLayout.AlignItems));
+        MirageLayoutHandler.Mapper.UpdateProperty(handler, layout, nameof(FlexLayout.AlignContent));
+
+        Assert.Equal("column-reverse", handler.PlatformView.GetStyleValue("flexDirection"));
+        Assert.Equal("wrap-reverse", handler.PlatformView.GetStyleValue("flexWrap"));
+        Assert.Equal("space-evenly", handler.PlatformView.GetStyleValue("justifyContent"));
+        Assert.Equal("flex-end", handler.PlatformView.GetStyleValue("alignItems"));
+        Assert.Equal("flex-start", handler.PlatformView.GetStyleValue("alignContent"));
+
+        var beforeRevision = handler.PlatformView.LocalStructureRevision;
+        FlexLayout.SetOrder(second, 1);
+        FlexLayout.SetGrow(second, 0.5f);
+        FlexLayout.SetShrink(second, 0.25f);
+        FlexLayout.SetBasis(second, FlexBasis.Auto);
+        FlexLayout.SetAlignSelf(second, FlexAlignSelf.Auto);
+
+        Assert.Equal(beforeRevision, handler.PlatformView.LocalStructureRevision);
+        Assert.Equal("1", secondPlatform.GetStyleValue("order"));
+        Assert.Equal("0.5", secondPlatform.GetStyleValue("flexGrow"));
+        Assert.Equal("0.25", secondPlatform.GetStyleValue("flexShrink"));
+        Assert.Equal("auto", secondPlatform.GetStyleValue("flexBasis"));
+        Assert.Null(secondPlatform.GetStyleValue("alignSelf"));
+    }
+
+    [Fact]
+    public void FlexLayout_Arrange_DoesNotApplyCustomAbsoluteFrames()
+    {
+        var layout = new TestFlexLayout
+        {
+            Direction = FlexDirection.Row,
+            Wrap = FlexWrap.Wrap,
+            JustifyContent = FlexJustify.SpaceBetween,
+            AlignItems = FlexAlignItems.Center,
+            AlignContent = FlexAlignContent.SpaceAround,
+            WidthRequest = 420,
+            HeightRequest = 260
+        };
+
+        var first = new Label { Text = "First" };
+        var second = new Label { Text = "Second" };
+        layout.Children.Add(first);
+        layout.Children.Add(second);
+
+        FlexLayout.SetOrder(second, 5);
+        FlexLayout.SetGrow(second, 2f);
+        FlexLayout.SetShrink(second, 1.5f);
+        FlexLayout.SetBasis(second, new FlexBasis(120f, false));
+        FlexLayout.SetAlignSelf(second, FlexAlignSelf.End);
+
+        var handler = CreateHandler(out var mauiContext);
+        AttachLayoutChildHandlers(layout, mauiContext);
+        ((IElementHandler)handler).SetVirtualView(layout);
+
+        var secondPlatform = GetPlatformView(second);
+        var preArrangeOrder = secondPlatform.GetStyleValue("order");
+        var preArrangeGrow = secondPlatform.GetStyleValue("flexGrow");
+        var preArrangeShrink = secondPlatform.GetStyleValue("flexShrink");
+        var preArrangeBasis = secondPlatform.GetStyleValue("flexBasis");
+        var preArrangeAlignSelf = secondPlatform.GetStyleValue("alignSelf");
+
+        handler.PlatformArrange(new Rect(0, 0, 420, 260));
+
+        var firstPlatform = GetPlatformView(first);
+        Assert.Equal("relative", firstPlatform.GetStyleValue("position"));
+        Assert.Null(firstPlatform.GetStyleValue("left"));
+        Assert.Null(firstPlatform.GetStyleValue("top"));
+        Assert.Null(firstPlatform.GetStyleValue("width"));
+        Assert.Null(firstPlatform.GetStyleValue("height"));
+
+        Assert.Equal(preArrangeOrder, secondPlatform.GetStyleValue("order"));
+        Assert.Equal(preArrangeGrow, secondPlatform.GetStyleValue("flexGrow"));
+        Assert.Equal(preArrangeShrink, secondPlatform.GetStyleValue("flexShrink"));
+        Assert.Equal(preArrangeBasis, secondPlatform.GetStyleValue("flexBasis"));
+        Assert.Equal(preArrangeAlignSelf, secondPlatform.GetStyleValue("alignSelf"));
+
+        Assert.Equal("flex", handler.PlatformView.GetStyleValue("display"));
+        Assert.Equal("row", handler.PlatformView.GetStyleValue("flexDirection"));
+        Assert.Equal("wrap", handler.PlatformView.GetStyleValue("flexWrap"));
+        Assert.Equal("space-between", handler.PlatformView.GetStyleValue("justifyContent"));
+        Assert.Equal("center", handler.PlatformView.GetStyleValue("alignItems"));
+        Assert.Equal("space-around", handler.PlatformView.GetStyleValue("alignContent"));
+    }
+
+    [Fact]
+    public void FlexLayout_ChildLayoutAlignmentRemaps_ReapplyFlexItemProjection()
+    {
+        var layout = new TestFlexLayout
+        {
+            Direction = FlexDirection.Row,
+            Wrap = FlexWrap.Wrap,
+            JustifyContent = FlexJustify.SpaceBetween,
+            AlignItems = FlexAlignItems.Center,
+            AlignContent = FlexAlignContent.SpaceAround,
+            WidthRequest = 420,
+            HeightRequest = 260
+        };
+
+        var child = new Label
+        {
+            Text = "Child",
+            HorizontalOptions = LayoutOptions.Fill,
+            VerticalOptions = LayoutOptions.Fill,
+            WidthRequest = 80,
+            HeightRequest = 40
+        };
+
+        layout.Children.Add(child);
+        FlexLayout.SetAlignSelf(child, FlexAlignSelf.End);
+
+        var handler = CreateHandler(out var mauiContext);
+        AttachLayoutChildHandlers(layout, mauiContext);
+        ((IElementHandler)handler).SetVirtualView(layout);
+
+        var childPlatform = GetPlatformView(child);
+        Assert.Equal("flex-end", childPlatform.GetStyleValue("alignSelf"));
+
+        var beforeRevision = handler.PlatformView.LocalStructureRevision;
+
+        child.WidthRequest = 120;
+        Assert.Equal("flex-end", childPlatform.GetStyleValue("alignSelf"));
+
+        child.HeightRequest = 64;
+        Assert.Equal("flex-end", childPlatform.GetStyleValue("alignSelf"));
+
+        child.HorizontalOptions = LayoutOptions.Center;
+        Assert.Equal("flex-end", childPlatform.GetStyleValue("alignSelf"));
+
+        child.VerticalOptions = LayoutOptions.End;
+        Assert.Equal("flex-end", childPlatform.GetStyleValue("alignSelf"));
+
+        Assert.Equal(beforeRevision, handler.PlatformView.LocalStructureRevision);
+    }
+
+    [Fact]
+    public void FlexLayout_ContainerMapperUpdates_PreserveParentAssignedPositioning()
+    {
+        var parent = new AbsoluteLayout
+        {
+            WidthRequest = 500,
+            HeightRequest = 300
+        };
+
+        var flex = new TestFlexLayout
+        {
+            Direction = FlexDirection.Row,
+            WidthRequest = 180,
+            HeightRequest = 90
+        };
+        flex.Children.Add(new Label { Text = "Child" });
+
+        parent.Children.Add(flex);
+        AbsoluteLayout.SetLayoutBounds(flex, new Rect(25, 35, 180, 90));
+        AbsoluteLayout.SetLayoutFlags(flex, AbsoluteLayoutFlags.None);
+
+        var parentHandler = CreateHandler(out var mauiContext);
+        AttachLayoutChildHandlers(parent, mauiContext);
+        ((IElementHandler)parentHandler).SetVirtualView(parent);
+        parentHandler.PlatformArrange(new Rect(0, 0, 500, 300));
+
+        var flexPlatform = GetPlatformView(flex);
+        Assert.Equal("absolute", flexPlatform.GetStyleValue("position"));
+        var initialLeft = flexPlatform.GetStyleValue("left");
+        var initialTop = flexPlatform.GetStyleValue("top");
+        var initialWidth = flexPlatform.GetStyleValue("width");
+        var initialHeight = flexPlatform.GetStyleValue("height");
+        Assert.NotNull(initialLeft);
+        Assert.NotNull(initialTop);
+        Assert.NotNull(initialWidth);
+        Assert.NotNull(initialHeight);
+
+        flex.Direction = FlexDirection.Column;
+        flex.Wrap = FlexWrap.Wrap;
+        flex.JustifyContent = FlexJustify.SpaceBetween;
+
+        Assert.Equal("absolute", flexPlatform.GetStyleValue("position"));
+        Assert.Equal(initialLeft, flexPlatform.GetStyleValue("left"));
+        Assert.Equal(initialTop, flexPlatform.GetStyleValue("top"));
+        Assert.Equal(initialWidth, flexPlatform.GetStyleValue("width"));
+        Assert.Equal(initialHeight, flexPlatform.GetStyleValue("height"));
+    }
+
+    [Fact]
+    public void CustomLayout_Arrange_StillAppliesAbsoluteArrangedFrames()
+    {
+        var layout = new FrameDrivenTestLayout();
+        var child = new BoxView { Color = Colors.CadetBlue };
+        layout.Children.Add(child);
+
+        var handler = CreateHandler(out var mauiContext);
+        AttachLayoutChildHandlers(layout, mauiContext);
+        ((IElementHandler)handler).SetVirtualView(layout);
+
+        handler.PlatformArrange(new Rect(0, 0, 300, 200));
+
+        var childPlatform = GetPlatformView(child);
+        Assert.Equal("absolute", childPlatform.GetStyleValue("position"));
+        Assert.Equal("17px", childPlatform.GetStyleValue("left"));
+        Assert.Equal("23px", childPlatform.GetStyleValue("top"));
+        Assert.Equal("80px", childPlatform.GetStyleValue("width"));
+        Assert.Equal("40px", childPlatform.GetStyleValue("height"));
+    }
+
+    [Fact]
     public void LayoutOrderingHelpers_UseStableZIndexTieSemantics()
     {
         var layout = new VerticalStackLayout();
@@ -296,11 +552,20 @@ public sealed class MirageLayoutHandlerTests
         {
             Label => new MirageLabelHandler(),
             BoxView => new MirageBoxViewHandler(),
+            Layout layout => CreateLayoutChildHandler(layout, mauiContext),
             _ => throw new InvalidOperationException($"No test child-handler binding registered for '{child.GetType().Name}'.")
         };
 
         ((IElementHandler)childHandler).SetMauiContext(mauiContext);
         ((IElementHandler)childHandler).SetVirtualView(element);
+    }
+
+    private static MirageLayoutHandler CreateLayoutChildHandler(Layout layout, MauiContext mauiContext)
+    {
+        var layoutHandler = new MirageLayoutHandler();
+        ((IElementHandler)layoutHandler).SetMauiContext(mauiContext);
+        AttachLayoutChildHandlers(layout, mauiContext);
+        return layoutHandler;
     }
 
     private static MiragePlatformView GetPlatformView(View view)
@@ -314,6 +579,90 @@ public sealed class MirageLayoutHandlerTests
         Assert.False(string.IsNullOrWhiteSpace(value));
         Assert.EndsWith("px", value, StringComparison.Ordinal);
         return double.Parse(value.AsSpan(0, value.Length - 2), System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    private sealed class FrameDrivenTestLayout : Layout
+    {
+        protected override ILayoutManager CreateLayoutManager()
+        {
+            return new FrameDrivenTestLayoutManager(this);
+        }
+
+        private sealed class FrameDrivenTestLayoutManager : Microsoft.Maui.Layouts.LayoutManager
+        {
+            private readonly FrameDrivenTestLayout _layout;
+
+            public FrameDrivenTestLayoutManager(FrameDrivenTestLayout layout)
+                : base(layout)
+            {
+                _layout = layout;
+            }
+
+            public override Size ArrangeChildren(Rect bounds)
+            {
+                foreach (View child in _layout)
+                {
+                    if (!child.IsVisible)
+                    {
+                        continue;
+                    }
+
+                    ((IView)child).Arrange(new Rect(17, 23, 80, 40));
+                }
+
+                return bounds.Size;
+            }
+
+            public override Size Measure(double widthConstraint, double heightConstraint)
+            {
+                var width = double.IsFinite(widthConstraint) ? Math.Max(0, widthConstraint) : 320;
+                var height = double.IsFinite(heightConstraint) ? Math.Max(0, heightConstraint) : 200;
+                return new Size(width, height);
+            }
+        }
+    }
+
+    private sealed class TestFlexLayout : FlexLayout
+    {
+        protected override ILayoutManager CreateLayoutManager()
+        {
+            return new TestFlexLayoutManager(this);
+        }
+
+        private sealed class TestFlexLayoutManager : Microsoft.Maui.Layouts.LayoutManager
+        {
+            private readonly TestFlexLayout _layout;
+
+            public TestFlexLayoutManager(TestFlexLayout layout)
+                : base(layout)
+            {
+                _layout = layout;
+            }
+
+            public override Size ArrangeChildren(Rect bounds)
+            {
+                var x = 0d;
+                foreach (View child in _layout)
+                {
+                    if (!child.IsVisible)
+                    {
+                        continue;
+                    }
+
+                    ((IView)child).Arrange(new Rect(x, 0, 80, 40));
+                    x += 82;
+                }
+
+                return bounds.Size;
+            }
+
+            public override Size Measure(double widthConstraint, double heightConstraint)
+            {
+                var width = double.IsFinite(widthConstraint) ? Math.Max(0, widthConstraint) : 320;
+                var height = double.IsFinite(heightConstraint) ? Math.Max(0, heightConstraint) : 200;
+                return new Size(width, height);
+            }
+        }
     }
 
 }
