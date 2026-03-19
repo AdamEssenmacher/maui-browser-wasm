@@ -27,6 +27,7 @@ public static class MirageHostingExtensions
             handlers.AddHandler(typeof(Window), typeof(MirageWindowHandler));
             handlers.AddHandler(typeof(NavigationPage), typeof(MirageNavigationPageHandler));
             handlers.AddHandler(typeof(ContentPage), typeof(MirageContentPageHandler));
+            handlers.AddHandler(typeof(TabbedPage), typeof(MirageTabbedPageHandler));
             handlers.AddHandler(typeof(ContentView), typeof(MirageContentViewHandler));
             handlers.AddHandler(typeof(Frame), typeof(MirageFrameHandler));
             handlers.AddHandler(typeof(ScrollView), typeof(MirageScrollViewHandler));
@@ -42,6 +43,7 @@ public static class MirageHostingExtensions
             handlers.AddHandler(typeof(Button), typeof(MirageButtonHandler));
             handlers.AddHandler(typeof(CheckBox), typeof(MirageCheckBoxHandler));
             handlers.AddHandler(typeof(Slider), typeof(MirageSliderHandler));
+            handlers.AddHandler(typeof(Picker), typeof(MiragePickerHandler));
             handlers.AddHandler(typeof(Stepper), typeof(MirageStepperHandler));
             handlers.AddHandler(typeof(Image), typeof(MirageImageHandler));
             handlers.AddHandler(typeof(Border), typeof(MirageBorderHandler));

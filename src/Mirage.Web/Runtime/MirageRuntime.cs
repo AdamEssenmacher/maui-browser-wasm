@@ -12,6 +12,8 @@ namespace Mirage.Web.Runtime;
 public sealed class MirageRuntime : IMirageRuntime
 {
     private const string ValueElementMarker = "data-mirage-value-element";
+    private const int MapProviderInitializationRetryLimit = 3;
+    private const int MapProviderInitializationRetryDelayMilliseconds = 250;
 
     private readonly DomElement _mountRoot;
     private readonly IMirageComponentProvider _provider;
@@ -19,6 +21,7 @@ public sealed class MirageRuntime : IMirageRuntime
     private readonly SemanticDiffEngine _diffEngine = new();
     private readonly Dictionary<string, RealizedNode> _nodes = new(StringComparer.Ordinal);
     private readonly Dictionary<(string NodeId, string EventName), int> _eventSubscriptions = new();
+    private readonly Dictionary<string, int> _mapProviderInitializationRetries = new(StringComparer.Ordinal);
 
     private NodeBase? _currentRoot;
     private IMirageEventSink? _eventSink;
@@ -128,6 +131,7 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         _eventSubscriptions.Clear();
+        _mapProviderInitializationRetries.Clear();
 
         foreach (var node in _nodes.Values.ToArray())
         {
@@ -354,6 +358,7 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         RemoveEventSubscriptionsForNode(operation.NodeId);
+        _mapProviderInitializationRetries.Remove(operation.NodeId);
         node.DisposeMapAdapter();
         node.Element.Release();
         _nodes.Remove(operation.NodeId);
@@ -583,17 +588,22 @@ public sealed class MirageRuntime : IMirageRuntime
 
     private void ApplyAttachEvent(AttachEventOperation operation)
     {
-        if (_eventSubscriptions.ContainsKey((operation.NodeId, operation.EventName)))
-        {
-            return;
-        }
-
         if (!_nodes.TryGetValue(operation.NodeId, out var node))
         {
             return;
         }
 
-        var eventDescriptor = ResolveEventDescriptor(node, operation.EventName);
+        EnsureEventSubscription(operation.NodeId, operation.EventName, node);
+    }
+
+    private void EnsureEventSubscription(string nodeId, string eventName, RealizedNode node)
+    {
+        if (_eventSubscriptions.ContainsKey((nodeId, eventName)))
+        {
+            return;
+        }
+
+        var eventDescriptor = ResolveEventDescriptor(node, eventName);
         var targetElement = eventDescriptor.Target switch
         {
             EventTarget.ValueElement => node.GetValueElement(),
@@ -607,7 +617,7 @@ public sealed class MirageRuntime : IMirageRuntime
             subscriptionId = targetElement.On(eventDescriptor.DomEventName, () =>
             {
                 var value = targetElement.GetInputValue();
-                _eventSink?.OnEvent(operation.NodeId, operation.EventName, value);
+                _eventSink?.OnEvent(nodeId, eventName, value);
             });
         }
         else if (eventDescriptor.PayloadKind == EventPayloadKind.InputChecked)
@@ -615,8 +625,8 @@ public sealed class MirageRuntime : IMirageRuntime
             subscriptionId = targetElement.On(eventDescriptor.DomEventName, () =>
             {
                 _eventSink?.OnEvent(
-                    operation.NodeId,
-                    operation.EventName,
+                    nodeId,
+                    eventName,
                     targetElement.GetInputChecked() ? "true" : "false");
             });
         }
@@ -624,11 +634,11 @@ public sealed class MirageRuntime : IMirageRuntime
         {
             subscriptionId = targetElement.On(eventDescriptor.DomEventName, () =>
             {
-                _eventSink?.OnEvent(operation.NodeId, operation.EventName, null);
+                _eventSink?.OnEvent(nodeId, eventName, null);
             });
         }
 
-        _eventSubscriptions[(operation.NodeId, operation.EventName)] = subscriptionId;
+        _eventSubscriptions[(nodeId, eventName)] = subscriptionId;
     }
 
     private void ConfigureMapNode(string nodeId, RealizedNode node)
@@ -644,19 +654,153 @@ public sealed class MirageRuntime : IMirageRuntime
         var initialization = _mapProvider.Initialization;
         if (!initialization.IsReady)
         {
-            var code = string.IsNullOrWhiteSpace(initialization.ErrorCode)
-                ? "provider-not-ready"
-                : initialization.ErrorCode!;
-            var message = string.IsNullOrWhiteSpace(initialization.ErrorMessage)
-                ? "Map provider initialization failed."
-                : initialization.ErrorMessage!;
-            ShowMapFailure(node, code, message);
-            MirageDiagnostics.Log("map.provider", $"node={nodeId} provider={_mapProvider.ProviderName} code={code} message={message}");
+            // Always re-check provider readiness here so transient startup failures can recover
+            // when maps are realized after the first warm-up attempt.
+            node.Element.Attr("data-mirage-map-status", "pending");
+            _ = ConfigureMapNodeWhenProviderReadyAsync(nodeId, node);
+            return;
+        }
+
+        _mapProviderInitializationRetries.Remove(nodeId);
+        ConfigureMapNodeCore(nodeId, node);
+    }
+
+    private async Task ConfigureMapNodeWhenProviderReadyAsync(string nodeId, RealizedNode expectedNode)
+    {
+        var mapProvider = _mapProvider;
+        if (mapProvider is null)
+        {
             return;
         }
 
         try
         {
+            var initialization = await mapProvider.EnsureInitializedAsync();
+            if (!_nodes.TryGetValue(nodeId, out var currentNode)
+                || !ReferenceEquals(currentNode, expectedNode)
+                || currentNode.TryGetMapAdapter(out _))
+            {
+                return;
+            }
+
+            if (!initialization.IsReady)
+            {
+                var code = string.IsNullOrWhiteSpace(initialization.ErrorCode)
+                    ? "provider-not-ready"
+                    : initialization.ErrorCode!;
+                var message = string.IsNullOrWhiteSpace(initialization.ErrorMessage)
+                    ? "Map provider initialization failed."
+                    : initialization.ErrorMessage!;
+
+                if (ShouldRetryMapProviderInitializationFailure(code)
+                    && TryScheduleMapProviderInitializationRetry(nodeId, currentNode, mapProvider.ProviderName, code, message))
+                {
+                    return;
+                }
+
+                ShowMapFailure(currentNode, code, message);
+                MirageDiagnostics.Log("map.provider", $"node={nodeId} provider={mapProvider.ProviderName} code={code} message={message}");
+                return;
+            }
+
+            _mapProviderInitializationRetries.Remove(nodeId);
+            ConfigureMapNodeCore(nodeId, currentNode);
+        }
+        catch (Exception error)
+        {
+            if (!_nodes.TryGetValue(nodeId, out var currentNode)
+                || !ReferenceEquals(currentNode, expectedNode)
+                || currentNode.TryGetMapAdapter(out _))
+            {
+                return;
+            }
+
+            var message = string.IsNullOrWhiteSpace(error.Message)
+                ? "Map provider initialization failed."
+                : error.Message;
+            _mapProviderInitializationRetries.Remove(nodeId);
+            ShowMapFailure(currentNode, "provider-init-exception", message);
+            MirageDiagnostics.Log(
+                "map.provider",
+                $"node={nodeId} provider={mapProvider.ProviderName} code=provider-init-exception message={message}");
+        }
+    }
+
+    private bool TryScheduleMapProviderInitializationRetry(
+        string nodeId,
+        RealizedNode node,
+        string providerName,
+        string errorCode,
+        string message)
+    {
+        var retryAttempt = _mapProviderInitializationRetries.TryGetValue(nodeId, out var existingAttempt)
+            ? existingAttempt + 1
+            : 1;
+        _mapProviderInitializationRetries[nodeId] = retryAttempt;
+
+        if (retryAttempt > MapProviderInitializationRetryLimit)
+        {
+            _mapProviderInitializationRetries.Remove(nodeId);
+            return false;
+        }
+
+        var delayMs = MapProviderInitializationRetryDelayMilliseconds * retryAttempt;
+        node.Element.Attr("data-mirage-map-status", "pending");
+        MirageDiagnostics.Log(
+            "map.provider",
+            $"node={nodeId} provider={providerName} code={errorCode} retryAttempt={retryAttempt} retryDelayMs={delayMs} message={message}");
+        _ = ConfigureMapNodeWhenProviderReadyAfterDelayAsync(nodeId, node, delayMs);
+        return true;
+    }
+
+    private static bool ShouldRetryMapProviderInitializationFailure(string errorCode)
+    {
+        return errorCode switch
+        {
+            "provider-not-ready" => true,
+            "not-initialized" => true,
+            "css-timeout" => true,
+            "js-timeout" => true,
+            "leaflet-global-missing" => true,
+            "readiness-exception" => true,
+            "initialization-exception" => true,
+            _ => false
+        };
+    }
+
+    private async Task ConfigureMapNodeWhenProviderReadyAfterDelayAsync(string nodeId, RealizedNode expectedNode, int delayMs)
+    {
+        await Task.Delay(delayMs);
+        if (!_nodes.TryGetValue(nodeId, out var currentNode)
+            || !ReferenceEquals(currentNode, expectedNode)
+            || currentNode.TryGetMapAdapter(out _))
+        {
+            return;
+        }
+
+        currentNode.Element.Attr("data-mirage-map-status", "pending");
+        await ConfigureMapNodeWhenProviderReadyAsync(nodeId, currentNode);
+    }
+
+    private void ConfigureMapNodeCore(string nodeId, RealizedNode node)
+    {
+        if (_mapProvider is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (node.TryGetControlDescriptor(out var descriptor))
+            {
+                // Map providers can emit initial runtime events (for example the first region) during adapter initialization.
+                // Ensure subscriptions are active before provider state is applied so those events are not dropped.
+                foreach (var eventName in descriptor.EventMappings.Keys)
+                {
+                    EnsureEventSubscription(nodeId, eventName, node);
+                }
+            }
+
             var adapter = _mapProvider.CreateAdapter(nodeId, node.Element);
             node.AttachMapAdapter(adapter);
             node.Element.Attr("data-mirage-map-provider", _mapProvider.ProviderName);

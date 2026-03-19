@@ -2,6 +2,68 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (Map resiliency follow-up: transient-only provider retries + geolocation watch recovery)
+- `MirageRuntime` now retries map-provider non-ready results only for transient failure codes (`*-timeout`, `leaflet-global-missing`, `readiness-exception`, `initialization-exception`, `provider-not-ready`) instead of retrying deterministic asset/config failures.
+- This preserves recovery behavior for intermittent startup issues while allowing deterministic broken-asset scenarios to fail fast with stable error projection.
+- Leaflet `applyUserLocationState` now clears the failed `watchPosition` ID on geolocation error callbacks, allowing later `isShowingUser=true` renders to start a fresh watch without requiring map recreation/toggle reset.
+- Added architecture-boundary coverage for both retry-filter policy and geolocation watch-id reset behavior.
+
+## 2026-03-19 (Map-node provider reattempt loop after non-ready init results)
+- `MirageRuntime.ConfigureMapNodeWhenProviderReadyAsync` now retries non-ready provider initialization results for already-realized map nodes, instead of projecting immediate terminal error on the first failed readiness result.
+- Retries are bounded (`MapProviderInitializationRetryLimit`) and delayed (`ConfigureMapNodeWhenProviderReadyAfterDelayAsync`) so transient CDN/network readiness failures can recover without hot-looping.
+- Map-provider retry state is now cleared on success, terminal failure, node removal, and runtime dispose, with architecture-boundary coverage added to guard this behavior.
+
+## 2026-03-19 (Map recovery follow-up: retry not-ready provider state + antimeridian span correction)
+- `MirageRuntime.ConfigureMapNode` now treats all non-ready provider states as retryable-at-render time by transitioning the node to `pending` and awaiting `EnsureInitializedAsync()` asynchronously, so maps can recover after a transient warm-up failure.
+- Leaflet runtime region telemetry now derives longitude span with antimeridian-aware bounds math (`getLongitudeSpanFromBounds`) instead of raw absolute longitude delta, preventing inflated 300+ degree spans when bounds cross ±180°.
+- Added architecture-boundary coverage for both runtime behaviors to prevent regression to one-shot provider failure projection and incorrect dateline span reporting.
+
+## 2026-03-19 (Map provider startup decoupling + in-flight Leaflet script readiness)
+- `MirageBrowserAppHost.RunAsync` no longer blocks first paint on map-provider readiness checks; provider initialization now warms in the background.
+- `MirageRuntime` map-node configuration now handles provider `not-initialized` state asynchronously and completes adapter attachment/apply once provider readiness resolves, preventing map hosts from getting stuck in startup races.
+- Leaflet runtime `ensureScript(...)` now waits for pre-existing in-flight script tags to load/error (with timeout) before failing readiness, so hosts that pre-inject Leaflet do not get false permanent `leaflet-global-missing` failures.
+- Leaflet region reads now treat pre-view bounds access as non-fatal (`readRegionFromMap` catches "set center/zoom first" cases), preventing initialization-time failures before the first region projection is applied.
+
+## 2026-03-19 (Leaflet map apply-state guard: no implicit recenter on non-region updates)
+- Leaflet `applyMapStateJson` now applies `fitBounds` only when the projected region actually changes or when `RegionRequestToken` transitions (explicit `MoveToRegion`), instead of reapplying region on every render.
+- Map entries now track the last applied/read runtime region so unrelated state updates (`pins`, `elements`, traffic/user toggles) do not snap the viewport back to stale coordinates during interaction.
+- Added an E2E regression (`MapLab_TrafficToggle_DoesNotReapplyRegionWithoutMoveRequest`) that instruments Leaflet `fitBounds` and asserts non-region updates do not invoke recentering.
+
+## 2026-03-19 (Map runtime event ordering: subscribe before provider initialization apply)
+- `MirageRuntime.ConfigureMapNode` now pre-subscribes map runtime events using provider event mappings before creating/applying the map adapter.
+- This prevents first-frame provider events (especially initial `mapregionchanged` emitted during Leaflet initialization) from being dropped when create/property operations precede explicit attach-event operations in patch order.
+- Runtime event attachment now flows through a shared idempotent subscription helper so early map subscriptions and later `AttachEventOperation` execution stay consistent.
+
+## 2026-03-19 (Map hardening follow-up: async init fault handling + query attribution lockdown)
+- `MirageRuntime.ConfigureMapNodeWhenProviderReadyAsync` now catches `EnsureInitializedAsync()` exceptions and converts them into deterministic map error projection (`provider-init-exception`) instead of leaving map hosts indefinitely in `pending`.
+- Startup option parsing now treats `mirageLeafletTileAttribution` as trusted configuration only (`MIRAGE_LEAFLET_TILE_ATTRIBUTION` environment variable); URL query values are ignored because Leaflet attribution renders HTML.
+- Added a map security E2E fixture/test that injects a malicious attribution query value and asserts it is not rendered in the Leaflet attribution surface.
+
+## 2026-03-19 (Leaflet provider retry semantics after failed initialization)
+- `LeafletMapProvider.EnsureInitializedAsync` now treats failed/completed-non-ready initialization tasks as retryable instead of permanently memoizing the first failed attempt for the app lifetime.
+- In-flight initialization tasks are still shared across callers, but once a task completes with non-ready/faulted/canceled status, the next `EnsureInitializedAsync` call starts a fresh initialization attempt.
+- Added architecture-boundary coverage to lock the retry gate behavior in `LeafletMapProvider` and guard against regressions back to one-shot failure memoization.
+
+## 2026-03-19 (Leaflet runtime retry hardening: failed promise reset + stylesheet readiness validation)
+- `ensureLeafletReadyJson` now clears its cached in-flight readiness promise when initialization returns a non-OK result (or throws), so subsequent provider retries can perform real CSS/JS load attempts instead of replaying a stale failed promise.
+- `ensureStylesheet` now validates existing matching `<link data-mirage-leaflet-css>` elements before reporting success: loaded links succeed immediately, error-marked links fail immediately, and in-flight links are awaited with timeout/error handling.
+- Created stylesheet links now track deterministic status via `data-mirage-leaflet-css-status` (`loading`, `loaded`, `error`) so later readiness checks can distinguish healthy and failed cached link tags.
+
+## 2026-03-19 (Leaflet pin interaction rewiring preserves popup behavior)
+- Marker interaction rewiring in `syncPins` now removes only Mirage-owned click and popup handlers (stored on marker instance) instead of calling broad `marker.off("click")` / `marker.off("popupopen")`.
+- This preserves Leaflet's internal popup-open click handlers from `bindPopup(...)` across subsequent map state applies, preventing marker popup UX regressions after non-pin renders.
+- Added architecture-boundary coverage to guard against regressions back to clearing the entire marker click handler set.
+
+## 2026-03-19 (Leaflet host resize handling via observer-driven invalidate)
+- Leaflet map entries now subscribe to host resize changes (via `ResizeObserver`, with window-resize fallback) and schedule `invalidateSize(false)` so layout-only container size changes refresh Leaflet pixel bounds without requiring map-state reapply.
+- Map state application now routes through `scheduleInvalidateSize(...)` instead of directly calling `invalidateSize(...)`, coalescing rapid updates and avoiding redundant synchronous invalidations.
+- Added architecture-boundary and E2E coverage to lock this behavior (`LeafletRuntimeModule_ObservesHostResizesAndInvalidatesMapSize`, `MapLab_HostStyleResize_TriggersLeafletInvalidateSize`).
+
+## 2026-03-19 (Leaflet interop import retry after transient module-load failure)
+- `LeafletMapInterop.EnsureModuleLoadedAsync` now treats faulted/canceled cached module-import tasks as retryable and clears the cached task before attempting a fresh `JSHost.ImportAsync(...)`.
+- Import tasks created by the interop layer now clear their own cache entry on failure, preventing a permanently faulted module task from blocking all subsequent map-provider initialization retries.
+- Added architecture-boundary coverage to guard this retry/reset behavior in `LeafletMapInterop`.
+
 ## 2026-03-18 (Layout parity wave: MAUI-shaped lifecycle + AbsoluteLayout runtime mutation coverage)
 - Refactored `MirageLayoutHandler` toward MAUI handler shape: `SetVirtualView` now performs deterministic full child sync in z-order, while command handlers (`Add/Remove/Insert/Update/UpdateZIndex`) execute incremental child operations and only fall back to full sync on invalid payloads.
 - Split layout support logic into focused internal helpers (`MirageLayoutHandlerOrdering`, `MirageLayoutProjection`) so handler orchestration is isolated from ordering/projection details and easier to keep aligned with upstream MAUI patterns.
@@ -496,13 +558,45 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Imported upstream page XAML/code-behind into `ControlsSample.Shared` and extended ControlsSample E2E coverage for catalog discoverability plus page-level structure checks (`Vertical` and `Horizontal` sections with six `BoxView` children each).
 - Kept parity expectations aligned to native MAUI behavior: unsized `BoxView` children in both sections are expected to collapse rather than render with synthetic default sizes.
 
+## 2026-03-19 (ControlsSample BrushesPage Enablement)
+- Promoted upstream `BrushesPage` to a runnable ControlsSample entry and linked its upstream XAML/code-behind into `ControlsSample.Shared`.
+- Added ControlsSample E2E coverage for catalog visibility and page-open smoke validation against the first tab content to keep import regressions detectable.
+- This slice intentionally wires the upstream page as-is; deeper brush parity gaps (for example specific gradient/shape visual deltas) remain follow-up parity work rather than sample-specific wrapper changes.
+
 ## 2026-03-17 (ControlsSample CustomLayoutPage Enablement)
 - Promoted upstream `CustomLayoutPage` to a runnable ControlsSample entry and linked its upstream XAML/code-behind into `ControlsSample.Shared`.
 - Added a framework-level generic `Layout` realization path in Mirage (`ComponentKind.Layout`) so custom `Layout`-derived views (like upstream `DockLayout`) can run without sample-specific handler glue.
 - `MirageLayoutHandler` now falls back to generic layout mode for non-built-in layouts and projects arranged child frames as absolute child styles (`left/top/width/height`) after MAUI cross-platform arrange, preserving MAUI custom-layout manager semantics in browser host runs.
 - Extended ControlsSample E2E coverage to verify `CustomLayoutPage` docked button arrangement and updated the page status tracker to mark `CustomLayoutPage.xaml` as runnable + E2E covered.
 
-## 2026-03-19 (Showcase Map Startup Security: Query URL Override Lockdown)
-- `Showcase.Fluent` startup now treats query-driven `mirageLeafletJsUrl` / `mirageLeafletCssUrl` as restricted inputs: in normal (CDN) mode only relative/local URLs are accepted, while absolute and protocol-relative URLs are ignored.
-- This blocks crafted public links from injecting arbitrary third-party script/style URLs, while still allowing deterministic test/dogfood overrides to local app paths.
-- Local asset mode (`mirageLeafletAssetMode=local`) keeps current validation coverage paths so invalid absolute/protocol-relative URLs continue to surface deterministic `local-assets-invalid-url` errors.
+## 2026-03-17 (ControlsSample Border Galleries Enablement + Picker Support)
+- Promoted upstream `BorderPage` to a runnable ControlsSample entry and imported all Border gallery sub-pages (`BorderPlayground`, `BorderClipPlayground`, `BorderStyles`, `BorderLayout`, `BorderStroke`, `Borderless`, `BorderResizeContent`, `BorderAlignment`) behind BorderPage's internal navigation surface.
+- Added a wrapper compat `GalleryBuilder` in the upstream namespace so BorderPage nav buttons and pushed sub-pages receive deterministic automation IDs without modifying vendored upstream sources.
+- Added first-class Mirage `Picker` support (`ComponentKind.Picker`, `MiragePickerHandler`, Fluent `select` descriptor) because Border galleries depend on Picker-based shape/content/line-cap/line-join selection; this is generic framework behavior, not sample glue.
+- Upgraded `MirageBorderHandler` from CSS-border-only stroke projection to a Border-owned shape/stroke rendering path using an internal SVG overlay for stroke semantics, enabling gradient stroke brushes, dash array/offset, line cap/join, and non-rect shape paths while keeping content hosting on the MAUI control-node path.
+- Locked transform/update behavior for Border rendering to reproject on both mapper updates and arrange-time size changes, and applied shape-based clipping semantics (`RoundRectangle`, `Ellipse`, `Polygon`) through host clip styles for gallery clip parity.
+
+## 2026-03-17 (Border Stroke Rendering Fix: SVG Namespace-Correct Node Creation)
+- Border stroke visuals in browser hosts were silently missing for some pages (for example `BorderAlignment`) because Mirage created `svg`/`defs`/`path` elements via `document.createElement(...)`, which does not guarantee SVG namespace semantics for runtime-generated nodes.
+- Mirage DOM runtime now creates SVG-family elements (`svg`, `defs`, `path`, gradient/shape tags) with `document.createElementNS("http://www.w3.org/2000/svg", ...)`, ensuring stroke attributes are interpreted/rendered as actual SVG geometry.
+- Added BorderAlignment E2E assertions that validate namespace-correct stroke nodes and non-empty red stroke projection to prevent regressions where stroke attributes exist but do not paint.
+
+## 2026-03-17 (Border Stroke Aspect-Ratio Fix For Alignment Parity)
+- Border stroke overlays now set SVG `preserveAspectRatio="none"` so stroke paths scale to the host border box even when layout frame dimensions and DOM-rendered host dimensions diverge during alignment scenarios (`Start/Center/End/Fill`).
+- This avoids collapsed center-line artifacts in `BorderAlignment` where correctly generated stroke paths were being rendered under default SVG `xMidYMid meet` behavior.
+- Added E2E geometry assertions for `BorderAlignment` to ensure stroke path rendered width tracks host width for both non-fill and fill border variants.
+
+## 2026-03-18 (BorderPlayground Stroke Parity: Dash Units, Content Inset, and Corner Ordering)
+- Updated Mirage Border stroke dash projection to use MAUI-style stroke-relative units (`StrokeDashArray` / `StrokeDashOffset` values multiplied by `StrokeThickness`) instead of raw SVG unit projection, which removes the pinstripe dash artifact in `BorderPlayground`.
+- Border host padding is now projected as `Border.Padding + StrokeThickness` while a renderable stroke is active, preventing stroke geometry from overlapping/clipping hosted content text at the edge.
+- Corrected `MirageBorderHandler` round-rectangle normalization output to preserve MAUI bottom-corner semantics (`BottomLeft`/`BottomRight`) and added missing `BottomLeftCornerSlider` automation instrumentation for deterministic E2E coverage.
+
+## 2026-03-18 (BorderPlayground Geometry-Frame And Clipping Lockstep)
+- Border stroke projection now uses the arranged frame as the sole geometry authority; Mirage no longer fabricates stroke dimensions from desired/content fallback values when arranged size is unavailable.
+- When arranged width/height are not yet valid, the SVG stroke overlay remains hidden and path attributes are cleared, avoiding stale or shrunken stroke frames.
+- Round-rectangle borders now project `clip-path: inset(0 round ...)` from the same normalized corner data used by the stroke path, keeping image/content clipping and stroke geometry in lockstep.
+
+## 2026-03-19 (TabbedPage Baseline Support for Browser Hosts)
+- Added a dedicated `MirageTabbedPageHandler` and handler registration for `TabbedPage` in `UseMirageBrowserPlatform` so browser hosts do not fall back to MAUI's platform-default `ContentViewHandler` path (which is not implemented for this target).
+- The browser `TabbedPage` baseline now mounts and arranges the current child page using Mirage page handlers, which unblocks importing upstream tab-root pages like `BrushesPage` without sample-specific wrapper transforms.
+- This slice is intentionally minimal: it establishes stable current-page hosting for tabbed roots and defers richer tab-strip interaction/chrome parity to follow-up work.

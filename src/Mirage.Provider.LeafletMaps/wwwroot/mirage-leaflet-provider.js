@@ -66,7 +66,56 @@ function ensureStylesheet(url, timeoutMs) {
 
     const existing = document.querySelector(`link[data-mirage-leaflet-css="true"][href="${escapeAttributeValue(url)}"]`);
     if (existing) {
-      resolve(toResult(true));
+      const existingStatus = existing.getAttribute("data-mirage-leaflet-css-status");
+      if (existingStatus === "loaded" || existing.sheet) {
+        resolve(toResult(true));
+        return;
+      }
+
+      if (existingStatus === "error") {
+        resolve(toResult(false, "css-load-failed", `Failed to load Leaflet CSS from '${url}'.`));
+        return;
+      }
+
+      let completed = false;
+      const onComplete = (result) => {
+        if (completed) {
+          return;
+        }
+
+        completed = true;
+        clearTimeout(timer);
+        existing.removeEventListener("load", onLoad);
+        existing.removeEventListener("error", onError);
+        resolve(result);
+      };
+
+      const onLoad = () => {
+        existing.setAttribute("data-mirage-leaflet-css-status", "loaded");
+        onComplete(toResult(true));
+      };
+
+      const onError = () => {
+        existing.setAttribute("data-mirage-leaflet-css-status", "error");
+        onComplete(toResult(false, "css-load-failed", `Failed to load Leaflet CSS from '${url}'.`));
+      };
+
+      const timer = setTimeout(() => {
+        if (existing.sheet) {
+          onLoad();
+          return;
+        }
+
+        onComplete(toResult(false, "css-timeout", `Timed out while waiting for Leaflet CSS from '${url}'.`));
+      }, timeoutMs);
+
+      existing.addEventListener("load", onLoad);
+      existing.addEventListener("error", onError);
+
+      if (existing.sheet) {
+        queueMicrotask(onLoad);
+      }
+
       return;
     }
 
@@ -74,6 +123,7 @@ function ensureStylesheet(url, timeoutMs) {
     link.rel = "stylesheet";
     link.href = url;
     link.setAttribute("data-mirage-leaflet-css", "true");
+    link.setAttribute("data-mirage-leaflet-css-status", "loading");
 
     let completed = false;
     const timer = setTimeout(() => {
@@ -86,6 +136,7 @@ function ensureStylesheet(url, timeoutMs) {
     }, timeoutMs);
 
     link.onload = () => {
+      link.setAttribute("data-mirage-leaflet-css-status", "loaded");
       if (completed) {
         return;
       }
@@ -96,6 +147,7 @@ function ensureStylesheet(url, timeoutMs) {
     };
 
     link.onerror = () => {
+      link.setAttribute("data-mirage-leaflet-css-status", "error");
       if (completed) {
         return;
       }
@@ -128,7 +180,48 @@ function ensureScript(url, timeoutMs) {
         return;
       }
 
-      resolve(toResult(false, "leaflet-global-missing", "Leaflet script tag exists but global 'L' is unavailable."));
+      let completed = false;
+      const onComplete = (result) => {
+        if (completed) {
+          return;
+        }
+
+        completed = true;
+        clearTimeout(timer);
+        existing.removeEventListener("load", onLoad);
+        existing.removeEventListener("error", onError);
+        resolve(result);
+      };
+
+      const onLoad = () => {
+        if (typeof window !== "undefined" && window.L && typeof window.L.map === "function") {
+          onComplete(toResult(true));
+          return;
+        }
+
+        onComplete(toResult(false, "leaflet-global-missing", "Leaflet script loaded but global 'L' is unavailable."));
+      };
+
+      const onError = () => {
+        onComplete(toResult(false, "js-load-failed", `Failed to load Leaflet JavaScript from '${url}'.`));
+      };
+
+      const timer = setTimeout(() => {
+        if (typeof window !== "undefined" && window.L && typeof window.L.map === "function") {
+          onComplete(toResult(true));
+          return;
+        }
+
+        onComplete(toResult(false, "js-timeout", `Timed out while waiting for Leaflet JavaScript from '${url}'.`));
+      }, timeoutMs);
+
+      existing.addEventListener("load", onLoad);
+      existing.addEventListener("error", onError);
+
+      if (existing.readyState === "complete" || existing.readyState === "loaded") {
+        queueMicrotask(onLoad);
+      }
+
       return;
     }
 
@@ -202,10 +295,24 @@ export async function ensureLeafletReadyJson(optionsJson) {
 
   if (!leafletReadinessPromise) {
     const options = parseJson(optionsJson, {});
-    leafletReadinessPromise = ensureLeafletReadyCore(options).then((result) => {
-      leafletReadinessResult = result;
-      return result;
-    });
+    leafletReadinessPromise = ensureLeafletReadyCore(options)
+      .then((result) => {
+        leafletReadinessResult = result;
+        if (!result.ok) {
+          leafletReadinessPromise = null;
+        }
+
+        return result;
+      })
+      .catch((error) => {
+        const message = error && typeof error.message === "string" && error.message.length > 0
+          ? error.message
+          : "Leaflet readiness failed with an unexpected exception.";
+        const failedResult = toResult(false, "readiness-exception", message);
+        leafletReadinessResult = failedResult;
+        leafletReadinessPromise = null;
+        return failedResult;
+      });
   }
 
   const result = await leafletReadinessPromise;
@@ -271,6 +378,72 @@ function toFiniteOrNull(value) {
   return Number(value);
 }
 
+function normalizeLongitude(value) {
+  let normalized = value;
+  while (normalized < -180) {
+    normalized += 360;
+  }
+
+  while (normalized > 180) {
+    normalized -= 360;
+  }
+
+  return normalized;
+}
+
+function normalizeRegion(region) {
+  const centerLatitude = toFiniteOrNull(region?.centerLatitude);
+  const centerLongitude = toFiniteOrNull(region?.centerLongitude);
+  const latitudeSpan = toFiniteOrNull(region?.latitudeSpan);
+  const longitudeSpan = toFiniteOrNull(region?.longitudeSpan);
+  if (centerLatitude == null || centerLongitude == null || latitudeSpan == null || longitudeSpan == null) {
+    return null;
+  }
+
+  return {
+    centerLatitude: Math.max(-90, Math.min(90, centerLatitude)),
+    centerLongitude: normalizeLongitude(centerLongitude),
+    latitudeSpan: Math.max(0.0001, Math.abs(latitudeSpan)),
+    longitudeSpan: Math.max(0.0001, Math.abs(longitudeSpan))
+  };
+}
+
+function getLongitudeSpanFromBounds(southWestLongitude, northEastLongitude) {
+  const southWest = toFiniteOrNull(southWestLongitude);
+  const northEast = toFiniteOrNull(northEastLongitude);
+  if (southWest == null || northEast == null) {
+    return 0.0001;
+  }
+
+  let span = northEast - southWest;
+  while (span < 0) {
+    span += 360;
+  }
+
+  return Math.max(0.0001, Math.min(360, span));
+}
+
+function approximatelyEqual(left, right, absoluteTolerance, relativeTolerance = 0.002) {
+  const diff = Math.abs(left - right);
+  if (diff <= absoluteTolerance) {
+    return true;
+  }
+
+  const scale = Math.max(Math.abs(left), Math.abs(right), 1);
+  return diff <= (scale * relativeTolerance);
+}
+
+function areRegionsEquivalent(left, right) {
+  if (!left || !right) {
+    return false;
+  }
+
+  return approximatelyEqual(left.centerLatitude, right.centerLatitude, 0.0001, 0.001)
+    && approximatelyEqual(left.centerLongitude, right.centerLongitude, 0.0001, 0.001)
+    && approximatelyEqual(left.latitudeSpan, right.latitudeSpan, 0.0005, 0.01)
+    && approximatelyEqual(left.longitudeSpan, right.longitudeSpan, 0.0005, 0.01);
+}
+
 function toBoolean(value, defaultValue) {
   if (typeof value === "boolean") {
     return value;
@@ -314,26 +487,119 @@ function readRegionFromMap(map) {
     return null;
   }
 
-  const center = map.getCenter();
-  const bounds = map.getBounds();
-  if (!center || !bounds || typeof bounds.getSouthWest !== "function" || typeof bounds.getNorthEast !== "function") {
+  try {
+    const center = map.getCenter();
+    const bounds = map.getBounds();
+    if (!center || !bounds || typeof bounds.getSouthWest !== "function" || typeof bounds.getNorthEast !== "function") {
+      return null;
+    }
+
+    const southWest = bounds.getSouthWest();
+    const northEast = bounds.getNorthEast();
+    if (!southWest || !northEast) {
+      return null;
+    }
+
+    const latitudeSpan = Math.max(0.0001, Math.abs(northEast.lat - southWest.lat));
+    const longitudeSpan = getLongitudeSpanFromBounds(southWest.lng, northEast.lng);
+    return {
+      centerLatitude: center.lat,
+      centerLongitude: center.lng,
+      latitudeSpan,
+      longitudeSpan
+    };
+  } catch {
     return null;
   }
+}
 
-  const southWest = bounds.getSouthWest();
-  const northEast = bounds.getNorthEast();
-  if (!southWest || !northEast) {
-    return null;
+function clearScheduledInvalidateSize(entry) {
+  if (!entry) {
+    return;
   }
 
-  const latitudeSpan = Math.max(0.0001, Math.abs(northEast.lat - southWest.lat));
-  const longitudeSpan = Math.max(0.0001, Math.abs(northEast.lng - southWest.lng));
-  return {
-    centerLatitude: center.lat,
-    centerLongitude: center.lng,
-    latitudeSpan,
-    longitudeSpan
+  if (entry.pendingInvalidateFrame != null && typeof cancelAnimationFrame === "function") {
+    cancelAnimationFrame(entry.pendingInvalidateFrame);
+  }
+
+  if (entry.pendingInvalidateTimeout != null) {
+    clearTimeout(entry.pendingInvalidateTimeout);
+  }
+
+  entry.pendingInvalidateFrame = null;
+  entry.pendingInvalidateTimeout = null;
+}
+
+function scheduleInvalidateSize(entry) {
+  if (!entry || !entry.map) {
+    return;
+  }
+
+  if (entry.pendingInvalidateFrame != null || entry.pendingInvalidateTimeout != null) {
+    return;
+  }
+
+  const runInvalidateSize = () => {
+    entry.pendingInvalidateFrame = null;
+    entry.pendingInvalidateTimeout = null;
+    if (!entry.map) {
+      return;
+    }
+
+    try {
+      entry.map.invalidateSize(false);
+    } catch {
+      // best effort
+    }
   };
+
+  if (typeof requestAnimationFrame === "function") {
+    entry.pendingInvalidateFrame = requestAnimationFrame(runInvalidateSize);
+    return;
+  }
+
+  entry.pendingInvalidateTimeout = setTimeout(runInvalidateSize, 0);
+}
+
+function subscribeHostResize(entry) {
+  if (!entry || !entry.host) {
+    return;
+  }
+
+  if (typeof ResizeObserver === "function") {
+    entry.resizeObserver = new ResizeObserver(() => {
+      scheduleInvalidateSize(entry);
+    });
+    entry.resizeObserver.observe(entry.host);
+    return;
+  }
+
+  if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
+    entry.windowResizeHandler = () => {
+      scheduleInvalidateSize(entry);
+    };
+    window.addEventListener("resize", entry.windowResizeHandler);
+  }
+}
+
+function unsubscribeHostResize(entry) {
+  if (!entry) {
+    return;
+  }
+
+  if (entry.resizeObserver && typeof entry.resizeObserver.disconnect === "function") {
+    entry.resizeObserver.disconnect();
+  }
+  entry.resizeObserver = null;
+
+  if (entry.windowResizeHandler
+    && typeof window !== "undefined"
+    && typeof window.removeEventListener === "function") {
+    window.removeEventListener("resize", entry.windowResizeHandler);
+  }
+  entry.windowResizeHandler = null;
+
+  clearScheduledInvalidateSize(entry);
 }
 
 function raiseRegionChanged(entry) {
@@ -346,6 +612,7 @@ function raiseRegionChanged(entry) {
     return;
   }
 
+  entry.lastAppliedRegion = region;
   setRegionTelemetry(entry.host, region);
   emitMirageEvent(entry.host, "mirage-map-region-changed", region);
 }
@@ -390,10 +657,17 @@ export function initializeMapJson(nodeId, optionsJson) {
       elements: new Map(),
       userLocationMarker: null,
       userLocationWatchId: null,
+      resizeObserver: null,
+      windowResizeHandler: null,
+      pendingInvalidateFrame: null,
+      pendingInvalidateTimeout: null,
+      lastProjectedRegion: null,
+      lastAppliedRegion: null,
       lastRegionRequestToken: 0,
       lastDismissPopupRequestToken: 0
     };
     mapEntries.set(nodeId, entry);
+    subscribeHostResize(entry);
 
     map.on("moveend", () => {
       raiseRegionChanged(entry);
@@ -433,24 +707,21 @@ function normalizeMapType(value) {
 }
 
 function applyRegion(entry, region, animate) {
-  if (!entry || !region) {
-    return;
+  if (!entry) {
+    return null;
   }
 
-  const centerLatitude = toFiniteOrNull(region.centerLatitude);
-  const centerLongitude = toFiniteOrNull(region.centerLongitude);
-  const latitudeSpan = toFiniteOrNull(region.latitudeSpan);
-  const longitudeSpan = toFiniteOrNull(region.longitudeSpan);
-  if (centerLatitude == null || centerLongitude == null || latitudeSpan == null || longitudeSpan == null) {
-    return;
+  const normalizedRegion = normalizeRegion(region);
+  if (!normalizedRegion) {
+    return null;
   }
 
-  const halfLat = Math.max(0.00005, Math.abs(latitudeSpan) / 2);
-  const halfLng = Math.max(0.00005, Math.abs(longitudeSpan) / 2);
-  const south = Math.max(-90, centerLatitude - halfLat);
-  const north = Math.min(90, centerLatitude + halfLat);
-  const west = centerLongitude - halfLng;
-  const east = centerLongitude + halfLng;
+  const halfLat = Math.max(0.00005, normalizedRegion.latitudeSpan / 2);
+  const halfLng = Math.max(0.00005, normalizedRegion.longitudeSpan / 2);
+  const south = Math.max(-90, normalizedRegion.centerLatitude - halfLat);
+  const north = Math.min(90, normalizedRegion.centerLatitude + halfLat);
+  const west = normalizedRegion.centerLongitude - halfLng;
+  const east = normalizedRegion.centerLongitude + halfLng;
 
   const bounds = [
     [south, west],
@@ -461,6 +732,8 @@ function applyRegion(entry, region, animate) {
     animate: !!animate,
     duration: animate ? 0.25 : undefined
   });
+
+  return readRegionFromMap(entry.map) ?? normalizedRegion;
 }
 
 function setLeafletHandlerState(handler, enabled) {
@@ -549,7 +822,8 @@ function applyUserLocationState(entry, state) {
 
   entry.host.setAttribute("data-mirage-map-geolocation-status", "pending");
   try {
-    entry.userLocationWatchId = navigator.geolocation.watchPosition(
+    let watchId = null;
+    watchId = navigator.geolocation.watchPosition(
       (position) => {
         const latitude = toFiniteOrNull(position?.coords?.latitude);
         const longitude = toFiniteOrNull(position?.coords?.longitude);
@@ -572,6 +846,18 @@ function applyUserLocationState(entry, state) {
         entry.host.setAttribute("data-mirage-map-geolocation-status", "ready");
       },
       (error) => {
+        if (entry.userLocationWatchId === watchId) {
+          if (typeof navigator !== "undefined" && navigator.geolocation && typeof navigator.geolocation.clearWatch === "function") {
+            try {
+              navigator.geolocation.clearWatch(watchId);
+            } catch {
+              // best effort
+            }
+          }
+
+          entry.userLocationWatchId = null;
+        }
+
         const code = mapGeolocationErrorCode(error);
         const message = error?.message || "Unable to read current browser location.";
         entry.host.setAttribute("data-mirage-map-geolocation-status", "error");
@@ -583,7 +869,9 @@ function applyUserLocationState(entry, state) {
         timeout: 15000
       }
     );
+    entry.userLocationWatchId = watchId;
   } catch (error) {
+    entry.userLocationWatchId = null;
     const message = error instanceof Error ? error.message : String(error);
     entry.host.setAttribute("data-mirage-map-geolocation-status", "error");
     emitDiagnostic(entry.host, "geolocation-watch-failed", message);
@@ -629,13 +917,23 @@ function buildPinPopupContent(pin, key) {
 }
 
 function wireMarkerInteraction(entry, marker, key) {
-  marker.off("click");
-  marker.on("click", () => {
-    emitMirageEvent(entry.host, "mirage-map-pin-clicked", { key });
-  });
+  const existingPinClickHandler = marker.__miragePinClickHandler;
+  if (typeof existingPinClickHandler === "function") {
+    marker.off("click", existingPinClickHandler);
+  }
 
-  marker.off("popupopen");
-  marker.on("popupopen", (event) => {
+  const onPinClick = () => {
+    emitMirageEvent(entry.host, "mirage-map-pin-clicked", { key });
+  };
+  marker.__miragePinClickHandler = onPinClick;
+  marker.on("click", onPinClick);
+
+  const existingPopupOpenHandler = marker.__miragePinPopupOpenHandler;
+  if (typeof existingPopupOpenHandler === "function") {
+    marker.off("popupopen", existingPopupOpenHandler);
+  }
+
+  const onPopupOpen = (event) => {
     const popupElement = event?.popup?.getElement?.();
     if (!popupElement) {
       return;
@@ -652,7 +950,9 @@ function wireMarkerInteraction(entry, marker, key) {
 
     popupElement.__miragePinInfoWindowClickHandler = onPopupClick;
     popupElement.addEventListener("click", onPopupClick);
-  });
+  };
+  marker.__miragePinPopupOpenHandler = onPopupOpen;
+  marker.on("popupopen", onPopupOpen);
 }
 
 function syncPins(entry, pins) {
@@ -911,16 +1211,35 @@ export function applyMapStateJson(nodeId, stateJson) {
   entry.lastRegionRequestToken = regionRequestToken;
 
   if (state?.region && typeof state.region === "object") {
-    applyRegion(entry, state.region, shouldAnimate);
-    setRegionTelemetry(entry.host, state.region);
+    const normalizedRequestedRegion = normalizeRegion(state.region);
+    if (normalizedRequestedRegion) {
+      const projectedRegionChanged = !areRegionsEquivalent(entry.lastProjectedRegion, normalizedRequestedRegion);
+      const regionMatchesViewport = areRegionsEquivalent(entry.lastAppliedRegion, normalizedRequestedRegion);
+      const shouldApplyRegion = shouldAnimate || (projectedRegionChanged && !regionMatchesViewport);
+      entry.lastProjectedRegion = normalizedRequestedRegion;
+      if (shouldApplyRegion) {
+        const appliedRegion = applyRegion(entry, normalizedRequestedRegion, shouldAnimate);
+        if (appliedRegion) {
+          entry.lastAppliedRegion = appliedRegion;
+        }
+      }
+
+      const telemetryRegion = shouldApplyRegion ? normalizedRequestedRegion : readRegionFromMap(entry.map);
+      setRegionTelemetry(entry.host, telemetryRegion ?? normalizedRequestedRegion);
+    } else {
+      entry.lastProjectedRegion = null;
+      setRegionTelemetry(entry.host, null);
+    }
   } else {
+    entry.lastProjectedRegion = null;
+    entry.lastAppliedRegion = null;
     setRegionTelemetry(entry.host, null);
   }
 
   syncPins(entry, state?.pins);
   syncElements(entry, state?.elements);
   applyDismissPopupRequest(entry, state);
-  entry.map.invalidateSize(false);
+  scheduleInvalidateSize(entry);
   return toResultJson(toResult(true, null, null, warningCode, warningMessage));
 }
 
@@ -942,6 +1261,7 @@ export function disposeMap(nodeId) {
     entry.markers.clear();
     entry.elements.clear();
     clearUserLocation(entry);
+    unsubscribeHostResize(entry);
     entry.map.remove();
   } catch {
     // best effort

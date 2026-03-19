@@ -50,7 +50,11 @@ internal sealed class LeafletMapProvider : IMirageMapProvider
         _ = cancellationToken;
         lock (_sync)
         {
-            _initializationTask ??= EnsureInitializedCoreAsync();
+            if (ShouldStartNewInitializationTask(_initializationTask))
+            {
+                _initializationTask = EnsureInitializedCoreAsync();
+            }
+
             return _initializationTask;
         }
     }
@@ -130,6 +134,26 @@ internal sealed class LeafletMapProvider : IMirageMapProvider
             MirageDiagnostics.Log("map.provider", $"provider=leaflet code=initialization-exception message={error.Message}");
             return failed;
         }
+    }
+
+    private static bool ShouldStartNewInitializationTask(Task<MirageMapProviderInitializationResult>? task)
+    {
+        if (task is null)
+        {
+            return true;
+        }
+
+        if (!task.IsCompleted)
+        {
+            return false;
+        }
+
+        if (!task.IsCompletedSuccessfully)
+        {
+            return true;
+        }
+
+        return !task.Result.IsReady;
     }
 
     private static LeafletInteropResult ParseResult(string? json)

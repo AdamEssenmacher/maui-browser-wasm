@@ -61,6 +61,13 @@ public static class ControlsSampleCatalog
             description: "Runnable in Mirage today: exercises ScrollView navigation scenarios across constructor scroll, scroll-to-end, template, and orientation variants.",
             pageFactory: CreateScrollViewPage),
         new(
+            id: "brushespage",
+            title: "BrushesPage",
+            upstreamPath: "Pages/Core/BrushesPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(BrushesPage),
+            description: "Runnable in Mirage today: exercises solid/gradient brush scenarios and live brush updates across content surfaces."),
+        new(
             id: "transformationspage",
             title: "TransformationsPage",
             upstreamPath: "Pages/Core/TransformationsPage.xaml",
@@ -68,6 +75,14 @@ public static class ControlsSampleCatalog
             pageType: typeof(TransformationsPage),
             description: "Runnable in Mirage today: exercises MAUI view transform properties with slider/stepper-driven updates.",
             pageFactory: CreateTransformationsPage),
+        new(
+            id: "borderpage",
+            title: "BorderPage",
+            upstreamPath: "Pages/Core/BorderGalleries/BorderPage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(BorderPage),
+            description: "Runnable in Mirage today: exercises Border gallery navigation including stroke, clipping, layout, and alignment scenarios.",
+            pageFactory: CreateBorderPage),
         new(
             id: "clippingpage",
             title: "ClippingPage",
@@ -404,6 +419,12 @@ public static class ControlsSampleCatalog
         SetNamedElementAutomationId(page, "_stepperAnchorY", "controls-sample-transformationspage-anchory-stepper");
 
         return page;
+    }
+
+    private static Page CreateBorderPage(IServiceProvider services)
+    {
+        _ = services;
+        return new BorderPage();
     }
 
     private static void SetNamedElementAutomationId(Page page, string fieldName, string automationId)

@@ -38,7 +38,7 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
-    public void BuiltInHandlers_DoNotUseWebNodeFactory()
+    public void BuiltInHandlers_DoNotUseWebNodeFactory_ExceptBorderStrokeRenderer()
     {
         var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");
         Assert.True(Directory.Exists(handlersPath), $"Handlers path was not found: {handlersPath}");
@@ -48,7 +48,6 @@ public sealed class ArchitectureBoundaryTests
             "MirageButtonHandler.cs",
             "MirageEntryHandler.cs",
             "MirageImageHandler.cs",
-            "MirageBorderHandler.cs",
             "MirageMapHandler.cs",
             "MirageLabelHandler.cs",
             "MirageBoxViewHandler.cs",
@@ -66,6 +65,11 @@ public sealed class ArchitectureBoundaryTests
             var text = File.ReadAllText(fullPath);
             Assert.DoesNotContain("CreateWeb(", text, StringComparison.Ordinal);
         }
+
+        var borderHandlerPath = Path.Combine(handlersPath, "MirageBorderHandler.cs");
+        Assert.True(File.Exists(borderHandlerPath), $"Expected handler file not found: {borderHandlerPath}");
+        var borderText = File.ReadAllText(borderHandlerPath);
+        Assert.Contains("CreateWeb(", borderText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -407,6 +411,48 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void MapRuntime_ConvertsAsyncProviderInitExceptionsIntoDeterministicErrorState()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var text = File.ReadAllText(runtimePath);
+        Assert.Contains("ConfigureMapNodeWhenProviderReadyAsync", text, StringComparison.Ordinal);
+        Assert.Contains("catch (Exception error)", text, StringComparison.Ordinal);
+        Assert.Contains("provider-init-exception", text, StringComparison.Ordinal);
+        Assert.Contains("ShowMapFailure(currentNode, \"provider-init-exception\", message);", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MapRuntime_RetriesProviderInitializationWhenCurrentStateIsNotReady()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var text = File.ReadAllText(runtimePath);
+        Assert.Contains("if (!initialization.IsReady)", text, StringComparison.Ordinal);
+        Assert.Contains("node.Element.Attr(\"data-mirage-map-status\", \"pending\");", text, StringComparison.Ordinal);
+        Assert.Contains("_ = ConfigureMapNodeWhenProviderReadyAsync(nodeId, node);", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("string.Equals(initialization.ErrorCode, \"not-initialized\"", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MapRuntime_RetriesRealizedMapNodeAfterNonReadyProviderResults()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var text = File.ReadAllText(runtimePath);
+        Assert.Contains("ShouldRetryMapProviderInitializationFailure", text, StringComparison.Ordinal);
+        Assert.Contains("\"js-timeout\" => true", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"js-load-failed\" => true", text, StringComparison.Ordinal);
+        Assert.Contains("TryScheduleMapProviderInitializationRetry(", text, StringComparison.Ordinal);
+        Assert.Contains("MapProviderInitializationRetryLimit", text, StringComparison.Ordinal);
+        Assert.Contains("ConfigureMapNodeWhenProviderReadyAfterDelayAsync", text, StringComparison.Ordinal);
+        Assert.Contains("await ConfigureMapNodeWhenProviderReadyAsync(nodeId, currentNode);", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void LeafletHostingExtension_ReplacesMapProviderRegistration()
     {
         var hostingExtensionsPath = Path.Combine(
@@ -422,6 +468,147 @@ public sealed class ArchitectureBoundaryTests
             text,
             StringComparison.Ordinal);
         Assert.DoesNotContain("TryAddSingleton<IMirageMapProvider", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LeafletMapProvider_AllowsRetryAfterFailedInitializationAttempts()
+    {
+        var providerPath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "LeafletMapProvider.cs");
+        Assert.True(File.Exists(providerPath), $"Expected provider file not found: {providerPath}");
+
+        var text = File.ReadAllText(providerPath);
+        Assert.Contains("ShouldStartNewInitializationTask", text, StringComparison.Ordinal);
+        Assert.Contains("_initializationTask = EnsureInitializedCoreAsync();", text, StringComparison.Ordinal);
+        Assert.Contains("return !task.Result.IsReady;", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LeafletMapInterop_ClearsFailedModuleImportTaskForRetries()
+    {
+        var interopPath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "LeafletMapInterop.cs");
+        Assert.True(File.Exists(interopPath), $"Expected interop file not found: {interopPath}");
+
+        var text = File.ReadAllText(interopPath);
+        Assert.Contains("existing.IsFaulted", text, StringComparison.Ordinal);
+        Assert.Contains("existing.IsCanceled", text, StringComparison.Ordinal);
+        Assert.Contains("Interlocked.CompareExchange(ref s_moduleImportTask, null, existing)", text, StringComparison.Ordinal);
+        Assert.Contains("Interlocked.CompareExchange(ref s_moduleImportTask, null, createdTask);", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LeafletRuntimeModule_ClearsReadinessPromiseAfterFailedInitialization()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "wwwroot",
+            "mirage-leaflet-provider.js");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+
+        var text = File.ReadAllText(runtimeModulePath);
+        Assert.Contains("if (!result.ok)", text, StringComparison.Ordinal);
+        Assert.Contains("leafletReadinessPromise = null;", text, StringComparison.Ordinal);
+        Assert.Contains(".catch((error) =>", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LeafletRuntimeModule_WaitsForExistingStylesheetLoadBeforeReportingReady()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "wwwroot",
+            "mirage-leaflet-provider.js");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+
+        var text = File.ReadAllText(runtimeModulePath);
+        Assert.Contains("const existingStatus = existing.getAttribute(\"data-mirage-leaflet-css-status\");", text, StringComparison.Ordinal);
+        Assert.Contains("existing.addEventListener(\"load\", onLoad);", text, StringComparison.Ordinal);
+        Assert.Contains("existing.addEventListener(\"error\", onError);", text, StringComparison.Ordinal);
+        Assert.Contains("Timed out while waiting for Leaflet CSS", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LeafletRuntimeModule_DetachesOnlyMirageMarkerClickHandlersWhenRewiringPins()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "wwwroot",
+            "mirage-leaflet-provider.js");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+
+        var text = File.ReadAllText(runtimeModulePath);
+        Assert.Contains("const existingPinClickHandler = marker.__miragePinClickHandler;", text, StringComparison.Ordinal);
+        Assert.Contains("marker.off(\"click\", existingPinClickHandler);", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("marker.off(\"click\");", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LeafletRuntimeModule_ObservesHostResizesAndInvalidatesMapSize()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "wwwroot",
+            "mirage-leaflet-provider.js");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+
+        var text = File.ReadAllText(runtimeModulePath);
+        Assert.Contains("function subscribeHostResize(entry)", text, StringComparison.Ordinal);
+        Assert.Contains("new ResizeObserver(() =>", text, StringComparison.Ordinal);
+        Assert.Contains("scheduleInvalidateSize(entry);", text, StringComparison.Ordinal);
+        Assert.Contains("function unsubscribeHostResize(entry)", text, StringComparison.Ordinal);
+        Assert.Contains("entry.resizeObserver.disconnect();", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LeafletRuntimeModule_ComputesLongitudeSpanAcrossAntimeridian()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "wwwroot",
+            "mirage-leaflet-provider.js");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+
+        var text = File.ReadAllText(runtimeModulePath);
+        Assert.Contains("function getLongitudeSpanFromBounds", text, StringComparison.Ordinal);
+        Assert.Contains("let span = northEast - southWest;", text, StringComparison.Ordinal);
+        Assert.Contains("while (span < 0)", text, StringComparison.Ordinal);
+        Assert.Contains("span += 360;", text, StringComparison.Ordinal);
+        Assert.Contains("const longitudeSpan = getLongitudeSpanFromBounds(southWest.lng, northEast.lng);", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LeafletRuntimeModule_ClearsFailedGeolocationWatchIdsToAllowRetry()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "wwwroot",
+            "mirage-leaflet-provider.js");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+
+        var text = File.ReadAllText(runtimeModulePath);
+        Assert.Contains("watchId = navigator.geolocation.watchPosition(", text, StringComparison.Ordinal);
+        Assert.Contains("if (entry.userLocationWatchId === watchId)", text, StringComparison.Ordinal);
+        Assert.Contains("navigator.geolocation.clearWatch(watchId);", text, StringComparison.Ordinal);
+        Assert.Contains("entry.userLocationWatchId = null;", text, StringComparison.Ordinal);
     }
 
     [Fact]

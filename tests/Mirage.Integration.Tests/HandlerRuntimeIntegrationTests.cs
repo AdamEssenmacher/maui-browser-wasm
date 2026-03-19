@@ -853,6 +853,72 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void PickerHandler_ProjectsItemsSelectionTitleAndEnabledSemantics()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MiragePickerHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var picker = new Picker
+        {
+            Title = "Choose shape",
+            TitleColor = Colors.Silver,
+            TextColor = Colors.Black
+        };
+        picker.Items.Add("Rectangle");
+        picker.Items.Add("RoundRectangle");
+        picker.SelectedIndex = -1;
+
+        ((IElementHandler)handler).SetVirtualView(picker);
+
+        Assert.Equal("Choose shape", handler.PlatformView.GetPropertyString("Title"));
+        Assert.Equal(string.Empty, handler.PlatformView.GetPropertyString("SelectedValue"));
+        Assert.Equal("rgba(192,192,192,1)", handler.PlatformView.GetStyleValue("color"));
+        Assert.Equal(3, handler.PlatformView.Children.Count);
+
+        var placeholderOption = handler.PlatformView.Children[0];
+        Assert.Equal(PlatformNodeType.Web, placeholderOption.NodeType);
+        Assert.Equal("option", placeholderOption.ElementName);
+        Assert.Equal(string.Empty, placeholderOption.Attributes["value"]);
+        Assert.Equal("disabled", placeholderOption.Attributes["disabled"]);
+        Assert.Equal("selected", placeholderOption.Attributes["selected"]);
+
+        var firstItemOption = handler.PlatformView.Children[1];
+        Assert.Equal("0", firstItemOption.Attributes["value"]);
+        Assert.Equal("Rectangle", firstItemOption.GetPropertyString("textContent"));
+        Assert.False(firstItemOption.Attributes.ContainsKey("selected"));
+
+        picker.SelectedIndex = 1;
+        MiragePickerHandler.Mapper.UpdateProperty(handler, picker, nameof(IPicker.SelectedIndex));
+
+        Assert.Equal("1", handler.PlatformView.GetPropertyString("SelectedValue"));
+        Assert.Equal("rgba(0,0,0,1)", handler.PlatformView.GetStyleValue("color"));
+        Assert.False(placeholderOption.Attributes.ContainsKey("selected"));
+        Assert.False(firstItemOption.Attributes.ContainsKey("selected"));
+        Assert.Equal("selected", handler.PlatformView.Children[2].Attributes["selected"]);
+
+        handler.OnRuntimeEvent("change", "0");
+        Assert.Equal(0, picker.SelectedIndex);
+        MiragePickerHandler.Mapper.UpdateProperty(handler, picker, nameof(IPicker.SelectedIndex));
+        Assert.Equal("selected", firstItemOption.Attributes["selected"]);
+        Assert.False(handler.PlatformView.Children[2].Attributes.ContainsKey("selected"));
+
+        handler.OnRuntimeEvent("change", string.Empty);
+        Assert.Equal(-1, picker.SelectedIndex);
+        MiragePickerHandler.Mapper.UpdateProperty(handler, picker, nameof(IPicker.SelectedIndex));
+        Assert.Equal("selected", placeholderOption.Attributes["selected"]);
+        Assert.False(firstItemOption.Attributes.ContainsKey("selected"));
+
+        picker.IsEnabled = false;
+        MiragePickerHandler.Mapper.UpdateProperty(handler, picker, nameof(IView.IsEnabled));
+
+        Assert.Equal("disabled", handler.PlatformView.GetPropertyString("Disabled"));
+        Assert.Equal("not-allowed", handler.PlatformView.GetStyleValue("cursor"));
+        Assert.Equal("none", handler.PlatformView.GetStyleValue("pointerEvents"));
+    }
+
+    [Fact]
     public void StepperHandler_ProjectsRangeAndButtonRuntimeFlow()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -1582,7 +1648,7 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void BorderHandler_MapsStrokeAndHostsPresentedContent()
+    public void BorderHandler_ProjectsGradientStrokeDashShapeAndClipping()
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var mauiContext = new MauiContext(services);
@@ -1593,31 +1659,150 @@ public sealed class HandlerRuntimeIntegrationTests
         var border = new Border
         {
             Padding = new Thickness(8),
-            Stroke = new SolidColorBrush(Colors.DarkGray),
-            StrokeThickness = 2,
+            Stroke = new LinearGradientBrush(
+                new GradientStopCollection
+                {
+                    new GradientStop(Colors.CadetBlue, 0),
+                    new GradientStop(Colors.Gold, 1)
+                },
+                new Point(0, 0),
+                new Point(1, 0)),
+            StrokeThickness = 6,
             StrokeShape = new RoundRectangle
             {
-                CornerRadius = new CornerRadius(5)
+                CornerRadius = new CornerRadius(12, 6, 10, 4)
+            },
+            StrokeLineCap = PenLineCap.Round,
+            StrokeLineJoin = PenLineJoin.Bevel
+        };
+
+        ((IElementHandler)handler).SetVirtualView(border);
+        var strokeOverlayNode = handler.PlatformView.Children.FirstOrDefault(child => string.Equals(child.ElementName, "svg", StringComparison.Ordinal));
+        Assert.NotNull(strokeOverlayNode);
+        Assert.Equal(PlatformNodeType.Web, strokeOverlayNode.NodeType);
+        Assert.Equal("svg", strokeOverlayNode.ElementName);
+        Assert.Equal(2, strokeOverlayNode.Children.Count);
+
+        var defsNode = strokeOverlayNode.Children[0];
+        var pathNode = strokeOverlayNode.Children[1];
+        Assert.Equal("defs", defsNode.ElementName);
+        Assert.Equal("path", pathNode.ElementName);
+        Assert.Equal("none", strokeOverlayNode.GetStyleValue("display"));
+        Assert.False(pathNode.Attributes.ContainsKey("d"));
+        Assert.Equal("inset(0 round 12px 6px 4px 10px)", handler.PlatformView.GetStyleValue("clipPath"));
+
+        handler.PlatformArrange(new Rect(0, 0, 180, 120));
+
+        Assert.Equal("12px 6px 4px 10px", handler.PlatformView.GetStyleValue("borderRadius"));
+        Assert.Equal("inset(0 round 12px 6px 4px 10px)", handler.PlatformView.GetStyleValue("clipPath"));
+        Assert.Equal("14px 14px 14px 14px", handler.PlatformView.GetStyleValue("padding"));
+        Assert.Equal("hidden", handler.PlatformView.GetStyleValue("overflow"));
+        Assert.Equal("none", handler.PlatformView.GetStyleValue("borderStyle"));
+        Assert.Equal("block", strokeOverlayNode.GetStyleValue("display"));
+        Assert.Equal("0 0 180 120", strokeOverlayNode.Attributes["viewBox"]);
+        Assert.Equal("none", strokeOverlayNode.Attributes["preserveAspectRatio"]);
+        Assert.Contains("<linearGradient", defsNode.GetPropertyString("innerHTML") ?? string.Empty, StringComparison.Ordinal);
+        Assert.StartsWith("url(#border-stroke-", pathNode.Attributes["stroke"], StringComparison.Ordinal);
+        Assert.Equal("6", pathNode.Attributes["stroke-width"]);
+        Assert.Equal("round", pathNode.Attributes["stroke-linecap"]);
+        Assert.Equal("bevel", pathNode.Attributes["stroke-linejoin"]);
+        Assert.Equal("none", pathNode.Attributes["fill"]);
+
+        border.StrokeDashArray = new DoubleCollection { 2, 1 };
+        MirageBorderHandler.Mapper.UpdateProperty(handler, border, nameof(Border.StrokeDashArray));
+        Assert.Equal("12 6", pathNode.Attributes["stroke-dasharray"]);
+
+        border.StrokeDashOffset = 1.5;
+        MirageBorderHandler.Mapper.UpdateProperty(handler, border, nameof(Border.StrokeDashOffset));
+        Assert.Equal("9", pathNode.Attributes["stroke-dashoffset"]);
+        Assert.Equal("1.5", handler.PlatformView.GetPropertyString("StrokeDashOffset"));
+
+        border.StrokeShape = new RoundRectangle
+        {
+            CornerRadius = new CornerRadius(4, 8, 16, 20)
+        };
+        MirageBorderHandler.Mapper.UpdateProperty(handler, border, nameof(Border.StrokeShape));
+        Assert.Equal("4px 8px 20px 16px", handler.PlatformView.GetStyleValue("borderRadius"));
+        Assert.Equal("inset(0 round 4px 8px 20px 16px)", handler.PlatformView.GetStyleValue("clipPath"));
+
+        border.StrokeShape = new Ellipse();
+        MirageBorderHandler.Mapper.UpdateProperty(handler, border, nameof(Border.StrokeShape));
+        Assert.Equal("ellipse(50% 50% at 50% 50%)", handler.PlatformView.GetStyleValue("clipPath"));
+        Assert.False(string.IsNullOrWhiteSpace(pathNode.Attributes["d"]));
+
+        border.Stroke = null;
+        MirageBorderHandler.Mapper.UpdateProperty(handler, border, nameof(Border.Stroke));
+        Assert.Equal("none", strokeOverlayNode.GetStyleValue("display"));
+        Assert.False(pathNode.Attributes.ContainsKey("stroke"));
+        Assert.Equal("8px 8px 8px 8px", handler.PlatformView.GetStyleValue("padding"));
+    }
+
+    [Fact]
+    public void BorderHandler_PolygonShape_ProjectsClipPathAndStrokePath()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageBorderHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var border = new Border
+        {
+            Stroke = new SolidColorBrush(Colors.Red),
+            StrokeThickness = 4,
+            StrokeShape = new Polygon
+            {
+                Points = new PointCollection
+                {
+                    new Point(40, 10),
+                    new Point(70, 80),
+                    new Point(10, 50)
+                }
             }
         };
 
         ((IElementHandler)handler).SetVirtualView(border);
+        handler.PlatformArrange(new Rect(0, 0, 140, 120));
 
+        Assert.Contains("polygon(", handler.PlatformView.GetStyleValue("clipPath") ?? string.Empty, StringComparison.Ordinal);
+
+        var strokeOverlayNode = handler.PlatformView.Children.Last();
+        var pathNode = strokeOverlayNode.Children.Last();
+        Assert.Equal("rgba(255,0,0,1)", pathNode.Attributes["stroke"]);
+        Assert.False(string.IsNullOrWhiteSpace(pathNode.Attributes["d"]));
+    }
+
+    [Fact]
+    public void FrameHandler_MapsCompatibilityStyles_AndHostsPresentedContent()
+    {
+#pragma warning disable CS0618 // Frame is intentionally covered for compatibility scenarios.
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageFrameHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var frame = new Frame
+        {
+            Padding = new Thickness(6),
+            CornerRadius = 12,
+            BorderColor = Colors.CadetBlue,
+            HasShadow = true
+        };
+
+        ((IElementHandler)handler).SetVirtualView(frame);
+
+        Assert.Equal("6px 6px 6px 6px", handler.PlatformView.GetStyleValue("padding"));
+        Assert.Equal("12px", handler.PlatformView.GetStyleValue("borderRadius"));
         Assert.Equal("solid", handler.PlatformView.GetStyleValue("borderStyle"));
-        Assert.Equal("rgba(169,169,169,1)", handler.PlatformView.GetStyleValue("borderColor"));
-        Assert.Equal("2px", handler.PlatformView.GetStyleValue("borderWidth"));
-        Assert.Equal("5px 5px 5px 5px", handler.PlatformView.GetStyleValue("borderRadius"));
-        Assert.Equal("8px 8px 8px 8px", handler.PlatformView.GetStyleValue("padding"));
-        Assert.Equal("hidden", handler.PlatformView.GetStyleValue("overflow"));
+        Assert.Equal("1px", handler.PlatformView.GetStyleValue("borderWidth"));
+        Assert.NotNull(handler.PlatformView.GetStyleValue("borderColor"));
+        Assert.NotNull(handler.PlatformView.GetStyleValue("boxShadow"));
+        Assert.Empty(handler.PlatformView.Children);
 
-        border.StrokeDashArray = new DoubleCollection { 2, 1 };
-        MirageBorderHandler.Mapper.UpdateProperty(handler, border, nameof(Border.StrokeDashArray));
-        Assert.Equal("dashed", handler.PlatformView.GetStyleValue("borderStyle"));
-
-        border.Stroke = null;
-        MirageBorderHandler.Mapper.UpdateProperty(handler, border, nameof(Border.Stroke));
-        Assert.Equal("none", handler.PlatformView.GetStyleValue("borderStyle"));
-        Assert.Null(handler.PlatformView.GetStyleValue("borderColor"));
+        frame.HasShadow = false;
+        MirageFrameHandler.Mapper.UpdateProperty(handler, frame, nameof(Frame.HasShadow));
+        Assert.Null(handler.PlatformView.GetStyleValue("boxShadow"));
+#pragma warning restore CS0618
     }
 
     [Fact]

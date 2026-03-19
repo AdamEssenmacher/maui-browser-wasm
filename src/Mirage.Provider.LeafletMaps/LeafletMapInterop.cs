@@ -11,15 +11,56 @@ internal static partial class LeafletMapInterop
 
     internal static Task EnsureModuleLoadedAsync()
     {
-        var existing = Volatile.Read(ref s_moduleImportTask);
-        if (existing is not null)
+        while (true)
         {
-            return existing;
-        }
+            var existing = Volatile.Read(ref s_moduleImportTask);
+            if (existing is not null)
+            {
+                if (!existing.IsFaulted && !existing.IsCanceled)
+                {
+                    return existing;
+                }
 
-        var created = JSHost.ImportAsync(Module, ModuleUrl);
-        var prior = Interlocked.CompareExchange(ref s_moduleImportTask, created, null);
-        return prior ?? created;
+                if (Interlocked.CompareExchange(ref s_moduleImportTask, null, existing) == existing)
+                {
+                    continue;
+                }
+
+                continue;
+            }
+
+            var created = CreateModuleImportTask();
+            var prior = Interlocked.CompareExchange(ref s_moduleImportTask, created, null);
+            if (prior is null)
+            {
+                return created;
+            }
+
+            if (!prior.IsFaulted && !prior.IsCanceled)
+            {
+                return prior;
+            }
+        }
+    }
+
+    private static Task CreateModuleImportTask()
+    {
+        Task createdTask = null!;
+        createdTask = ImportModuleWithRetryResetAsync();
+        return createdTask;
+
+        async Task ImportModuleWithRetryResetAsync()
+        {
+            try
+            {
+                await JSHost.ImportAsync(Module, ModuleUrl);
+            }
+            catch
+            {
+                Interlocked.CompareExchange(ref s_moduleImportTask, null, createdTask);
+                throw;
+            }
+        }
     }
 
     [JSImport("ensureLeafletReadyJson", Module)]

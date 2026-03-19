@@ -113,9 +113,8 @@ public static class Program
             ? tileFromQuery
             : GetEnvironmentOrNull("MIRAGE_LEAFLET_TILE_URL");
 
-        var tileAttribution = queryOptions.TryGetValue("mirageLeafletTileAttribution", out var attributionFromQuery)
-            ? attributionFromQuery
-            : GetEnvironmentOrNull("MIRAGE_LEAFLET_TILE_ATTRIBUTION");
+        // Tile attribution can render HTML in Leaflet controls, so do not trust URL query overrides.
+        var tileAttribution = GetEnvironmentOrNull("MIRAGE_LEAFLET_TILE_ATTRIBUTION");
 
         return new StartupMapOptions(
             DisableMapProvider: disableMapProvider,

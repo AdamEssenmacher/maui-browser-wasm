@@ -29,11 +29,16 @@ public sealed class ShowcaseFluentMapE2ETests : IClassFixture<ShowcaseHostFixtur
         var leafletContainerCount = await page.Locator("[data-automation-id='showcase-map'].leaflet-container").CountAsync();
         var markerCount = await page.Locator("[data-automation-id='showcase-map'] .leaflet-marker-icon").CountAsync();
         var elementCount = await page.Locator("[data-automation-id='showcase-map'] path").CountAsync();
+        var mapStatus = await page.Locator("[data-automation-id='showcase-map']").GetAttributeAsync("data-mirage-map-status");
+        var mapErrorCode = await page.Locator("[data-automation-id='showcase-map']").GetAttributeAsync("data-mirage-map-error-code");
+        var mapError = await page.Locator("[data-automation-id='showcase-map']").GetAttributeAsync("data-mirage-map-error");
 
         Assert.Equal("control", nodeType);
         Assert.Equal("Map", nodeKind);
         Assert.True(leafletContainerCount > 0, "Expected the built-in map host element to be initialized as a Leaflet container.");
-        Assert.True(markerCount >= 2, $"Expected at least 2 projected pin markers. Actual marker count: {markerCount}");
+        Assert.True(
+            markerCount >= 2,
+            $"Expected at least 2 projected pin markers. Actual marker count: {markerCount}. status={mapStatus ?? "missing"} code={mapErrorCode ?? "none"} error={mapError ?? "none"}");
         Assert.True(elementCount >= 2, $"Expected projected map elements (polyline/polygon/circle). Actual SVG path count: {elementCount}");
     }
 
@@ -70,6 +75,106 @@ public sealed class ShowcaseFluentMapE2ETests : IClassFixture<ShowcaseHostFixtur
 
         Assert.NotEqual(initialLatitude, updatedLatitude);
         Assert.Contains("Seattle", regionLabel, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task MapLab_TrafficToggle_DoesNotReapplyRegionWithoutMoveRequest()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1320, height: 860);
+        var page = await OpenMapLabAsync(context);
+        await WaitForMapReadyAsync(page);
+
+        await page.EvaluateAsync(
+            @"() => {
+                const proto = window.L && window.L.Map && window.L.Map.prototype;
+                if (!proto || typeof proto.fitBounds !== 'function') {
+                    return;
+                }
+
+                if (!proto.__mirageOriginalFitBounds) {
+                    proto.__mirageOriginalFitBounds = proto.fitBounds;
+                    proto.fitBounds = function(bounds, options) {
+                        window.__mirageFitBoundsCallCount = (window.__mirageFitBoundsCallCount || 0) + 1;
+                        return proto.__mirageOriginalFitBounds.call(this, bounds, options);
+                    };
+                }
+            }");
+
+        var baselineFitBoundsCount = await page.EvaluateAsync<int>("() => Number(window.__mirageFitBoundsCallCount || 0)");
+        for (var i = 0; i < 5; i++)
+        {
+            await page.WaitForTimeoutAsync(150);
+            var nextCount = await page.EvaluateAsync<int>("() => Number(window.__mirageFitBoundsCallCount || 0)");
+            if (nextCount == baselineFitBoundsCount)
+            {
+                break;
+            }
+
+            baselineFitBoundsCount = nextCount;
+        }
+
+        await page.Locator("[data-automation-id='showcase-map-traffic-button']").ClickAsync();
+        await page.WaitForFunctionAsync(
+            @"() => {
+                const summary = document.querySelector('[data-automation-id=""showcase-map-options-label""]');
+                return !!summary && (summary.textContent || '').includes('Traffic=True');
+            }",
+            null,
+            new PageWaitForFunctionOptions
+            {
+                Timeout = 10000
+            });
+
+        await page.WaitForTimeoutAsync(250);
+        var fitBoundsCallCount = await page.EvaluateAsync<int>("() => Number(window.__mirageFitBoundsCallCount || 0)");
+        Assert.Equal(baselineFitBoundsCount, fitBoundsCallCount);
+    }
+
+    [Fact]
+    public async Task MapLab_HostStyleResize_TriggersLeafletInvalidateSize()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1320, height: 860);
+        var page = await OpenMapLabAsync(context);
+        await WaitForMapReadyAsync(page);
+
+        await page.EvaluateAsync(
+            @"() => {
+                const proto = window.L && window.L.Map && window.L.Map.prototype;
+                if (!proto || typeof proto.invalidateSize !== 'function') {
+                    return;
+                }
+
+                if (!proto.__mirageOriginalInvalidateSize) {
+                    proto.__mirageOriginalInvalidateSize = proto.invalidateSize;
+                    proto.invalidateSize = function(...args) {
+                        window.__mirageInvalidateSizeCallCount = (window.__mirageInvalidateSizeCallCount || 0) + 1;
+                        return proto.__mirageOriginalInvalidateSize.apply(this, args);
+                    };
+                }
+
+                window.__mirageInvalidateSizeCallCount = 0;
+            }");
+
+        await page.EvaluateAsync(
+            @"() => {
+                const map = document.querySelector('[data-automation-id=""showcase-map""]');
+                if (!map) {
+                    return;
+                }
+
+                map.style.height = '320px';
+            }");
+
+        await page.WaitForFunctionAsync(
+            "() => Number(window.__mirageInvalidateSizeCallCount || 0) > 0",
+            null,
+            new PageWaitForFunctionOptions
+            {
+                Timeout = 8000
+            });
+
+        var invalidateCalls = await page.EvaluateAsync<int>("() => Number(window.__mirageInvalidateSizeCallCount || 0)");
+        Assert.True(invalidateCalls > 0, $"Expected Leaflet invalidateSize to run after host resize. Calls={invalidateCalls}");
     }
 
     [Fact]

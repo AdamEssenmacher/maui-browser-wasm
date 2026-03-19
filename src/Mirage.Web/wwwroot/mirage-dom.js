@@ -448,7 +448,10 @@ export function getRootById(id) {
 
 export function createElement(tag) {
   ensureMirageFrameworkStyles();
-  const element = document.createElement(tag);
+  const normalizedTag = typeof tag === "string" ? tag.toLowerCase() : "";
+  const element = isSvgTag(normalizedTag)
+    ? document.createElementNS("http://www.w3.org/2000/svg", normalizedTag)
+    : document.createElement(tag);
   const customElementConstructor = globalThis.customElements?.get?.(tag);
   if (
     customElementConstructor &&
@@ -463,6 +466,28 @@ export function createElement(tag) {
   }
 
   return toHandle(element);
+}
+
+function isSvgTag(tag) {
+  switch (tag) {
+    case "svg":
+    case "defs":
+    case "path":
+    case "lineargradient":
+    case "radialgradient":
+    case "stop":
+    case "rect":
+    case "circle":
+    case "ellipse":
+    case "polygon":
+    case "polyline":
+    case "line":
+    case "g":
+    case "clippath":
+      return true;
+    default:
+      return false;
+  }
 }
 
 export function appendChild(parentHandle, childHandle) {
