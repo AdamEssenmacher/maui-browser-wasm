@@ -255,14 +255,7 @@ internal static class MirageLayoutProjection
     {
         if (IsAbsoluteFlexLayoutChild(childView))
         {
-            var absoluteChanged = SetChildStyleIfChanged(childPlatformView, "margin", null);
-            absoluteChanged |= SetChildStyleIfChanged(childPlatformView, "alignSelf", null);
-            absoluteChanged |= SetChildStyleIfChanged(childPlatformView, "order", null);
-            absoluteChanged |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
-            absoluteChanged |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
-            absoluteChanged |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
-            absoluteChanged |= ApplyCustomLayoutChildStyles(childPlatformView, childView);
-            return absoluteChanged;
+            return ApplyAbsoluteFlexLayoutChildStyles(childPlatformView, childView);
         }
 
         var changed = SetChildStyleIfChanged(childPlatformView, "position", "relative");
@@ -301,6 +294,18 @@ internal static class MirageLayoutProjection
         }
 
         changed |= MirageCommonViewProjection.SetLayoutTransformFragment(childPlatformView, null);
+        return changed;
+    }
+
+    public static bool ApplyAbsoluteFlexLayoutChildStyles(MiragePlatformView childPlatformView, IView childView)
+    {
+        var changed = SetChildStyleIfChanged(childPlatformView, "margin", null);
+        changed |= SetChildStyleIfChanged(childPlatformView, "alignSelf", null);
+        changed |= SetChildStyleIfChanged(childPlatformView, "order", null);
+        changed |= SetChildStyleIfChanged(childPlatformView, "flexGrow", null);
+        changed |= SetChildStyleIfChanged(childPlatformView, "flexShrink", null);
+        changed |= SetChildStyleIfChanged(childPlatformView, "flexBasis", null);
+        changed |= ApplyCustomLayoutChildStyles(childPlatformView, childView);
         return changed;
     }
 

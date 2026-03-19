@@ -968,6 +968,11 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
         return MirageLayoutProjection.ApplyCustomLayoutChildStyles(childPlatformView, childView);
     }
 
+    private static bool ApplyAbsoluteFlexLayoutChildStyles(MiragePlatformView childPlatformView, IView childView)
+    {
+        return MirageLayoutProjection.ApplyAbsoluteFlexLayoutChildStyles(childPlatformView, childView);
+    }
+
     private static bool TryBuildGridTrackTemplate(IEnumerable<GridLength> trackLengths, out string template)
     {
         var parts = new List<string>();
@@ -1094,7 +1099,7 @@ internal sealed class MirageLayoutHandler : MirageViewHandler<MauiLayout>, ILayo
                 continue;
             }
 
-            changed |= ApplyChildProjectionStyles(childPlatformView, child, ComponentKind.Layout);
+            changed |= ApplyAbsoluteFlexLayoutChildStyles(childPlatformView, child);
         }
 
         if (changed)

@@ -558,6 +558,38 @@ public sealed class MirageLayoutHandlerTests
     }
 
     [Fact]
+    public void FlexLayout_AbsoluteNestedChild_RepeatedArrangeWithoutFrameChange_DoesNotMutateStyles()
+    {
+        var layout = new TestFlexLayout
+        {
+            Direction = FlexDirection.Row,
+            WidthRequest = 420,
+            HeightRequest = 260
+        };
+
+        var child = new TestFlexLayout { Position = FlexPosition.Absolute };
+        child.Children.Add(new Label { Text = "Nested" });
+        layout.Children.Add(child);
+
+        var handler = CreateHandler(out var mauiContext);
+        AttachLayoutChildHandlers(layout, mauiContext);
+        ((IElementHandler)handler).SetVirtualView(layout);
+
+        handler.PlatformArrange(new Rect(0, 0, 420, 260));
+        var childPlatform = GetPlatformView(child);
+        var beforeSecondArrangeRevision = childPlatform.LocalRevision;
+
+        handler.PlatformArrange(new Rect(0, 0, 420, 260));
+
+        Assert.Equal(beforeSecondArrangeRevision, childPlatform.LocalRevision);
+        Assert.Equal("absolute", childPlatform.GetStyleValue("position"));
+        Assert.Equal("0px", childPlatform.GetStyleValue("left"));
+        Assert.Equal("0px", childPlatform.GetStyleValue("top"));
+        Assert.Equal("80px", childPlatform.GetStyleValue("width"));
+        Assert.Equal("40px", childPlatform.GetStyleValue("height"));
+    }
+
+    [Fact]
     public void CustomLayout_Arrange_StillAppliesAbsoluteArrangedFrames()
     {
         var layout = new FrameDrivenTestLayout();
