@@ -408,6 +408,21 @@ function normalizeRegion(region) {
   };
 }
 
+function getLongitudeSpanFromBounds(southWestLongitude, northEastLongitude) {
+  const southWest = toFiniteOrNull(southWestLongitude);
+  const northEast = toFiniteOrNull(northEastLongitude);
+  if (southWest == null || northEast == null) {
+    return 0.0001;
+  }
+
+  let span = northEast - southWest;
+  while (span < 0) {
+    span += 360;
+  }
+
+  return Math.max(0.0001, Math.min(360, span));
+}
+
 function approximatelyEqual(left, right, absoluteTolerance, relativeTolerance = 0.002) {
   const diff = Math.abs(left - right);
   if (diff <= absoluteTolerance) {
@@ -486,7 +501,7 @@ function readRegionFromMap(map) {
     }
 
     const latitudeSpan = Math.max(0.0001, Math.abs(northEast.lat - southWest.lat));
-    const longitudeSpan = Math.max(0.0001, Math.abs(northEast.lng - southWest.lng));
+    const longitudeSpan = getLongitudeSpanFromBounds(southWest.lng, northEast.lng);
     return {
       centerLatitude: center.lat,
       centerLongitude: center.lng,

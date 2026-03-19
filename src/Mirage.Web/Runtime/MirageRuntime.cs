@@ -649,21 +649,10 @@ public sealed class MirageRuntime : IMirageRuntime
         var initialization = _mapProvider.Initialization;
         if (!initialization.IsReady)
         {
-            if (string.Equals(initialization.ErrorCode, "not-initialized", StringComparison.Ordinal))
-            {
-                node.Element.Attr("data-mirage-map-status", "pending");
-                _ = ConfigureMapNodeWhenProviderReadyAsync(nodeId, node);
-                return;
-            }
-
-            var code = string.IsNullOrWhiteSpace(initialization.ErrorCode)
-                ? "provider-not-ready"
-                : initialization.ErrorCode!;
-            var message = string.IsNullOrWhiteSpace(initialization.ErrorMessage)
-                ? "Map provider initialization failed."
-                : initialization.ErrorMessage!;
-            ShowMapFailure(node, code, message);
-            MirageDiagnostics.Log("map.provider", $"node={nodeId} provider={_mapProvider.ProviderName} code={code} message={message}");
+            // Always re-check provider readiness here so transient startup failures can recover
+            // when maps are realized after the first warm-up attempt.
+            node.Element.Attr("data-mirage-map-status", "pending");
+            _ = ConfigureMapNodeWhenProviderReadyAsync(nodeId, node);
             return;
         }
 

@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (Map recovery follow-up: retry not-ready provider state + antimeridian span correction)
+- `MirageRuntime.ConfigureMapNode` now treats all non-ready provider states as retryable-at-render time by transitioning the node to `pending` and awaiting `EnsureInitializedAsync()` asynchronously, so maps can recover after a transient warm-up failure.
+- Leaflet runtime region telemetry now derives longitude span with antimeridian-aware bounds math (`getLongitudeSpanFromBounds`) instead of raw absolute longitude delta, preventing inflated 300+ degree spans when bounds cross ±180°.
+- Added architecture-boundary coverage for both runtime behaviors to prevent regression to one-shot provider failure projection and incorrect dateline span reporting.
+
 ## 2026-03-19 (Map provider startup decoupling + in-flight Leaflet script readiness)
 - `MirageBrowserAppHost.RunAsync` no longer blocks first paint on map-provider readiness checks; provider initialization now warms in the background.
 - `MirageRuntime` map-node configuration now handles provider `not-initialized` state asynchronously and completes adapter attachment/apply once provider readiness resolves, preventing map hosts from getting stuck in startup races.

@@ -424,6 +424,19 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void MapRuntime_RetriesProviderInitializationWhenCurrentStateIsNotReady()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var text = File.ReadAllText(runtimePath);
+        Assert.Contains("if (!initialization.IsReady)", text, StringComparison.Ordinal);
+        Assert.Contains("node.Element.Attr(\"data-mirage-map-status\", \"pending\");", text, StringComparison.Ordinal);
+        Assert.Contains("_ = ConfigureMapNodeWhenProviderReadyAsync(nodeId, node);", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("string.Equals(initialization.ErrorCode, \"not-initialized\"", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void LeafletHostingExtension_ReplacesMapProviderRegistration()
     {
         var hostingExtensionsPath = Path.Combine(
@@ -543,6 +556,25 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("scheduleInvalidateSize(entry);", text, StringComparison.Ordinal);
         Assert.Contains("function unsubscribeHostResize(entry)", text, StringComparison.Ordinal);
         Assert.Contains("entry.resizeObserver.disconnect();", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LeafletRuntimeModule_ComputesLongitudeSpanAcrossAntimeridian()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "wwwroot",
+            "mirage-leaflet-provider.js");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+
+        var text = File.ReadAllText(runtimeModulePath);
+        Assert.Contains("function getLongitudeSpanFromBounds", text, StringComparison.Ordinal);
+        Assert.Contains("let span = northEast - southWest;", text, StringComparison.Ordinal);
+        Assert.Contains("while (span < 0)", text, StringComparison.Ordinal);
+        Assert.Contains("span += 360;", text, StringComparison.Ordinal);
+        Assert.Contains("const longitudeSpan = getLongitudeSpanFromBounds(southWest.lng, northEast.lng);", text, StringComparison.Ordinal);
     }
 
     [Fact]
