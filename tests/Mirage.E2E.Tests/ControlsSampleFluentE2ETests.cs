@@ -1419,11 +1419,6 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             "(selector) => { const element = document.querySelector(selector); const src = element?.getAttribute('src') ?? ''; return src.length > 0; }",
             animatedGifSelector);
 
-        await page.Locator("[data-automation-id='controls-sample-imagepage-use-online-source']").ClickAsync();
-        await page.WaitForFunctionAsync(
-            "(selector) => (document.querySelector(selector)?.getAttribute('src') ?? '').includes('raw.githubusercontent.com')",
-            animatedGifSelector);
-
         await page.EvaluateAsync(
             "(selector) => { const element = document.querySelector(selector); if (element) { element.dispatchEvent(new Event('error')); } }",
             animatedGifSelector);

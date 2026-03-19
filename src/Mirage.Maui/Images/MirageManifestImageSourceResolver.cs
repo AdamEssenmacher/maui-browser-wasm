@@ -203,14 +203,14 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
         {
             _objectUrlFactory.RevokeObjectUrl(trimmed);
             ReportOnce(
-                $"stream-release:{trimmed.ToLowerInvariant()}",
-                $"Released stream image blob URL '{trimmed}'.");
+                "stream-release-success",
+                "Released stream image blob URL.");
         }
         catch (Exception ex)
         {
             ReportOnce(
-                $"stream-release-failed:{trimmed.ToLowerInvariant()}",
-                $"Failed to release stream image blob URL '{trimmed}': {ex.GetType().Name}.");
+                $"stream-release-failed:{ex.GetType().Name}",
+                $"Failed to release a stream image blob URL: {ex.GetType().Name}.");
         }
     }
 
@@ -361,7 +361,7 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
         return MirageImageSourceProjectionResult.Resolved(
             browserUrl: resolved.BrowserUrl,
             sourceKind: "file",
-            isGifSource: IsGifPath(fileValue));
+            isGifSource: IsGifPath(resolved.BrowserUrl));
     }
 
     private MirageImageSourceProjectionResult ResolveFontImageSource(FontImageSource source)
@@ -419,8 +419,8 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
             }
 
             ReportOnce(
-                $"stream-created:{objectUrl.ToLowerInvariant()}",
-                $"Created stream image blob URL '{objectUrl}'.");
+                "stream-created-success",
+                "Created stream image blob URL.");
 
             return MirageImageSourceProjectionResult.Resolved(
                 browserUrl: objectUrl,

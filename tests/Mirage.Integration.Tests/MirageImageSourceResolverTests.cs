@@ -103,6 +103,20 @@ public sealed class MirageImageSourceResolverTests
     }
 
     [Fact]
+    public async Task Resolve_ImageSource_FileSource_ExtensionlessAlias_PreservesGifDetectionFromResolvedUrl()
+    {
+        var resolver = CreateResolver(CreateGifAliasManifestJson());
+        await resolver.EnsureInitializedAsync();
+
+        var result = resolver.Resolve((ImageSource)new FileImageSource { File = "animated_heart" });
+
+        Assert.True(result.IsResolved);
+        Assert.Equal("file", result.SourceKind);
+        Assert.Equal("/_mirage/assets/ControlsSample.Shared/animated_heart.abcd1234.gif", result.BrowserUrl);
+        Assert.True(result.IsGifSource);
+    }
+
+    [Fact]
     public async Task Resolve_ImageSource_UriSource_AllowsApprovedSchemes_AndRejectsOthers()
     {
         var resolver = CreateResolver(CreateManifestJson());
@@ -259,6 +273,27 @@ public sealed class MirageImageSourceResolverTests
                      "Showcase.Shared:Images/logo.png",
                      "Counter.Shared:Images/logo.png"
                    ]
+                 }
+               }
+               """;
+    }
+
+    private static string CreateGifAliasManifestJson()
+    {
+        return """
+               {
+                 "version": 1,
+                 "images": {
+                   "ControlsSample.Shared:animated_heart.gif": "/_mirage/assets/ControlsSample.Shared/animated_heart.abcd1234.gif"
+                 },
+                 "logicalPath": {
+                   "animated_heart.gif": ["ControlsSample.Shared:animated_heart.gif"]
+                 },
+                 "fileName": {
+                   "animated_heart.gif": ["ControlsSample.Shared:animated_heart.gif"]
+                 },
+                 "fileStem": {
+                   "animated_heart": ["ControlsSample.Shared:animated_heart.gif"]
                  }
                }
                """;
