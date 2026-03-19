@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (Map-node provider reattempt loop after non-ready init results)
+- `MirageRuntime.ConfigureMapNodeWhenProviderReadyAsync` now retries non-ready provider initialization results for already-realized map nodes, instead of projecting immediate terminal error on the first failed readiness result.
+- Retries are bounded (`MapProviderInitializationRetryLimit`) and delayed (`ConfigureMapNodeWhenProviderReadyAfterDelayAsync`) so transient CDN/network readiness failures can recover without hot-looping.
+- Map-provider retry state is now cleared on success, terminal failure, node removal, and runtime dispose, with architecture-boundary coverage added to guard this behavior.
+
 ## 2026-03-19 (Map recovery follow-up: retry not-ready provider state + antimeridian span correction)
 - `MirageRuntime.ConfigureMapNode` now treats all non-ready provider states as retryable-at-render time by transitioning the node to `pending` and awaiting `EnsureInitializedAsync()` asynchronously, so maps can recover after a transient warm-up failure.
 - Leaflet runtime region telemetry now derives longitude span with antimeridian-aware bounds math (`getLongitudeSpanFromBounds`) instead of raw absolute longitude delta, preventing inflated 300+ degree spans when bounds cross ±180°.

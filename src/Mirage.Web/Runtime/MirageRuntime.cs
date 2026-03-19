@@ -12,6 +12,8 @@ namespace Mirage.Web.Runtime;
 public sealed class MirageRuntime : IMirageRuntime
 {
     private const string ValueElementMarker = "data-mirage-value-element";
+    private const int MapProviderInitializationRetryLimit = 3;
+    private const int MapProviderInitializationRetryDelayMilliseconds = 250;
 
     private readonly DomElement _mountRoot;
     private readonly IMirageComponentProvider _provider;
@@ -19,6 +21,7 @@ public sealed class MirageRuntime : IMirageRuntime
     private readonly SemanticDiffEngine _diffEngine = new();
     private readonly Dictionary<string, RealizedNode> _nodes = new(StringComparer.Ordinal);
     private readonly Dictionary<(string NodeId, string EventName), int> _eventSubscriptions = new();
+    private readonly Dictionary<string, int> _mapProviderInitializationRetries = new(StringComparer.Ordinal);
 
     private NodeBase? _currentRoot;
     private IMirageEventSink? _eventSink;
@@ -128,6 +131,7 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         _eventSubscriptions.Clear();
+        _mapProviderInitializationRetries.Clear();
 
         foreach (var node in _nodes.Values.ToArray())
         {
@@ -354,6 +358,7 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         RemoveEventSubscriptionsForNode(operation.NodeId);
+        _mapProviderInitializationRetries.Remove(operation.NodeId);
         node.DisposeMapAdapter();
         node.Element.Release();
         _nodes.Remove(operation.NodeId);
@@ -656,6 +661,7 @@ public sealed class MirageRuntime : IMirageRuntime
             return;
         }
 
+        _mapProviderInitializationRetries.Remove(nodeId);
         ConfigureMapNodeCore(nodeId, node);
     }
 
@@ -685,11 +691,18 @@ public sealed class MirageRuntime : IMirageRuntime
                 var message = string.IsNullOrWhiteSpace(initialization.ErrorMessage)
                     ? "Map provider initialization failed."
                     : initialization.ErrorMessage!;
+
+                if (TryScheduleMapProviderInitializationRetry(nodeId, currentNode, mapProvider.ProviderName, code, message))
+                {
+                    return;
+                }
+
                 ShowMapFailure(currentNode, code, message);
                 MirageDiagnostics.Log("map.provider", $"node={nodeId} provider={mapProvider.ProviderName} code={code} message={message}");
                 return;
             }
 
+            _mapProviderInitializationRetries.Remove(nodeId);
             ConfigureMapNodeCore(nodeId, currentNode);
         }
         catch (Exception error)
@@ -704,11 +717,53 @@ public sealed class MirageRuntime : IMirageRuntime
             var message = string.IsNullOrWhiteSpace(error.Message)
                 ? "Map provider initialization failed."
                 : error.Message;
+            _mapProviderInitializationRetries.Remove(nodeId);
             ShowMapFailure(currentNode, "provider-init-exception", message);
             MirageDiagnostics.Log(
                 "map.provider",
                 $"node={nodeId} provider={mapProvider.ProviderName} code=provider-init-exception message={message}");
         }
+    }
+
+    private bool TryScheduleMapProviderInitializationRetry(
+        string nodeId,
+        RealizedNode node,
+        string providerName,
+        string errorCode,
+        string message)
+    {
+        var retryAttempt = _mapProviderInitializationRetries.TryGetValue(nodeId, out var existingAttempt)
+            ? existingAttempt + 1
+            : 1;
+        _mapProviderInitializationRetries[nodeId] = retryAttempt;
+
+        if (retryAttempt > MapProviderInitializationRetryLimit)
+        {
+            _mapProviderInitializationRetries.Remove(nodeId);
+            return false;
+        }
+
+        var delayMs = MapProviderInitializationRetryDelayMilliseconds * retryAttempt;
+        node.Element.Attr("data-mirage-map-status", "pending");
+        MirageDiagnostics.Log(
+            "map.provider",
+            $"node={nodeId} provider={providerName} code={errorCode} retryAttempt={retryAttempt} retryDelayMs={delayMs} message={message}");
+        _ = ConfigureMapNodeWhenProviderReadyAfterDelayAsync(nodeId, node, delayMs);
+        return true;
+    }
+
+    private async Task ConfigureMapNodeWhenProviderReadyAfterDelayAsync(string nodeId, RealizedNode expectedNode, int delayMs)
+    {
+        await Task.Delay(delayMs);
+        if (!_nodes.TryGetValue(nodeId, out var currentNode)
+            || !ReferenceEquals(currentNode, expectedNode)
+            || currentNode.TryGetMapAdapter(out _))
+        {
+            return;
+        }
+
+        currentNode.Element.Attr("data-mirage-map-status", "pending");
+        await ConfigureMapNodeWhenProviderReadyAsync(nodeId, currentNode);
     }
 
     private void ConfigureMapNodeCore(string nodeId, RealizedNode node)

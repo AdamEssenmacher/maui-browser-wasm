@@ -437,6 +437,19 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void MapRuntime_RetriesRealizedMapNodeAfterNonReadyProviderResults()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var text = File.ReadAllText(runtimePath);
+        Assert.Contains("TryScheduleMapProviderInitializationRetry(", text, StringComparison.Ordinal);
+        Assert.Contains("MapProviderInitializationRetryLimit", text, StringComparison.Ordinal);
+        Assert.Contains("ConfigureMapNodeWhenProviderReadyAfterDelayAsync", text, StringComparison.Ordinal);
+        Assert.Contains("await ConfigureMapNodeWhenProviderReadyAsync(nodeId, currentNode);", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void LeafletHostingExtension_ReplacesMapProviderRegistration()
     {
         var hostingExtensionsPath = Path.Combine(
