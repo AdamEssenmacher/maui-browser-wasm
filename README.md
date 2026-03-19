@@ -17,6 +17,7 @@ Supported semantic kinds:
 - `VerticalStack`
 - `HorizontalStack`
 - `Grid`
+- `Map`
 - `Label`
 - `Entry`
 - `Button`
@@ -40,6 +41,8 @@ Built-in handlers stay inside this control set. Third-party/custom handlers can 
   - `MirageBrowserAppHost.RunAsync(...)`
 - `src/Mirage.Provider.Fluent`
   - Fluent UI Web Components provider implementation for phase 1
+- `src/Mirage.Provider.LeafletMaps`
+  - Browser map provider implementation (Leaflet) for built-in `Map` control semantics
 - `samples/Counter.Shared`
   - Host-agnostic shared counter UI/state (`CounterPage`, XAML, and bindings)
 - `samples/Counter.Fluent`
@@ -50,7 +53,8 @@ Built-in handlers stay inside this control set. Third-party/custom handlers can 
   - Host-agnostic shared showcase UI/state/resources (`ShowcaseHeroPage`, styles)
 - `samples/Showcase.Fluent`
   - Mirage browser host for the shared showcase app (`Showcase.Shared`)
-  - Registers `UseMirageNavigation(...)` route projection (`/`, `/layout-lab`, `/xaml-lab`, `/navigation-lab`, `/projects/{id}`) while keeping `NavigationPage` stack semantics as source of truth
+  - Registers `UseMirageNavigation(...)` route projection (`/`, `/layout-lab`, `/xaml-lab`, `/navigation-lab`, `/map-lab`, `/projects/{id}`) while keeping `NavigationPage` stack semantics as source of truth
+  - Registers `UseMirageLeafletMaps(...)` and includes built-in `Map` proof route (`/map-lab`) using ControlNode map semantics (not WebNode fallback)
   - Includes an exhaustive dedicated `Layout Lab` page validating sizing, constraints, positioning, and nested container behavior across `ContentView`, stacks, and `Grid`
   - Includes a constrained `XAML Lab` page (`/xaml-lab`) with a WebNode-hosted Monaco editor and debounced fragment preview rendered through the normal Mirage MAUI handler pipeline
   - Uses explicit `ScrollView` hosting for long-page scrolling; `ContentPage` remains non-scrollable by default
@@ -131,6 +135,18 @@ Mirage startup requires `IMirageComponentProvider` registration.
 If missing, startup fails with:
 
 `MirageRuntime requires IMirageComponentProvider. Register one with UseMirageComponentProvider<TProvider>().`
+
+## Map Support (Provider Model)
+
+- `Map` is a built-in Mirage control-node path (`ComponentKind.Map`), not a generic `WebNode`.
+- Mirage core semantics are region-first (`center + span`) with MAUI-shaped map options (`MapType`, `IsShowingUser`, `IsScrollEnabled`, `IsZoomEnabled`, `IsTrafficEnabled`), identity-based pins, and identity-based map elements (`Circle`/`Polyline`/`Polygon`).
+- Browser map realization is provider-owned through `IMirageMapProvider`/`IMirageMapAdapter`; Mirage core/runtime stays provider-neutral.
+- First browser map provider is Leaflet (`UseMirageLeafletMaps(...)`) in `src/Mirage.Provider.LeafletMaps`.
+- Leaflet asset policy defaults to CDN JS/CSS URLs (configurable), with explicit initialization diagnostics and visible error state on provider/asset failures.
+- `LeafletAssetMode.Local` requires explicit local JS/CSS URLs; Mirage fails fast with diagnostics when local mode is enabled without local URLs.
+- Leaflet default tile source is OpenStreetMap with attribution as a provider default policy; tile URL/attribution are configurable and not Mirage core semantics.
+- Runtime parity contract and CI guard live at `docs/parity/map-parity-contract.json` and `tests/Mirage.Integration.Tests/MapParityContractTests.cs`.
+- Explicit non-parity/constraint entries are tracked in `docs/parity/map-parity-divergences.json` with test references.
 
 ## Notes
 

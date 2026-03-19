@@ -14,5 +14,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiPackageVersion)" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiPackageVersion)" />
+    <PackageReference Include="Microsoft.Maui.Controls.Maps" Version="$(MauiPackageVersion)" />
   </ItemGroup>
 </Project>

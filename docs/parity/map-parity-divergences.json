@@ -1,0 +1,22 @@
+{
+  "entries": [
+    {
+      "id": "leaflet-map-type-fallback",
+      "summary": "Leaflet provider supports street tiles as the canonical map-type path; satellite/hybrid requests are deterministic fallback with diagnostics.",
+      "upstreamReference": "src/Core/maps/src/Handlers/Map/MapHandler.Android.cs",
+      "testReference": "MapLab_RendersBuiltInMapControlNode_AndInitializesLeafletHost"
+    },
+    {
+      "id": "leaflet-traffic-overlay-unsupported",
+      "summary": "Mirage map semantics include IsTrafficEnabled, but Leaflet provider currently reports traffic overlays as unsupported and emits diagnostics.",
+      "upstreamReference": "src/Core/maps/src/Handlers/Map/MapHandler.iOS.cs",
+      "testReference": "MapLab_TrafficToggle_ReportsUnsupportedDiagnostic"
+    },
+    {
+      "id": "browser-geolocation-permission-dependent",
+      "summary": "IsShowingUser is browser-permission dependent; provider emits deterministic geolocation diagnostics when permission or capability is unavailable.",
+      "upstreamReference": "src/Core/maps/src/Handlers/Map/MapHandler.iOS.cs",
+      "testReference": "MapLab_ToggleUserLocation_EmitsDeterministicStatus"
+    }
+  ]
+}

@@ -216,7 +216,19 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 },
                 valueElementTagName: "button",
                 secondaryElementTagName: "button",
-                stretchValueElementWidth: false)
+                stretchValueElementWidth: false),
+            [ComponentKind.Map] = new(
+                ComponentKind.Map,
+                "div",
+                propertyMappings: CommonProperties,
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["mapregionchanged"] = new("mirage-map-region-changed", EventTarget.Self, EventPayloadKind.InputValue),
+                    ["mapclicked"] = new("mirage-map-clicked", EventTarget.Self, EventPayloadKind.InputValue),
+                    ["pinclicked"] = new("mirage-map-pin-clicked", EventTarget.Self, EventPayloadKind.InputValue),
+                    ["pininfowindowclicked"] = new("mirage-map-pin-info-window-clicked", EventTarget.Self, EventPayloadKind.InputValue),
+                    ["mapdiagnostic"] = new("mirage-map-diagnostic", EventTarget.Self, EventPayloadKind.InputValue)
+                })
         };
 
     public ProviderCapabilities Capabilities { get; } = new(

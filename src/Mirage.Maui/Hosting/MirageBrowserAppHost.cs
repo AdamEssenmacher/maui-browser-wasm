@@ -5,6 +5,7 @@ using Mirage.Maui.Handlers;
 using Mirage.Maui.Images;
 using Mirage.Maui.Navigation;
 using Mirage.Web.Dom;
+using Mirage.Web.Maps;
 using Mirage.Web.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
@@ -41,13 +42,19 @@ public static class MirageBrowserAppHost
             await imageSourceResolver.EnsureInitializedAsync();
         }
 
+        var mapProvider = mauiApp.Services.GetService<IMirageMapProvider>();
+        if (mapProvider is not null)
+        {
+            _ = WarmMapProviderInitializationAsync(mapProvider);
+        }
+
         var provider = MirageProviderValidation.GetRequiredProvider(mauiApp.Services);
         var rootDomElement = DomElement.RootById(rootElementId);
 
         ClearActiveHostState(rootDomElement);
         rootDomElement.ClearChildren();
 
-        var runtime = new MirageRuntime(rootDomElement, provider);
+        var runtime = new MirageRuntime(rootDomElement, provider, mapProvider);
         var renderCoordinator = mauiApp.Services.GetRequiredService<IMirageRenderCoordinator>();
         var dispatcher = mauiApp.Services.GetRequiredService<IDispatcher>();
         var pageNavigator = mauiApp.Services.GetService<BrowserPageNavigator>();
@@ -100,6 +107,30 @@ public static class MirageBrowserAppHost
 
         ArrangeAndRender();
         s_resizeSubscriptionId = DomElement.SubscribeWindowResize(ArrangeAndRender);
+    }
+
+    private static async Task WarmMapProviderInitializationAsync(IMirageMapProvider mapProvider)
+    {
+        try
+        {
+            var initialization = await mapProvider.EnsureInitializedAsync();
+            if (initialization.IsReady)
+            {
+                return;
+            }
+
+            var code = string.IsNullOrWhiteSpace(initialization.ErrorCode)
+                ? "provider-not-ready"
+                : initialization.ErrorCode!;
+            var message = string.IsNullOrWhiteSpace(initialization.ErrorMessage)
+                ? "Map provider initialization failed."
+                : initialization.ErrorMessage!;
+            MirageDiagnostics.Log("map.provider", $"provider={mapProvider.ProviderName} code={code} message={message}");
+        }
+        catch (Exception error)
+        {
+            MirageDiagnostics.Log("map.provider", $"provider={mapProvider.ProviderName} code=initialization-exception message={error.Message}");
+        }
     }
 
     public static void NotifyHotReloadApplied()

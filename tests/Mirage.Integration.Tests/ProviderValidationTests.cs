@@ -153,6 +153,23 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentMapDescriptor_MapsToMirageOwnedMapHost()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.Map);
+
+        Assert.Equal("div", descriptor.ElementTagName);
+        Assert.True(descriptor.PropertyMappings.ContainsKey("AutomationId"));
+        Assert.Equal(5, descriptor.EventMappings.Count);
+        Assert.True(descriptor.EventMappings.ContainsKey("mapregionchanged"));
+        Assert.Equal("mirage-map-region-changed", descriptor.EventMappings["mapregionchanged"].DomEventName);
+        Assert.True(descriptor.EventMappings.ContainsKey("mapclicked"));
+        Assert.True(descriptor.EventMappings.ContainsKey("pinclicked"));
+        Assert.True(descriptor.EventMappings.ContainsKey("pininfowindowclicked"));
+        Assert.True(descriptor.EventMappings.ContainsKey("mapdiagnostic"));
+    }
+
+    [Fact]
     public void FluentProvider_ResolvesHorizontalStackSemanticKind()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();

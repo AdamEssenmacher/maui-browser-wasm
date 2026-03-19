@@ -18,5 +18,6 @@ public enum ComponentKind
     CheckBox,
     Slider,
     Picker,
-    Stepper
+    Stepper,
+    Map
 }

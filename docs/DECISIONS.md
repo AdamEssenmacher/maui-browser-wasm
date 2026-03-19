@@ -2,6 +2,90 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (Map resiliency follow-up: transient-only provider retries + geolocation watch recovery)
+- `MirageRuntime` now retries map-provider non-ready results only for transient failure codes (`*-timeout`, `leaflet-global-missing`, `readiness-exception`, `initialization-exception`, `provider-not-ready`) instead of retrying deterministic asset/config failures.
+- This preserves recovery behavior for intermittent startup issues while allowing deterministic broken-asset scenarios to fail fast with stable error projection.
+- Leaflet `applyUserLocationState` now clears the failed `watchPosition` ID on geolocation error callbacks, allowing later `isShowingUser=true` renders to start a fresh watch without requiring map recreation/toggle reset.
+- Added architecture-boundary coverage for both retry-filter policy and geolocation watch-id reset behavior.
+
+## 2026-03-19 (Map-node provider reattempt loop after non-ready init results)
+- `MirageRuntime.ConfigureMapNodeWhenProviderReadyAsync` now retries non-ready provider initialization results for already-realized map nodes, instead of projecting immediate terminal error on the first failed readiness result.
+- Retries are bounded (`MapProviderInitializationRetryLimit`) and delayed (`ConfigureMapNodeWhenProviderReadyAfterDelayAsync`) so transient CDN/network readiness failures can recover without hot-looping.
+- Map-provider retry state is now cleared on success, terminal failure, node removal, and runtime dispose, with architecture-boundary coverage added to guard this behavior.
+
+## 2026-03-19 (Map recovery follow-up: retry not-ready provider state + antimeridian span correction)
+- `MirageRuntime.ConfigureMapNode` now treats all non-ready provider states as retryable-at-render time by transitioning the node to `pending` and awaiting `EnsureInitializedAsync()` asynchronously, so maps can recover after a transient warm-up failure.
+- Leaflet runtime region telemetry now derives longitude span with antimeridian-aware bounds math (`getLongitudeSpanFromBounds`) instead of raw absolute longitude delta, preventing inflated 300+ degree spans when bounds cross ±180°.
+- Added architecture-boundary coverage for both runtime behaviors to prevent regression to one-shot provider failure projection and incorrect dateline span reporting.
+
+## 2026-03-19 (Map provider startup decoupling + in-flight Leaflet script readiness)
+- `MirageBrowserAppHost.RunAsync` no longer blocks first paint on map-provider readiness checks; provider initialization now warms in the background.
+- `MirageRuntime` map-node configuration now handles provider `not-initialized` state asynchronously and completes adapter attachment/apply once provider readiness resolves, preventing map hosts from getting stuck in startup races.
+- Leaflet runtime `ensureScript(...)` now waits for pre-existing in-flight script tags to load/error (with timeout) before failing readiness, so hosts that pre-inject Leaflet do not get false permanent `leaflet-global-missing` failures.
+- Leaflet region reads now treat pre-view bounds access as non-fatal (`readRegionFromMap` catches "set center/zoom first" cases), preventing initialization-time failures before the first region projection is applied.
+
+## 2026-03-19 (Leaflet map apply-state guard: no implicit recenter on non-region updates)
+- Leaflet `applyMapStateJson` now applies `fitBounds` only when the projected region actually changes or when `RegionRequestToken` transitions (explicit `MoveToRegion`), instead of reapplying region on every render.
+- Map entries now track the last applied/read runtime region so unrelated state updates (`pins`, `elements`, traffic/user toggles) do not snap the viewport back to stale coordinates during interaction.
+- Added an E2E regression (`MapLab_TrafficToggle_DoesNotReapplyRegionWithoutMoveRequest`) that instruments Leaflet `fitBounds` and asserts non-region updates do not invoke recentering.
+
+## 2026-03-19 (Map runtime event ordering: subscribe before provider initialization apply)
+- `MirageRuntime.ConfigureMapNode` now pre-subscribes map runtime events using provider event mappings before creating/applying the map adapter.
+- This prevents first-frame provider events (especially initial `mapregionchanged` emitted during Leaflet initialization) from being dropped when create/property operations precede explicit attach-event operations in patch order.
+- Runtime event attachment now flows through a shared idempotent subscription helper so early map subscriptions and later `AttachEventOperation` execution stay consistent.
+
+## 2026-03-19 (Map hardening follow-up: async init fault handling + query attribution lockdown)
+- `MirageRuntime.ConfigureMapNodeWhenProviderReadyAsync` now catches `EnsureInitializedAsync()` exceptions and converts them into deterministic map error projection (`provider-init-exception`) instead of leaving map hosts indefinitely in `pending`.
+- Startup option parsing now treats `mirageLeafletTileAttribution` as trusted configuration only (`MIRAGE_LEAFLET_TILE_ATTRIBUTION` environment variable); URL query values are ignored because Leaflet attribution renders HTML.
+- Added a map security E2E fixture/test that injects a malicious attribution query value and asserts it is not rendered in the Leaflet attribution surface.
+
+## 2026-03-19 (Leaflet provider retry semantics after failed initialization)
+- `LeafletMapProvider.EnsureInitializedAsync` now treats failed/completed-non-ready initialization tasks as retryable instead of permanently memoizing the first failed attempt for the app lifetime.
+- In-flight initialization tasks are still shared across callers, but once a task completes with non-ready/faulted/canceled status, the next `EnsureInitializedAsync` call starts a fresh initialization attempt.
+- Added architecture-boundary coverage to lock the retry gate behavior in `LeafletMapProvider` and guard against regressions back to one-shot failure memoization.
+
+## 2026-03-19 (Leaflet runtime retry hardening: failed promise reset + stylesheet readiness validation)
+- `ensureLeafletReadyJson` now clears its cached in-flight readiness promise when initialization returns a non-OK result (or throws), so subsequent provider retries can perform real CSS/JS load attempts instead of replaying a stale failed promise.
+- `ensureStylesheet` now validates existing matching `<link data-mirage-leaflet-css>` elements before reporting success: loaded links succeed immediately, error-marked links fail immediately, and in-flight links are awaited with timeout/error handling.
+- Created stylesheet links now track deterministic status via `data-mirage-leaflet-css-status` (`loading`, `loaded`, `error`) so later readiness checks can distinguish healthy and failed cached link tags.
+
+## 2026-03-19 (Leaflet pin interaction rewiring preserves popup behavior)
+- Marker interaction rewiring in `syncPins` now removes only Mirage-owned click and popup handlers (stored on marker instance) instead of calling broad `marker.off("click")` / `marker.off("popupopen")`.
+- This preserves Leaflet's internal popup-open click handlers from `bindPopup(...)` across subsequent map state applies, preventing marker popup UX regressions after non-pin renders.
+- Added architecture-boundary coverage to guard against regressions back to clearing the entire marker click handler set.
+
+## 2026-03-19 (Leaflet host resize handling via observer-driven invalidate)
+- Leaflet map entries now subscribe to host resize changes (via `ResizeObserver`, with window-resize fallback) and schedule `invalidateSize(false)` so layout-only container size changes refresh Leaflet pixel bounds without requiring map-state reapply.
+- Map state application now routes through `scheduleInvalidateSize(...)` instead of directly calling `invalidateSize(...)`, coalescing rapid updates and avoiding redundant synchronous invalidations.
+- Added architecture-boundary and E2E coverage to lock this behavior (`LeafletRuntimeModule_ObservesHostResizesAndInvalidatesMapSize`, `MapLab_HostStyleResize_TriggersLeafletInvalidateSize`).
+
+## 2026-03-19 (Leaflet interop import retry after transient module-load failure)
+- `LeafletMapInterop.EnsureModuleLoadedAsync` now treats faulted/canceled cached module-import tasks as retryable and clears the cached task before attempting a fresh `JSHost.ImportAsync(...)`.
+- Import tasks created by the interop layer now clear their own cache entry on failure, preventing a permanently faulted module task from blocking all subsequent map-provider initialization retries.
+- Added architecture-boundary coverage to guard this retry/reset behavior in `LeafletMapInterop`.
+
+## 2026-03-18 (Map parity wave: MAUI-shaped handler split + region/event parity guardrails)
+- Split Mirage map handling into MAUI-shaped surfaces (`MirageMapHandler`, `MirageMapPinHandler`, `MirageMapElementHandler`) and registered all map-related handlers (`Map`, `Pin`, `MapElement`, `Circle`, `Polyline`, `Polygon`) through `UseMirageBrowserPlatform()`.
+- Expanded Mirage map semantic state to include MAUI map options, identity-based map elements, and popup-dismiss command tokens while keeping region/span authoritative and provider-neutral in core/runtime.
+- Added runtime-provider round-trip event flow for map click, pin click, info-window click, provider diagnostics, and visible-region updates (with feedback-loop suppression when updating `VisibleRegion` from provider events).
+- Introduced machine-readable map parity governance: `docs/parity/map-parity-contract.json` + `docs/parity/map-parity-divergences.json` with CI enforcement in `MapParityContractTests`.
+- Preserved explicit provider constraints as documented divergences (Leaflet map-type fallback, traffic overlay unsupported, and geolocation permission/capability dependence) instead of hiding them behind silent behavior drift.
+
+## 2026-03-18 (Map hardening follow-up: provider-scoped module sync + local-mode validation + pin item updates)
+- Replaced hardcoded Leaflet module sync in `Directory.Build.targets` with provider-declared `MirageBrowserRuntimeModule` discovery/copy so browser runtime module assets are owned by referenced provider projects instead of repo-root path assumptions.
+- Hardened Leaflet local-asset mode by requiring explicit local JS/CSS URLs when `AssetMode=Local`; invalid local-mode configuration now fails fast with deterministic diagnostics (`local-assets-not-configured` / `local-assets-invalid-url`).
+- Extended map handler behavior to subscribe to individual `Pin` property changes so label/location updates on existing pin instances project without requiring explicit mapper calls.
+- Tightened local-asset validation to reject protocol-relative and absolute URLs in `AssetMode=Local` so the local-mode contract is strict and deterministic.
+- Removed runtime-side unconditional map-error clearing after adapter apply; provider/adapter status now remains authoritative and failed apply operations cannot be masked as ready.
+- Updated Leaflet host registration to explicitly replace any prior `IMirageMapProvider` registration so `UseMirageLeafletMaps(...)` is deterministic in host composition order.
+
+## 2026-03-17 (Built-in Map ControlNode + Leaflet provider architecture)
+- Added first-class `Map` support on the built-in control-node path (`ComponentKind.Map`) with Mirage-owned, provider-neutral semantic state (`region/span` as authority, map type, and identity-keyed pins).
+- Introduced map provider contracts (`IMirageMapProvider`, `IMirageMapAdapter`) so map engine lifecycle is provider-owned (create once per host, update many times, dispose deterministically) while handlers remain the MAUI mapping boundary.
+- Added `Mirage.Provider.LeafletMaps` as the first browser map provider with CDN-default asset loading, explicit readiness diagnostics, deterministic error states for missing provider/assets, and configurable tile policy (default OSM + attribution).
+- Added `Showcase` map proof surface (`/map-lab`) and integration/E2E coverage for ControlNode projection, provider-required behavior, region updates, and identity-based pin synchronization.
+- E2E host fixtures now serialize sample-host startup and run browser samples with `--configuration Release --no-launch-profile`, allowing test-invoked builds from clean checkouts while still avoiding parallel startup contention.
+
 ## 2026-03-16 (Stepper moved from numeric input to Mirage-owned +/- chrome)
 - Replaced the browser Stepper realization from `input[type=number]` with a Mirage-owned two-button control (`-` and `+`) so interaction semantics match MAUI Stepper behavior instead of free-form text entry.
 - Added provider/runtime secondary-element event targeting to route decrement and increment clicks without handler-side DOM assumptions.
