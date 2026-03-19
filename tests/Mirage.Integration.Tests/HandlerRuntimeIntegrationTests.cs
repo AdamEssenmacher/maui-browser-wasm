@@ -2844,6 +2844,33 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public async Task ScrollView_ScrollToAsync_WithNullContent_CompletesWithoutArrange()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var scrollView = new ScrollView();
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        await scrollView.ScrollToAsync(18, 44, animated: true).WaitAsync(TimeSpan.FromSeconds(1));
+
+        Assert.True(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out var left, out var top));
+        Assert.Equal(18, left);
+        Assert.Equal(44, top);
+        Assert.Equal(18, scrollView.ScrollX);
+        Assert.Equal(44, scrollView.ScrollY);
+    }
+
+    [Fact]
     public void ScrollViewHandler_RequestScrollTo_DefersUntilArrangeWhenContentIsUnmeasured()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());

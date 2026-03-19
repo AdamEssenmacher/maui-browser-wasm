@@ -115,6 +115,8 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
         if (ResolvePresentedContent(VirtualView) is not IView content
             || !TryGetPresentedContentPlatformView(out var contentPlatformView))
         {
+            // Ensure pending command tasks cannot hang if content is absent/unrealized during arrange.
+            TryApplyPendingScrollToRequest(VirtualView);
             return;
         }
 
@@ -273,7 +275,7 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
     {
         if (ResolvePresentedContent(scrollView) is not IView content)
         {
-            return true;
+            return false;
         }
 
         var hasWidth = IsFinitePositive(content.Frame.Width);
