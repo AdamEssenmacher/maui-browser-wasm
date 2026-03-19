@@ -19,6 +19,44 @@ function ensureMirageFrameworkStyles() {
   const styleElement = document.createElement("style");
   styleElement.id = MIRAGE_FRAMEWORK_STYLE_ID;
   styleElement.textContent = `
+@keyframes mirage-activity-indicator-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+[data-mirage-kind="ActivityIndicator"] {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  color: CanvasText;
+}
+
+[data-mirage-kind="ActivityIndicator"]::before {
+  content: "";
+  box-sizing: border-box;
+  display: block;
+  block-size: 100%;
+  inline-size: auto;
+  max-inline-size: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  border: 2px solid rgba(148, 163, 184, 0.38);
+  border-top-color: var(--mirage-activity-color, currentColor);
+  animation: mirage-activity-indicator-spin 0.85s linear infinite;
+}
+
+[data-mirage-kind="ActivityIndicator"][data-maui-activity-running="false"]::before {
+  opacity: 0;
+  animation-play-state: paused;
+}
+
 input[data-mirage-kind="Slider"][type="range"] {
   -webkit-appearance: none;
   appearance: none;

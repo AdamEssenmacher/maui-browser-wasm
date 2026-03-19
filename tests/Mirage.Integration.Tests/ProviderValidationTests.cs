@@ -60,6 +60,21 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentActivityIndicatorDescriptor_MapsRunningBusyAndColorChannels()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.ActivityIndicator);
+
+        Assert.Equal("div", descriptor.ElementTagName);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["IsRunning"].Target);
+        Assert.Equal("data-maui-activity-running", descriptor.PropertyMappings["IsRunning"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["BusyState"].Target);
+        Assert.Equal("aria-busy", descriptor.PropertyMappings["BusyState"].Name);
+        Assert.Equal(PropertyTarget.Style, descriptor.PropertyMappings["SpinnerColor"].Target);
+        Assert.Equal("--mirage-activity-color", descriptor.PropertyMappings["SpinnerColor"].Name);
+    }
+
+    [Fact]
     public void FluentImageDescriptor_MapsSourceToImgSrcAttribute()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();

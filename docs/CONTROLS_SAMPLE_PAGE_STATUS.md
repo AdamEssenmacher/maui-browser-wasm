@@ -87,7 +87,7 @@ Visual legend:
 | `WindowTitleBar.xaml` | `Pages/Core/WindowTitleBar.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `CorePage.xaml` | `Pages/CorePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `HitTestingPage.xaml` | `Pages/HitTestingPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `ActivityIndicatorPage.xaml` | `Pages/Controls/ActivityIndicatorPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ActivityIndicatorPage.xaml` | `Pages/Controls/ActivityIndicatorPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `BoxViewPage.xaml` | `Pages/Controls/BoxViewPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ButtonPage.xaml` | `Pages/Controls/ButtonPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `CheckBoxPage.xaml` | `Pages/Controls/CheckBoxPage.xaml` | `[x]` | `[x]` | `[ ]` |

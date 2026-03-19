@@ -217,8 +217,35 @@ public class ControlsSampleApp : Application
                 Property = Label.FontSizeProperty,
                 Value = 10d
             });
+            headlineStyle.Setters.Add(new Setter
+            {
+                Property = Label.TextColorProperty,
+                Value = UpstreamLightTextPrimaryColor
+            });
 
             resources["Headline"] = headlineStyle;
+        }
+
+        if (!resources.ContainsKey("Subhead"))
+        {
+            var subheadStyle = new Style(typeof(Label));
+            subheadStyle.Setters.Add(new Setter
+            {
+                Property = Label.FontFamilyProperty,
+                Value = "Segoe UI"
+            });
+            subheadStyle.Setters.Add(new Setter
+            {
+                Property = Label.FontSizeProperty,
+                Value = 9d
+            });
+            subheadStyle.Setters.Add(new Setter
+            {
+                Property = Label.TextColorProperty,
+                Value = UpstreamLightTextPrimaryColor
+            });
+
+            resources["Subhead"] = subheadStyle;
         }
     }
 
@@ -266,6 +293,8 @@ public class ControlsSampleApp : Application
         SetStyleSetterValue(resources, "GalleryItemContainerStyle", Border.StrokeProperty, borderBrush);
         SetStyleSetterValue(resources, "GalleryItemTitleStyle", Label.TextColorProperty, accent);
         SetStyleSetterValue(resources, "GalleryItemDescriptionStyle", Label.TextColorProperty, textPrimary);
+        SetStyleSetterValue(resources, "Headline", Label.TextColorProperty, textPrimary);
+        SetStyleSetterValue(resources, "Subhead", Label.TextColorProperty, textPrimary);
     }
 
     private static void SetStyleSetterValue(

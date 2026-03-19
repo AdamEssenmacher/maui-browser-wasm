@@ -606,3 +606,8 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added a dedicated `MirageTabbedPageHandler` and handler registration for `TabbedPage` in `UseMirageBrowserPlatform` so browser hosts do not fall back to MAUI's platform-default `ContentViewHandler` path (which is not implemented for this target).
 - The browser `TabbedPage` baseline now mounts and arranges the current child page using Mirage page handlers, which unblocks importing upstream tab-root pages like `BrushesPage` without sample-specific wrapper transforms.
 - This slice is intentionally minimal: it establishes stable current-page hosting for tabbed roots and defers richer tab-strip interaction/chrome parity to follow-up work.
+
+## 2026-03-19 (ControlsSample ActivityIndicatorPage Enablement)
+- Promoted upstream `ActivityIndicatorPage` to a runnable ControlsSample entry and linked its XAML/code-behind into `ControlsSample.Shared`.
+- Added first-class Mirage browser support for `ActivityIndicator` (`ComponentKind.ActivityIndicator` + `MirageActivityIndicatorHandler`) with deterministic projection channels for running state, busy state, and spinner color.
+- Fluent provider now maps `ActivityIndicator` as a Mirage-owned control node and Mirage runtime CSS realizes it as a circular spinner with explicit running/stopped states, keeping behavior framework-owned (no sample-specific host hacks).

@@ -731,6 +731,38 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void ActivityIndicatorHandler_ProjectsColorRunningStateAndStoppedSemantics()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageActivityIndicatorHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var indicator = new ActivityIndicator
+        {
+            IsRunning = true,
+            Color = Colors.Orange
+        };
+
+        ((IElementHandler)handler).SetVirtualView(indicator);
+
+        Assert.Null(handler.PlatformView.GetStyleValue("width"));
+        Assert.Equal("24px", handler.PlatformView.GetStyleValue("height"));
+        Assert.Equal("true", handler.PlatformView.GetPropertyString("IsRunning"));
+        Assert.Equal("true", handler.PlatformView.GetPropertyString("BusyState"));
+        Assert.Equal("rgba(255,165,0,1)", handler.PlatformView.GetPropertyString("SpinnerColor"));
+
+        indicator.IsRunning = false;
+        MirageActivityIndicatorHandler.Mapper.UpdateProperty(handler, indicator, nameof(IActivityIndicator.IsRunning));
+        Assert.Equal("false", handler.PlatformView.GetPropertyString("IsRunning"));
+        Assert.Equal("false", handler.PlatformView.GetPropertyString("BusyState"));
+
+        indicator.Color = null;
+        MirageActivityIndicatorHandler.Mapper.UpdateProperty(handler, indicator, nameof(IActivityIndicator.Color));
+        Assert.Null(handler.PlatformView.GetPropertyString("SpinnerColor"));
+    }
+
+    [Fact]
     public void SliderHandler_ProjectsRangeAndRuntimeDragFlow()
     {
         var services = new ServiceCollection()
