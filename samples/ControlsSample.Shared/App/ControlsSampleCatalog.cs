@@ -54,6 +54,13 @@ public static class ControlsSampleCatalog
             description: "Runnable in Mirage today: exercises ScrollView navigation scenarios across constructor scroll, scroll-to-end, template, and orientation variants.",
             pageFactory: CreateScrollViewPage),
         new(
+            id: "brushespage",
+            title: "BrushesPage",
+            upstreamPath: "Pages/Core/BrushesPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(BrushesPage),
+            description: "Runnable in Mirage today: exercises solid/gradient brush scenarios and live brush updates across content surfaces."),
+        new(
             id: "transformationspage",
             title: "TransformationsPage",
             upstreamPath: "Pages/Core/TransformationsPage.xaml",

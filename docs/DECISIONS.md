@@ -468,6 +468,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Imported upstream page XAML/code-behind into `ControlsSample.Shared` and extended ControlsSample E2E coverage for catalog discoverability plus page-level structure checks (`Vertical` and `Horizontal` sections with six `BoxView` children each).
 - Kept parity expectations aligned to native MAUI behavior: unsized `BoxView` children in both sections are expected to collapse rather than render with synthetic default sizes.
 
+## 2026-03-19 (ControlsSample BrushesPage Enablement)
+- Promoted upstream `BrushesPage` to a runnable ControlsSample entry and linked its upstream XAML/code-behind into `ControlsSample.Shared`.
+- Added ControlsSample E2E coverage for catalog visibility and page-open smoke validation against the first tab content to keep import regressions detectable.
+- This slice intentionally wires the upstream page as-is; deeper brush parity gaps (for example specific gradient/shape visual deltas) remain follow-up parity work rather than sample-specific wrapper changes.
+
 ## 2026-03-17 (ControlsSample CustomLayoutPage Enablement)
 - Promoted upstream `CustomLayoutPage` to a runnable ControlsSample entry and linked its upstream XAML/code-behind into `ControlsSample.Shared`.
 - Added a framework-level generic `Layout` realization path in Mirage (`ComponentKind.Layout`) so custom `Layout`-derived views (like upstream `DockLayout`) can run without sample-specific handler glue.
@@ -500,3 +505,8 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Border stroke projection now uses the arranged frame as the sole geometry authority; Mirage no longer fabricates stroke dimensions from desired/content fallback values when arranged size is unavailable.
 - When arranged width/height are not yet valid, the SVG stroke overlay remains hidden and path attributes are cleared, avoiding stale or shrunken stroke frames.
 - Round-rectangle borders now project `clip-path: inset(0 round ...)` from the same normalized corner data used by the stroke path, keeping image/content clipping and stroke geometry in lockstep.
+
+## 2026-03-19 (TabbedPage Baseline Support for Browser Hosts)
+- Added a dedicated `MirageTabbedPageHandler` and handler registration for `TabbedPage` in `UseMirageBrowserPlatform` so browser hosts do not fall back to MAUI's platform-default `ContentViewHandler` path (which is not implemented for this target).
+- The browser `TabbedPage` baseline now mounts and arranges the current child page using Mirage page handlers, which unblocks importing upstream tab-root pages like `BrushesPage` without sample-specific wrapper transforms.
+- This slice is intentionally minimal: it establishes stable current-page hosting for tabbed roots and defers richer tab-strip interaction/chrome parity to follow-up work.

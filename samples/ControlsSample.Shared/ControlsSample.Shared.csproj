@@ -22,6 +22,7 @@
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollViewOrientationPage.xaml" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollViewOrientationPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\VerticalStackLayoutPage.xaml" Link="Vendor\Pages\Layouts\VerticalStackLayoutPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BrushesPage.xaml" Link="Vendor\Pages\Core\BrushesPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\TransformationsPage.xaml" Link="Vendor\Pages\Core\TransformationsPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderPlayground.xaml" Link="Vendor\Pages\Core\BorderGalleries\BorderPlayground.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderClipPlayground.xaml" Link="Vendor\Pages\Core\BorderGalleries\BorderClipPlayground.xaml" />
@@ -56,6 +57,7 @@
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollViewOrientationPage.xaml.cs" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollViewOrientationPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml.cs" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\VerticalStackLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\VerticalStackLayoutPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BrushesPage.xaml.cs" Link="Vendor\Pages\Core\BrushesPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\TransformationsPage.xaml.cs" Link="Vendor\Pages\Core\TransformationsPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderPage.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderPage.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderPlayground.xaml.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderPlayground.xaml.cs" />
