@@ -2871,6 +2871,44 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public async Task ScrollView_ScrollToAsync_DeferredRequest_CompletesWhenHandlerDisconnects()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var content = new Label
+        {
+            Text = "Deferred content",
+            WidthRequest = 640,
+            HeightRequest = 1200
+        };
+        var contentHandler = new MirageLabelHandler();
+        ((IElementHandler)contentHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)contentHandler).SetVirtualView(content);
+
+        var scrollView = new ScrollView
+        {
+            Content = content
+        };
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        var pendingScrollTask = scrollView.ScrollToAsync(28, 52, animated: true);
+        Assert.False(pendingScrollTask.IsCompleted);
+
+        ((IElementHandler)handler).DisconnectHandler();
+        await pendingScrollTask.WaitAsync(TimeSpan.FromSeconds(1));
+    }
+
+    [Fact]
     public void ScrollViewHandler_RequestScrollTo_DefersUntilArrangeWhenContentIsUnmeasured()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());

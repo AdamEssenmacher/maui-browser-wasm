@@ -79,7 +79,12 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
     protected override void DisconnectHandler(MiragePlatformView platformView)
     {
         platformView.SetEvent("scroll", enabled: false);
-        _pendingScrollToRequest = null;
+        if (_pendingScrollToRequest is not null)
+        {
+            _pendingScrollToRequest = null;
+            VirtualView.ScrollFinished();
+        }
+
         DisconnectCurrentPresentedContent();
         base.DisconnectHandler(platformView);
     }
