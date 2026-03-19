@@ -28,6 +28,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - In-flight initialization tasks are still shared across callers, but once a task completes with non-ready/faulted/canceled status, the next `EnsureInitializedAsync` call starts a fresh initialization attempt.
 - Added architecture-boundary coverage to lock the retry gate behavior in `LeafletMapProvider` and guard against regressions back to one-shot failure memoization.
 
+## 2026-03-19 (Leaflet runtime retry hardening: failed promise reset + stylesheet readiness validation)
+- `ensureLeafletReadyJson` now clears its cached in-flight readiness promise when initialization returns a non-OK result (or throws), so subsequent provider retries can perform real CSS/JS load attempts instead of replaying a stale failed promise.
+- `ensureStylesheet` now validates existing matching `<link data-mirage-leaflet-css>` elements before reporting success: loaded links succeed immediately, error-marked links fail immediately, and in-flight links are awaited with timeout/error handling.
+- Created stylesheet links now track deterministic status via `data-mirage-leaflet-css-status` (`loading`, `loaded`, `error`) so later readiness checks can distinguish healthy and failed cached link tags.
+
 ## 2026-03-18 (Map parity wave: MAUI-shaped handler split + region/event parity guardrails)
 - Split Mirage map handling into MAUI-shaped surfaces (`MirageMapHandler`, `MirageMapPinHandler`, `MirageMapElementHandler`) and registered all map-related handlers (`Map`, `Pin`, `MapElement`, `Circle`, `Polyline`, `Polygon`) through `UseMirageBrowserPlatform()`.
 - Expanded Mirage map semantic state to include MAUI map options, identity-based map elements, and popup-dismiss command tokens while keeping region/span authoritative and provider-neutral in core/runtime.

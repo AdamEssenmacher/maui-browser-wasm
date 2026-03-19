@@ -458,6 +458,41 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void LeafletRuntimeModule_ClearsReadinessPromiseAfterFailedInitialization()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "wwwroot",
+            "mirage-leaflet-provider.js");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+
+        var text = File.ReadAllText(runtimeModulePath);
+        Assert.Contains("if (!result.ok)", text, StringComparison.Ordinal);
+        Assert.Contains("leafletReadinessPromise = null;", text, StringComparison.Ordinal);
+        Assert.Contains(".catch((error) =>", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LeafletRuntimeModule_WaitsForExistingStylesheetLoadBeforeReportingReady()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Provider.LeafletMaps",
+            "wwwroot",
+            "mirage-leaflet-provider.js");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+
+        var text = File.ReadAllText(runtimeModulePath);
+        Assert.Contains("const existingStatus = existing.getAttribute(\"data-mirage-leaflet-css-status\");", text, StringComparison.Ordinal);
+        Assert.Contains("existing.addEventListener(\"load\", onLoad);", text, StringComparison.Ordinal);
+        Assert.Contains("existing.addEventListener(\"error\", onError);", text, StringComparison.Ordinal);
+        Assert.Contains("Timed out while waiting for Leaflet CSS", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ScrollViewHandler_MapsExplicitRequestScrollToThroughRuntimeBridge()
     {
         var handlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageScrollViewHandler.cs");

@@ -66,7 +66,56 @@ function ensureStylesheet(url, timeoutMs) {
 
     const existing = document.querySelector(`link[data-mirage-leaflet-css="true"][href="${escapeAttributeValue(url)}"]`);
     if (existing) {
-      resolve(toResult(true));
+      const existingStatus = existing.getAttribute("data-mirage-leaflet-css-status");
+      if (existingStatus === "loaded" || existing.sheet) {
+        resolve(toResult(true));
+        return;
+      }
+
+      if (existingStatus === "error") {
+        resolve(toResult(false, "css-load-failed", `Failed to load Leaflet CSS from '${url}'.`));
+        return;
+      }
+
+      let completed = false;
+      const onComplete = (result) => {
+        if (completed) {
+          return;
+        }
+
+        completed = true;
+        clearTimeout(timer);
+        existing.removeEventListener("load", onLoad);
+        existing.removeEventListener("error", onError);
+        resolve(result);
+      };
+
+      const onLoad = () => {
+        existing.setAttribute("data-mirage-leaflet-css-status", "loaded");
+        onComplete(toResult(true));
+      };
+
+      const onError = () => {
+        existing.setAttribute("data-mirage-leaflet-css-status", "error");
+        onComplete(toResult(false, "css-load-failed", `Failed to load Leaflet CSS from '${url}'.`));
+      };
+
+      const timer = setTimeout(() => {
+        if (existing.sheet) {
+          onLoad();
+          return;
+        }
+
+        onComplete(toResult(false, "css-timeout", `Timed out while waiting for Leaflet CSS from '${url}'.`));
+      }, timeoutMs);
+
+      existing.addEventListener("load", onLoad);
+      existing.addEventListener("error", onError);
+
+      if (existing.sheet) {
+        queueMicrotask(onLoad);
+      }
+
       return;
     }
 
@@ -74,6 +123,7 @@ function ensureStylesheet(url, timeoutMs) {
     link.rel = "stylesheet";
     link.href = url;
     link.setAttribute("data-mirage-leaflet-css", "true");
+    link.setAttribute("data-mirage-leaflet-css-status", "loading");
 
     let completed = false;
     const timer = setTimeout(() => {
@@ -86,6 +136,7 @@ function ensureStylesheet(url, timeoutMs) {
     }, timeoutMs);
 
     link.onload = () => {
+      link.setAttribute("data-mirage-leaflet-css-status", "loaded");
       if (completed) {
         return;
       }
@@ -96,6 +147,7 @@ function ensureStylesheet(url, timeoutMs) {
     };
 
     link.onerror = () => {
+      link.setAttribute("data-mirage-leaflet-css-status", "error");
       if (completed) {
         return;
       }
@@ -243,10 +295,24 @@ export async function ensureLeafletReadyJson(optionsJson) {
 
   if (!leafletReadinessPromise) {
     const options = parseJson(optionsJson, {});
-    leafletReadinessPromise = ensureLeafletReadyCore(options).then((result) => {
-      leafletReadinessResult = result;
-      return result;
-    });
+    leafletReadinessPromise = ensureLeafletReadyCore(options)
+      .then((result) => {
+        leafletReadinessResult = result;
+        if (!result.ok) {
+          leafletReadinessPromise = null;
+        }
+
+        return result;
+      })
+      .catch((error) => {
+        const message = error && typeof error.message === "string" && error.message.length > 0
+          ? error.message
+          : "Leaflet readiness failed with an unexpected exception.";
+        const failedResult = toResult(false, "readiness-exception", message);
+        leafletReadinessResult = failedResult;
+        leafletReadinessPromise = null;
+        return failedResult;
+      });
   }
 
   const result = await leafletReadinessPromise;
