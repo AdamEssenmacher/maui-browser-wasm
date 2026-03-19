@@ -641,9 +641,17 @@ function wireMarkerInteraction(entry, marker, key) {
       return;
     }
 
-    popupElement.addEventListener("click", () => {
+    const existingHandler = popupElement.__miragePinInfoWindowClickHandler;
+    if (typeof existingHandler === "function") {
+      popupElement.removeEventListener("click", existingHandler);
+    }
+
+    const onPopupClick = () => {
       emitMirageEvent(entry.host, "mirage-map-pin-info-window-clicked", { key });
-    }, { once: true });
+    };
+
+    popupElement.__miragePinInfoWindowClickHandler = onPopupClick;
+    popupElement.addEventListener("click", onPopupClick);
   });
 }
 
