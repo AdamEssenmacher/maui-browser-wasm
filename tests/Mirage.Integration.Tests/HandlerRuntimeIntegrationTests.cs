@@ -3134,6 +3134,41 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void ScrollViewHandler_Padding_AdjustsInnerArrangeViewport()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var content = new ArrangeProbeContentView();
+        var contentHandler = new MirageContentViewHandler();
+        ((IElementHandler)contentHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)contentHandler).SetVirtualView(content);
+
+        var scrollView = new ScrollView
+        {
+            Orientation = ScrollOrientation.Vertical,
+            Padding = new Thickness(12, 8, 6, 4),
+            Content = content
+        };
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+
+        // Arranged width tracks the inner padded viewport for vertical scrolling.
+        Assert.True(content.ArrangeCount > 0, "Expected probe content to be arranged.");
+        Assert.Equal(302, content.LastArrangeBounds.Width);
+    }
+
+    [Fact]
     public async Task EntryHandler_RuntimeInputEvents_AreCoalescedPerDispatcherFrame()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());

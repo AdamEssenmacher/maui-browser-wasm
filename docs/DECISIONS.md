@@ -18,6 +18,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added deterministic safety fallbacks to avoid hangs when a runtime completion signal is unavailable (no presented content, no runtime set bridge, unchanged position).
 - Added integration coverage for element-targeted `ScrollToAsync(element, ...)` command routing so this path stays locked while handler parity evolves.
 
+## 2026-03-19 (ScrollView parity follow-up: padding-aware viewport measure/arrange)
+- `MirageScrollViewHandler` now subtracts `ScrollView.Padding` thickness from the inner viewport constraints before content measure/arrange, then adds padding back into desired-size projection.
+- This keeps content geometry aligned with browser padded scroll hosts and prevents padded vertical scroll views from arranging child content at full outer width.
+- Added integration coverage to assert padded inner-viewport arrange width behavior.
+
 ## 2026-03-19 (FlexLayout position parity follow-up: MAUI-shape constraint + custom-item toggle coverage)
 - Confirmed and locked the upstream MAUI shape for `FlexLayout.Position`: absolute-position flow applies to nested `FlexLayout` children (via `IFlexLayout.Position`), not arbitrary child controls.
 - Added integration coverage for absolute nested flex children carrying non-default flex-item properties (`Order`, `Grow`, `Shrink`, `Basis`, `AlignSelf`) to verify styles are cleared in absolute mode and deterministically restored when toggling back to relative mode.

@@ -93,32 +93,38 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
 
     public override Size GetDesiredSize(double widthConstraint, double heightConstraint)
     {
+        var padding = ResolvePadding(VirtualView);
         var content = ResolvePresentedContent(VirtualView);
         if (content is null)
         {
-            return base.GetDesiredSize(widthConstraint, heightConstraint);
+            return new Size(
+                ResolveDesiredDimension(widthConstraint, padding.HorizontalThickness),
+                ResolveDesiredDimension(heightConstraint, padding.VerticalThickness));
         }
 
         var orientation = VirtualView.Orientation;
+        var innerWidthConstraint = ResolveInnerViewportConstraint(widthConstraint, padding.HorizontalThickness);
+        var innerHeightConstraint = ResolveInnerViewportConstraint(heightConstraint, padding.VerticalThickness);
         var horizontalConstraint = orientation is ScrollOrientation.Horizontal or ScrollOrientation.Both
             ? double.PositiveInfinity
-            : widthConstraint;
+            : innerWidthConstraint;
         var verticalConstraint = orientation is ScrollOrientation.Vertical or ScrollOrientation.Both
             ? double.PositiveInfinity
-            : heightConstraint;
+            : innerHeightConstraint;
 
         var contentSize = content.Measure(horizontalConstraint, verticalConstraint);
         return new Size(
-            ResolveDesiredDimension(widthConstraint, contentSize.Width),
-            ResolveDesiredDimension(heightConstraint, contentSize.Height));
+            ResolveDesiredDimension(widthConstraint, contentSize.Width + padding.HorizontalThickness),
+            ResolveDesiredDimension(heightConstraint, contentSize.Height + padding.VerticalThickness));
     }
 
     public override void PlatformArrange(Rect frame)
     {
         base.PlatformArrange(frame);
 
-        var width = Math.Max(0, frame.Width);
-        var height = Math.Max(0, frame.Height);
+        var padding = ResolvePadding(VirtualView);
+        var width = Math.Max(0, frame.Width - padding.HorizontalThickness);
+        var height = Math.Max(0, frame.Height - padding.VerticalThickness);
         if (ResolvePresentedContent(VirtualView) is not IView content
             || !TryGetPresentedContentPlatformView(out var contentPlatformView))
         {
@@ -320,6 +326,23 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
     private static bool IsFinitePositive(double value)
     {
         return double.IsFinite(value) && value > 0;
+    }
+
+    private static Thickness ResolvePadding(IScrollView scrollView)
+    {
+        return scrollView is IPadding paddingView
+            ? paddingView.Padding
+            : Thickness.Zero;
+    }
+
+    private static double ResolveInnerViewportConstraint(double outerConstraint, double paddingThickness)
+    {
+        if (double.IsNaN(outerConstraint) || double.IsInfinity(outerConstraint))
+        {
+            return outerConstraint;
+        }
+
+        return Math.Max(0, outerConstraint - Math.Max(0, paddingThickness));
     }
 
     private static bool ShouldCompleteScrollRequestImmediately(
