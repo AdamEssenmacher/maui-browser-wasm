@@ -70,6 +70,12 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Import tasks created by the interop layer now clear their own cache entry on failure, preventing a permanently faulted module task from blocking all subsequent map-provider initialization retries.
 - Added architecture-boundary coverage to guard this retry/reset behavior in `LeafletMapInterop`.
 
+## 2026-03-18 (Layout parity wave: MAUI-shaped lifecycle + AbsoluteLayout runtime mutation coverage)
+- Refactored `MirageLayoutHandler` toward MAUI handler shape: `SetVirtualView` now performs deterministic full child sync in z-order, while command handlers (`Add/Remove/Insert/Update/UpdateZIndex`) execute incremental child operations and only fall back to full sync on invalid payloads.
+- Split layout support logic into focused internal helpers (`MirageLayoutHandlerOrdering`, `MirageLayoutProjection`) so handler orchestration is isolated from ordering/projection details and easier to keep aligned with upstream MAUI patterns.
+- Added explicit layout parity governance artifacts (`docs/parity/layout-parity-contract.json`, `docs/parity/layout-parity-divergences.json`) with integration tests enforcing contract coverage and divergence-key/test linkage.
+- AbsoluteLayout now reapplies arranged geometry during `PlatformArrange` so runtime `LayoutBounds`/`LayoutFlags` mutations project without child-handler churn; added integration tests and a runnable controls-sample parity probe page with browser E2E assertions for bounds/flags/z-order mutation behavior.
+
 ## 2026-03-18 (Map parity wave: MAUI-shaped handler split + region/event parity guardrails)
 - Split Mirage map handling into MAUI-shaped surfaces (`MirageMapHandler`, `MirageMapPinHandler`, `MirageMapElementHandler`) and registered all map-related handlers (`Map`, `Pin`, `MapElement`, `Circle`, `Polyline`, `Polygon`) through `UseMirageBrowserPlatform()`.
 - Expanded Mirage map semantic state to include MAUI map options, identity-based map elements, and popup-dismiss command tokens while keeping region/span authoritative and provider-neutral in core/runtime.

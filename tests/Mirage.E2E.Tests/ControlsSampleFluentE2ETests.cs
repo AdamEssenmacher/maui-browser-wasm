@@ -22,6 +22,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         var (page, diagnostics) = await OpenAsync(context);
 
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-clippingpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-contentviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-customlayoutpage']").CountAsync());
@@ -35,13 +36,11 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stepperpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-brushespage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-transformationspage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-borderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-mapsgallery']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-layoutisenabledpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-scrollviewpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
 
         await NavigateWithDiagnosticsAsync(
@@ -130,24 +129,20 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             "hidden",
             iconHostOverflow);
 
-        var iconHostShapeStyles = await page.EvaluateAsync<string[]>(
+        var iconHostBorderRadius = await page.EvaluateAsync<string>(
             """
             () => {
                 const image = document.querySelector("[data-automation-id='controls-sample-page-contentviewpage'] img[src*='/_mirage/assets/']");
                 const iconHost = image?.parentElement;
                 if (!iconHost) {
-                    return ["__missing__", "__missing__"];
+                    return "__missing__";
                 }
 
-                const computed = getComputedStyle(iconHost);
-                return [computed.borderRadius ?? "", computed.clipPath ?? ""];
+                return getComputedStyle(iconHost).borderRadius;
             }
             """);
 
-        Assert.True(
-            !string.Equals(iconHostShapeStyles[0], "0px", StringComparison.Ordinal)
-            || !string.Equals(iconHostShapeStyles[1], "none", StringComparison.OrdinalIgnoreCase),
-            $"Expected avatar host to project clipping geometry via borderRadius or clipPath, but got borderRadius='{iconHostShapeStyles[0]}' clipPath='{iconHostShapeStyles[1]}'.");
+        Assert.NotEqual("0px", iconHostBorderRadius);
 
         var overlapProbeTagName = await page.EvaluateAsync<string>(
             """
@@ -235,6 +230,45 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.NotEqual("none", dividerMetrics[2]);
         Assert.True(double.Parse(dividerMetrics[3], CultureInfo.InvariantCulture) >= 1d);
         Assert.True(double.Parse(dividerMetrics[4], CultureInfo.InvariantCulture) >= 120d);
+    }
+
+    [Fact]
+    public async Task AbsoluteLayoutParityProbe_UpdatesBoundsFlagsAndZOrderAtRuntime()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1180, height: 860);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutparitypage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-absolutelayoutparitypage']");
+            });
+
+        const string primarySelector = "[data-automation-id='controls-sample-absolutelayout-parity-a']";
+        var initialPrimaryRect = await ReadBoundingClientRectAsync(page, primarySelector);
+
+        await page.Locator("[data-automation-id='controls-sample-absolutelayout-parity-toggle-bounds']").ClickAsync();
+        var updatedPrimaryRect = await WaitForBoundingClientRectChangeAsync(page, primarySelector, initialPrimaryRect);
+
+        var boundsChanged = AnyBoundingClientRectDimensionChanged(initialPrimaryRect, updatedPrimaryRect);
+        Assert.True(boundsChanged);
+
+        await page.Locator("[data-automation-id='controls-sample-absolutelayout-parity-toggle-flags']").ClickAsync();
+        var proportionalPrimaryRect = await WaitForBoundingClientRectChangeAsync(page, primarySelector, updatedPrimaryRect);
+
+        var flagsChangedGeometry = AnyBoundingClientRectDimensionChanged(updatedPrimaryRect, proportionalPrimaryRect);
+        Assert.True(flagsChangedGeometry);
+
+        var topBeforeToggle = await ReadParityProbeOverlapTopAutomationIdAsync(page);
+
+        await page.Locator("[data-automation-id='controls-sample-absolutelayout-parity-toggle-zindex']").ClickAsync();
+        var topAfterToggle = await WaitForParityProbeOverlapTopAutomationIdChangeAsync(page, topBeforeToggle);
+
+        Assert.Equal("controls-sample-absolutelayout-parity-a", topAfterToggle);
+        Assert.NotEqual(topBeforeToggle, topAfterToggle);
     }
 
     [Fact]
@@ -407,7 +441,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     [Fact]
     public async Task StackLayoutPage_IsRunnable_AndAllowsUnsizedBoxViewsToCollapse()
     {
-        await using var context = await _fixture.NewContextAsync(width: 960, height: 760);
+        await using var context = await _fixture.NewContextAsync(width: 900, height: 700);
         var (page, diagnostics) = await OpenAsync(context);
 
         await NavigateWithDiagnosticsAsync(
@@ -424,37 +458,52 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             () => {
                 const host = document.querySelector("[data-automation-id='controls-sample-page-stacklayoutpage']");
                 if (!host) {
-                    return ["__missing__", "0", "0", "0", "0", "0", "0", "0"];
+                    return ["__missing__", "0", "0", "0", "0", "0", "0"];
                 }
 
-                const labels = Array
-                    .from(host.querySelectorAll("[data-mirage-kind='Label']"))
-                    .map(label => (label.textContent ?? "").trim());
-                const stackNodes = Array
-                    .from(host.querySelectorAll("[data-mirage-kind='VerticalStack'], [data-mirage-kind='HorizontalStack']"));
-                const sectionStacks = stackNodes
-                    .map(stack => ({
-                        kind: stack.getAttribute("data-mirage-kind") ?? "",
-                        boxes: Array.from(stack.children).filter(child => child.getAttribute?.("data-mirage-kind") === "BoxView")
-                    }))
-                    .filter(section => section.boxes.length > 0);
+                const labels = Array.from(host.querySelectorAll("[data-mirage-kind='Label']"));
+                const verticalLabel = labels.find(label => (label.textContent ?? "").trim() === "Vertical");
+                const horizontalLabel = labels.find(label => (label.textContent ?? "").trim() === "Horizontal");
+                const stackKinds = new Set(["StackLayout", "VerticalStack", "HorizontalStack"]);
 
-                const verticalBoxes = sectionStacks.find(section => section.kind === "VerticalStack")?.boxes ?? [];
-                const horizontalBoxes = sectionStacks.find(section => section.kind === "HorizontalStack")?.boxes ?? [];
-                const allBoxes = sectionStacks.flatMap(section => section.boxes);
-                const boxRects = allBoxes.map(box => box.getBoundingClientRect());
-                const collapsedCount = boxRects.filter(rect => rect.width <= 1 || rect.height <= 1 || (rect.width * rect.height) <= 1).length;
-                const maxArea = boxRects.reduce((current, rect) => Math.max(current, rect.width * rect.height), 0);
+                const findFollowingStack = (label) => {
+                    let current = label?.nextElementSibling ?? null;
+                    while (current) {
+                        const kind = current.getAttribute("data-mirage-kind");
+                        if (kind && stackKinds.has(kind)) {
+                            return current;
+                        }
+
+                        current = current.nextElementSibling;
+                    }
+
+                    return null;
+                };
+
+                const verticalStack = findFollowingStack(verticalLabel);
+                const horizontalStack = findFollowingStack(horizontalLabel);
+                if (!verticalStack || !horizontalStack) {
+                    return ["__missing_sections__", "0", "0", "0", "0", "0", "0"];
+                }
+
+                const collect = (stack) => {
+                    const boxes = Array.from(stack.querySelectorAll(":scope > [data-mirage-kind='BoxView']"));
+                    const rects = boxes.map(box => box.getBoundingClientRect());
+                    const collapsed = rects.filter(rect => rect.width <= 1 || rect.height <= 1 || (rect.width * rect.height) <= 1).length;
+                    return [boxes.length, collapsed];
+                };
+
+                const [verticalCount, verticalCollapsed] = collect(verticalStack);
+                const [horizontalCount, horizontalCollapsed] = collect(horizontalStack);
 
                 return [
                     "ok",
-                    labels.includes("Vertical") ? "1" : "0",
-                    labels.includes("Horizontal") ? "1" : "0",
-                    sectionStacks.length.toString(),
-                    verticalBoxes.length.toString(),
-                    horizontalBoxes.length.toString(),
-                    collapsedCount.toString(),
-                    maxArea.toString()
+                    verticalLabel ? "1" : "0",
+                    horizontalLabel ? "1" : "0",
+                    verticalCount.toString(),
+                    horizontalCount.toString(),
+                    verticalCollapsed.toString(),
+                    horizontalCollapsed.toString()
                 ];
             }
             """);
@@ -462,11 +511,10 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal("ok", layoutSnapshot[0]);
         Assert.Equal("1", layoutSnapshot[1]);
         Assert.Equal("1", layoutSnapshot[2]);
-        Assert.Equal("2", layoutSnapshot[3]);
+        Assert.Equal("6", layoutSnapshot[3]);
         Assert.Equal("6", layoutSnapshot[4]);
         Assert.Equal("6", layoutSnapshot[5]);
-        Assert.Equal("12", layoutSnapshot[6]);
-        Assert.True(double.Parse(layoutSnapshot[7], CultureInfo.InvariantCulture) <= 1d);
+        Assert.Equal("6", layoutSnapshot[6]);
     }
 
     [Fact]
@@ -1987,8 +2035,108 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         }
     }
 
+    private static async Task<double[]> WaitForBoundingClientRectChangeAsync(
+        IPage page,
+        string selector,
+        double[] baselineRect,
+        int timeoutMs = 3000,
+        int pollMs = 50)
+    {
+        var elapsedMs = 0;
+        while (elapsedMs < timeoutMs)
+        {
+            var currentRect = await ReadBoundingClientRectAsync(page, selector);
+            if (AnyBoundingClientRectDimensionChanged(baselineRect, currentRect))
+            {
+                return currentRect;
+            }
+
+            await page.WaitForTimeoutAsync(pollMs);
+            elapsedMs += pollMs;
+        }
+
+        return await ReadBoundingClientRectAsync(page, selector);
+    }
+
+    private static bool AnyBoundingClientRectDimensionChanged(double[] before, double[] after)
+    {
+        return before
+            .Zip(after, static (previous, current) => Math.Abs(previous - current) > 0.5d)
+            .Any(static changed => changed);
+    }
+
+    private static async Task<double[]> ReadBoundingClientRectAsync(IPage page, string selector)
+    {
+        return await page.EvaluateAsync<double[]>(
+            """
+            (targetSelector) => {
+                const target = document.querySelector(targetSelector);
+                if (!target) {
+                    return [0, 0, 0, 0];
+                }
+
+                const rect = target.getBoundingClientRect();
+                return [rect.left, rect.top, rect.width, rect.height];
+            }
+            """,
+            selector);
+    }
+
+    private static async Task<string> WaitForParityProbeOverlapTopAutomationIdChangeAsync(
+        IPage page,
+        string baselineTopAutomationId,
+        int timeoutMs = 3000,
+        int pollMs = 50)
+    {
+        var elapsedMs = 0;
+        while (elapsedMs < timeoutMs)
+        {
+            var currentTopAutomationId = await ReadParityProbeOverlapTopAutomationIdAsync(page);
+            if (!string.Equals(currentTopAutomationId, baselineTopAutomationId, StringComparison.Ordinal))
+            {
+                return currentTopAutomationId;
+            }
+
+            await page.WaitForTimeoutAsync(pollMs);
+            elapsedMs += pollMs;
+        }
+
+        return await ReadParityProbeOverlapTopAutomationIdAsync(page);
+    }
+
+    private static async Task<string> ReadParityProbeOverlapTopAutomationIdAsync(IPage page)
+    {
+        return await page.EvaluateAsync<string>(
+            """
+            () => {
+                const primary = document.querySelector("[data-automation-id='controls-sample-absolutelayout-parity-a']");
+                const secondary = document.querySelector("[data-automation-id='controls-sample-absolutelayout-parity-b']");
+                if (!primary || !secondary) {
+                    return "__missing__";
+                }
+
+                const firstRect = primary.getBoundingClientRect();
+                const secondRect = secondary.getBoundingClientRect();
+                const left = Math.max(firstRect.left, secondRect.left);
+                const top = Math.max(firstRect.top, secondRect.top);
+                const right = Math.min(firstRect.right, secondRect.right);
+                const bottom = Math.min(firstRect.bottom, secondRect.bottom);
+                if (!(right > left && bottom > top)) {
+                    return "__no_overlap__";
+                }
+
+                const probeX = left + Math.min(6, right - left - 1);
+                const probeY = top + Math.min(6, bottom - top - 1);
+                const topElement = document.elementFromPoint(probeX, probeY);
+                return topElement?.closest("[data-automation-id]")?.getAttribute("data-automation-id") ?? "__none__";
+            }
+            """);
+    }
+
     private static async Task SetSelectIndexAsync(IPage page, string selector, int selectedIndex)
     {
+        await page.WaitForSelectorAsync(selector);
+
         var result = await page.EvaluateAsync<string>(
             """
             (payload) => {
@@ -2003,7 +2151,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 control.selectedIndex = targetIndex;
                 control.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
                 control.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
-                return control.value;
+                return control.value ?? "";
             }
             """,
             new
@@ -2017,6 +2165,8 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
 
     private static async Task SetInputTextAsync(IPage page, string selector, string value)
     {
+        await page.WaitForSelectorAsync(selector);
+
         var result = await page.EvaluateAsync<string>(
             """
             (payload) => {

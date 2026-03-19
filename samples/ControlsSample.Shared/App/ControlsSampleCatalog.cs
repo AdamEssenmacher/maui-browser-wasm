@@ -19,6 +19,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(AbsoluteLayoutPage),
             description: "Runnable in Mirage today: exercises AbsoluteLayout with proportional positioning and BoxView primitives."),
         new(
+            id: "absolutelayoutparitypage",
+            title: "AbsoluteLayoutParityProbePage",
+            upstreamPath: "App/AbsoluteLayoutParityProbePage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(AbsoluteLayoutParityProbePage),
+            description: "Mirage parity probe: mutates AbsoluteLayout bounds, flags, and z-order at runtime to validate dynamic projection behavior."),
+        new(
             id: "gridpage",
             title: "GridPage",
             upstreamPath: "Pages/Layouts/GridPage.xaml",
