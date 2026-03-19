@@ -36,6 +36,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stepperpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-transformationspage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-borderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-layoutisenabledpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-scrollviewpage']").CountAsync());
@@ -127,20 +128,24 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             "hidden",
             iconHostOverflow);
 
-        var iconHostBorderRadius = await page.EvaluateAsync<string>(
+        var iconHostShapeStyles = await page.EvaluateAsync<string[]>(
             """
             () => {
                 const image = document.querySelector("[data-automation-id='controls-sample-page-contentviewpage'] img[src*='/_mirage/assets/']");
                 const iconHost = image?.parentElement;
                 if (!iconHost) {
-                    return "__missing__";
+                    return ["__missing__", "__missing__"];
                 }
 
-                return getComputedStyle(iconHost).borderRadius;
+                const computed = getComputedStyle(iconHost);
+                return [computed.borderRadius ?? "", computed.clipPath ?? ""];
             }
             """);
 
-        Assert.NotEqual("0px", iconHostBorderRadius);
+        Assert.True(
+            !string.Equals(iconHostShapeStyles[0], "0px", StringComparison.Ordinal)
+            || !string.Equals(iconHostShapeStyles[1], "none", StringComparison.OrdinalIgnoreCase),
+            $"Expected avatar host to project clipping geometry via borderRadius or clipPath, but got borderRadius='{iconHostShapeStyles[0]}' clipPath='{iconHostShapeStyles[1]}'.");
 
         var overlapProbeTagName = await page.EvaluateAsync<string>(
             """
@@ -1079,6 +1084,530 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
+    public async Task BorderPage_IsRunnable_AndExercisesBorderGalleryScenarios()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 1600);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-borderpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
+            });
+
+        var navButtonIds = new[]
+        {
+            "controls-sample-borderpage-open-border-playground",
+            "controls-sample-borderpage-open-border-clipping-playground",
+            "controls-sample-borderpage-open-border-using-styles",
+            "controls-sample-borderpage-open-border-using-content-layout",
+            "controls-sample-borderpage-open-border-stroke-options",
+            "controls-sample-borderpage-open-border-without-stroke",
+            "controls-sample-borderpage-open-border-resize-content",
+            "controls-sample-borderpage-open-border-alignment"
+        };
+
+        foreach (var navButtonId in navButtonIds)
+        {
+            Assert.Equal(1, await page.Locator($"[data-automation-id='{navButtonId}']").CountAsync());
+        }
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-playground']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderplayground']");
+            });
+
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-borderplayground-border']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-borderplayground-content-picker']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-borderplayground-shape-picker']").CountAsync());
+
+        var defaultShapeSelection = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const picker = document.querySelector("[data-automation-id='controls-sample-borderplayground-shape-picker']");
+                if (!(picker instanceof HTMLSelectElement)) {
+                    return ["__missing__", "__missing__"];
+                }
+
+                const selectedText = picker.selectedOptions.length > 0
+                    ? (picker.selectedOptions[0].textContent ?? "").trim()
+                    : "";
+                return [picker.value ?? "", selectedText];
+            }
+            """);
+
+        Assert.Equal("1", defaultShapeSelection[0]);
+        Assert.Equal("RoundRectangle", defaultShapeSelection[1]);
+
+        var borderPlaygroundDefaultSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id='controls-sample-borderplayground-border']");
+                const label = host?.querySelector("[data-mirage-kind='Label']");
+                const path = host?.querySelector("[data-maui-border-part='stroke-path']");
+                if (!(host instanceof HTMLElement)) {
+                    return ["__missing__", "", "", "", "", "0", "0"];
+                }
+
+                const hostRect = host.getBoundingClientRect();
+                const pathRect = path?.getBoundingClientRect();
+                const widthRatio = pathRect && hostRect.width > 0 ? (pathRect.width / hostRect.width) : 0;
+                const heightRatio = pathRect && hostRect.height > 0 ? (pathRect.height / hostRect.height) : 0;
+
+                return [
+                    "ok",
+                    (label?.textContent ?? "").trim(),
+                    getComputedStyle(host).paddingLeft ?? "",
+                    path?.getAttribute("stroke-dasharray") ?? "",
+                    path?.getAttribute("stroke-dashoffset") ?? "",
+                    widthRatio.toString(),
+                    heightRatio.toString()
+                ];
+            }
+            """);
+
+        Assert.Equal("ok", borderPlaygroundDefaultSnapshot[0]);
+        Assert.Equal("Just a Label", borderPlaygroundDefaultSnapshot[1]);
+        var defaultPaddingLeft = double.Parse(borderPlaygroundDefaultSnapshot[2].Replace("px", string.Empty, StringComparison.Ordinal), CultureInfo.InvariantCulture);
+        Assert.True(defaultPaddingLeft >= 4.5d);
+        Assert.Equal("5 5", borderPlaygroundDefaultSnapshot[3]);
+        Assert.Equal("5", borderPlaygroundDefaultSnapshot[4]);
+        Assert.True(double.Parse(borderPlaygroundDefaultSnapshot[5], CultureInfo.InvariantCulture) >= 0.9d);
+        Assert.True(double.Parse(borderPlaygroundDefaultSnapshot[6], CultureInfo.InvariantCulture) >= 0.9d);
+
+        await SetSelectIndexAsync(page, "[data-automation-id='controls-sample-borderplayground-content-picker']", 1);
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderplayground-corner-top-left']", 60);
+        await page.WaitForTimeoutAsync(120);
+        var borderTopLeftCornerHitSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id='controls-sample-borderplayground-border']");
+                const image = host?.querySelector("img");
+                if (!(host instanceof HTMLElement) || !(image instanceof HTMLImageElement)) {
+                    return ["__missing__", "", "0"];
+                }
+
+                const rect = host.getBoundingClientRect();
+                const probeX = rect.left + 8;
+                const probeY = rect.top + 8;
+                const hit = document.elementFromPoint(probeX, probeY);
+                const hitIsImage = hit === image || (hit instanceof Node && image.contains(hit));
+                const hostStyle = getComputedStyle(host);
+                const imageStyle = getComputedStyle(image);
+                return [
+                    "ok",
+                    hit?.tagName ?? "",
+                    hitIsImage ? "1" : "0",
+                    hostStyle.clipPath ?? "",
+                    hostStyle.borderRadius ?? "",
+                    hostStyle.overflow ?? "",
+                    imageStyle.clipPath ?? "",
+                    imageStyle.borderRadius ?? "",
+                    imageStyle.overflow ?? ""
+                ];
+            }
+            """);
+        Assert.Equal("ok", borderTopLeftCornerHitSnapshot[0]);
+        Assert.True(
+            string.Equals(borderTopLeftCornerHitSnapshot[2], "0", StringComparison.Ordinal),
+            $"Expected clipped top-left corner probe to avoid image hit but got tag={borderTopLeftCornerHitSnapshot[1]} hitFlag={borderTopLeftCornerHitSnapshot[2]} " +
+            $"hostClipPath='{borderTopLeftCornerHitSnapshot[3]}' hostBorderRadius='{borderTopLeftCornerHitSnapshot[4]}' hostOverflow='{borderTopLeftCornerHitSnapshot[5]}' " +
+            $"imageClipPath='{borderTopLeftCornerHitSnapshot[6]}' imageBorderRadius='{borderTopLeftCornerHitSnapshot[7]}' imageOverflow='{borderTopLeftCornerHitSnapshot[8]}'.");
+
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderplayground-corner-top-left']", 20);
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderplayground-corner-bottom-left']", 18);
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderplayground-corner-bottom-right']", 4);
+        await page.WaitForTimeoutAsync(120);
+
+        var borderCornerSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id='controls-sample-borderplayground-border']");
+                if (!(host instanceof HTMLElement)) {
+                    return ["__missing__", ""];
+                }
+
+                return [
+                    "ok",
+                    host.style.borderRadius ?? ""
+                ];
+            }
+            """);
+        Assert.Equal("ok", borderCornerSnapshot[0]);
+        Assert.Equal("20px 0px 4px 18px", borderCornerSnapshot[1]);
+
+        await SetSelectIndexAsync(page, "[data-automation-id='controls-sample-borderplayground-content-picker']", 1);
+        await SetSelectIndexAsync(page, "[data-automation-id='controls-sample-borderplayground-linejoin-picker']", 2);
+        await SetSelectIndexAsync(page, "[data-automation-id='controls-sample-borderplayground-linecap-picker']", 1);
+        await SetInputTextAsync(page, "[data-automation-id='controls-sample-borderplayground-dash-entry']", "4, 2");
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderplayground-dash-offset-slider']", 1.5);
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderplayground-width-slider']", 7);
+        await SetSelectIndexAsync(page, "[data-automation-id='controls-sample-borderplayground-shape-picker']", 2);
+
+        var playgroundSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id='controls-sample-borderplayground-border']");
+                if (!(host instanceof HTMLElement)) {
+                    return ["__missing__", "", "", "", "", "", "", "", ""];
+                }
+
+                const image = host.querySelector("img");
+                const path = host.querySelector("[data-maui-border-part='stroke-path']");
+                const defs = host.querySelector("[data-maui-border-part='stroke-defs']");
+                return [
+                    "ok",
+                    image ? "1" : "0",
+                    getComputedStyle(host).clipPath ?? "",
+                    path?.getAttribute("stroke") ?? "",
+                    path?.getAttribute("stroke-dasharray") ?? "",
+                    path?.getAttribute("stroke-dashoffset") ?? "",
+                    path?.getAttribute("stroke-linejoin") ?? "",
+                    path?.getAttribute("stroke-linecap") ?? "",
+                    defs?.innerHTML ?? ""
+                ];
+            }
+            """);
+
+        Assert.Equal("ok", playgroundSnapshot[0]);
+        Assert.Equal("1", playgroundSnapshot[1]);
+        Assert.Contains("ellipse(", playgroundSnapshot[2], StringComparison.OrdinalIgnoreCase);
+        Assert.StartsWith("url(#", playgroundSnapshot[3], StringComparison.Ordinal);
+        Assert.Equal("28 14", playgroundSnapshot[4]);
+        Assert.Equal("10.5", playgroundSnapshot[5]);
+        Assert.Equal("bevel", playgroundSnapshot[6]);
+        Assert.Equal("round", playgroundSnapshot[7]);
+        Assert.Contains("<lineargradient", playgroundSnapshot[8], StringComparison.OrdinalIgnoreCase);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
+            });
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-clipping-playground']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderclipplayground']");
+            });
+
+        await SetSelectIndexAsync(page, "[data-automation-id='controls-sample-borderclipplayground-shape-picker']", 2);
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderclipplayground-width-slider']", 12);
+        await page.WaitForTimeoutAsync(120);
+        var clipSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id='controls-sample-borderclipplayground-border']");
+                if (!(host instanceof HTMLElement)) {
+                    return ["__missing__", "", "", ""];
+                }
+
+                const widthLabel = Array
+                    .from(document.querySelectorAll("[data-automation-id='controls-sample-page-borderclipplayground'] [data-mirage-kind='Label']"))
+                    .map(label => (label.textContent ?? "").trim())
+                    .find(text => text.includes("Border Width:")) ?? "";
+
+                return [
+                    "ok",
+                    getComputedStyle(host).clipPath ?? "",
+                    widthLabel,
+                    getComputedStyle(host).overflow ?? ""
+                ];
+            }
+            """);
+        Assert.Equal("ok", clipSnapshot[0]);
+        Assert.Contains("ellipse(", clipSnapshot[1], StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("12", clipSnapshot[2], StringComparison.Ordinal);
+        Assert.Equal("hidden", clipSnapshot[3]);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
+            });
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-using-styles']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderstyles']");
+            });
+
+        var borderStylesInfoBefore = await page.Locator("[data-automation-id='controls-sample-borderstyles-update-info']").InnerTextAsync();
+        await page.Locator("[data-automation-id='controls-sample-borderstyles-increase-corner']").ClickAsync();
+        await page.WaitForTimeoutAsync(100);
+        var borderStylesInfoAfter = await page.Locator("[data-automation-id='controls-sample-borderstyles-update-info']").InnerTextAsync();
+        Assert.NotEqual(borderStylesInfoBefore, borderStylesInfoAfter);
+        Assert.Contains("RoundRectangle", borderStylesInfoAfter, StringComparison.Ordinal);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
+            });
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-using-content-layout']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderlayout']");
+            });
+
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderlayout-width-slider']", 18);
+        await page.WaitForTimeoutAsync(120);
+        var strokeWidths = await page.EvaluateAsync<double[]>(
+            """
+            () => {
+                const paths = Array
+                    .from(document.querySelectorAll("[data-automation-id='controls-sample-page-borderlayout'] [data-maui-border-part='stroke-path']"));
+                return paths
+                    .map(path => parseFloat(path.getAttribute("stroke-width") ?? "NaN"))
+                    .filter(width => Number.isFinite(width));
+            }
+            """);
+        Assert.Contains(strokeWidths, width => width >= 17.5d && width <= 18.5d);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
+            });
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-stroke-options']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderstroke']");
+            });
+
+        var strokeThicknessVariants = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const paths = Array.from(document.querySelectorAll("[data-automation-id='controls-sample-page-borderstroke'] [data-maui-border-part='stroke-path']"));
+                return paths.slice(0, 3).map(path => path.getAttribute("stroke-width") ?? "");
+            }
+            """);
+        Assert.Contains("1", strokeThicknessVariants);
+        Assert.Contains("5", strokeThicknessVariants);
+        Assert.Contains("10", strokeThicknessVariants);
+
+        var strokeResizeBefore = await page.EvaluateAsync<double>(
+            "(selector) => document.querySelector(selector)?.getBoundingClientRect().height ?? 0",
+            "[data-automation-id='controls-sample-borderstroke-rectangle-3']");
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderstroke-height-slider']", 100);
+        await page.WaitForTimeoutAsync(100);
+        var strokeResizeAfter = await page.EvaluateAsync<double>(
+            "(selector) => document.querySelector(selector)?.getBoundingClientRect().height ?? 0",
+            "[data-automation-id='controls-sample-borderstroke-rectangle-3']");
+        Assert.True(strokeResizeAfter > strokeResizeBefore);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
+            });
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-without-stroke']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderless']");
+            });
+
+        var borderlessSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const borders = Array.from(document.querySelectorAll("[data-automation-id='controls-sample-page-borderless'] [data-mirage-kind='Border']"));
+                if (borders.length < 2) {
+                    return ["0", "", ""];
+                }
+
+                const topBackground = getComputedStyle(borders[0]).backgroundColor ?? "";
+                const bottomBackground = getComputedStyle(borders[1]).backgroundColor ?? "";
+                const hasVisibleStroke = borders.some(border => {
+                    const path = border.querySelector("[data-maui-border-part='stroke-path']");
+                    const stroke = path?.getAttribute("stroke");
+                    const width = path?.getAttribute("stroke-width");
+                    return !!stroke && stroke !== "none" && width && width !== "0";
+                });
+
+                return [borders.length.toString(), topBackground, bottomBackground, hasVisibleStroke ? "1" : "0"];
+            }
+            """);
+        Assert.Equal("2", borderlessSnapshot[0]);
+        Assert.NotEqual("rgba(0, 0, 0, 0)", borderlessSnapshot[1]);
+        Assert.NotEqual("rgba(0, 0, 0, 0)", borderlessSnapshot[2]);
+        Assert.Equal("0", borderlessSnapshot[3]);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
+            });
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-resize-content']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderresizecontent']");
+            });
+
+        await SetInputTextAsync(page, "[data-automation-id='controls-sample-borderresizecontent-text-entry']", "*");
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderresizecontent-font-slider']", 120);
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-borderresizecontent-image-scale-slider']", 3);
+        await page.WaitForTimeoutAsync(120);
+
+        var resizeSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const circleImageBorder = document.querySelector("[data-automation-id='controls-sample-borderresizecontent-circle-image']");
+                const triangleImageBorder = document.querySelector("[data-automation-id='controls-sample-borderresizecontent-triangle-image']");
+                const hasUpdatedLabel = Array
+                    .from(document.querySelectorAll("[data-automation-id='controls-sample-page-borderresizecontent'] [data-mirage-kind='Label']"))
+                    .some(label => (label.textContent ?? "").includes("*"));
+                const circleImage = circleImageBorder?.querySelector("img");
+
+                return [
+                    circleImage ? "1" : "0",
+                    triangleImageBorder ? "1" : "0",
+                    getComputedStyle(triangleImageBorder ?? document.body).clipPath ?? "",
+                    hasUpdatedLabel ? "1" : "0",
+                    circleImage ? circleImage.style.transform ?? "" : ""
+                ];
+            }
+            """);
+        Assert.Equal("1", resizeSnapshot[0]);
+        Assert.Equal("1", resizeSnapshot[1]);
+        Assert.Contains("polygon(", resizeSnapshot[2], StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("1", resizeSnapshot[3]);
+        Assert.Contains("scale(", resizeSnapshot[4], StringComparison.Ordinal);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
+            });
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-borderpage-open-border-alignment']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderalignment']");
+            });
+
+        var alignmentSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id='controls-sample-page-borderalignment']");
+                const start = document.querySelector("[data-automation-id='controls-sample-borderalignment-border-1']");
+                const center = document.querySelector("[data-automation-id='controls-sample-borderalignment-border-2']");
+                const end = document.querySelector("[data-automation-id='controls-sample-borderalignment-border-3']");
+                const fill = document.querySelector("[data-automation-id='controls-sample-borderalignment-border-4']");
+                const startStrokePath = start?.querySelector("[data-maui-border-part='stroke-path']");
+                const fillStrokePath = fill?.querySelector("[data-maui-border-part='stroke-path']");
+                const startStrokeOverlay = start?.querySelector("[data-maui-border-part='stroke-overlay']");
+                const fillStrokeOverlay = fill?.querySelector("[data-maui-border-part='stroke-overlay']");
+                if (!(host instanceof HTMLElement) || !(start instanceof HTMLElement) || !(center instanceof HTMLElement) || !(end instanceof HTMLElement) || !(fill instanceof HTMLElement)) {
+                    return ["__missing__", "0", "0", "0", "0", "0", "0", "", "", "0", "0", "", "", "", ""];
+                }
+
+                const hostRect = host.getBoundingClientRect();
+                const startRect = start.getBoundingClientRect();
+                const centerRect = center.getBoundingClientRect();
+                const endRect = end.getBoundingClientRect();
+                const fillRect = fill.getBoundingClientRect();
+                const startStrokeRect = startStrokePath?.getBoundingClientRect();
+                const fillStrokeRect = fillStrokePath?.getBoundingClientRect();
+
+                const hostCenter = hostRect.left + (hostRect.width / 2);
+                const centerCenter = centerRect.left + (centerRect.width / 2);
+                const centerDelta = Math.abs(centerCenter - hostCenter);
+                const endRightGap = Math.abs(hostRect.right - endRect.right);
+                const startStrokeWidthRatio = startStrokeRect && startRect.width > 0 ? (startStrokeRect.width / startRect.width) : 0;
+                const fillStrokeWidthRatio = fillStrokeRect && fillRect.width > 0 ? (fillStrokeRect.width / fillRect.width) : 0;
+
+                return [
+                    "ok",
+                    startRect.left.toString(),
+                    centerDelta.toString(),
+                    endRightGap.toString(),
+                    fillRect.width.toString(),
+                    startRect.width.toString(),
+                    endRect.width.toString(),
+                    startStrokePath?.namespaceURI ?? "",
+                    startStrokePath?.getAttribute("stroke") ?? "",
+                    startStrokeWidthRatio.toString(),
+                    fillStrokeWidthRatio.toString(),
+                    startStrokeOverlay?.getAttribute("viewBox") ?? "",
+                    fillStrokeOverlay?.getAttribute("viewBox") ?? "",
+                    startRect.width.toString(),
+                    startStrokeRect?.width?.toString() ?? "0"
+                ];
+            }
+            """);
+
+        Assert.Equal("ok", alignmentSnapshot[0]);
+        Assert.True(double.Parse(alignmentSnapshot[2], CultureInfo.InvariantCulture) <= 24d);
+        Assert.True(double.Parse(alignmentSnapshot[3], CultureInfo.InvariantCulture) <= 24d);
+        Assert.True(
+            double.Parse(alignmentSnapshot[4], CultureInfo.InvariantCulture)
+            > double.Parse(alignmentSnapshot[5], CultureInfo.InvariantCulture));
+        Assert.Equal("http://www.w3.org/2000/svg", alignmentSnapshot[7]);
+        Assert.Contains("255,0,0", alignmentSnapshot[8].Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+        var startStrokeWidthRatio = double.Parse(alignmentSnapshot[9], CultureInfo.InvariantCulture);
+        var fillStrokeWidthRatio = double.Parse(alignmentSnapshot[10], CultureInfo.InvariantCulture);
+        Assert.True(
+            startStrokeWidthRatio >= 0.45d,
+            $"Expected start stroke ratio >= 0.45 but got {startStrokeWidthRatio:0.###}. startViewBox={alignmentSnapshot[11]} startHostWidth={alignmentSnapshot[13]} startStrokeWidth={alignmentSnapshot[14]}");
+        Assert.True(
+            fillStrokeWidthRatio >= 0.9d,
+            $"Expected fill stroke ratio >= 0.9 but got {fillStrokeWidthRatio:0.###}. fillViewBox={alignmentSnapshot[12]}");
+    }
+
+    [Fact]
     public async Task ClippingPage_GridFrame_RendersAtExpectedSize_AndIsHorizontallyCentered()
     {
         await using var context = await _fixture.NewContextAsync();
@@ -1213,6 +1742,71 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 $"{ex.Message}\nBody text snapshot: {bodyText}\nHost logs:\n{hostLogs}\nPage diagnostics:\n{diagnosticsSnapshot}",
                 ex);
         }
+    }
+
+    private static async Task SetSelectIndexAsync(IPage page, string selector, int selectedIndex)
+    {
+        var result = await page.EvaluateAsync<string>(
+            """
+            (payload) => {
+                const control = document.querySelector(payload.selector);
+                if (!(control instanceof HTMLSelectElement)) {
+                    return "__missing__";
+                }
+
+                const targetIndex = Math.max(0, Math.min(payload.selectedIndex, control.options.length - 1));
+                const targetValue = control.options[targetIndex]?.value ?? "";
+                control.value = targetValue;
+                control.selectedIndex = targetIndex;
+                control.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+                control.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+                return control.value;
+            }
+            """,
+            new
+            {
+                selector,
+                selectedIndex
+            });
+
+        Assert.NotEqual("__missing__", result);
+    }
+
+    private static async Task SetInputTextAsync(IPage page, string selector, string value)
+    {
+        var result = await page.EvaluateAsync<string>(
+            """
+            (payload) => {
+                const control = document.querySelector(payload.selector);
+                if (!(control instanceof Element)) {
+                    return "__missing__";
+                }
+
+                if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) {
+                    control.value = payload.value;
+                    control.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+                    control.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+                    return control.value;
+                }
+
+                if (!("value" in control)) {
+                    return "__unsupported__";
+                }
+
+                control.value = payload.value;
+                control.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+                control.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+                return String(control.value ?? "");
+            }
+            """,
+            new
+            {
+                selector,
+                value
+            });
+
+        Assert.NotEqual("__missing__", result);
+        Assert.NotEqual("__unsupported__", result);
     }
 
     private static async Task SetInputValueAsync(IPage page, string selector, double value)
