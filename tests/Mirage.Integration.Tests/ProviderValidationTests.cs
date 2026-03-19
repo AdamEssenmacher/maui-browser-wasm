@@ -112,6 +112,22 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentPickerDescriptor_MapsSelectProjectionChannels()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.Picker);
+
+        Assert.Equal("select", descriptor.ElementTagName);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Title"].Target);
+        Assert.Equal("aria-label", descriptor.PropertyMappings["Title"].Name);
+        Assert.Equal(PropertyTarget.InputValue, descriptor.PropertyMappings["SelectedValue"].Target);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Disabled"].Target);
+        Assert.Equal("disabled", descriptor.PropertyMappings["Disabled"].Name);
+        Assert.True(descriptor.EventMappings.ContainsKey("change"));
+        Assert.Equal(EventPayloadKind.InputValue, descriptor.EventMappings["change"].PayloadKind);
+    }
+
+    [Fact]
     public void FluentStepperDescriptor_MapsSplitButtonProjectionChannels()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();

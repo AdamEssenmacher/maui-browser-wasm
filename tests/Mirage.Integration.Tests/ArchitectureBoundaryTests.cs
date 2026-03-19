@@ -38,7 +38,7 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
-    public void BuiltInHandlers_DoNotUseWebNodeFactory()
+    public void BuiltInHandlers_DoNotUseWebNodeFactory_ExceptBorderStrokeRenderer()
     {
         var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");
         Assert.True(Directory.Exists(handlersPath), $"Handlers path was not found: {handlersPath}");
@@ -48,7 +48,6 @@ public sealed class ArchitectureBoundaryTests
             "MirageButtonHandler.cs",
             "MirageEntryHandler.cs",
             "MirageImageHandler.cs",
-            "MirageBorderHandler.cs",
             "MirageMapHandler.cs",
             "MirageLabelHandler.cs",
             "MirageBoxViewHandler.cs",
@@ -66,6 +65,11 @@ public sealed class ArchitectureBoundaryTests
             var text = File.ReadAllText(fullPath);
             Assert.DoesNotContain("CreateWeb(", text, StringComparison.Ordinal);
         }
+
+        var borderHandlerPath = Path.Combine(handlersPath, "MirageBorderHandler.cs");
+        Assert.True(File.Exists(borderHandlerPath), $"Expected handler file not found: {borderHandlerPath}");
+        var borderText = File.ReadAllText(borderHandlerPath);
+        Assert.Contains("CreateWeb(", borderText, StringComparison.Ordinal);
     }
 
     [Fact]
