@@ -11,6 +11,9 @@ internal sealed class MirageTabbedPageHandler : MirageViewHandler<TabbedPage>
 {
     private readonly Dictionary<Page, IElementHandler> _pageHandlers = [];
     private Page? _currentPage;
+    private bool _hasArrangedFrame;
+    private double _lastArrangedWidth;
+    private double _lastArrangedHeight;
 
     public static IPropertyMapper<TabbedPage, MirageTabbedPageHandler> Mapper =
         new PropertyMapper<TabbedPage, MirageTabbedPageHandler>(MirageViewMapper.CommonViewMapper)
@@ -68,18 +71,10 @@ internal sealed class MirageTabbedPageHandler : MirageViewHandler<TabbedPage>
     {
         base.PlatformArrange(frame);
 
-        var width = Math.Max(0, frame.Width);
-        var height = Math.Max(0, frame.Height);
-        if (ResolveCurrentPage() is not IView currentPage)
-        {
-            return;
-        }
-
-        currentPage.Arrange(new Rect(0, 0, width, height));
-        if (TryGetCurrentPagePlatformView(out var currentPageView))
-        {
-            NormalizeHostedContentFlowStyles(currentPageView);
-        }
+        _hasArrangedFrame = true;
+        _lastArrangedWidth = Math.Max(0, frame.Width);
+        _lastArrangedHeight = Math.Max(0, frame.Height);
+        ArrangeCurrentPage();
     }
 
     public static void MapCurrentPage(MirageTabbedPageHandler handler, TabbedPage tabbedPage)
@@ -153,6 +148,12 @@ internal sealed class MirageTabbedPageHandler : MirageViewHandler<TabbedPage>
 
         NormalizeHostedContentFlowStyles(pagePlatformView);
         platformView.AddChild(pagePlatformView);
+
+        if (_hasArrangedFrame)
+        {
+            ArrangeCurrentPage();
+        }
+
         RequestRender();
     }
 
@@ -190,6 +191,22 @@ internal sealed class MirageTabbedPageHandler : MirageViewHandler<TabbedPage>
 
         platformView = null!;
         return false;
+    }
+
+    private void ArrangeCurrentPage()
+    {
+        if (_currentPage is not IView currentView)
+        {
+            return;
+        }
+
+        currentView.Measure(_lastArrangedWidth, _lastArrangedHeight);
+        currentView.Arrange(new Rect(0, 0, _lastArrangedWidth, _lastArrangedHeight));
+
+        if (TryGetCurrentPagePlatformView(out var currentPageView))
+        {
+            NormalizeHostedContentFlowStyles(currentPageView);
+        }
     }
 
     private static void NormalizeHostedContentFlowStyles(MiragePlatformView contentPlatformView)
