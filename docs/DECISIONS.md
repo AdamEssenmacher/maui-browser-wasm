@@ -637,3 +637,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Promoted upstream `ActivityIndicatorPage` to a runnable ControlsSample entry and linked its XAML/code-behind into `ControlsSample.Shared`.
 - Added first-class Mirage browser support for `ActivityIndicator` (`ComponentKind.ActivityIndicator` + `MirageActivityIndicatorHandler`) with deterministic projection channels for running state, busy state, and spinner color.
 - Fluent provider now maps `ActivityIndicator` as a Mirage-owned control node and Mirage runtime CSS realizes it as a circular spinner with explicit running/stopped states, keeping behavior framework-owned (no sample-specific host hacks).
+
+## 2026-03-19 (ControlsSample ImagePage + Resolver-First Browser-Native Image Pipeline)
+- Promoted upstream `ImagePage` to a runnable ControlsSample entry, linked vendor XAML/code-behind, and added deterministic automation IDs for URI/file/font/stream/GIF scenarios plus animation controls.
+- Refactored Mirage image resolution to a structured resolver-first model (`IMirageImageSourceResolver.Resolve(ImageSource)` / `ResolveAsync`) so URI/file/font/stream decisions all flow through one authoritative path before handlers project browser URLs.
+- `MirageImageHandler` now follows an event-driven lifecycle (`load` / `error`) with explicit state transitions (`empty`, `loading`, `loaded`, `error`, `unresolved`), and no handler-side manifest retry/path guessing.
+- Stream image support now uses managed blob URLs with explicit ownership and cleanup (`createObjectURL` on resolve, revoke on source replacement/disconnect) through `IMirageObjectUrlFactory`.
+- GIF `IsAnimationPlaying` behavior is best-effort restart-on-resume: toggling off clears active GIF `src`, toggling on reapplies the resolved URL.
+- Browser loading remains native by design: Mirage projects real `<img>` nodes with `alt=""`, `decoding="async"`, and `loading="eager"` defaults while the browser owns network/decode/cache/render behavior.

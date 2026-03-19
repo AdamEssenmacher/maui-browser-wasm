@@ -1611,6 +1611,65 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void ImageHandler_OnRuntimeLoadAndError_TransitionsSourceStateDeterministically()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "coffee.png"
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+
+        handler.OnRuntimeEvent("load", payload: null);
+        Assert.Equal("loaded", handler.PlatformView.GetPropertyString("SourceState"));
+
+        handler.OnRuntimeEvent("error", payload: null);
+        Assert.Equal("error", handler.PlatformView.GetPropertyString("SourceState"));
+    }
+
+    [Fact]
+    public void ImageHandler_GifIsAnimationPlaying_TogglesSourceWithRestartOnResume()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "animated_heart.gif",
+            IsAnimationPlaying = true
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+        Assert.Equal("/_mirage/assets/test/animated_heart.gif", handler.PlatformView.GetPropertyString("Source"));
+
+        image.IsAnimationPlaying = false;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.IsAnimationPlaying));
+
+        Assert.Null(handler.PlatformView.GetPropertyString("Source"));
+        Assert.Equal("loaded", handler.PlatformView.GetPropertyString("SourceState"));
+
+        image.IsAnimationPlaying = true;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.IsAnimationPlaying));
+
+        Assert.Equal("/_mirage/assets/test/animated_heart.gif", handler.PlatformView.GetPropertyString("Source"));
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+    }
+
+    [Fact]
     public void ImageHandler_RespectsRequestedDimensions_AndClearsWhenUnset()
     {
         var services = new ServiceCollection()
@@ -1733,7 +1792,7 @@ public sealed class HandlerRuntimeIntegrationTests
 
         Assert.Null(handler.PlatformView.GetPropertyString("Source"));
         Assert.Equal("unsupported", handler.PlatformView.GetPropertyString("SourceKind"));
-        Assert.Equal("unsupported", handler.PlatformView.GetPropertyString("SourceState"));
+        Assert.Equal("unresolved", handler.PlatformView.GetPropertyString("SourceState"));
     }
 
     [Fact]
@@ -3678,6 +3737,8 @@ public sealed class HandlerRuntimeIntegrationTests
 
     private sealed class StubImageSourceResolver : IMirageImageSourceResolver
     {
+        public List<string> ReleasedUrls { get; } = [];
+
         public ValueTask EnsureInitializedAsync()
         {
             return ValueTask.CompletedTask;
@@ -3695,12 +3756,65 @@ public sealed class HandlerRuntimeIntegrationTests
                 return MirageImageSourceResolveResult.Resolved("/_mirage/assets/test/thumb_image.png");
             }
 
+            if (string.Equals(source, "animated_heart.gif", StringComparison.Ordinal))
+            {
+                return MirageImageSourceResolveResult.Resolved("/_mirage/assets/test/animated_heart.gif");
+            }
+
             if (string.IsNullOrWhiteSpace(source))
             {
                 return MirageImageSourceResolveResult.Unresolved("Empty source.");
             }
 
             return MirageImageSourceResolveResult.Resolved(source);
+        }
+
+        public MirageImageSourceProjectionResult Resolve(ImageSource? source)
+        {
+            return source switch
+            {
+                null => MirageImageSourceProjectionResult.Empty(),
+                FileImageSource file => ResolveFile(file),
+                UriImageSource uri when uri.Uri is not null => MirageImageSourceProjectionResult.Resolved(uri.Uri.ToString(), "uri", isGifSource: uri.Uri.ToString().EndsWith(".gif", StringComparison.OrdinalIgnoreCase)),
+                FontImageSource => MirageImageSourceProjectionResult.Resolved("data:image/svg+xml;base64,AAA=", "font"),
+                _ => MirageImageSourceProjectionResult.Unresolved("unsupported", "Unsupported source in test resolver.")
+            };
+        }
+
+        public ValueTask<MirageImageSourceProjectionResult> ResolveAsync(ImageSource? source, CancellationToken cancellationToken = default)
+        {
+            if (source is StreamImageSource)
+            {
+                return new ValueTask<MirageImageSourceProjectionResult>(
+                    MirageImageSourceProjectionResult.Resolved(
+                        "blob:test-image",
+                        "stream",
+                        isManagedObjectUrl: true));
+            }
+
+            return new ValueTask<MirageImageSourceProjectionResult>(Resolve(source));
+        }
+
+        public void Release(string? browserUrl)
+        {
+            if (!string.IsNullOrWhiteSpace(browserUrl))
+            {
+                ReleasedUrls.Add(browserUrl);
+            }
+        }
+
+        private MirageImageSourceProjectionResult ResolveFile(FileImageSource fileImageSource)
+        {
+            var resolved = Resolve(fileImageSource.File);
+            if (!resolved.IsResolved || string.IsNullOrWhiteSpace(resolved.BrowserUrl))
+            {
+                return MirageImageSourceProjectionResult.Unresolved("file", resolved.FailureReason ?? "Unresolved.");
+            }
+
+            return MirageImageSourceProjectionResult.Resolved(
+                resolved.BrowserUrl,
+                "file",
+                isGifSource: (fileImageSource.File ?? string.Empty).EndsWith(".gif", StringComparison.OrdinalIgnoreCase));
         }
     }
 
@@ -3714,6 +3828,32 @@ public sealed class HandlerRuntimeIntegrationTests
         public MirageImageSourceResolveResult Resolve(string? source)
         {
             return MirageImageSourceResolveResult.Unresolved($"Could not resolve '{source}'.");
+        }
+
+        public MirageImageSourceProjectionResult Resolve(ImageSource? source)
+        {
+            var kind = source switch
+            {
+                null => "none",
+                FileImageSource => "file",
+                UriImageSource => "uri",
+                FontImageSource => "font",
+                StreamImageSource => "stream",
+                _ => "unsupported"
+            };
+            return source is null
+                ? MirageImageSourceProjectionResult.Empty()
+                : MirageImageSourceProjectionResult.Unresolved(kind, $"Could not resolve '{source.GetType().Name}'.");
+        }
+
+        public ValueTask<MirageImageSourceProjectionResult> ResolveAsync(ImageSource? source, CancellationToken cancellationToken = default)
+        {
+            return new ValueTask<MirageImageSourceProjectionResult>(Resolve(source));
+        }
+
+        public void Release(string? browserUrl)
+        {
+            _ = browserUrl;
         }
     }
 }

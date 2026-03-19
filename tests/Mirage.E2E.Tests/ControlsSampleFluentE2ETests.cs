@@ -36,6 +36,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-buttonpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-activityindicatorpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-imagepage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stepperpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-transformationspage']").CountAsync());
@@ -1349,6 +1350,87 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal("hidden", snapshot[19]);
 
         Assert.Contains("255,255,0", snapshot[20].Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ImagePage_IsRunnable_AndExercisesResolverBackedSourcesStreamAndGifPlayback()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1200, height: 1400);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-imagepage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-imagepage']");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-imagepage-uri']");
+            });
+
+        const string uriSelector = "[data-automation-id='controls-sample-imagepage-uri']";
+        const string fileSelector = "[data-automation-id='controls-sample-imagepage-file']";
+        const string fontSelector = "[data-automation-id='controls-sample-imagepage-font']";
+        const string streamSelector = "[data-automation-id='controls-sample-imagepage-stream']";
+        const string switchBoundGifSelector = "[data-automation-id='controls-sample-imagepage-gif-switch-bound']";
+        const string animatedGifSelector = "[data-automation-id='controls-sample-imagepage-animated-gif']";
+
+        var uriSource = await page.Locator(uriSelector).GetAttributeAsync("src");
+        Assert.StartsWith("https://", uriSource, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("async", await page.Locator(uriSelector).GetAttributeAsync("decoding"));
+        Assert.Equal("eager", await page.Locator(uriSelector).GetAttributeAsync("loading"));
+
+        var fileSource = await page.Locator(fileSelector).GetAttributeAsync("src");
+        Assert.StartsWith("/_mirage/assets/", fileSource, StringComparison.Ordinal);
+
+        var fontSource = await page.Locator(fontSelector).GetAttributeAsync("src");
+        Assert.StartsWith("data:image/svg+xml;base64,", fontSource, StringComparison.Ordinal);
+
+        await page.WaitForFunctionAsync(
+            "(selector) => { const element = document.querySelector(selector); const src = element?.getAttribute('src') ?? ''; return src.startsWith('blob:'); }",
+            streamSelector);
+        var streamSource = await page.Locator(streamSelector).GetAttributeAsync("src");
+        Assert.StartsWith("blob:", streamSource, StringComparison.Ordinal);
+
+        var initialSwitchGifSource = await page.Locator(switchBoundGifSelector).GetAttributeAsync("src");
+        Assert.False(string.IsNullOrWhiteSpace(initialSwitchGifSource));
+
+        await page.Locator("[data-automation-id='controls-sample-imagepage-animation-switch']").ClickAsync();
+        await page.WaitForFunctionAsync(
+            "(selector) => { const element = document.querySelector(selector); return !element || !element.hasAttribute('src'); }",
+            switchBoundGifSelector);
+        Assert.Null(await page.Locator(switchBoundGifSelector).GetAttributeAsync("src"));
+
+        await page.Locator("[data-automation-id='controls-sample-imagepage-animation-switch']").ClickAsync();
+        await page.WaitForFunctionAsync(
+            "(selector) => { const element = document.querySelector(selector); const src = element?.getAttribute('src') ?? ''; return src.length > 0; }",
+            switchBoundGifSelector);
+        Assert.Equal(initialSwitchGifSource, await page.Locator(switchBoundGifSelector).GetAttributeAsync("src"));
+
+        await page.Locator("[data-automation-id='controls-sample-imagepage-start-stop']").ClickAsync();
+        await page.WaitForFunctionAsync(
+            "(selector) => { const element = document.querySelector(selector); return !element || !element.hasAttribute('src'); }",
+            animatedGifSelector);
+        Assert.Null(await page.Locator(animatedGifSelector).GetAttributeAsync("src"));
+        Assert.Equal("loaded", await page.Locator(animatedGifSelector).GetAttributeAsync("data-maui-image-state"));
+
+        await page.Locator("[data-automation-id='controls-sample-imagepage-start-stop']").ClickAsync();
+        await page.WaitForFunctionAsync(
+            "(selector) => { const element = document.querySelector(selector); const src = element?.getAttribute('src') ?? ''; return src.length > 0; }",
+            animatedGifSelector);
+
+        await page.Locator("[data-automation-id='controls-sample-imagepage-use-online-source']").ClickAsync();
+        await page.WaitForFunctionAsync(
+            "(selector) => (document.querySelector(selector)?.getAttribute('src') ?? '').includes('raw.githubusercontent.com')",
+            animatedGifSelector);
+
+        await page.EvaluateAsync(
+            "(selector) => { const element = document.querySelector(selector); if (element) { element.dispatchEvent(new Event('error')); } }",
+            animatedGifSelector);
+        await page.WaitForFunctionAsync(
+            "(selector) => (document.querySelector(selector)?.getAttribute('data-maui-image-state') ?? '') === 'error'",
+            animatedGifSelector);
+        Assert.Equal("error", await page.Locator(animatedGifSelector).GetAttributeAsync("data-maui-image-state"));
     }
 
     [Fact]

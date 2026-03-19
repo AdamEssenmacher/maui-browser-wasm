@@ -194,6 +194,22 @@ public sealed class DomElement
         }
     }
 
+    public static string? CreateObjectUrlFromBase64(string base64, string? contentType)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(base64);
+        return DomApi.CreateObjectUrlFromBase64(base64, contentType);
+    }
+
+    public static void RevokeObjectUrl(string objectUrl)
+    {
+        if (string.IsNullOrWhiteSpace(objectUrl))
+        {
+            return;
+        }
+
+        DomApi.RevokeObjectUrl(objectUrl);
+    }
+
     public static void InstallHotReloadHintBridge() => DomApi.InstallHotReloadHintBridge();
 
     public static string DrainHotReloadHintsJson() => DomApi.DrainHotReloadHintsJson();

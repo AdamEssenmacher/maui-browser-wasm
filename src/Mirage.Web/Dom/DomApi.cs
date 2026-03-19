@@ -154,6 +154,12 @@ internal static partial class DomApi
     [JSImport("fetchTextWithStatusJson", Module)]
     internal static partial Task<string?> FetchTextWithStatusJsonAsync(string path);
 
+    [JSImport("createObjectUrlFromBase64", Module)]
+    internal static partial string? CreateObjectUrlFromBase64(string base64, string? contentType);
+
+    [JSImport("revokeObjectUrl", Module)]
+    internal static partial void RevokeObjectUrl(string objectUrl);
+
     [JSImport("installHotReloadHintBridge", Module)]
     internal static partial void InstallHotReloadHintBridge();
 

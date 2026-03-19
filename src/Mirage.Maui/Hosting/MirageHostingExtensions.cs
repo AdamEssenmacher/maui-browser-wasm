@@ -66,6 +66,7 @@ public static class MirageHostingExtensions
         builder.Services.TryAddSingleton<IMiragePageNavigator>(sp => sp.GetRequiredService<BrowserPageNavigator>());
         builder.Services.TryAddSingleton<IMirageBrowserHistory, BrowserHistoryService>();
         builder.Services.TryAddSingleton<IMirageImageManifestProvider, DomMirageImageManifestProvider>();
+        builder.Services.TryAddSingleton<IMirageObjectUrlFactory, DomMirageObjectUrlFactory>();
         builder.Services.TryAddSingleton<IMirageImageSourceResolver, MirageManifestImageSourceResolver>();
         EnsureNavigationServices(builder.Services);
 

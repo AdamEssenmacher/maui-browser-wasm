@@ -497,6 +497,59 @@ export async function fetchTextWithStatusJson(path) {
   return JSON.stringify(result);
 }
 
+function decodeBase64ToUint8Array(base64) {
+  if (typeof base64 !== "string" || base64.length === 0) {
+    return null;
+  }
+
+  try {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+
+export function createObjectUrlFromBase64(base64, contentType) {
+  if (typeof Blob === "undefined" || typeof URL === "undefined" || typeof URL.createObjectURL !== "function") {
+    return null;
+  }
+
+  const bytes = decodeBase64ToUint8Array(base64);
+  if (!bytes || bytes.length === 0) {
+    return null;
+  }
+
+  const normalizedContentType = typeof contentType === "string" && contentType.trim().length > 0
+    ? contentType.trim()
+    : "application/octet-stream";
+
+  const blob = new Blob([bytes], { type: normalizedContentType });
+  return URL.createObjectURL(blob);
+}
+
+export function revokeObjectUrl(objectUrl) {
+  if (
+    typeof objectUrl !== "string"
+    || objectUrl.length === 0
+    || typeof URL === "undefined"
+    || typeof URL.revokeObjectURL !== "function"
+  ) {
+    return;
+  }
+
+  try {
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    // best effort cleanup
+  }
+}
+
 function toHandle(element) {
   const existing = handleByElement.get(element);
   if (existing !== undefined) {

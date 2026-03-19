@@ -145,6 +145,14 @@ public static class ControlsSampleCatalog
             description: "Runnable in Mirage today: exercises CheckBox checked state, accent color aliases, and disabled variants.",
             pageFactory: CreateCheckBoxPage),
         new(
+            id: "imagepage",
+            title: "ImagePage",
+            upstreamPath: "Pages/Controls/ImagePage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(ImagePage),
+            description: "Runnable in Mirage today: exercises URI/file/font/stream image sources plus GIF playback toggles and opacity scenarios.",
+            pageFactory: CreateImagePage),
+        new(
             id: "sliderpage",
             title: "SliderPage",
             upstreamPath: "Pages/Controls/SliderPage.xaml",
@@ -384,6 +392,53 @@ public static class ControlsSampleCatalog
         if (disabledSlider is not null && string.IsNullOrWhiteSpace(disabledSlider.AutomationId))
         {
             disabledSlider.AutomationId = "controls-sample-sliderpage-disabled-slider";
+        }
+
+        return page;
+    }
+
+    private static Page CreateImagePage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new ImagePage();
+
+        SetNamedElementAutomationId(page, "IsAnimationPlayingSwitch", "controls-sample-imagepage-animation-switch");
+        SetNamedElementAutomationId(page, "StreamSourceImage", "controls-sample-imagepage-stream");
+        SetNamedElementAutomationId(page, "AnimatedGifImage", "controls-sample-imagepage-animated-gif");
+
+        var images = FindDescendants<Image>(page).ToArray();
+        var imageAutomationIds = new[]
+        {
+            "controls-sample-imagepage-uri",
+            "controls-sample-imagepage-file",
+            "controls-sample-imagepage-font",
+            "controls-sample-imagepage-font-scaled",
+            "controls-sample-imagepage-gif-switch-bound",
+            "controls-sample-imagepage-stream",
+            "controls-sample-imagepage-opacity",
+            "controls-sample-imagepage-animated-gif"
+        };
+
+        for (var i = 0; i < images.Length && i < imageAutomationIds.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(images[i].AutomationId))
+            {
+                images[i].AutomationId = imageAutomationIds[i];
+            }
+        }
+
+        var startStopButton = FindDescendants<Button>(page)
+            .FirstOrDefault(button => string.Equals(button.Text, "Start/Stop", StringComparison.Ordinal));
+        if (startStopButton is not null && string.IsNullOrWhiteSpace(startStopButton.AutomationId))
+        {
+            startStopButton.AutomationId = "controls-sample-imagepage-start-stop";
+        }
+
+        var onlineSourceButton = FindDescendants<Button>(page)
+            .FirstOrDefault(button => string.Equals(button.Text, "Use Online Source", StringComparison.Ordinal));
+        if (onlineSourceButton is not null && string.IsNullOrWhiteSpace(onlineSourceButton.AutomationId))
+        {
+            onlineSourceButton.AutomationId = "controls-sample-imagepage-use-online-source";
         }
 
         return page;

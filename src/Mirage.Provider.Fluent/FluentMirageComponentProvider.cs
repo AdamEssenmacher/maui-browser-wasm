@@ -124,7 +124,9 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 "img",
                 defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
                 {
-                    ["alt"] = string.Empty
+                    ["alt"] = string.Empty,
+                    ["decoding"] = "async",
+                    ["loading"] = "eager"
                 },
                 propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
@@ -133,6 +135,11 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                     ["SourceKind"] = new(PropertyTarget.Attribute, "data-maui-image-source-kind"),
                     ["SourceState"] = new(PropertyTarget.Attribute, "data-maui-image-state"),
                     ["IsOpaque"] = new(PropertyTarget.Attribute, "data-maui-image-opaque")
+                },
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["load"] = new("load"),
+                    ["error"] = new("error")
                 }),
             [ComponentKind.Border] = new(
                 ComponentKind.Border,
