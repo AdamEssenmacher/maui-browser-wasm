@@ -672,33 +672,54 @@ public sealed class MirageRuntime : IMirageRuntime
 
     private async Task ConfigureMapNodeWhenProviderReadyAsync(string nodeId, RealizedNode expectedNode)
     {
-        if (_mapProvider is null)
+        var mapProvider = _mapProvider;
+        if (mapProvider is null)
         {
             return;
         }
 
-        var initialization = await _mapProvider.EnsureInitializedAsync();
-        if (!_nodes.TryGetValue(nodeId, out var currentNode)
-            || !ReferenceEquals(currentNode, expectedNode)
-            || currentNode.TryGetMapAdapter(out _))
+        try
         {
-            return;
-        }
+            var initialization = await mapProvider.EnsureInitializedAsync();
+            if (!_nodes.TryGetValue(nodeId, out var currentNode)
+                || !ReferenceEquals(currentNode, expectedNode)
+                || currentNode.TryGetMapAdapter(out _))
+            {
+                return;
+            }
 
-        if (!initialization.IsReady)
+            if (!initialization.IsReady)
+            {
+                var code = string.IsNullOrWhiteSpace(initialization.ErrorCode)
+                    ? "provider-not-ready"
+                    : initialization.ErrorCode!;
+                var message = string.IsNullOrWhiteSpace(initialization.ErrorMessage)
+                    ? "Map provider initialization failed."
+                    : initialization.ErrorMessage!;
+                ShowMapFailure(currentNode, code, message);
+                MirageDiagnostics.Log("map.provider", $"node={nodeId} provider={mapProvider.ProviderName} code={code} message={message}");
+                return;
+            }
+
+            ConfigureMapNodeCore(nodeId, currentNode);
+        }
+        catch (Exception error)
         {
-            var code = string.IsNullOrWhiteSpace(initialization.ErrorCode)
-                ? "provider-not-ready"
-                : initialization.ErrorCode!;
-            var message = string.IsNullOrWhiteSpace(initialization.ErrorMessage)
+            if (!_nodes.TryGetValue(nodeId, out var currentNode)
+                || !ReferenceEquals(currentNode, expectedNode)
+                || currentNode.TryGetMapAdapter(out _))
+            {
+                return;
+            }
+
+            var message = string.IsNullOrWhiteSpace(error.Message)
                 ? "Map provider initialization failed."
-                : initialization.ErrorMessage!;
-            ShowMapFailure(currentNode, code, message);
-            MirageDiagnostics.Log("map.provider", $"node={nodeId} provider={_mapProvider.ProviderName} code={code} message={message}");
-            return;
+                : error.Message;
+            ShowMapFailure(currentNode, "provider-init-exception", message);
+            MirageDiagnostics.Log(
+                "map.provider",
+                $"node={nodeId} provider={mapProvider.ProviderName} code=provider-init-exception message={message}");
         }
-
-        ConfigureMapNodeCore(nodeId, currentNode);
     }
 
     private void ConfigureMapNodeCore(string nodeId, RealizedNode node)

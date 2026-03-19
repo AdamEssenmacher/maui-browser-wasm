@@ -411,6 +411,19 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void MapRuntime_ConvertsAsyncProviderInitExceptionsIntoDeterministicErrorState()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var text = File.ReadAllText(runtimePath);
+        Assert.Contains("ConfigureMapNodeWhenProviderReadyAsync", text, StringComparison.Ordinal);
+        Assert.Contains("catch (Exception error)", text, StringComparison.Ordinal);
+        Assert.Contains("provider-init-exception", text, StringComparison.Ordinal);
+        Assert.Contains("ShowMapFailure(currentNode, \"provider-init-exception\", message);", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void LeafletHostingExtension_ReplacesMapProviderRegistration()
     {
         var hostingExtensionsPath = Path.Combine(
