@@ -106,6 +106,14 @@ public static class ControlsSampleCatalog
             pageType: typeof(CustomLayoutPage),
             description: "Runnable in Mirage today: exercises custom DockLayout arrangement with top/bottom/left/right button docking."),
         new(
+            id: "activityindicatorpage",
+            title: "ActivityIndicatorPage",
+            upstreamPath: "Pages/Controls/ActivityIndicatorPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(ActivityIndicatorPage),
+            description: "Runnable in Mirage today: exercises ActivityIndicator running state, theme color, background, and requested sizing scenarios.",
+            pageFactory: CreateActivityIndicatorPage),
+        new(
             id: "boxviewpage",
             title: "BoxViewPage",
             upstreamPath: "Pages/Controls/BoxViewPage.xaml",
@@ -216,6 +224,33 @@ public static class ControlsSampleCatalog
         if (lineBreakUpdateButton is not null)
         {
             lineBreakUpdateButton.AutomationId = "controls-sample-buttonpage-linebreak-update";
+        }
+
+        return page;
+    }
+
+    private static Page CreateActivityIndicatorPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new ActivityIndicatorPage();
+
+        var indicators = FindDescendants<ActivityIndicator>(page).ToArray();
+        var activityAutomationIds = new[]
+        {
+            "controls-sample-activityindicatorpage-default",
+            "controls-sample-activityindicatorpage-themed",
+            "controls-sample-activityindicatorpage-background",
+            "controls-sample-activityindicatorpage-large",
+            "controls-sample-activityindicatorpage-small",
+            "controls-sample-activityindicatorpage-stopped"
+        };
+
+        for (var i = 0; i < indicators.Length && i < activityAutomationIds.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(indicators[i].AutomationId))
+            {
+                indicators[i].AutomationId = activityAutomationIds[i];
+            }
         }
 
         return page;

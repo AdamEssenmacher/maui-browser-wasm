@@ -109,6 +109,16 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 valueElementTagName: "span",
                 secondaryElementTagName: "img",
                 stretchValueElementWidth: false),
+            [ComponentKind.ActivityIndicator] = new(
+                ComponentKind.ActivityIndicator,
+                "div",
+                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
+                    ["IsRunning"] = new(PropertyTarget.Attribute, "data-maui-activity-running"),
+                    ["BusyState"] = new(PropertyTarget.Attribute, "aria-busy"),
+                    ["SpinnerColor"] = new(PropertyTarget.Style, "--mirage-activity-color")
+                }),
             [ComponentKind.Image] = new(
                 ComponentKind.Image,
                 "img",

@@ -33,6 +33,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-scrollviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-boxviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-buttonpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-activityindicatorpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stepperpage']").CountAsync());
@@ -1131,6 +1132,124 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await page.WaitForTimeoutAsync(100);
         var valueLabelAfterDecrement = await page.Locator("[data-automation-id='controls-sample-stepperpage-value-label']").InnerTextAsync();
         Assert.Contains("0", valueLabelAfterDecrement, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ActivityIndicatorPage_IsRunnable_AndProjectsRunningColorSizingAndStoppedState()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1200, height: 1200);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-activityindicatorpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-activityindicatorpage']");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-activityindicatorpage-default']");
+            });
+
+        var snapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id='controls-sample-page-activityindicatorpage']");
+                const ids = [
+                    "controls-sample-activityindicatorpage-default",
+                    "controls-sample-activityindicatorpage-themed",
+                    "controls-sample-activityindicatorpage-background",
+                    "controls-sample-activityindicatorpage-large",
+                    "controls-sample-activityindicatorpage-small",
+                    "controls-sample-activityindicatorpage-stopped"
+                ];
+
+                const elements = ids.map(id => document.querySelector(`[data-automation-id='${id}']`));
+                if (!(host instanceof HTMLElement) || elements.some(element => !(element instanceof HTMLElement))) {
+                    return ["__missing__", "0", "", "", "", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "0", "", "", "0", "", ""];
+                }
+
+                const themed = elements[1];
+                const background = elements[2];
+                const large = elements[3];
+                const small = elements[4];
+                const stopped = elements[5];
+                const defaultSpinner = elements[0];
+
+                const hostRect = host.getBoundingClientRect();
+                const defaultRect = defaultSpinner.getBoundingClientRect();
+                const backgroundRect = background.getBoundingClientRect();
+                const largeRect = large.getBoundingClientRect();
+                const smallRect = small.getBoundingClientRect();
+                const hostCenterX = hostRect.left + (hostRect.width / 2);
+                const smallCenterX = smallRect.left + (smallRect.width / 2);
+                const smallCenterDelta = Math.abs(smallCenterX - hostCenterX);
+                const defaultPseudo = getComputedStyle(defaultSpinner, "::before");
+                const stoppedStyle = getComputedStyle(stopped);
+
+                return [
+                    "ok",
+                    elements.length.toString(),
+                    defaultSpinner.getAttribute("data-maui-activity-running") ?? "",
+                    defaultSpinner.getAttribute("aria-busy") ?? "",
+                    getComputedStyle(themed).getPropertyValue("--mirage-activity-color").trim(),
+                    defaultRect.width.toString(),
+                    defaultRect.height.toString(),
+                    backgroundRect.width.toString(),
+                    defaultPseudo.width ?? "",
+                    defaultPseudo.height ?? "",
+                    defaultPseudo.opacity ?? "",
+                    largeRect.width.toString(),
+                    largeRect.height.toString(),
+                    smallRect.width.toString(),
+                    smallRect.height.toString(),
+                    smallCenterDelta.toString(),
+                    stopped.getAttribute("data-maui-activity-running") ?? "",
+                    stopped.getAttribute("aria-busy") ?? "",
+                    stoppedStyle.display ?? "",
+                    stoppedStyle.visibility ?? "",
+                    getComputedStyle(background).backgroundColor
+                ];
+            }
+            """);
+
+        Assert.Equal("ok", snapshot[0]);
+        Assert.Equal("6", snapshot[1]);
+        Assert.Equal("true", snapshot[2]);
+        Assert.Equal("true", snapshot[3]);
+        Assert.False(string.IsNullOrWhiteSpace(snapshot[4]));
+
+        var defaultWidth = double.Parse(snapshot[5], CultureInfo.InvariantCulture);
+        var defaultHeight = double.Parse(snapshot[6], CultureInfo.InvariantCulture);
+        var backgroundWidth = double.Parse(snapshot[7], CultureInfo.InvariantCulture);
+        var defaultPseudoWidth = double.Parse(snapshot[8].Replace("px", string.Empty, StringComparison.Ordinal), CultureInfo.InvariantCulture);
+        var defaultPseudoHeight = double.Parse(snapshot[9].Replace("px", string.Empty, StringComparison.Ordinal), CultureInfo.InvariantCulture);
+        var defaultPseudoOpacity = double.Parse(snapshot[10], CultureInfo.InvariantCulture);
+        Assert.True(defaultWidth >= 400d);
+        Assert.InRange(defaultHeight, 20d, 32d);
+        Assert.True(backgroundWidth >= 400d);
+        Assert.InRange(defaultPseudoWidth, 18d, 30d);
+        Assert.InRange(defaultPseudoHeight, 18d, 30d);
+        Assert.True(defaultPseudoOpacity > 0.1d);
+
+        var largeWidth = double.Parse(snapshot[11], CultureInfo.InvariantCulture);
+        var largeHeight = double.Parse(snapshot[12], CultureInfo.InvariantCulture);
+        Assert.InRange(largeWidth, 148d, 152d);
+        Assert.InRange(largeHeight, 148d, 152d);
+
+        var smallWidth = double.Parse(snapshot[13], CultureInfo.InvariantCulture);
+        var smallHeight = double.Parse(snapshot[14], CultureInfo.InvariantCulture);
+        Assert.InRange(smallWidth, 9d, 12d);
+        Assert.InRange(smallHeight, 9d, 12d);
+
+        var smallCenterDelta = double.Parse(snapshot[15], CultureInfo.InvariantCulture);
+        Assert.True(smallCenterDelta <= 24d, $"Expected centered small spinner; center delta was {smallCenterDelta:0.###}.");
+
+        Assert.Equal("false", snapshot[16]);
+        Assert.Equal("false", snapshot[17]);
+        Assert.Equal("none", snapshot[18]);
+        Assert.Equal("hidden", snapshot[19]);
+
+        Assert.Contains("255,255,0", snapshot[20].Replace(" ", string.Empty, StringComparison.Ordinal), StringComparison.Ordinal);
     }
 
     [Fact]

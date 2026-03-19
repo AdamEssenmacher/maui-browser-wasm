@@ -32,6 +32,7 @@
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\Borderless.xaml" Link="Vendor\Pages\Core\BorderGalleries\Borderless.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderResizeContent.xaml" Link="Vendor\Pages\Core\BorderGalleries\BorderResizeContent.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderAlignment.xaml" Link="Vendor\Pages\Core\BorderGalleries\BorderAlignment.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\ActivityIndicatorPage.xaml" Link="Vendor\Pages\Controls\ActivityIndicatorPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml" Link="Vendor\Pages\Controls\ButtonPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\BoxViewPage.xaml" Link="Vendor\Pages\Controls\BoxViewPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\CheckBoxPage.xaml" Link="Vendor\Pages\Controls\CheckBoxPage.xaml" />
@@ -74,6 +75,7 @@
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\Borderless.xaml.cs" Link="Vendor\Pages\Core\BorderGalleries\Borderless.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderResizeContent.xaml.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderResizeContent.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderAlignment.xaml.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderAlignment.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\ActivityIndicatorPage.xaml.cs" Link="Vendor\Pages\Controls\ActivityIndicatorPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml.cs" Link="Vendor\Pages\Controls\ButtonPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\BoxViewPage.xaml.cs" Link="Vendor\Pages\Controls\BoxViewPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\CheckBoxPage.xaml.cs" Link="Vendor\Pages\Controls\CheckBoxPage.xaml.cs" />

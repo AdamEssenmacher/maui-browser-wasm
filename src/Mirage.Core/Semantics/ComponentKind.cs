@@ -12,6 +12,7 @@ public enum ComponentKind
     Label,
     Entry,
     Button,
+    ActivityIndicator,
     Image,
     Border,
     BoxView,
