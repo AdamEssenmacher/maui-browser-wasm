@@ -1,6 +1,7 @@
 using ControlsSample.Shared.App;
 using Mirage.Maui.Hosting;
 using Mirage.Provider.Fluent;
+using Mirage.Provider.LeafletMaps;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.Hosting;
 
@@ -19,6 +20,7 @@ public static class Program
         builder.UseMauiApp<ControlsSampleApp>();
         builder.Services.AddSingleton<IControlsSampleVisibilityPolicy, MirageControlsSampleVisibilityPolicy>();
         builder.UseMirageBrowserPlatform();
+        builder.UseMirageLeafletMaps();
         builder.UseMirageComponentProvider<FluentMirageComponentProvider>();
 
         var app = builder.Build();

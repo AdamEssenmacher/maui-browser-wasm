@@ -689,6 +689,48 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void SwitchHandler_ProjectsToggleColorAndDisabledSemantics()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageSwitchHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var @switch = new Switch
+        {
+            IsToggled = false,
+            ThumbColor = Colors.White,
+            OnColor = Colors.MediumSeaGreen
+        };
+
+        ((IElementHandler)handler).SetVirtualView(@switch);
+
+        Assert.Equal("false", handler.PlatformView.GetPropertyString("IsOn"));
+        Assert.Equal("rgba(60,179,113,1)", handler.PlatformView.GetStyleValue("--mirage-switch-track-on"));
+        Assert.Equal("rgba(255,255,255,1)", handler.PlatformView.GetStyleValue("--mirage-switch-thumb"));
+        Assert.Null(handler.PlatformView.GetPropertyString("Disabled"));
+
+        handler.OnRuntimeEvent("change", "true");
+        Assert.True(((ISwitch)@switch).IsOn);
+
+        ((ISwitch)@switch).IsOn = false;
+        MirageSwitchHandler.Mapper.UpdateProperty(handler, @switch, "IsToggled");
+        Assert.Equal("false", handler.PlatformView.GetPropertyString("IsOn"));
+
+        @switch.OnColor = Colors.Teal;
+        MirageSwitchHandler.Mapper.UpdateProperty(handler, @switch, "OnColor");
+        Assert.Equal("rgba(0,128,128,1)", handler.PlatformView.GetStyleValue("--mirage-switch-track-on"));
+
+        @switch.IsEnabled = false;
+        MirageSwitchHandler.Mapper.UpdateProperty(handler, @switch, nameof(IView.IsEnabled));
+        Assert.Equal("none", handler.PlatformView.GetStyleValue("pointerEvents"));
+        Assert.Equal("disabled", handler.PlatformView.GetPropertyString("Disabled"));
+
+        handler.OnRuntimeEvent("change", "true");
+        Assert.False(((ISwitch)@switch).IsOn);
+    }
+
+    [Fact]
     public void SliderHandler_ProjectsRangeAndRuntimeDragFlow()
     {
         var services = new ServiceCollection()

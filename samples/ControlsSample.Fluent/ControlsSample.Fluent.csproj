@@ -24,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Mirage.Maui\Mirage.Maui.csproj" />
     <ProjectReference Include="..\..\src\Mirage.Provider.Fluent\Mirage.Provider.Fluent.csproj" />
+    <ProjectReference Include="..\..\src\Mirage.Provider.LeafletMaps\Mirage.Provider.LeafletMaps.csproj" />
     <ProjectReference Include="..\..\src\Mirage.Web\Mirage.Web.csproj" />
     <ProjectReference Include="..\..\src\Mirage.Core\Mirage.Core.csproj" />
     <ProjectReference Include="..\ControlsSample.Shared\ControlsSample.Shared.csproj" />

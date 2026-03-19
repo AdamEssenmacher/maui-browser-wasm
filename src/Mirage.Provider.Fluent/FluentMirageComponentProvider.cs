@@ -153,6 +153,23 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 {
                     ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputChecked)
                 }),
+            [ComponentKind.Switch] = new(
+                ComponentKind.Switch,
+                "input",
+                defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["type"] = "checkbox"
+                },
+                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
+                    ["IsOn"] = new(PropertyTarget.InputChecked),
+                    ["Disabled"] = new(PropertyTarget.Attribute, "disabled")
+                },
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputChecked)
+                }),
             [ComponentKind.Slider] = new(
                 ComponentKind.Slider,
                 "input",

@@ -96,6 +96,20 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentSwitchDescriptor_MapsToggleAndDisabledState()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.Switch);
+
+        Assert.Equal("input", descriptor.ElementTagName);
+        Assert.Equal(PropertyTarget.InputChecked, descriptor.PropertyMappings["IsOn"].Target);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Disabled"].Target);
+        Assert.Equal("disabled", descriptor.PropertyMappings["Disabled"].Name);
+        Assert.True(descriptor.EventMappings.ContainsKey("change"));
+        Assert.Equal(EventPayloadKind.InputChecked, descriptor.EventMappings["change"].PayloadKind);
+    }
+
+    [Fact]
     public void FluentSliderDescriptor_MapsThumbImageProjectionChannels()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();

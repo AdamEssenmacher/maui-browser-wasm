@@ -16,6 +16,7 @@ public enum ComponentKind
     Border,
     BoxView,
     CheckBox,
+    Switch,
     Slider,
     Picker,
     Stepper,

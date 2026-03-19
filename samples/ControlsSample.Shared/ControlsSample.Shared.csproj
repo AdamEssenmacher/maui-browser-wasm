@@ -35,6 +35,12 @@
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml" Link="Vendor\Pages\Controls\ButtonPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\BoxViewPage.xaml" Link="Vendor\Pages\Controls\BoxViewPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\CheckBoxPage.xaml" Link="Vendor\Pages\Controls\CheckBoxPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\BasicMapGallery.xaml" Link="Vendor\Pages\Controls\MapsGalleries\BasicMapGallery.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\MapTypeGallery.xaml" Link="Vendor\Pages\Controls\MapsGalleries\MapTypeGallery.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\MapPinsGallery.xaml" Link="Vendor\Pages\Controls\MapsGalleries\MapPinsGallery.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\PinItemsSourceGallery.xaml" Link="Vendor\Pages\Controls\MapsGalleries\PinItemsSourceGallery.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\CircleGallery.xaml" Link="Vendor\Pages\Controls\MapsGalleries\CircleGallery.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\PolygonsGallery.xaml" Link="Vendor\Pages\Controls\MapsGalleries\PolygonsGallery.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\SliderPage.xaml" Link="Vendor\Pages\Controls\SliderPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\StepperPage.xaml" Link="Vendor\Pages\Controls\StepperPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Compatibility\TabbedPageGalleryMainPage.xaml" Link="Vendor\Pages\Compatibility\TabbedPageGalleryMainPage.xaml" />
@@ -71,6 +77,13 @@
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml.cs" Link="Vendor\Pages\Controls\ButtonPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\BoxViewPage.xaml.cs" Link="Vendor\Pages\Controls\BoxViewPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\CheckBoxPage.xaml.cs" Link="Vendor\Pages\Controls\CheckBoxPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\MapsGallery.cs" Link="Vendor\Pages\Controls\MapsGalleries\MapsGallery.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\BasicMapGallery.xaml.cs" Link="Vendor\Pages\Controls\MapsGalleries\BasicMapGallery.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\MapTypeGallery.xaml.cs" Link="Vendor\Pages\Controls\MapsGalleries\MapTypeGallery.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\MapPinsGallery.xaml.cs" Link="Vendor\Pages\Controls\MapsGalleries\MapPinsGallery.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\PinItemsSourceGallery.xaml.cs" Link="Vendor\Pages\Controls\MapsGalleries\PinItemsSourceGallery.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\CircleGallery.xaml.cs" Link="Vendor\Pages\Controls\MapsGalleries\CircleGallery.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\PolygonsGallery.xaml.cs" Link="Vendor\Pages\Controls\MapsGalleries\PolygonsGallery.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\SliderPage.xaml.cs" Link="Vendor\Pages\Controls\SliderPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\StepperPage.xaml.cs" Link="Vendor\Pages\Controls\StepperPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Compatibility\TabbedPageGalleryMainPage.xaml.cs" Link="Vendor\Pages\Compatibility\TabbedPageGalleryMainPage.xaml.cs" />
@@ -101,6 +114,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiPackageVersion)" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiPackageVersion)" />
+    <PackageReference Include="Microsoft.Maui.Controls.Maps" Version="$(MauiPackageVersion)" />
     <PackageReference Include="Microsoft.Maui.Controls.Xaml" Version="$(MauiPackageVersion)" />
   </ItemGroup>
 </Project>

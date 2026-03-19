@@ -38,6 +38,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-brushespage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-transformationspage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-borderpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-mapsgallery']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-layoutisenabledpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-scrollviewpage']").CountAsync());
@@ -1658,6 +1659,198 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
+    public async Task MapsGallery_IsRunnable_AndExercisesAllMapSubPages()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1280, height: 980);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-mapsgallery']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-mapsgallery']");
+            });
+
+        var navButtonIds = new[]
+        {
+            "controls-sample-mapsgallery-open-basic-map",
+            "controls-sample-mapsgallery-open-map-type",
+            "controls-sample-mapsgallery-open-map-pins",
+            "controls-sample-mapsgallery-open-pins-itemssource",
+            "controls-sample-mapsgallery-open-circle",
+            "controls-sample-mapsgallery-open-polygon"
+        };
+
+        foreach (var navButtonId in navButtonIds)
+        {
+            Assert.Equal(1, await page.Locator($"[data-automation-id='{navButtonId}']").CountAsync());
+        }
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-mapsgallery-open-basic-map']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-basicmapgallery']");
+            });
+
+        await WaitForMapReadyAsync(page, "[data-automation-id='controls-sample-basicmapgallery-map']");
+        Assert.Equal(4, await page.Locator("[data-automation-id='controls-sample-page-basicmapgallery'] input[data-mirage-kind='Switch']").CountAsync());
+
+        var zoomSwitchSelector = "[data-automation-id='controls-sample-basicmapgallery-zoom-enabled-switch']";
+        var zoomBefore = await ReadCheckedAsync(page, zoomSwitchSelector);
+        await page.Locator(zoomSwitchSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+        var zoomAfter = await ReadCheckedAsync(page, zoomSwitchSelector);
+        Assert.NotEqual(zoomBefore, zoomAfter);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-mapsgallery']");
+            });
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-mapsgallery-open-map-type']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-maptypegallery']");
+            });
+
+        await WaitForMapReadyAsync(page, "[data-automation-id='controls-sample-maptypegallery-map']");
+        await SetSelectIndexAsync(page, "[data-automation-id='controls-sample-maptypegallery-type-picker']", 1);
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-maptypegallery-zoom-slider']", 14);
+        await WaitForMapReadyAsync(page, "[data-automation-id='controls-sample-maptypegallery-map']");
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-mapsgallery']");
+            });
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-mapsgallery-open-map-pins']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-mappinsgallery']");
+            });
+
+        const string mapPinsSelector = "[data-automation-id='controls-sample-mappinsgallery-map']";
+        await WaitForMapReadyAsync(page, mapPinsSelector);
+        var pinCount = await ReadMapCountAsync(page, mapPinsSelector, "data-mirage-map-pin-count");
+        Assert.True(pinCount >= 1);
+
+        await page.Locator("[data-automation-id='controls-sample-mappinsgallery-add-pin']").ClickAsync();
+        await WaitForMapCountAsync(page, mapPinsSelector, "data-mirage-map-pin-count", pinCount + 1);
+
+        await page.Locator("[data-automation-id='controls-sample-mappinsgallery-remove-pin']").ClickAsync();
+        await WaitForMapCountAsync(page, mapPinsSelector, "data-mirage-map-pin-count", pinCount);
+
+        await page.Locator("[data-automation-id='controls-sample-mappinsgallery-add-ten-pins']").ClickAsync();
+        await WaitForMapCountAsync(page, mapPinsSelector, "data-mirage-map-pin-count", pinCount + 11);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-mapsgallery']");
+            });
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-mapsgallery-open-pins-itemssource']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-pinitemssourcegallery']");
+            });
+
+        const string itemsSourceMapSelector = "[data-automation-id='controls-sample-pinitemssourcegallery-map']";
+        await WaitForMapReadyAsync(page, itemsSourceMapSelector);
+        var initialItemsSourcePinCount = await ReadMapCountAsync(page, itemsSourceMapSelector, "data-mirage-map-pin-count");
+        Assert.True(initialItemsSourcePinCount >= 3);
+
+        await page.Locator("[data-automation-id='controls-sample-pinitemssourcegallery-add']").ClickAsync();
+        await WaitForMapCountAsync(page, itemsSourceMapSelector, "data-mirage-map-pin-count", initialItemsSourcePinCount + 1);
+
+        await page.Locator("[data-automation-id='controls-sample-pinitemssourcegallery-remove']").ClickAsync();
+        await WaitForMapCountAsync(page, itemsSourceMapSelector, "data-mirage-map-pin-count", initialItemsSourcePinCount);
+
+        await page.Locator("[data-automation-id='controls-sample-pinitemssourcegallery-clear']").ClickAsync();
+        await WaitForMapCountAsync(page, itemsSourceMapSelector, "data-mirage-map-pin-count", 0);
+
+        await page.Locator("[data-automation-id='controls-sample-pinitemssourcegallery-add']").ClickAsync();
+        await WaitForMapCountAsync(page, itemsSourceMapSelector, "data-mirage-map-pin-count", 1);
+
+        await page.Locator("[data-automation-id='controls-sample-pinitemssourcegallery-replace']").ClickAsync();
+        await WaitForMapCountAsync(page, itemsSourceMapSelector, "data-mirage-map-pin-count", 1);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-mapsgallery']");
+            });
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-mapsgallery-open-circle']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-circlegallery']");
+            });
+
+        const string circleMapSelector = "[data-automation-id='controls-sample-circlegallery-map']";
+        await WaitForMapReadyAsync(page, circleMapSelector);
+        var circleElementCount = await ReadMapCountAsync(page, circleMapSelector, "data-mirage-map-element-count");
+        Assert.True(circleElementCount >= 1);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-mapsgallery']");
+            });
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-mapsgallery-open-polygon']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-polygonsgallery']");
+            });
+
+        const string polygonMapSelector = "[data-automation-id='controls-sample-polygonsgallery-map']";
+        await WaitForMapReadyAsync(page, polygonMapSelector);
+        var polygonElementCount = await ReadMapCountAsync(page, polygonMapSelector, "data-mirage-map-element-count");
+        Assert.True(polygonElementCount >= 3);
+
+        await page.Locator("[data-automation-id='controls-sample-polygonsgallery-clear-map-elements']").ClickAsync();
+        await WaitForMapCountAsync(page, polygonMapSelector, "data-mirage-map-element-count", 0);
+    }
+
+    [Fact]
     public async Task ClippingPage_GridFrame_RendersAtExpectedSize_AndIsHorizontallyCentered()
     {
         await using var context = await _fixture.NewContextAsync();
@@ -1882,6 +2075,95 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             });
 
         Assert.NotEqual("__missing__", result);
+    }
+
+    private static async Task<bool> ReadCheckedAsync(IPage page, string selector)
+    {
+        return await page.EvaluateAsync<bool>(
+            """
+            (targetSelector) => {
+                const element = document.querySelector(targetSelector);
+                if (!(element instanceof HTMLInputElement)) {
+                    return false;
+                }
+
+                return element.checked;
+            }
+            """,
+            selector);
+    }
+
+    private static async Task WaitForMapReadyAsync(IPage page, string mapSelector, float timeoutMs = 20000)
+    {
+        await page.WaitForFunctionAsync(
+            """
+            (payload) => {
+                const element = document.querySelector(payload.selector);
+                if (!(element instanceof HTMLElement)) {
+                    return false;
+                }
+
+                return element.getAttribute("data-mirage-map-status") === payload.status;
+            }
+            """,
+            new
+            {
+                selector = mapSelector,
+                status = "ready"
+            },
+            new()
+            {
+                Timeout = timeoutMs
+            });
+    }
+
+    private static async Task<int> ReadMapCountAsync(IPage page, string mapSelector, string attributeName)
+    {
+        return await page.EvaluateAsync<int>(
+            """
+            (payload) => {
+                const element = document.querySelector(payload.selector);
+                if (!(element instanceof HTMLElement)) {
+                    return -1;
+                }
+
+                const raw = element.getAttribute(payload.attributeName);
+                const parsed = Number.parseInt(raw ?? "", 10);
+                return Number.isFinite(parsed) ? parsed : -1;
+            }
+            """,
+            new
+            {
+                selector = mapSelector,
+                attributeName
+            });
+    }
+
+    private static async Task WaitForMapCountAsync(IPage page, string mapSelector, string attributeName, int expectedCount, float timeoutMs = 15000)
+    {
+        await page.WaitForFunctionAsync(
+            """
+            (payload) => {
+                const element = document.querySelector(payload.selector);
+                if (!(element instanceof HTMLElement)) {
+                    return false;
+                }
+
+                const raw = element.getAttribute(payload.attributeName);
+                const parsed = Number.parseInt(raw ?? "", 10);
+                return Number.isFinite(parsed) && parsed === payload.expectedCount;
+            }
+            """,
+            new
+            {
+                selector = mapSelector,
+                attributeName,
+                expectedCount
+            },
+            new()
+            {
+                Timeout = timeoutMs
+            });
     }
 
     private static async Task<bool> HasDisabledAttributeAsync(IPage page, string selector)
