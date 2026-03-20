@@ -172,7 +172,11 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>, IMirageRunt
         {
             try
             {
-                await resolver.EnsureInitializedAsync();
+                if (RequiresManifestInitialization(image.Source))
+                {
+                    await resolver.EnsureInitializedAsync();
+                }
+
                 resolved = await resolver.ResolveAsync(image.Source, cancellation.Token);
             }
             catch (OperationCanceledException)
@@ -271,6 +275,11 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>, IMirageRunt
         {
             RequestRender();
         }
+    }
+
+    private static bool RequiresManifestInitialization(ImageSource? source)
+    {
+        return source is FileImageSource;
     }
 
     private bool UpdateAnimationPlaybackProjection(Image image)

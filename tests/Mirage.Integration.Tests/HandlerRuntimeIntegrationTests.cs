@@ -1580,8 +1580,9 @@ public sealed class HandlerRuntimeIntegrationTests
     [Fact]
     public void ImageHandler_MapsSourceAspectAndOpaqueState()
     {
+        var resolver = new StubImageSourceResolver();
         var services = new ServiceCollection()
-            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .AddSingleton<IMirageImageSourceResolver>(resolver)
             .BuildServiceProvider();
         var mauiContext = new MauiContext(services);
 
@@ -1600,6 +1601,8 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal("/_mirage/assets/test/coffee.png", handler.PlatformView.GetPropertyString("Source"));
         Assert.Equal("file", handler.PlatformView.GetPropertyString("SourceKind"));
         Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+        var fileEnsureCount = resolver.EnsureInitializedCallCount;
+        Assert.True(fileEnsureCount > 0);
         Assert.Equal("true", handler.PlatformView.GetPropertyString("IsOpaque"));
         Assert.Equal("cover", handler.PlatformView.GetStyleValue("objectFit"));
 
@@ -1608,6 +1611,48 @@ public sealed class HandlerRuntimeIntegrationTests
 
         Assert.Equal("https://example.com/photo.png", handler.PlatformView.GetPropertyString("Source"));
         Assert.Equal("uri", handler.PlatformView.GetPropertyString("SourceKind"));
+        Assert.Equal(fileEnsureCount, resolver.EnsureInitializedCallCount);
+    }
+
+    [Fact]
+    public void ImageHandler_SkipsManifestInitialization_ForUriFontAndStreamSources()
+    {
+        var resolver = new StubImageSourceResolver();
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(resolver)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = new UriImageSource { Uri = new Uri("images/photo.png", UriKind.Relative) }
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+        Assert.Equal(0, resolver.EnsureInitializedCallCount);
+
+        image.Source = "coffee.png";
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        var fileEnsureCount = resolver.EnsureInitializedCallCount;
+        Assert.True(fileEnsureCount > 0);
+
+        image.Source = new FontImageSource { Glyph = "★", Size = 24 };
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        Assert.Equal(fileEnsureCount, resolver.EnsureInitializedCallCount);
+
+        image.Source = new StreamImageSource
+        {
+            Stream = _ => Task.FromResult<Stream>(new MemoryStream(new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 }))
+        };
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        Assert.Equal(fileEnsureCount, resolver.EnsureInitializedCallCount);
+
+        image.Source = new UriImageSource { Uri = new Uri("images/another-photo.png", UriKind.Relative) };
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        Assert.Equal(fileEnsureCount, resolver.EnsureInitializedCallCount);
     }
 
     [Fact]
@@ -3777,9 +3822,11 @@ public sealed class HandlerRuntimeIntegrationTests
     private sealed class StubImageSourceResolver : IMirageImageSourceResolver
     {
         public List<string> ReleasedUrls { get; } = [];
+        public int EnsureInitializedCallCount { get; private set; }
 
         public ValueTask EnsureInitializedAsync()
         {
+            EnsureInitializedCallCount++;
             return ValueTask.CompletedTask;
         }
 

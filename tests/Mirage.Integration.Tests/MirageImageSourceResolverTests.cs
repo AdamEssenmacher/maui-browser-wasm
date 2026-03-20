@@ -117,7 +117,7 @@ public sealed class MirageImageSourceResolverTests
     }
 
     [Fact]
-    public async Task Resolve_ImageSource_UriSource_AllowsApprovedSchemes_AndRejectsOthers()
+    public async Task Resolve_ImageSource_UriSource_AllowsApprovedSchemes_AndRejectsUnsupportedValues()
     {
         var resolver = CreateResolver(CreateManifestJson());
         await resolver.EnsureInitializedAsync();
@@ -134,7 +134,7 @@ public sealed class MirageImageSourceResolverTests
         Assert.Equal("blob:https://example.com/123", blobResult.BrowserUrl);
 
         Assert.False(ftpResult.IsResolved);
-        Assert.Contains("scheme", ftpResult.FailureReason, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("supported", ftpResult.FailureReason, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

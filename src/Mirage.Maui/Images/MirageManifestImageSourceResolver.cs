@@ -329,18 +329,29 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
 
     private MirageImageSourceProjectionResult ResolveUriImageSource(UriImageSource source)
     {
-        var uriValue = source.Uri?.ToString();
+        var uriValue = source.Uri?.OriginalString;
+        if (string.IsNullOrWhiteSpace(uriValue))
+        {
+            var fallbackValue = source.ToString();
+            if (!string.IsNullOrWhiteSpace(fallbackValue)
+                && !string.Equals(fallbackValue, source.GetType().Name, StringComparison.Ordinal)
+                && !string.Equals(fallbackValue, source.GetType().FullName, StringComparison.Ordinal))
+            {
+                uriValue = fallbackValue;
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(uriValue))
         {
             return MirageImageSourceProjectionResult.Unresolved("uri", "UriImageSource was missing a Uri value.");
         }
 
         var trimmed = uriValue.Trim();
-        if (!IsAllowedDirectUri(trimmed))
+        if (!IsAllowedUriImageSource(trimmed))
         {
             return MirageImageSourceProjectionResult.Unresolved(
                 "uri",
-                $"UriImageSource scheme is not supported for browser passthrough: '{trimmed}'.");
+                $"UriImageSource value is not supported for browser passthrough: '{trimmed}'.");
         }
 
         return MirageImageSourceProjectionResult.Resolved(
@@ -552,6 +563,61 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
             || trimmed.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
             || trimmed.StartsWith("blob:", StringComparison.OrdinalIgnoreCase)
             || trimmed.StartsWith("/", StringComparison.Ordinal);
+    }
+
+    private static bool IsAllowedUriImageSource(string value)
+    {
+        return IsAllowedDirectUri(value) || IsSafeRelativeUri(value);
+    }
+
+    private static bool IsSafeRelativeUri(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var trimmed = value.Trim();
+        if (trimmed.StartsWith("//", StringComparison.Ordinal)
+            || trimmed.StartsWith("\\\\", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (trimmed.Contains('\0')
+            || trimmed.StartsWith("javascript:", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("vbscript:", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (HasUriScheme(trimmed))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool HasUriScheme(string value)
+    {
+        var colonIndex = value.IndexOf(':', StringComparison.Ordinal);
+        if (colonIndex <= 0)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < colonIndex; i++)
+        {
+            var c = value[i];
+            var isValid = char.IsLetterOrDigit(c) || c is '+' or '-' or '.';
+            if (!isValid)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static bool IsGifPath(string? source)
