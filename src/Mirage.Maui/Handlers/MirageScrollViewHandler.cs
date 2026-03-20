@@ -8,6 +8,9 @@ namespace Mirage.Maui.Handlers;
 
 internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<IScrollView>, IScrollViewHandler, IMirageRuntimeEventTarget
 {
+    private const int AnimatedScrollCompletionTimeoutMs = 1200;
+    private const double ScrollCompletionEpsilon = 0.01;
+
     internal static readonly string[] ParityPropertyKeys =
     {
         nameof(IContentView.Content),
@@ -44,6 +47,10 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
 
     private ScrollToRequest? _pendingScrollToRequest;
     private bool _awaitingAnimatedScrollCompletion;
+    private double _awaitedAnimatedHorizontalOffset;
+    private double _awaitedAnimatedVerticalOffset;
+    private int _animatedScrollCompletionRequestVersion;
+    private CancellationTokenSource? _animatedScrollCompletionTimeoutCts;
 
     public MirageScrollViewHandler()
         : this(Mapper, CommandMapper)
@@ -83,8 +90,14 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
         if (_pendingScrollToRequest is not null || _awaitingAnimatedScrollCompletion)
         {
             _pendingScrollToRequest = null;
-            _awaitingAnimatedScrollCompletion = false;
-            VirtualView.ScrollFinished();
+            if (_awaitingAnimatedScrollCompletion)
+            {
+                CompleteAnimatedScrollRequest();
+            }
+            else
+            {
+                VirtualView.ScrollFinished();
+            }
         }
 
         DisconnectCurrentPresentedContent();
@@ -174,10 +187,9 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
 
         VirtualView.HorizontalOffset = left;
         VirtualView.VerticalOffset = top;
-        if (_awaitingAnimatedScrollCompletion)
+        if (_awaitingAnimatedScrollCompletion && HasReachedAnimatedScrollTarget(left, top))
         {
-            _awaitingAnimatedScrollCompletion = false;
-            VirtualView.ScrollFinished();
+            CompleteAnimatedScrollRequest();
         }
     }
 
@@ -227,6 +239,7 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
         {
             // A new request supersedes any in-flight animation completion for prior requests.
             // The current request must complete only when its own runtime signal arrives.
+            CancelAnimatedScrollCompletionTimeout();
             _awaitingAnimatedScrollCompletion = false;
         }
 
@@ -267,7 +280,7 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
             return;
         }
 
-        _awaitingAnimatedScrollCompletion = true;
+        BeginAwaitingAnimatedScrollCompletion(actualHorizontalOffset, actualVerticalOffset);
     }
 
     private static double NormalizeOffset(double value)
@@ -410,6 +423,98 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
         const double epsilon = 0.001;
         return Math.Abs(actualHorizontalOffset - previousHorizontalOffset) < epsilon
                && Math.Abs(actualVerticalOffset - previousVerticalOffset) < epsilon;
+    }
+
+    private bool HasReachedAnimatedScrollTarget(double horizontalOffset, double verticalOffset)
+    {
+        return Math.Abs(horizontalOffset - _awaitedAnimatedHorizontalOffset) <= ScrollCompletionEpsilon
+               && Math.Abs(verticalOffset - _awaitedAnimatedVerticalOffset) <= ScrollCompletionEpsilon;
+    }
+
+    private void BeginAwaitingAnimatedScrollCompletion(double horizontalOffset, double verticalOffset)
+    {
+        _awaitedAnimatedHorizontalOffset = horizontalOffset;
+        _awaitedAnimatedVerticalOffset = verticalOffset;
+        _awaitingAnimatedScrollCompletion = true;
+        var requestVersion = unchecked(++_animatedScrollCompletionRequestVersion);
+        ArmAnimatedScrollCompletionTimeout(requestVersion);
+    }
+
+    private void CompleteAnimatedScrollRequest()
+    {
+        CancelAnimatedScrollCompletionTimeout();
+        if (!_awaitingAnimatedScrollCompletion)
+        {
+            return;
+        }
+
+        _awaitingAnimatedScrollCompletion = false;
+        VirtualView.ScrollFinished();
+    }
+
+    private void ArmAnimatedScrollCompletionTimeout(int requestVersion)
+    {
+        CancelAnimatedScrollCompletionTimeout();
+        var timeoutCts = new CancellationTokenSource();
+        _animatedScrollCompletionTimeoutCts = timeoutCts;
+        _ = CompleteAnimatedScrollRequestOnTimeoutAsync(requestVersion, timeoutCts.Token);
+    }
+
+    private void CancelAnimatedScrollCompletionTimeout()
+    {
+        if (_animatedScrollCompletionTimeoutCts is not CancellationTokenSource timeoutCts)
+        {
+            return;
+        }
+
+        _animatedScrollCompletionTimeoutCts = null;
+        timeoutCts.Cancel();
+        timeoutCts.Dispose();
+    }
+
+    private async Task CompleteAnimatedScrollRequestOnTimeoutAsync(int requestVersion, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(AnimatedScrollCompletionTimeoutMs, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        DispatchOnUiThreadIfRequired(() =>
+        {
+            if (cancellationToken.IsCancellationRequested
+                || !_awaitingAnimatedScrollCompletion
+                || requestVersion != _animatedScrollCompletionRequestVersion)
+            {
+                return;
+            }
+
+            CompleteAnimatedScrollRequest();
+        });
+    }
+
+    private void DispatchOnUiThreadIfRequired(Action action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        if (ResolveDispatcher() is not IDispatcher dispatcher || !dispatcher.IsDispatchRequired)
+        {
+            action();
+            return;
+        }
+
+        if (!dispatcher.Dispatch(action))
+        {
+            action();
+        }
+    }
+
+    private IDispatcher? ResolveDispatcher()
+    {
+        return MauiContext?.Services.GetService(typeof(IDispatcher)) as IDispatcher;
     }
 
     private void ApplyScrollStyles(IScrollView scrollView)

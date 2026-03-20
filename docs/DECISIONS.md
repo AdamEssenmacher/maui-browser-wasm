@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (ScrollView parity follow-up: target-gated completion with bounded timeout fallback)
+- Animated `ScrollTo` completion remains target-gated (to prevent stale superseded scroll events from completing the newest request early), but now adds a versioned timeout fallback so requests cannot hang indefinitely when runtime events never report the exact target offsets.
+- Timeout completion is request-version scoped and dispatcher-safe, so only the active animated request can complete from fallback and superseded timeout work is canceled deterministically.
+- Superseded-request integration coverage now locks baseline MAUI `ScrollView` task behavior (`WaitingForActivation` for the superseded task at this pinned baseline) and adds a near-target stale-event regression plus a timeout-fallback regression.
+
 ## 2026-03-19 (ScrollView parity follow-up: superseded animated completion + explicit constraint resolution)
 - `MirageScrollViewHandler` no longer calls `ScrollFinished()` when a new scroll request supersedes an in-flight animated request; completion now tracks the active request and remains runtime-signal-driven for non-instant scrolls.
 - `GetDesiredSize` now resolves measured size in two phases (constraint clamp, then explicit/min/max resolution), matching MAUI constraint intent for both content-present and no-content (padding baseline) paths.

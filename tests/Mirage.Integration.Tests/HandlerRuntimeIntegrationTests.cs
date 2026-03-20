@@ -2936,11 +2936,116 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal(44, left);
         Assert.Equal(280, top);
 
+        runtime.TrySetNodeScrollPosition(handler.PlatformView.NodeId, 16, 120, out _, out _);
+        handler.OnRuntimeEvent("scroll", payload: null);
+        Assert.False(secondTask.IsCompleted);
+
+        runtime.TrySetNodeScrollPosition(handler.PlatformView.NodeId, 44, 280, out _, out _);
         handler.OnRuntimeEvent("scroll", payload: null);
         await secondTask.WaitAsync(TimeSpan.FromSeconds(1));
 
+        Assert.Equal(TaskStatus.WaitingForActivation, firstTask.Status);
         Assert.Equal(44, scrollView.ScrollX);
         Assert.Equal(280, scrollView.ScrollY);
+    }
+
+    [Fact]
+    public async Task ScrollView_ScrollToAsync_SupersededAnimatedRequest_NearTargetStaleEventDoesNotComplete()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var content = new Label
+        {
+            Text = "Scrollable content",
+            WidthRequest = 640,
+            HeightRequest = 1200
+        };
+        var contentHandler = new MirageLabelHandler();
+        ((IElementHandler)contentHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)contentHandler).SetVirtualView(content);
+
+        var scrollView = new ScrollView
+        {
+            Content = content
+        };
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        content.Frame = new Rect(0, 0, 320, 1200);
+
+        var firstTask = scrollView.ScrollToAsync(44.00, 280.00, animated: true);
+        Assert.False(firstTask.IsCompleted);
+
+        var secondTask = scrollView.ScrollToAsync(44.03, 280.03, animated: true);
+        Assert.False(secondTask.IsCompleted);
+        Assert.True(runtime.TryGetNodeScrollPosition(handler.PlatformView.NodeId, out var left, out var top));
+        Assert.Equal(44.03, left, 2);
+        Assert.Equal(280.03, top, 2);
+
+        runtime.TrySetNodeScrollPosition(handler.PlatformView.NodeId, 44.00, 280.00, out _, out _);
+        handler.OnRuntimeEvent("scroll", payload: null);
+        Assert.False(secondTask.IsCompleted);
+
+        runtime.TrySetNodeScrollPosition(handler.PlatformView.NodeId, 44.03, 280.03, out _, out _);
+        handler.OnRuntimeEvent("scroll", payload: null);
+        await secondTask.WaitAsync(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(TaskStatus.WaitingForActivation, firstTask.Status);
+        Assert.Equal(44.03, scrollView.ScrollX, 2);
+        Assert.Equal(280.03, scrollView.ScrollY, 2);
+    }
+
+    [Fact]
+    public async Task ScrollView_ScrollToAsync_AnimatedRequest_CompletesOnTimeoutWhenTargetIsNeverObserved()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var content = new Label
+        {
+            Text = "Scrollable content",
+            WidthRequest = 640,
+            HeightRequest = 1200
+        };
+        var contentHandler = new MirageLabelHandler();
+        ((IElementHandler)contentHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)contentHandler).SetVirtualView(content);
+
+        var scrollView = new ScrollView
+        {
+            Content = content
+        };
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        content.Frame = new Rect(0, 0, 320, 1200);
+
+        var pendingTask = scrollView.ScrollToAsync(48, 300, animated: true);
+        Assert.False(pendingTask.IsCompleted);
+
+        // Simulate runtime drift/interruption where scroll events never report the originally requested offsets.
+        runtime.TrySetNodeScrollPosition(handler.PlatformView.NodeId, 40, 252, out _, out _);
+        handler.OnRuntimeEvent("scroll", payload: null);
+        Assert.False(pendingTask.IsCompleted);
+
+        await pendingTask.WaitAsync(TimeSpan.FromSeconds(3));
     }
 
     [Fact]
