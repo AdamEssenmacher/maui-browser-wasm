@@ -3403,6 +3403,45 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void ScrollViewHandler_RuntimeScrollEvent_RaisesSingleScrolledEventForDualAxisUpdate()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        var scrollView = new ScrollView
+        {
+            Orientation = ScrollOrientation.Both
+        };
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+
+        var scrolledEventCount = 0;
+        ScrolledEventArgs? lastArgs = null;
+        scrollView.Scrolled += (_, args) =>
+        {
+            scrolledEventCount++;
+            lastArgs = args;
+        };
+
+        runtime.TrySetNodeScrollPosition(handler.PlatformView.NodeId, 36, 88, out _, out _);
+        handler.OnRuntimeEvent("scroll", payload: null);
+
+        Assert.Equal(1, scrolledEventCount);
+        Assert.NotNull(lastArgs);
+        Assert.Equal(36, lastArgs!.ScrollX);
+        Assert.Equal(88, lastArgs.ScrollY);
+        Assert.Equal(36, scrollView.ScrollX);
+        Assert.Equal(88, scrollView.ScrollY);
+    }
+
+    [Fact]
     public void ScrollViewHandler_PaddingMapper_ProjectsPaddingStyles()
     {
         var handler = new MirageScrollViewHandler();

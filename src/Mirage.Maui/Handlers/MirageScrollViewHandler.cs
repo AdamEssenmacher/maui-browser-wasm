@@ -185,8 +185,7 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
             return;
         }
 
-        VirtualView.HorizontalOffset = left;
-        VirtualView.VerticalOffset = top;
+        SetScrolledPosition(VirtualView, left, top);
         if (_awaitingAnimatedScrollCompletion && HasReachedAnimatedScrollTarget(left, top))
         {
             CompleteAnimatedScrollRequest();
@@ -276,8 +275,7 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
             actualVerticalOffset = realizedTop;
         }
 
-        scrollView.HorizontalOffset = actualHorizontalOffset;
-        scrollView.VerticalOffset = actualVerticalOffset;
+        SetScrolledPosition(scrollView, actualHorizontalOffset, actualVerticalOffset);
         if (request.Instant || ShouldCompleteScrollRequestImmediately(scrollView, appliedViaCoordinator, previousHorizontalOffset, previousVerticalOffset, actualHorizontalOffset, actualVerticalOffset))
         {
             scrollView.ScrollFinished();
@@ -375,6 +373,19 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
     private static IView? ResolvePresentedContent(IScrollView scrollView)
     {
         return scrollView is IContentView contentView ? contentView.PresentedContent : null;
+    }
+
+    private static void SetScrolledPosition(IScrollView scrollView, double horizontalOffset, double verticalOffset)
+    {
+        if (scrollView is ScrollView controlsScrollView)
+        {
+            controlsScrollView.SetScrolledPosition(horizontalOffset, verticalOffset);
+            return;
+        }
+
+        // Fallback for non-Controls IScrollView implementations.
+        scrollView.HorizontalOffset = horizontalOffset;
+        scrollView.VerticalOffset = verticalOffset;
     }
 
     private void TryApplyPendingScrollToRequest(IScrollView scrollView)

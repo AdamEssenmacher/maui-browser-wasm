@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (ScrollView parity follow-up: atomic runtime scrolled update)
+- Runtime-driven scroll offset updates now use MAUI `ScrollView.SetScrolledPosition(x, y)` when available, so dual-axis offset updates are applied atomically.
+- This avoids emitting intermediate `Scrolled` events with stale single-axis values when both offsets change in one runtime tick.
+- Added integration coverage to assert a single `Scrolled` event for a dual-axis runtime scroll update.
+
 ## 2026-03-19 (ScrollView parity follow-up: explicit request constraints must ignore arranged size)
 - `MirageScrollViewHandler.GetDesiredSize` now resolves explicit/min/max constraints from `VisualElement` request properties (`WidthRequest`, `HeightRequest`, etc.) instead of live arranged `Width`/`Height`.
 - This avoids pinning future desired-size calculations to stale arranged dimensions after first layout, preserving re-measure behavior when parent constraints shrink.
