@@ -83,6 +83,17 @@ public sealed class DomElement
 
     public int On(string eventName, Action callback) => DomApi.SubscribeEvent(Handle, eventName, callback);
 
+    public int On(string eventName, string payloadKind, Action<string?> callback)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(payloadKind);
+        ArgumentNullException.ThrowIfNull(callback);
+
+        return DomApi.SubscribeEventWithPayload(Handle, eventName, payloadKind, () =>
+        {
+            callback(DomApi.ConsumeTrackedEventPayload(Handle, payloadKind));
+        });
+    }
+
     public static void Off(int subscriptionId) => DomApi.UnsubscribeEvent(subscriptionId);
 
     public void SetInputValue(string? value) => DomApi.SetInputValue(Handle, value);

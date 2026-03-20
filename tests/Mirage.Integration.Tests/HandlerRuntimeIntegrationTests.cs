@@ -1684,6 +1684,32 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void ImageHandler_IgnoresLoadAndErrorEvents_WhenSourcePayloadMissing()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "coffee.png"
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+
+        handler.OnRuntimeEvent("load", payload: null);
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+
+        handler.OnRuntimeEvent("error", payload: "");
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+    }
+
+    [Fact]
     public void ImageHandler_IgnoresStaleLoadAndErrorEventsForPreviousSource()
     {
         var services = new ServiceCollection()

@@ -632,9 +632,9 @@ public sealed class MirageRuntime : IMirageRuntime
         }
         else if (eventDescriptor.PayloadKind == EventPayloadKind.SourceAttribute)
         {
-            subscriptionId = targetElement.On(eventDescriptor.DomEventName, () =>
+            subscriptionId = targetElement.On(eventDescriptor.DomEventName, "source-attribute", payload =>
             {
-                _eventSink?.OnEvent(nodeId, eventName, targetElement.GetAttr("src"));
+                _eventSink?.OnEvent(nodeId, eventName, payload);
             });
         }
         else

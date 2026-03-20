@@ -669,6 +669,7 @@ export function clearChildren(parentHandle) {
 }
 
 const eventSubscriptions = new Map();
+const trackedEventPayloads = new Map();
 let nextEventSubscriptionId = 1;
 
 function releaseElementRecursive(element) {
@@ -688,6 +689,13 @@ function releaseElementRecursive(element) {
   const handle = handleByElement.get(element);
   if (handle === undefined) {
     return;
+  }
+
+  const trackedPayloadPrefix = `${handle}:`;
+  for (const key of Array.from(trackedEventPayloads.keys())) {
+    if (key.startsWith(trackedPayloadPrefix)) {
+      trackedEventPayloads.delete(key);
+    }
   }
 
   handleByElement.delete(element);
@@ -807,6 +815,66 @@ export function removeProperty(elementHandle, name) {
 export function subscribeEvent(elementHandle, eventName, callback) {
   const element = fromHandle(elementHandle);
   const listener = () => callback();
+  const subscriptionId = nextEventSubscriptionId++;
+  eventSubscriptions.set(subscriptionId, { element, eventName, listener });
+  element.addEventListener(eventName, listener);
+  return subscriptionId;
+}
+
+function getEventPayload(event, payloadKind, fallbackElement) {
+  if (payloadKind !== "source-attribute") {
+    return null;
+  }
+
+  const eventTarget = (event && typeof event === "object" ? event.currentTarget : null) ?? fallbackElement;
+  if (!eventTarget) {
+    return null;
+  }
+
+  if (typeof eventTarget.getAttribute === "function") {
+    const attributeValue = eventTarget.getAttribute("src");
+    if (typeof attributeValue === "string" && attributeValue.length > 0) {
+      return attributeValue;
+    }
+  }
+
+  if (typeof eventTarget.currentSrc === "string" && eventTarget.currentSrc.length > 0) {
+    return eventTarget.currentSrc;
+  }
+
+  return null;
+}
+
+function setTrackedEventPayload(elementHandle, payloadKind, payload) {
+  if (!Number.isInteger(elementHandle) || typeof payloadKind !== "string" || payloadKind.length === 0) {
+    return;
+  }
+
+  const key = `${elementHandle}:${payloadKind}`;
+  trackedEventPayloads.set(key, typeof payload === "string" && payload.length > 0 ? payload : null);
+}
+
+export function consumeTrackedEventPayload(elementHandle, payloadKind) {
+  if (!Number.isInteger(elementHandle) || typeof payloadKind !== "string" || payloadKind.length === 0) {
+    return null;
+  }
+
+  const key = `${elementHandle}:${payloadKind}`;
+  if (!trackedEventPayloads.has(key)) {
+    return null;
+  }
+
+  const payload = trackedEventPayloads.get(key);
+  trackedEventPayloads.delete(key);
+  return typeof payload === "string" ? payload : null;
+}
+
+export function subscribeEventWithPayload(elementHandle, eventName, payloadKind, callback) {
+  const element = fromHandle(elementHandle);
+  const listener = (event) => {
+    setTrackedEventPayload(elementHandle, payloadKind, getEventPayload(event, payloadKind, element));
+    callback();
+  };
   const subscriptionId = nextEventSubscriptionId++;
   eventSubscriptions.set(subscriptionId, { element, eventName, listener });
   element.addEventListener(eventName, listener);

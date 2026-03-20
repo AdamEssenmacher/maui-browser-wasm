@@ -77,6 +77,15 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>, IMirageRunt
             return;
         }
 
+        if ((string.Equals(eventName, "load", StringComparison.Ordinal)
+             || string.Equals(eventName, "error", StringComparison.Ordinal))
+            && string.IsNullOrWhiteSpace(payload))
+        {
+            // Image runtime events should be keyed by the source active when the event fired.
+            // Missing payload makes stale-event filtering unsafe, so ignore deterministically.
+            return;
+        }
+
         // Ignore stale events emitted for a previously assigned src.
         if (!string.IsNullOrWhiteSpace(payload)
             && !string.Equals(payload, _projectedSourceUrl, StringComparison.Ordinal))
