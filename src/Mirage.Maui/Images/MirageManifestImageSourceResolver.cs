@@ -547,7 +547,7 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
 
     private static bool IsSafePassthrough(string value)
     {
-        return IsAllowedDirectUri(value) || value.StartsWith("/", StringComparison.Ordinal);
+        return IsAllowedDirectUri(value);
     }
 
     private static bool IsAllowedDirectUri(string value)
@@ -558,6 +558,12 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
         }
 
         var trimmed = value.Trim();
+        if (trimmed.StartsWith("//", StringComparison.Ordinal)
+            || trimmed.StartsWith("\\\\", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
         return trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
             || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
             || trimmed.StartsWith("data:", StringComparison.OrdinalIgnoreCase)

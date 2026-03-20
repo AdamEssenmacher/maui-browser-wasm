@@ -89,6 +89,26 @@ public sealed class MirageImageSourceResolverTests
     }
 
     [Fact]
+    public async Task Resolve_SchemeRelativeUris_AreRejectedDeterministically()
+    {
+        var resolver = CreateResolver(CreateManifestJson());
+        await resolver.EnsureInitializedAsync();
+
+        var stringResult = resolver.Resolve("//cdn.example.com/image.png");
+        var uriSourceResult = resolver.Resolve((ImageSource)new UriImageSource
+        {
+            Uri = new Uri("//cdn.example.com/image.png", UriKind.RelativeOrAbsolute)
+        });
+
+        Assert.False(stringResult.IsResolved);
+        Assert.Null(stringResult.BrowserUrl);
+
+        Assert.False(uriSourceResult.IsResolved);
+        Assert.Equal("uri", uriSourceResult.SourceKind);
+        Assert.Contains("not supported", uriSourceResult.FailureReason, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Resolve_ImageSource_FileSource_UsesManifestResolverPath()
     {
         var resolver = CreateResolver(CreateManifestJson());
