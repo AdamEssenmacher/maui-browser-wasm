@@ -718,6 +718,15 @@ export function setAttr(elementHandle, name, value) {
   element.setAttribute(name, value);
 }
 
+export function getAttr(elementHandle, name) {
+  const element = fromHandle(elementHandle);
+  if (typeof name !== "string" || name.length === 0) {
+    return null;
+  }
+
+  return element.getAttribute(name);
+}
+
 export function setStyle(elementHandle, name, value) {
   const element = fromHandle(elementHandle);
   if (typeof name !== "string" || name.length === 0) {

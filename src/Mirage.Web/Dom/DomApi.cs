@@ -49,6 +49,9 @@ internal static partial class DomApi
     [JSImport("setAttr", Module)]
     internal static partial void SetAttr(nint element, string name, string? value);
 
+    [JSImport("getAttr", Module)]
+    internal static partial string? GetAttr(nint element, string name);
+
     [JSImport("setStyle", Module)]
     internal static partial void SetStyle(nint element, string name, string? value);
 

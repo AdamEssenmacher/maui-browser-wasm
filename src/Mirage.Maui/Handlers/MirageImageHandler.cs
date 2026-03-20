@@ -72,9 +72,14 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>, IMirageRunt
 
     public void OnRuntimeEvent(string eventName, string? payload)
     {
-        _ = payload;
-
         if (string.IsNullOrWhiteSpace(_projectedSourceUrl))
+        {
+            return;
+        }
+
+        // Ignore stale events emitted for a previously assigned src.
+        if (!string.IsNullOrWhiteSpace(payload)
+            && !string.Equals(payload, _projectedSourceUrl, StringComparison.Ordinal))
         {
             return;
         }

@@ -1628,12 +1628,51 @@ public sealed class HandlerRuntimeIntegrationTests
 
         ((IElementHandler)handler).SetVirtualView(image);
         Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+        var projectedSource = handler.PlatformView.GetPropertyString("Source");
+        Assert.False(string.IsNullOrWhiteSpace(projectedSource));
 
-        handler.OnRuntimeEvent("load", payload: null);
+        handler.OnRuntimeEvent("load", projectedSource);
         Assert.Equal("loaded", handler.PlatformView.GetPropertyString("SourceState"));
 
-        handler.OnRuntimeEvent("error", payload: null);
+        handler.OnRuntimeEvent("error", projectedSource);
         Assert.Equal("error", handler.PlatformView.GetPropertyString("SourceState"));
+    }
+
+    [Fact]
+    public void ImageHandler_IgnoresStaleLoadAndErrorEventsForPreviousSource()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "coffee.png"
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+        var oldSource = handler.PlatformView.GetPropertyString("Source");
+        Assert.Equal("/_mirage/assets/test/coffee.png", oldSource);
+
+        image.Source = new UriImageSource { Uri = new Uri("https://example.com/photo.png") };
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+
+        var currentSource = handler.PlatformView.GetPropertyString("Source");
+        Assert.Equal("https://example.com/photo.png", currentSource);
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+
+        handler.OnRuntimeEvent("error", oldSource);
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+
+        handler.OnRuntimeEvent("load", oldSource);
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+
+        handler.OnRuntimeEvent("load", currentSource);
+        Assert.Equal("loaded", handler.PlatformView.GetPropertyString("SourceState"));
     }
 
     [Fact]

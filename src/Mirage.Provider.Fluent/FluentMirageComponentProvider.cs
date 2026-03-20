@@ -138,8 +138,8 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 },
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
-                    ["load"] = new("load"),
-                    ["error"] = new("error")
+                    ["load"] = new("load", EventTarget.Self, EventPayloadKind.SourceAttribute),
+                    ["error"] = new("error", EventTarget.Self, EventPayloadKind.SourceAttribute)
                 }),
             [ComponentKind.Border] = new(
                 ComponentKind.Border,

@@ -11,7 +11,8 @@ public enum EventPayloadKind
 {
     None,
     InputValue,
-    InputChecked
+    InputChecked,
+    SourceAttribute
 }
 
 public sealed record ProviderEventDescriptor(

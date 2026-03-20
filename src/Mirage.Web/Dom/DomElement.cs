@@ -34,6 +34,8 @@ public sealed class DomElement
 
     public void Attr(string name, string? value) => DomApi.SetAttr(Handle, name, value);
 
+    public string? GetAttr(string name) => DomApi.GetAttr(Handle, name);
+
     public void Style(string name, string? value) => DomApi.SetStyle(Handle, name, value);
 
     public void AddClass(string className) => DomApi.AddClass(Handle, className);

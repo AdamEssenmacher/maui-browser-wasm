@@ -89,6 +89,8 @@ public sealed class ProviderValidationTests
         Assert.Equal("src", descriptor.PropertyMappings["Source"].Name);
         Assert.True(descriptor.EventMappings.ContainsKey("load"));
         Assert.True(descriptor.EventMappings.ContainsKey("error"));
+        Assert.Equal(EventPayloadKind.SourceAttribute, descriptor.EventMappings["load"].PayloadKind);
+        Assert.Equal(EventPayloadKind.SourceAttribute, descriptor.EventMappings["error"].PayloadKind);
     }
 
     [Fact]
