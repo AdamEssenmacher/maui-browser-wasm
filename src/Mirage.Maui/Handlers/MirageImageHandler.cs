@@ -288,7 +288,27 @@ internal sealed class MirageImageHandler : MirageViewHandler<Image>, IMirageRunt
 
     private static bool RequiresManifestInitialization(ImageSource? source)
     {
-        return source is FileImageSource;
+        if (source is not FileImageSource fileImageSource)
+        {
+            return false;
+        }
+
+        return RequiresManifestLookup(fileImageSource.File);
+    }
+
+    private static bool RequiresManifestLookup(string? fileSource)
+    {
+        if (string.IsNullOrWhiteSpace(fileSource))
+        {
+            return false;
+        }
+
+        var trimmed = fileSource.Trim();
+        return !(trimmed.StartsWith("/", StringComparison.Ordinal)
+            || trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("blob:", StringComparison.OrdinalIgnoreCase));
     }
 
     private bool UpdateAnimationPlaybackProjection(Image image)

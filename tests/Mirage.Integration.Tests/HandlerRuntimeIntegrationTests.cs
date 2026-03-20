@@ -1656,6 +1656,39 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void ImageHandler_SkipsManifestInitialization_ForPassthroughFileSources()
+    {
+        var resolver = new StubImageSourceResolver();
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(resolver)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image { Source = "/_mirage/assets/test/coffee.png" };
+        ((IElementHandler)handler).SetVirtualView(image);
+        Assert.Equal(0, resolver.EnsureInitializedCallCount);
+
+        image.Source = "https://example.com/photo.png";
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        Assert.Equal(0, resolver.EnsureInitializedCallCount);
+
+        image.Source = "data:image/png;base64,AAAA";
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        Assert.Equal(0, resolver.EnsureInitializedCallCount);
+
+        image.Source = "blob:https://example.com/image";
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        Assert.Equal(0, resolver.EnsureInitializedCallCount);
+
+        image.Source = "coffee.png";
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        Assert.True(resolver.EnsureInitializedCallCount > 0);
+    }
+
+    [Fact]
     public void ImageHandler_OnRuntimeLoadAndError_TransitionsSourceStateDeterministically()
     {
         var services = new ServiceCollection()
