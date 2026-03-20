@@ -1,8 +1,6 @@
-using System.Text;
 using Mirage.Maui.Images;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
-using Microsoft.Maui.Graphics;
 
 namespace Mirage.Maui.Handlers;
 
@@ -13,7 +11,9 @@ internal static class MirageImageSourceProjection
         string SourceKind,
         string InitialState,
         bool IsSupported,
-        string? FailureReason);
+        string? FailureReason,
+        bool IsGifSource,
+        bool IsManagedObjectUrl);
 
 #if DEBUG
     private static readonly HashSet<string> UnsupportedWarnings = new();
@@ -26,56 +26,55 @@ internal static class MirageImageSourceProjection
     {
         if (source is null)
         {
-            return new SourceProjection(null, "none", "empty", true, null);
+            return new SourceProjection(
+                SourceValue: null,
+                SourceKind: "none",
+                InitialState: "empty",
+                IsSupported: true,
+                FailureReason: null,
+                IsGifSource: false,
+                IsManagedObjectUrl: false);
         }
 
-        if (source is UriImageSource uriImageSource)
+        if (imageSourceResolver is null)
         {
-            var uri = uriImageSource.Uri?.ToString();
-            if (!string.IsNullOrWhiteSpace(uri))
-            {
-                return new SourceProjection(uri, "uri", "loading", true, null);
-            }
-
-            ReportUnsupported(ownerView, source, "UriImageSource was missing a Uri.");
-            return new SourceProjection(null, "unsupported", "unsupported", false, "UriImageSource was missing a Uri.");
+            const string resolverMissingReason = "IMirageImageSourceResolver was not available.";
+            ReportUnsupported(ownerView, source, resolverMissingReason);
+            return new SourceProjection(
+                SourceValue: null,
+                SourceKind: "unsupported",
+                InitialState: "unresolved",
+                IsSupported: false,
+                FailureReason: resolverMissingReason,
+                IsGifSource: false,
+                IsManagedObjectUrl: false);
         }
 
-        if (source is FileImageSource fileImageSource)
+        var resolved = imageSourceResolver.Resolve(source);
+        if (resolved.IsResolved)
         {
-            if (imageSourceResolver is null)
-            {
-                const string resolverMissingReason = "IMirageImageSourceResolver was not available.";
-                ReportUnsupported(ownerView, source, resolverMissingReason);
-                return new SourceProjection(null, "unsupported", "unsupported", false, resolverMissingReason);
-            }
-
-            var resolved = imageSourceResolver.Resolve(fileImageSource.File);
-            if (resolved.IsResolved && !string.IsNullOrWhiteSpace(resolved.BrowserUrl))
-            {
-                return new SourceProjection(resolved.BrowserUrl, "file", "loading", true, null);
-            }
-
-            var reason = string.IsNullOrWhiteSpace(resolved.FailureReason)
-                ? "FileImageSource could not be resolved."
-                : resolved.FailureReason;
-            ReportUnsupported(ownerView, source, reason);
-            return new SourceProjection(null, "unsupported", "unsupported", false, reason);
+            return new SourceProjection(
+                SourceValue: resolved.BrowserUrl,
+                SourceKind: resolved.SourceKind,
+                InitialState: resolved.InitialState,
+                IsSupported: true,
+                FailureReason: null,
+                IsGifSource: resolved.IsGifSource,
+                IsManagedObjectUrl: resolved.IsManagedObjectUrl);
         }
 
-        if (source is FontImageSource fontImageSource)
-        {
-            if (TryBuildFontImageDataUri(fontImageSource, out var dataUri))
-            {
-                return new SourceProjection(dataUri, "font", "loading", true, null);
-            }
-
-            ReportUnsupported(ownerView, source, "FontImageSource did not have enough information to project.");
-            return new SourceProjection(null, "unsupported", "unsupported", false, "FontImageSource did not have enough information to project.");
-        }
-
-        ReportUnsupported(ownerView, source, "ImageSource type is not yet supported.");
-        return new SourceProjection(null, "unsupported", "unsupported", false, "ImageSource type is not yet supported.");
+        var reason = string.IsNullOrWhiteSpace(resolved.FailureReason)
+            ? $"{source.GetType().Name} could not be resolved."
+            : resolved.FailureReason;
+        ReportUnsupported(ownerView, source, reason);
+        return new SourceProjection(
+            SourceValue: null,
+            SourceKind: "unsupported",
+            InitialState: "unresolved",
+            IsSupported: false,
+            FailureReason: reason,
+            IsGifSource: false,
+            IsManagedObjectUrl: false);
     }
 
     public static string ResolveObjectFit(Aspect aspect)
@@ -87,67 +86,6 @@ internal static class MirageImageSourceProjection
             Aspect.Center => "none",
             _ => "contain"
         };
-    }
-
-    private static bool TryBuildFontImageDataUri(FontImageSource fontImageSource, out string dataUri)
-    {
-        dataUri = string.Empty;
-        if (string.IsNullOrWhiteSpace(fontImageSource.Glyph))
-        {
-            return false;
-        }
-
-        var glyph = EscapeXml(fontImageSource.Glyph);
-        var color = MirageCommonViewProjection.ToCssColor(fontImageSource.Color);
-        if (string.IsNullOrWhiteSpace(color))
-        {
-            color = "#000000";
-        }
-
-        var fontFamily = string.IsNullOrWhiteSpace(fontImageSource.FontFamily)
-            ? "sans-serif"
-            : EscapeXml(fontImageSource.FontFamily);
-
-        var size = fontImageSource.Size;
-        if (!double.IsFinite(size) || size <= 0)
-        {
-            size = 24;
-        }
-
-        var iconSize = Math.Max(8, size * 1.6);
-        var svg = new StringBuilder();
-        svg.Append("<svg xmlns='http://www.w3.org/2000/svg' width='");
-        svg.Append(iconSize.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
-        svg.Append("' height='");
-        svg.Append(iconSize.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
-        svg.Append("' viewBox='0 0 ");
-        svg.Append(iconSize.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
-        svg.Append(' ');
-        svg.Append(iconSize.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
-        svg.Append("'>");
-        svg.Append("<text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-family='");
-        svg.Append(fontFamily);
-        svg.Append("' font-size='");
-        svg.Append(size.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture));
-        svg.Append("' fill='");
-        svg.Append(color);
-        svg.Append("'>");
-        svg.Append(glyph);
-        svg.Append("</text></svg>");
-
-        var encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(svg.ToString()));
-        dataUri = $"data:image/svg+xml;base64,{encoded}";
-        return true;
-    }
-
-    private static string EscapeXml(string value)
-    {
-        return value
-            .Replace("&", "&amp;", StringComparison.Ordinal)
-            .Replace("<", "&lt;", StringComparison.Ordinal)
-            .Replace(">", "&gt;", StringComparison.Ordinal)
-            .Replace("\"", "&quot;", StringComparison.Ordinal)
-            .Replace("'", "&apos;", StringComparison.Ordinal);
     }
 
     private static void ReportUnsupported(IView? ownerView, object? value, string details)

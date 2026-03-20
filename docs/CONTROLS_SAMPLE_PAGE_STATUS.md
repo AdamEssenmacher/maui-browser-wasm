@@ -96,7 +96,7 @@ Visual legend:
 | `EntryPage.xaml` | `Pages/Controls/EntryPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `HybridWebViewPage.xaml` | `Pages/Controls/HybridWebViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ImageButtonPage.xaml` | `Pages/Controls/ImageButtonPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `ImagePage.xaml` | `Pages/Controls/ImagePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ImagePage.xaml` | `Pages/Controls/ImagePage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `IndicatorPage.xaml` | `Pages/Controls/IndicatorPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `LabelPage.xaml` | `Pages/Controls/LabelPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `PickerPage.xaml` | `Pages/Controls/PickerPage.xaml` | `[ ]` | `[ ]` | `[ ]` |

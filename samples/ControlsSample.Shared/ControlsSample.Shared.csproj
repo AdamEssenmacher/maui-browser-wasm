@@ -37,6 +37,7 @@
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml" Link="Vendor\Pages\Controls\ButtonPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\BoxViewPage.xaml" Link="Vendor\Pages\Controls\BoxViewPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\CheckBoxPage.xaml" Link="Vendor\Pages\Controls\CheckBoxPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\ImagePage.xaml" Link="Vendor\Pages\Controls\ImagePage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\BasicMapGallery.xaml" Link="Vendor\Pages\Controls\MapsGalleries\BasicMapGallery.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\MapTypeGallery.xaml" Link="Vendor\Pages\Controls\MapsGalleries\MapTypeGallery.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\MapPinsGallery.xaml" Link="Vendor\Pages\Controls\MapsGalleries\MapPinsGallery.xaml" />
@@ -81,6 +82,7 @@
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml.cs" Link="Vendor\Pages\Controls\ButtonPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\BoxViewPage.xaml.cs" Link="Vendor\Pages\Controls\BoxViewPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\CheckBoxPage.xaml.cs" Link="Vendor\Pages\Controls\CheckBoxPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\ImagePage.xaml.cs" Link="Vendor\Pages\Controls\ImagePage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\MapsGallery.cs" Link="Vendor\Pages\Controls\MapsGalleries\MapsGallery.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\BasicMapGallery.xaml.cs" Link="Vendor\Pages\Controls\MapsGalleries\BasicMapGallery.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\MapTypeGallery.xaml.cs" Link="Vendor\Pages\Controls\MapsGalleries\MapTypeGallery.xaml.cs" />

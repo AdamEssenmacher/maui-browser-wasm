@@ -630,6 +630,13 @@ public sealed class MirageRuntime : IMirageRuntime
                     targetElement.GetInputChecked() ? "true" : "false");
             });
         }
+        else if (eventDescriptor.PayloadKind == EventPayloadKind.SourceAttribute)
+        {
+            subscriptionId = targetElement.On(eventDescriptor.DomEventName, "source-attribute", payload =>
+            {
+                _eventSink?.OnEvent(nodeId, eventName, payload);
+            });
+        }
         else
         {
             subscriptionId = targetElement.On(eventDescriptor.DomEventName, () =>

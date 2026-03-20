@@ -1580,8 +1580,9 @@ public sealed class HandlerRuntimeIntegrationTests
     [Fact]
     public void ImageHandler_MapsSourceAspectAndOpaqueState()
     {
+        var resolver = new StubImageSourceResolver();
         var services = new ServiceCollection()
-            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .AddSingleton<IMirageImageSourceResolver>(resolver)
             .BuildServiceProvider();
         var mauiContext = new MauiContext(services);
 
@@ -1600,6 +1601,8 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal("/_mirage/assets/test/coffee.png", handler.PlatformView.GetPropertyString("Source"));
         Assert.Equal("file", handler.PlatformView.GetPropertyString("SourceKind"));
         Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+        var fileEnsureCount = resolver.EnsureInitializedCallCount;
+        Assert.True(fileEnsureCount > 0);
         Assert.Equal("true", handler.PlatformView.GetPropertyString("IsOpaque"));
         Assert.Equal("cover", handler.PlatformView.GetStyleValue("objectFit"));
 
@@ -1608,6 +1611,205 @@ public sealed class HandlerRuntimeIntegrationTests
 
         Assert.Equal("https://example.com/photo.png", handler.PlatformView.GetPropertyString("Source"));
         Assert.Equal("uri", handler.PlatformView.GetPropertyString("SourceKind"));
+        Assert.Equal(fileEnsureCount, resolver.EnsureInitializedCallCount);
+    }
+
+    [Fact]
+    public void ImageHandler_SkipsManifestInitialization_ForUriFontAndStreamSources()
+    {
+        var resolver = new StubImageSourceResolver();
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(resolver)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = new UriImageSource { Uri = new Uri("images/photo.png", UriKind.Relative) }
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+        Assert.Equal(0, resolver.EnsureInitializedCallCount);
+
+        image.Source = "coffee.png";
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        var fileEnsureCount = resolver.EnsureInitializedCallCount;
+        Assert.True(fileEnsureCount > 0);
+
+        image.Source = new FontImageSource { Glyph = "★", Size = 24 };
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        Assert.Equal(fileEnsureCount, resolver.EnsureInitializedCallCount);
+
+        image.Source = new StreamImageSource
+        {
+            Stream = _ => Task.FromResult<Stream>(new MemoryStream(new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 }))
+        };
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        Assert.Equal(fileEnsureCount, resolver.EnsureInitializedCallCount);
+
+        image.Source = new UriImageSource { Uri = new Uri("images/another-photo.png", UriKind.Relative) };
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        Assert.Equal(fileEnsureCount, resolver.EnsureInitializedCallCount);
+    }
+
+    [Fact]
+    public void ImageHandler_SkipsManifestInitialization_ForPassthroughFileSources()
+    {
+        var resolver = new StubImageSourceResolver();
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(resolver)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image { Source = "/_mirage/assets/test/coffee.png" };
+        ((IElementHandler)handler).SetVirtualView(image);
+        Assert.Equal(0, resolver.EnsureInitializedCallCount);
+
+        image.Source = "https://example.com/photo.png";
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        Assert.Equal(0, resolver.EnsureInitializedCallCount);
+
+        image.Source = "data:image/png;base64,AAAA";
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        Assert.Equal(0, resolver.EnsureInitializedCallCount);
+
+        image.Source = "blob:https://example.com/image";
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        Assert.Equal(0, resolver.EnsureInitializedCallCount);
+
+        image.Source = "coffee.png";
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+        Assert.True(resolver.EnsureInitializedCallCount > 0);
+    }
+
+    [Fact]
+    public void ImageHandler_OnRuntimeLoadAndError_TransitionsSourceStateDeterministically()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "coffee.png"
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+        var projectedSource = handler.PlatformView.GetPropertyString("Source");
+        Assert.False(string.IsNullOrWhiteSpace(projectedSource));
+
+        handler.OnRuntimeEvent("load", projectedSource);
+        Assert.Equal("loaded", handler.PlatformView.GetPropertyString("SourceState"));
+
+        handler.OnRuntimeEvent("error", projectedSource);
+        Assert.Equal("error", handler.PlatformView.GetPropertyString("SourceState"));
+    }
+
+    [Fact]
+    public void ImageHandler_IgnoresLoadAndErrorEvents_WhenSourcePayloadMissing()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "coffee.png"
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+
+        handler.OnRuntimeEvent("load", payload: null);
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+
+        handler.OnRuntimeEvent("error", payload: "");
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+    }
+
+    [Fact]
+    public void ImageHandler_IgnoresStaleLoadAndErrorEventsForPreviousSource()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "coffee.png"
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+        var oldSource = handler.PlatformView.GetPropertyString("Source");
+        Assert.Equal("/_mirage/assets/test/coffee.png", oldSource);
+
+        image.Source = new UriImageSource { Uri = new Uri("https://example.com/photo.png") };
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.Source));
+
+        var currentSource = handler.PlatformView.GetPropertyString("Source");
+        Assert.Equal("https://example.com/photo.png", currentSource);
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+
+        handler.OnRuntimeEvent("error", oldSource);
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+
+        handler.OnRuntimeEvent("load", oldSource);
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
+
+        handler.OnRuntimeEvent("load", currentSource);
+        Assert.Equal("loaded", handler.PlatformView.GetPropertyString("SourceState"));
+    }
+
+    [Fact]
+    public void ImageHandler_GifIsAnimationPlaying_TogglesSourceWithRestartOnResume()
+    {
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(new StubImageSourceResolver())
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageImageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var image = new Image
+        {
+            Source = "animated_heart.gif",
+            IsAnimationPlaying = true
+        };
+
+        ((IElementHandler)handler).SetVirtualView(image);
+        Assert.Equal("/_mirage/assets/test/animated_heart.gif", handler.PlatformView.GetPropertyString("Source"));
+
+        image.IsAnimationPlaying = false;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.IsAnimationPlaying));
+
+        Assert.Null(handler.PlatformView.GetPropertyString("Source"));
+        Assert.Equal("loaded", handler.PlatformView.GetPropertyString("SourceState"));
+
+        image.IsAnimationPlaying = true;
+        MirageImageHandler.Mapper.UpdateProperty(handler, image, nameof(Image.IsAnimationPlaying));
+
+        Assert.Equal("/_mirage/assets/test/animated_heart.gif", handler.PlatformView.GetPropertyString("Source"));
+        Assert.Equal("loading", handler.PlatformView.GetPropertyString("SourceState"));
     }
 
     [Fact]
@@ -1733,7 +1935,7 @@ public sealed class HandlerRuntimeIntegrationTests
 
         Assert.Null(handler.PlatformView.GetPropertyString("Source"));
         Assert.Equal("unsupported", handler.PlatformView.GetPropertyString("SourceKind"));
-        Assert.Equal("unsupported", handler.PlatformView.GetPropertyString("SourceState"));
+        Assert.Equal("unresolved", handler.PlatformView.GetPropertyString("SourceState"));
     }
 
     [Fact]
@@ -4362,8 +4564,12 @@ public sealed class HandlerRuntimeIntegrationTests
 
     private sealed class StubImageSourceResolver : IMirageImageSourceResolver
     {
+        public List<string> ReleasedUrls { get; } = [];
+        public int EnsureInitializedCallCount { get; private set; }
+
         public ValueTask EnsureInitializedAsync()
         {
+            EnsureInitializedCallCount++;
             return ValueTask.CompletedTask;
         }
 
@@ -4379,12 +4585,65 @@ public sealed class HandlerRuntimeIntegrationTests
                 return MirageImageSourceResolveResult.Resolved("/_mirage/assets/test/thumb_image.png");
             }
 
+            if (string.Equals(source, "animated_heart.gif", StringComparison.Ordinal))
+            {
+                return MirageImageSourceResolveResult.Resolved("/_mirage/assets/test/animated_heart.gif");
+            }
+
             if (string.IsNullOrWhiteSpace(source))
             {
                 return MirageImageSourceResolveResult.Unresolved("Empty source.");
             }
 
             return MirageImageSourceResolveResult.Resolved(source);
+        }
+
+        public MirageImageSourceProjectionResult Resolve(ImageSource? source)
+        {
+            return source switch
+            {
+                null => MirageImageSourceProjectionResult.Empty(),
+                FileImageSource file => ResolveFile(file),
+                UriImageSource uri when uri.Uri is not null => MirageImageSourceProjectionResult.Resolved(uri.Uri.ToString(), "uri", isGifSource: uri.Uri.ToString().EndsWith(".gif", StringComparison.OrdinalIgnoreCase)),
+                FontImageSource => MirageImageSourceProjectionResult.Resolved("data:image/svg+xml;base64,AAA=", "font"),
+                _ => MirageImageSourceProjectionResult.Unresolved("unsupported", "Unsupported source in test resolver.")
+            };
+        }
+
+        public ValueTask<MirageImageSourceProjectionResult> ResolveAsync(ImageSource? source, CancellationToken cancellationToken = default)
+        {
+            if (source is StreamImageSource)
+            {
+                return new ValueTask<MirageImageSourceProjectionResult>(
+                    MirageImageSourceProjectionResult.Resolved(
+                        "blob:test-image",
+                        "stream",
+                        isManagedObjectUrl: true));
+            }
+
+            return new ValueTask<MirageImageSourceProjectionResult>(Resolve(source));
+        }
+
+        public void Release(string? browserUrl)
+        {
+            if (!string.IsNullOrWhiteSpace(browserUrl))
+            {
+                ReleasedUrls.Add(browserUrl);
+            }
+        }
+
+        private MirageImageSourceProjectionResult ResolveFile(FileImageSource fileImageSource)
+        {
+            var resolved = Resolve(fileImageSource.File);
+            if (!resolved.IsResolved || string.IsNullOrWhiteSpace(resolved.BrowserUrl))
+            {
+                return MirageImageSourceProjectionResult.Unresolved("file", resolved.FailureReason ?? "Unresolved.");
+            }
+
+            return MirageImageSourceProjectionResult.Resolved(
+                resolved.BrowserUrl,
+                "file",
+                isGifSource: (fileImageSource.File ?? string.Empty).EndsWith(".gif", StringComparison.OrdinalIgnoreCase));
         }
     }
 
@@ -4398,6 +4657,32 @@ public sealed class HandlerRuntimeIntegrationTests
         public MirageImageSourceResolveResult Resolve(string? source)
         {
             return MirageImageSourceResolveResult.Unresolved($"Could not resolve '{source}'.");
+        }
+
+        public MirageImageSourceProjectionResult Resolve(ImageSource? source)
+        {
+            var kind = source switch
+            {
+                null => "none",
+                FileImageSource => "file",
+                UriImageSource => "uri",
+                FontImageSource => "font",
+                StreamImageSource => "stream",
+                _ => "unsupported"
+            };
+            return source is null
+                ? MirageImageSourceProjectionResult.Empty()
+                : MirageImageSourceProjectionResult.Unresolved(kind, $"Could not resolve '{source.GetType().Name}'.");
+        }
+
+        public ValueTask<MirageImageSourceProjectionResult> ResolveAsync(ImageSource? source, CancellationToken cancellationToken = default)
+        {
+            return new ValueTask<MirageImageSourceProjectionResult>(Resolve(source));
+        }
+
+        public void Release(string? browserUrl)
+        {
+            _ = browserUrl;
         }
     }
 }

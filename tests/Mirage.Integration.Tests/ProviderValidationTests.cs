@@ -81,9 +81,16 @@ public sealed class ProviderValidationTests
         var descriptor = provider.ResolveControl(ComponentKind.Image);
 
         Assert.Equal("img", descriptor.ElementTagName);
+        Assert.Equal(string.Empty, descriptor.DefaultAttributes["alt"]);
+        Assert.Equal("async", descriptor.DefaultAttributes["decoding"]);
+        Assert.Equal("eager", descriptor.DefaultAttributes["loading"]);
         Assert.True(descriptor.PropertyMappings.ContainsKey("Source"));
         Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Source"].Target);
         Assert.Equal("src", descriptor.PropertyMappings["Source"].Name);
+        Assert.True(descriptor.EventMappings.ContainsKey("load"));
+        Assert.True(descriptor.EventMappings.ContainsKey("error"));
+        Assert.Equal(EventPayloadKind.SourceAttribute, descriptor.EventMappings["load"].PayloadKind);
+        Assert.Equal(EventPayloadKind.SourceAttribute, descriptor.EventMappings["error"].PayloadKind);
     }
 
     [Fact]

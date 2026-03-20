@@ -497,6 +497,59 @@ export async function fetchTextWithStatusJson(path) {
   return JSON.stringify(result);
 }
 
+function decodeBase64ToUint8Array(base64) {
+  if (typeof base64 !== "string" || base64.length === 0) {
+    return null;
+  }
+
+  try {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let index = 0; index < binary.length; index += 1) {
+      bytes[index] = binary.charCodeAt(index);
+    }
+
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+
+export function createObjectUrlFromBase64(base64, contentType) {
+  if (typeof Blob === "undefined" || typeof URL === "undefined" || typeof URL.createObjectURL !== "function") {
+    return null;
+  }
+
+  const bytes = decodeBase64ToUint8Array(base64);
+  if (!bytes || bytes.length === 0) {
+    return null;
+  }
+
+  const normalizedContentType = typeof contentType === "string" && contentType.trim().length > 0
+    ? contentType.trim()
+    : "application/octet-stream";
+
+  const blob = new Blob([bytes], { type: normalizedContentType });
+  return URL.createObjectURL(blob);
+}
+
+export function revokeObjectUrl(objectUrl) {
+  if (
+    typeof objectUrl !== "string"
+    || objectUrl.length === 0
+    || typeof URL === "undefined"
+    || typeof URL.revokeObjectURL !== "function"
+  ) {
+    return;
+  }
+
+  try {
+    URL.revokeObjectURL(objectUrl);
+  } catch {
+    // best effort cleanup
+  }
+}
+
 function toHandle(element) {
   const existing = handleByElement.get(element);
   if (existing !== undefined) {
@@ -616,6 +669,7 @@ export function clearChildren(parentHandle) {
 }
 
 const eventSubscriptions = new Map();
+const trackedEventPayloads = new Map();
 let nextEventSubscriptionId = 1;
 
 function releaseElementRecursive(element) {
@@ -635,6 +689,13 @@ function releaseElementRecursive(element) {
   const handle = handleByElement.get(element);
   if (handle === undefined) {
     return;
+  }
+
+  const trackedPayloadPrefix = `${handle}:`;
+  for (const key of Array.from(trackedEventPayloads.keys())) {
+    if (key.startsWith(trackedPayloadPrefix)) {
+      trackedEventPayloads.delete(key);
+    }
   }
 
   handleByElement.delete(element);
@@ -663,6 +724,15 @@ export function setAttr(elementHandle, name, value) {
   }
 
   element.setAttribute(name, value);
+}
+
+export function getAttr(elementHandle, name) {
+  const element = fromHandle(elementHandle);
+  if (typeof name !== "string" || name.length === 0) {
+    return null;
+  }
+
+  return element.getAttribute(name);
 }
 
 export function setStyle(elementHandle, name, value) {
@@ -745,6 +815,66 @@ export function removeProperty(elementHandle, name) {
 export function subscribeEvent(elementHandle, eventName, callback) {
   const element = fromHandle(elementHandle);
   const listener = () => callback();
+  const subscriptionId = nextEventSubscriptionId++;
+  eventSubscriptions.set(subscriptionId, { element, eventName, listener });
+  element.addEventListener(eventName, listener);
+  return subscriptionId;
+}
+
+function getEventPayload(event, payloadKind, fallbackElement) {
+  if (payloadKind !== "source-attribute") {
+    return null;
+  }
+
+  const eventTarget = (event && typeof event === "object" ? event.currentTarget : null) ?? fallbackElement;
+  if (!eventTarget) {
+    return null;
+  }
+
+  if (typeof eventTarget.getAttribute === "function") {
+    const attributeValue = eventTarget.getAttribute("src");
+    if (typeof attributeValue === "string" && attributeValue.length > 0) {
+      return attributeValue;
+    }
+  }
+
+  if (typeof eventTarget.currentSrc === "string" && eventTarget.currentSrc.length > 0) {
+    return eventTarget.currentSrc;
+  }
+
+  return null;
+}
+
+function setTrackedEventPayload(elementHandle, payloadKind, payload) {
+  if (!Number.isInteger(elementHandle) || typeof payloadKind !== "string" || payloadKind.length === 0) {
+    return;
+  }
+
+  const key = `${elementHandle}:${payloadKind}`;
+  trackedEventPayloads.set(key, typeof payload === "string" && payload.length > 0 ? payload : null);
+}
+
+export function consumeTrackedEventPayload(elementHandle, payloadKind) {
+  if (!Number.isInteger(elementHandle) || typeof payloadKind !== "string" || payloadKind.length === 0) {
+    return null;
+  }
+
+  const key = `${elementHandle}:${payloadKind}`;
+  if (!trackedEventPayloads.has(key)) {
+    return null;
+  }
+
+  const payload = trackedEventPayloads.get(key);
+  trackedEventPayloads.delete(key);
+  return typeof payload === "string" ? payload : null;
+}
+
+export function subscribeEventWithPayload(elementHandle, eventName, payloadKind, callback) {
+  const element = fromHandle(elementHandle);
+  const listener = (event) => {
+    setTrackedEventPayload(elementHandle, payloadKind, getEventPayload(event, payloadKind, element));
+    callback();
+  };
   const subscriptionId = nextEventSubscriptionId++;
   eventSubscriptions.set(subscriptionId, { element, eventName, listener });
   element.addEventListener(eventName, listener);

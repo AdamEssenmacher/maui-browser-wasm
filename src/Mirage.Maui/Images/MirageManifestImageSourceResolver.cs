@@ -1,6 +1,10 @@
+using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Mirage.Core.Diagnostics;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Graphics;
 
 namespace Mirage.Maui.Images;
 
@@ -10,10 +14,14 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
     private const int SupportedManifestVersion = 1;
     private const int ManifestLoadMaxAttempts = 5;
     private const int ManifestLoadRetryDelayMilliseconds = 150;
+    private const int MaxDiagnosticKeyCount = 256;
 
     private readonly IMirageImageManifestProvider _manifestProvider;
+    private readonly IMirageObjectUrlFactory? _objectUrlFactory;
     private readonly object _diagnosticSync = new();
     private readonly HashSet<string> _diagnosticKeys = new(StringComparer.Ordinal);
+    private readonly object _objectUrlSync = new();
+    private readonly HashSet<string> _ownedObjectUrls = new(StringComparer.Ordinal);
 
     private Dictionary<string, string> _imagesByIdentity = new(StringComparer.OrdinalIgnoreCase);
     private Dictionary<string, string[]> _logicalPathAliases = new(StringComparer.OrdinalIgnoreCase);
@@ -24,9 +32,12 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
     private bool _manifestLoaded;
     private string _degradedReason = "Bundled image resolver is running in degraded mode because the manifest was unavailable.";
 
-    public MirageManifestImageSourceResolver(IMirageImageManifestProvider manifestProvider)
+    public MirageManifestImageSourceResolver(
+        IMirageImageManifestProvider manifestProvider,
+        IMirageObjectUrlFactory? objectUrlFactory = null)
     {
         _manifestProvider = manifestProvider ?? throw new ArgumentNullException(nameof(manifestProvider));
+        _objectUrlFactory = objectUrlFactory;
     }
 
     public ValueTask EnsureInitializedAsync()
@@ -56,7 +67,7 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
     {
         if (string.IsNullOrWhiteSpace(source))
         {
-            return Fail("Image source was empty.");
+            return Fail("Image source was empty.", "empty-source");
         }
 
         var trimmed = source.Trim();
@@ -69,7 +80,7 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
         {
             return Fail(
                 _degradedReason,
-                $"degraded:{trimmed.ToLowerInvariant()}");
+                "degraded");
         }
 
         if (_imagesByIdentity.TryGetValue(trimmed, out var exactIdentityUrl))
@@ -83,7 +94,7 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
         {
             return logicalLookup.IsResolved
                 ? Succeed(logicalLookup.BrowserUrl!, "logicalPath", normalizedLookup)
-                : Fail(logicalLookup.FailureReason!);
+                : Fail(logicalLookup.FailureReason!, "alias-logicalpath");
         }
 
         var fileName = Path.GetFileName(normalizedLookup);
@@ -94,7 +105,7 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
             {
                 return fileNameLookup.IsResolved
                     ? Succeed(fileNameLookup.BrowserUrl!, "fileName", fileName)
-                    : Fail(fileNameLookup.FailureReason!);
+                    : Fail(fileNameLookup.FailureReason!, "alias-filename");
             }
 
             var fileStem = Path.GetFileNameWithoutExtension(fileName);
@@ -105,12 +116,103 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
                 {
                     return fileStemLookup.IsResolved
                         ? Succeed(fileStemLookup.BrowserUrl!, "fileStem", fileStem)
-                        : Fail(fileStemLookup.FailureReason!);
+                        : Fail(fileStemLookup.FailureReason!, "alias-filestem");
                 }
             }
         }
 
-        return Fail($"Bundled image source '{trimmed}' was not found in the Mirage image manifest.");
+        return Fail($"Bundled image source '{trimmed}' was not found in the Mirage image manifest.", "not-found");
+    }
+
+    public MirageImageSourceProjectionResult Resolve(ImageSource? source)
+    {
+        if (source is null)
+        {
+            return MirageImageSourceProjectionResult.Empty();
+        }
+
+        if (source is UriImageSource uriImageSource)
+        {
+            return ResolveUriImageSource(uriImageSource);
+        }
+
+        if (source is FileImageSource fileImageSource)
+        {
+            return ResolveFileImageSource(fileImageSource);
+        }
+
+        if (source is FontImageSource fontImageSource)
+        {
+            return ResolveFontImageSource(fontImageSource);
+        }
+
+        if (source is StreamImageSource)
+        {
+            return MirageImageSourceProjectionResult.Unresolved(
+                "stream",
+                "StreamImageSource requires async resolver execution.");
+        }
+
+        return MirageImageSourceProjectionResult.Unresolved(
+            "unsupported",
+            $"Image source kind '{source.GetType().Name}' is not supported.");
+    }
+
+    public async ValueTask<MirageImageSourceProjectionResult> ResolveAsync(
+        ImageSource? source,
+        CancellationToken cancellationToken = default)
+    {
+        if (source is StreamImageSource streamImageSource)
+        {
+            return await ResolveStreamImageSourceAsync(streamImageSource, cancellationToken);
+        }
+
+        return Resolve(source);
+    }
+
+    public void Release(string? browserUrl)
+    {
+        if (string.IsNullOrWhiteSpace(browserUrl))
+        {
+            return;
+        }
+
+        var trimmed = browserUrl.Trim();
+        var shouldRelease = false;
+        lock (_objectUrlSync)
+        {
+            if (_ownedObjectUrls.Remove(trimmed))
+            {
+                shouldRelease = true;
+            }
+        }
+
+        if (!shouldRelease)
+        {
+            return;
+        }
+
+        if (_objectUrlFactory is null)
+        {
+            ReportOnce(
+                "stream-release-without-factory",
+                "Attempted to release a stream blob URL without an object URL factory.");
+            return;
+        }
+
+        try
+        {
+            _objectUrlFactory.RevokeObjectUrl(trimmed);
+            ReportOnce(
+                "stream-release-success",
+                "Released stream image blob URL.");
+        }
+        catch (Exception ex)
+        {
+            ReportOnce(
+                $"stream-release-failed:{ex.GetType().Name}",
+                $"Failed to release a stream image blob URL: {ex.GetType().Name}.");
+        }
     }
 
     private async Task InitializeCoreAsync()
@@ -211,16 +313,145 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
     private MirageImageSourceResolveResult Succeed(string browserUrl, string resolutionStage, string lookupKey)
     {
         ReportOnce(
-            $"resolve-success:{resolutionStage}:{lookupKey.ToLowerInvariant()}",
+            $"resolve-success:{resolutionStage}",
             $"Resolved bundled image source via {resolutionStage}: '{lookupKey}' -> '{browserUrl}'.");
         return MirageImageSourceResolveResult.Resolved(browserUrl);
     }
 
-    private MirageImageSourceResolveResult Fail(string reason, string? diagnosticKey = null)
+    private MirageImageSourceResolveResult Fail(string reason, string? errorCode = null)
     {
-        var normalizedDiagnosticKey = diagnosticKey ?? $"resolve-failure:{reason.ToLowerInvariant()}";
+        var normalizedDiagnosticKey = string.IsNullOrWhiteSpace(errorCode)
+            ? "resolve-failure:generic"
+            : $"resolve-failure:{errorCode}";
         ReportOnce(normalizedDiagnosticKey, reason);
         return MirageImageSourceResolveResult.Unresolved(reason);
+    }
+
+    private MirageImageSourceProjectionResult ResolveUriImageSource(UriImageSource source)
+    {
+        var uriValue = source.Uri?.OriginalString;
+        if (string.IsNullOrWhiteSpace(uriValue))
+        {
+            var fallbackValue = source.ToString();
+            if (!string.IsNullOrWhiteSpace(fallbackValue)
+                && !string.Equals(fallbackValue, source.GetType().Name, StringComparison.Ordinal)
+                && !string.Equals(fallbackValue, source.GetType().FullName, StringComparison.Ordinal))
+            {
+                uriValue = fallbackValue;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(uriValue))
+        {
+            return MirageImageSourceProjectionResult.Unresolved("uri", "UriImageSource was missing a Uri value.");
+        }
+
+        var trimmed = uriValue.Trim();
+        if (!IsAllowedUriImageSource(trimmed))
+        {
+            return MirageImageSourceProjectionResult.Unresolved(
+                "uri",
+                $"UriImageSource value is not supported for browser passthrough: '{trimmed}'.");
+        }
+
+        return MirageImageSourceProjectionResult.Resolved(
+            browserUrl: trimmed,
+            sourceKind: "uri",
+            isGifSource: IsGifPath(trimmed));
+    }
+
+    private MirageImageSourceProjectionResult ResolveFileImageSource(FileImageSource source)
+    {
+        var fileValue = source.File;
+        var resolved = Resolve(fileValue);
+        if (!resolved.IsResolved || string.IsNullOrWhiteSpace(resolved.BrowserUrl))
+        {
+            var reason = string.IsNullOrWhiteSpace(resolved.FailureReason)
+                ? "FileImageSource could not be resolved via bundled-image manifest lookup."
+                : resolved.FailureReason;
+            return MirageImageSourceProjectionResult.Unresolved("file", reason);
+        }
+
+        return MirageImageSourceProjectionResult.Resolved(
+            browserUrl: resolved.BrowserUrl,
+            sourceKind: "file",
+            isGifSource: IsGifPath(resolved.BrowserUrl));
+    }
+
+    private MirageImageSourceProjectionResult ResolveFontImageSource(FontImageSource source)
+    {
+        if (!TryBuildFontImageDataUri(source, out var dataUri, out var reason))
+        {
+            return MirageImageSourceProjectionResult.Unresolved("font", reason);
+        }
+
+        return MirageImageSourceProjectionResult.Resolved(dataUri, "font");
+    }
+
+    private async ValueTask<MirageImageSourceProjectionResult> ResolveStreamImageSourceAsync(
+        StreamImageSource source,
+        CancellationToken cancellationToken)
+    {
+        if (_objectUrlFactory is null)
+        {
+            return MirageImageSourceProjectionResult.Unresolved(
+                "stream",
+                "StreamImageSource is unavailable because IMirageObjectUrlFactory was not registered.");
+        }
+
+        if (source.Stream is null)
+        {
+            return MirageImageSourceProjectionResult.Unresolved("stream", "StreamImageSource did not provide a stream factory.");
+        }
+
+        try
+        {
+            await using var stream = await source.Stream(cancellationToken);
+            if (stream is null)
+            {
+                return MirageImageSourceProjectionResult.Unresolved("stream", "StreamImageSource produced a null stream.");
+            }
+
+            await using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, cancellationToken);
+            var bytes = buffer.ToArray();
+            if (bytes.Length == 0)
+            {
+                return MirageImageSourceProjectionResult.Unresolved("stream", "StreamImageSource produced an empty stream.");
+            }
+
+            var contentType = InferStreamContentType(bytes);
+            var objectUrl = _objectUrlFactory.CreateObjectUrl(bytes, contentType);
+            if (string.IsNullOrWhiteSpace(objectUrl))
+            {
+                return MirageImageSourceProjectionResult.Unresolved("stream", "StreamImageSource blob URL creation failed.");
+            }
+
+            lock (_objectUrlSync)
+            {
+                _ownedObjectUrls.Add(objectUrl);
+            }
+
+            ReportOnce(
+                "stream-created-success",
+                "Created stream image blob URL.");
+
+            return MirageImageSourceProjectionResult.Resolved(
+                browserUrl: objectUrl,
+                sourceKind: "stream",
+                isManagedObjectUrl: true,
+                isGifSource: contentType.Equals("image/gif", StringComparison.OrdinalIgnoreCase));
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            return MirageImageSourceProjectionResult.Unresolved(
+                "stream",
+                $"StreamImageSource conversion failed: {ex.GetType().Name}.");
+        }
     }
 
     private AliasResolveResult ResolveAlias(
@@ -263,6 +494,11 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
     {
         lock (_diagnosticSync)
         {
+            if (_diagnosticKeys.Count >= MaxDiagnosticKeyCount)
+            {
+                _diagnosticKeys.Clear();
+            }
+
             if (!_diagnosticKeys.Add(key))
             {
                 return;
@@ -311,11 +547,146 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
 
     private static bool IsSafePassthrough(string value)
     {
-        return value.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
-            || value.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
-            || value.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
-            || value.StartsWith("blob:", StringComparison.OrdinalIgnoreCase)
-            || value.StartsWith("/", StringComparison.Ordinal);
+        return IsAllowedDirectUri(value);
+    }
+
+    private static bool IsAllowedDirectUri(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var trimmed = value.Trim();
+        if (trimmed.StartsWith("//", StringComparison.Ordinal)
+            || trimmed.StartsWith("\\\\", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("blob:", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("/", StringComparison.Ordinal);
+    }
+
+    private static bool IsAllowedUriImageSource(string value)
+    {
+        return IsAllowedDirectUri(value) || IsSafeRelativeUri(value);
+    }
+
+    private static bool IsSafeRelativeUri(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var trimmed = value.Trim();
+        if (trimmed.StartsWith("//", StringComparison.Ordinal)
+            || trimmed.StartsWith("\\\\", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (trimmed.Contains('\0')
+            || trimmed.StartsWith("javascript:", StringComparison.OrdinalIgnoreCase)
+            || trimmed.StartsWith("vbscript:", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (HasUriScheme(trimmed))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool HasUriScheme(string value)
+    {
+        var colonIndex = value.IndexOf(':', StringComparison.Ordinal);
+        if (colonIndex <= 0)
+        {
+            return false;
+        }
+
+        for (var i = 0; i < colonIndex; i++)
+        {
+            var c = value[i];
+            var isValid = char.IsLetterOrDigit(c) || c is '+' or '-' or '.';
+            if (!isValid)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsGifPath(string? source)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            return false;
+        }
+
+        var normalized = StripQueryAndFragment(source.Trim());
+        return normalized.EndsWith(".gif", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string InferStreamContentType(ReadOnlySpan<byte> bytes)
+    {
+        if (bytes.Length >= 8
+            && bytes[0] == 0x89
+            && bytes[1] == 0x50
+            && bytes[2] == 0x4E
+            && bytes[3] == 0x47
+            && bytes[4] == 0x0D
+            && bytes[5] == 0x0A
+            && bytes[6] == 0x1A
+            && bytes[7] == 0x0A)
+        {
+            return "image/png";
+        }
+
+        if (bytes.Length >= 3
+            && bytes[0] == 0xFF
+            && bytes[1] == 0xD8
+            && bytes[2] == 0xFF)
+        {
+            return "image/jpeg";
+        }
+
+        if (bytes.Length >= 6)
+        {
+            var header = Encoding.ASCII.GetString(bytes[..6]);
+            if (string.Equals(header, "GIF87a", StringComparison.Ordinal)
+                || string.Equals(header, "GIF89a", StringComparison.Ordinal))
+            {
+                return "image/gif";
+            }
+        }
+
+        if (bytes.Length >= 4
+            && bytes[0] == 0x52
+            && bytes[1] == 0x49
+            && bytes[2] == 0x46
+            && bytes[3] == 0x46)
+        {
+            return "image/webp";
+        }
+
+        var sniffLength = Math.Min(bytes.Length, 256);
+        var prefix = Encoding.UTF8.GetString(bytes[..sniffLength]);
+        if (prefix.Contains("<svg", StringComparison.OrdinalIgnoreCase))
+        {
+            return "image/svg+xml";
+        }
+
+        return "application/octet-stream";
     }
 
     private static string NormalizeLookupKey(string? value)
@@ -385,6 +756,90 @@ internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceReso
             parseError = ex.GetType().Name;
             return false;
         }
+    }
+
+    private static bool TryBuildFontImageDataUri(FontImageSource fontImageSource, out string dataUri, out string failureReason)
+    {
+        dataUri = string.Empty;
+        failureReason = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(fontImageSource.Glyph))
+        {
+            failureReason = "FontImageSource did not specify a glyph.";
+            return false;
+        }
+
+        var glyph = EscapeXml(fontImageSource.Glyph);
+        var color = ToCssColor(fontImageSource.Color);
+        if (string.IsNullOrWhiteSpace(color))
+        {
+            color = "#000000";
+        }
+
+        var fontFamily = string.IsNullOrWhiteSpace(fontImageSource.FontFamily)
+            ? "sans-serif"
+            : EscapeXml(fontImageSource.FontFamily);
+
+        var size = fontImageSource.Size;
+        if (!double.IsFinite(size) || size <= 0)
+        {
+            size = 24;
+        }
+
+        var iconSize = Math.Max(8, size * 1.6);
+        var svg = new StringBuilder();
+        svg.Append("<svg xmlns='http://www.w3.org/2000/svg' width='");
+        svg.Append(iconSize.ToString("0.###", CultureInfo.InvariantCulture));
+        svg.Append("' height='");
+        svg.Append(iconSize.ToString("0.###", CultureInfo.InvariantCulture));
+        svg.Append("' viewBox='0 0 ");
+        svg.Append(iconSize.ToString("0.###", CultureInfo.InvariantCulture));
+        svg.Append(' ');
+        svg.Append(iconSize.ToString("0.###", CultureInfo.InvariantCulture));
+        svg.Append("'>");
+        svg.Append("<text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' font-family='");
+        svg.Append(fontFamily);
+        svg.Append("' font-size='");
+        svg.Append(size.ToString("0.###", CultureInfo.InvariantCulture));
+        svg.Append("' fill='");
+        svg.Append(color);
+        svg.Append("'>");
+        svg.Append(glyph);
+        svg.Append("</text></svg>");
+
+        var encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(svg.ToString()));
+        dataUri = $"data:image/svg+xml;base64,{encoded}";
+        return true;
+    }
+
+    private static string EscapeXml(string value)
+    {
+        return value
+            .Replace("&", "&amp;", StringComparison.Ordinal)
+            .Replace("<", "&lt;", StringComparison.Ordinal)
+            .Replace(">", "&gt;", StringComparison.Ordinal)
+            .Replace("\"", "&quot;", StringComparison.Ordinal)
+            .Replace("'", "&apos;", StringComparison.Ordinal);
+    }
+
+    private static string? ToCssColor(Color? color)
+    {
+        if (color is null)
+        {
+            return null;
+        }
+
+        var red = (int)Math.Round(Math.Clamp(color.Red, 0, 1) * 255, MidpointRounding.AwayFromZero);
+        var green = (int)Math.Round(Math.Clamp(color.Green, 0, 1) * 255, MidpointRounding.AwayFromZero);
+        var blue = (int)Math.Round(Math.Clamp(color.Blue, 0, 1) * 255, MidpointRounding.AwayFromZero);
+        var alpha = Math.Clamp(color.Alpha, 0, 1);
+
+        if (alpha >= 0.999)
+        {
+            return string.Create(CultureInfo.InvariantCulture, $"rgb({red},{green},{blue})");
+        }
+
+        return string.Create(CultureInfo.InvariantCulture, $"rgba({red},{green},{blue},{alpha:0.###})");
     }
 
     private static Dictionary<string, string> ParseImageMap(JsonElement root, string propertyName)

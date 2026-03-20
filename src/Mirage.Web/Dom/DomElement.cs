@@ -34,6 +34,8 @@ public sealed class DomElement
 
     public void Attr(string name, string? value) => DomApi.SetAttr(Handle, name, value);
 
+    public string? GetAttr(string name) => DomApi.GetAttr(Handle, name);
+
     public void Style(string name, string? value) => DomApi.SetStyle(Handle, name, value);
 
     public void AddClass(string className) => DomApi.AddClass(Handle, className);
@@ -80,6 +82,17 @@ public sealed class DomElement
     public void RemoveProperty(string name) => DomApi.RemoveProperty(Handle, name);
 
     public int On(string eventName, Action callback) => DomApi.SubscribeEvent(Handle, eventName, callback);
+
+    public int On(string eventName, string payloadKind, Action<string?> callback)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(payloadKind);
+        ArgumentNullException.ThrowIfNull(callback);
+
+        return DomApi.SubscribeEventWithPayload(Handle, eventName, payloadKind, () =>
+        {
+            callback(DomApi.ConsumeTrackedEventPayload(Handle, payloadKind));
+        });
+    }
 
     public static void Off(int subscriptionId) => DomApi.UnsubscribeEvent(subscriptionId);
 
@@ -192,6 +205,22 @@ public sealed class DomElement
         {
             return FetchTextResult.Failure(0);
         }
+    }
+
+    public static string? CreateObjectUrlFromBase64(string base64, string? contentType)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(base64);
+        return DomApi.CreateObjectUrlFromBase64(base64, contentType);
+    }
+
+    public static void RevokeObjectUrl(string objectUrl)
+    {
+        if (string.IsNullOrWhiteSpace(objectUrl))
+        {
+            return;
+        }
+
+        DomApi.RevokeObjectUrl(objectUrl);
     }
 
     public static void InstallHotReloadHintBridge() => DomApi.InstallHotReloadHintBridge();
