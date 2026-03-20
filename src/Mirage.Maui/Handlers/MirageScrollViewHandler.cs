@@ -191,6 +191,10 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
         {
             CompleteAnimatedScrollRequest();
         }
+        else if (_awaitingAnimatedScrollCompletion)
+        {
+            RefreshAnimatedScrollCompletionTimeout();
+        }
     }
 
     public static void MapContent(MirageScrollViewHandler handler, IScrollView scrollView)
@@ -438,6 +442,16 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
         _awaitingAnimatedScrollCompletion = true;
         var requestVersion = unchecked(++_animatedScrollCompletionRequestVersion);
         ArmAnimatedScrollCompletionTimeout(requestVersion);
+    }
+
+    private void RefreshAnimatedScrollCompletionTimeout()
+    {
+        if (!_awaitingAnimatedScrollCompletion)
+        {
+            return;
+        }
+
+        ArmAnimatedScrollCompletionTimeout(_animatedScrollCompletionRequestVersion);
     }
 
     private void CompleteAnimatedScrollRequest()

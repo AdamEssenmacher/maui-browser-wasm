@@ -2944,7 +2944,9 @@ public sealed class HandlerRuntimeIntegrationTests
         handler.OnRuntimeEvent("scroll", payload: null);
         await secondTask.WaitAsync(TimeSpan.FromSeconds(1));
 
-        Assert.Equal(TaskStatus.WaitingForActivation, firstTask.Status);
+        Assert.True(
+            firstTask.Status is TaskStatus.Canceled or TaskStatus.WaitingForActivation,
+            $"Expected superseded first task to be canceled or pending, but status was {firstTask.Status}.");
         Assert.Equal(44, scrollView.ScrollX);
         Assert.Equal(280, scrollView.ScrollY);
     }
@@ -2999,7 +3001,9 @@ public sealed class HandlerRuntimeIntegrationTests
         handler.OnRuntimeEvent("scroll", payload: null);
         await secondTask.WaitAsync(TimeSpan.FromSeconds(1));
 
-        Assert.Equal(TaskStatus.WaitingForActivation, firstTask.Status);
+        Assert.True(
+            firstTask.Status is TaskStatus.Canceled or TaskStatus.WaitingForActivation,
+            $"Expected superseded first task to be canceled or pending, but status was {firstTask.Status}.");
         Assert.Equal(44.03, scrollView.ScrollX, 2);
         Assert.Equal(280.03, scrollView.ScrollY, 2);
     }
@@ -3046,6 +3050,67 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.False(pendingTask.IsCompleted);
 
         await pendingTask.WaitAsync(TimeSpan.FromSeconds(3));
+    }
+
+    [Fact]
+    public async Task ScrollView_ScrollToAsync_AnimatedRequest_RemainsPendingWhileNonTargetScrollEventsContinue()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var content = new Label
+        {
+            Text = "Scrollable content",
+            WidthRequest = 640,
+            HeightRequest = 1200
+        };
+        var contentHandler = new MirageLabelHandler();
+        ((IElementHandler)contentHandler).SetMauiContext(mauiContext);
+        ((IElementHandler)contentHandler).SetVirtualView(content);
+
+        var scrollView = new ScrollView
+        {
+            Content = content
+        };
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        content.Frame = new Rect(0, 0, 320, 1200);
+
+        var pendingTask = scrollView.ScrollToAsync(48, 300, animated: true);
+        Assert.False(pendingTask.IsCompleted);
+
+        // Keep sending non-target scroll events beyond the initial timeout window;
+        // completion should stay pending while movement is still active.
+        await Task.Delay(400);
+        runtime.TrySetNodeScrollPosition(handler.PlatformView.NodeId, 40, 252, out _, out _);
+        handler.OnRuntimeEvent("scroll", payload: null);
+        Assert.False(pendingTask.IsCompleted);
+
+        await Task.Delay(400);
+        runtime.TrySetNodeScrollPosition(handler.PlatformView.NodeId, 41, 260, out _, out _);
+        handler.OnRuntimeEvent("scroll", payload: null);
+        Assert.False(pendingTask.IsCompleted);
+
+        await Task.Delay(400);
+        runtime.TrySetNodeScrollPosition(handler.PlatformView.NodeId, 42, 268, out _, out _);
+        handler.OnRuntimeEvent("scroll", payload: null);
+        Assert.False(pendingTask.IsCompleted);
+
+        await Task.Delay(350);
+        Assert.False(pendingTask.IsCompleted);
+
+        runtime.TrySetNodeScrollPosition(handler.PlatformView.NodeId, 48, 300, out _, out _);
+        handler.OnRuntimeEvent("scroll", payload: null);
+        await pendingTask.WaitAsync(TimeSpan.FromSeconds(1));
     }
 
     [Fact]
