@@ -8,6 +8,27 @@ namespace Mirage.Maui.Handlers;
 
 internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<IScrollView>, IScrollViewHandler, IMirageRuntimeEventTarget
 {
+    private const int AnimatedScrollCompletionTimeoutMs = 1200;
+    private const double ScrollCompletionEpsilon = 0.01;
+
+    internal static readonly string[] ParityPropertyKeys =
+    {
+        nameof(IContentView.Content),
+        nameof(IScrollView.HorizontalScrollBarVisibility),
+        nameof(IScrollView.VerticalScrollBarVisibility),
+        nameof(IScrollView.Orientation)
+    };
+
+    internal static readonly string[] ParityExtensionPropertyKeys =
+    {
+        nameof(ScrollView.Padding)
+    };
+
+    internal static readonly string[] ParityCommandKeys =
+    {
+        nameof(IScrollView.RequestScrollTo)
+    };
+
     public static IPropertyMapper<IScrollView, MirageScrollViewHandler> Mapper =
         new PropertyMapper<IScrollView, MirageScrollViewHandler>(MirageViewMapper.CommonViewMapper)
         {
@@ -15,7 +36,7 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
             [nameof(IScrollView.Orientation)] = MapOrientation,
             [nameof(IScrollView.HorizontalScrollBarVisibility)] = MapHorizontalScrollBarVisibility,
             [nameof(IScrollView.VerticalScrollBarVisibility)] = MapVerticalScrollBarVisibility,
-            [nameof(IScrollView.ContentSize)] = MapContentSize
+            [nameof(ScrollView.Padding)] = MapPadding
         };
 
     public static CommandMapper<IScrollView, MirageScrollViewHandler> CommandMapper =
@@ -24,8 +45,25 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
             [nameof(IScrollView.RequestScrollTo)] = MapRequestScrollTo
         };
 
+    private ScrollToRequest? _pendingScrollToRequest;
+    private bool _awaitingAnimatedScrollCompletion;
+    private double _awaitedAnimatedHorizontalOffset;
+    private double _awaitedAnimatedVerticalOffset;
+    private int _animatedScrollCompletionRequestVersion;
+    private CancellationTokenSource? _animatedScrollCompletionTimeoutCts;
+
     public MirageScrollViewHandler()
-        : base(ComponentKind.ContentContainer, Mapper, CommandMapper)
+        : this(Mapper, CommandMapper)
+    {
+    }
+
+    public MirageScrollViewHandler(IPropertyMapper? mapper)
+        : this(mapper, CommandMapper)
+    {
+    }
+
+    public MirageScrollViewHandler(IPropertyMapper? mapper, CommandMapper? commandMapper)
+        : base(ComponentKind.ContentContainer, mapper ?? Mapper, commandMapper ?? CommandMapper)
     {
         DefaultDisplayStyle = "block";
     }
@@ -41,6 +79,7 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
         platformView.SetStyle("boxSizing", "border-box");
         platformView.SetEvent("scroll", enabled: true);
         SetPresentedContent(ResolvePresentedContent(VirtualView));
+        MapPadding(this, VirtualView);
         ApplyScrollStyles(VirtualView);
         RequestRender();
     }
@@ -48,41 +87,62 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
     protected override void DisconnectHandler(MiragePlatformView platformView)
     {
         platformView.SetEvent("scroll", enabled: false);
+        if (_pendingScrollToRequest is not null || _awaitingAnimatedScrollCompletion)
+        {
+            _pendingScrollToRequest = null;
+            if (_awaitingAnimatedScrollCompletion)
+            {
+                CompleteAnimatedScrollRequest();
+            }
+            else
+            {
+                VirtualView.ScrollFinished();
+            }
+        }
+
         DisconnectCurrentPresentedContent();
         base.DisconnectHandler(platformView);
     }
 
     public override Size GetDesiredSize(double widthConstraint, double heightConstraint)
     {
+        var padding = ResolvePadding(VirtualView);
         var content = ResolvePresentedContent(VirtualView);
+        var measuredWidth = Math.Max(0, padding.HorizontalThickness);
+        var measuredHeight = Math.Max(0, padding.VerticalThickness);
         if (content is null)
         {
-            return base.GetDesiredSize(widthConstraint, heightConstraint);
+            return ResolveMeasuredSizeWithConstraints(VirtualView, widthConstraint, heightConstraint, measuredWidth, measuredHeight);
         }
 
         var orientation = VirtualView.Orientation;
+        var innerWidthConstraint = ResolveInnerViewportConstraint(widthConstraint, padding.HorizontalThickness);
+        var innerHeightConstraint = ResolveInnerViewportConstraint(heightConstraint, padding.VerticalThickness);
         var horizontalConstraint = orientation is ScrollOrientation.Horizontal or ScrollOrientation.Both
             ? double.PositiveInfinity
-            : widthConstraint;
+            : innerWidthConstraint;
         var verticalConstraint = orientation is ScrollOrientation.Vertical or ScrollOrientation.Both
             ? double.PositiveInfinity
-            : heightConstraint;
+            : innerHeightConstraint;
 
         var contentSize = content.Measure(horizontalConstraint, verticalConstraint);
-        return new Size(
-            ResolveDesiredDimension(widthConstraint, contentSize.Width),
-            ResolveDesiredDimension(heightConstraint, contentSize.Height));
+        measuredWidth = contentSize.Width + padding.HorizontalThickness;
+        measuredHeight = contentSize.Height + padding.VerticalThickness;
+        return ResolveMeasuredSizeWithConstraints(VirtualView, widthConstraint, heightConstraint, measuredWidth, measuredHeight);
     }
 
     public override void PlatformArrange(Rect frame)
     {
         base.PlatformArrange(frame);
 
-        var width = Math.Max(0, frame.Width);
-        var height = Math.Max(0, frame.Height);
+        var padding = ResolvePadding(VirtualView);
+        var width = Math.Max(0, frame.Width - padding.HorizontalThickness);
+        var height = Math.Max(0, frame.Height - padding.VerticalThickness);
         if (ResolvePresentedContent(VirtualView) is not IView content
             || !TryGetPresentedContentPlatformView(out var contentPlatformView))
         {
+            // Ensure pending command tasks cannot hang if content is absent/unrealized during arrange.
+            TryApplyPendingScrollToRequest(VirtualView);
             return;
         }
 
@@ -104,6 +164,7 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
 
         content.Arrange(new Rect(0, 0, arrangedWidth, arrangedHeight));
         NormalizeHostedContentFlowStyles(contentPlatformView);
+        TryApplyPendingScrollToRequest(VirtualView);
     }
 
     public void OnRuntimeEvent(string eventName, string? payload)
@@ -124,15 +185,30 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
             return;
         }
 
-        if (VirtualView is ScrollView controlsScrollView)
+        SetScrolledPosition(VirtualView, left, top);
+        if (_awaitingAnimatedScrollCompletion && HasReachedAnimatedScrollTarget(left, top))
         {
-            controlsScrollView.SetScrolledPosition(left, top);
+            CompleteAnimatedScrollRequest();
+        }
+        else if (_awaitingAnimatedScrollCompletion)
+        {
+            RefreshAnimatedScrollCompletionTimeout();
         }
     }
 
     public static void MapContent(MirageScrollViewHandler handler, IScrollView scrollView)
     {
         handler.SetPresentedContent(ResolvePresentedContent(scrollView));
+    }
+
+    public static void MapPadding(MirageScrollViewHandler handler, IScrollView scrollView)
+    {
+        if (scrollView is not IPadding paddingView)
+        {
+            return;
+        }
+
+        MirageViewMapper.MapPadding(handler, paddingView);
     }
 
     public static void MapHorizontalScrollBarVisibility(MirageScrollViewHandler handler, IScrollView scrollView)
@@ -150,122 +226,63 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
         handler.ApplyScrollStyles(scrollView);
     }
 
-    public static void MapContentSize(MirageScrollViewHandler handler, IScrollView scrollView)
-    {
-        _ = handler;
-        _ = scrollView;
-    }
-
     public static void MapRequestScrollTo(MirageScrollViewHandler handler, IScrollView scrollView, object? args)
     {
-        if (!TryResolveScrollRequest(scrollView, args, out var horizontalOffset, out var verticalOffset))
+        if (args is not ScrollToRequest request)
         {
             return;
         }
 
-        horizontalOffset = NormalizeOffset(horizontalOffset);
-        verticalOffset = NormalizeOffset(verticalOffset);
+        handler.ApplyScrollRequest(scrollView, request, allowDeferral: true);
+    }
+
+    private void ApplyScrollRequest(IScrollView scrollView, ScrollToRequest request, bool allowDeferral)
+    {
+        if (_awaitingAnimatedScrollCompletion)
+        {
+            // A new request supersedes any in-flight animation completion for prior requests.
+            // The current request must complete only when its own runtime signal arrives.
+            CancelAnimatedScrollCompletionTimeout();
+            _awaitingAnimatedScrollCompletion = false;
+        }
+
+        if (allowDeferral && ShouldDeferScrollRequest(scrollView))
+        {
+            _pendingScrollToRequest = request;
+            return;
+        }
+
+        _pendingScrollToRequest = null;
+
+        var horizontalOffset = NormalizeOffset(request.HorizontalOffset);
+        var verticalOffset = NormalizeOffset(request.VerticalOffset);
         var actualHorizontalOffset = horizontalOffset;
         var actualVerticalOffset = verticalOffset;
+        var previousHorizontalOffset = scrollView.HorizontalOffset;
+        var previousVerticalOffset = scrollView.VerticalOffset;
+        var appliedViaCoordinator = false;
 
-        if (handler.Coordinator is not null
-            && handler.Coordinator.TrySetNodeScrollPosition(
-                handler.PlatformView.NodeId,
+        if (Coordinator is not null
+            && Coordinator.TrySetNodeScrollPosition(
+                PlatformView.NodeId,
                 horizontalOffset,
                 verticalOffset,
                 out var realizedLeft,
                 out var realizedTop))
         {
+            appliedViaCoordinator = true;
             actualHorizontalOffset = realizedLeft;
             actualVerticalOffset = realizedTop;
         }
 
-        if (scrollView is ScrollView controlsScrollView)
+        SetScrolledPosition(scrollView, actualHorizontalOffset, actualVerticalOffset);
+        if (request.Instant || ShouldCompleteScrollRequestImmediately(scrollView, appliedViaCoordinator, previousHorizontalOffset, previousVerticalOffset, actualHorizontalOffset, actualVerticalOffset))
         {
-            controlsScrollView.SetScrolledPosition(actualHorizontalOffset, actualVerticalOffset);
-            controlsScrollView.SendScrollFinished();
-        }
-    }
-
-    private static bool TryResolveScrollRequest(
-        IScrollView scrollView,
-        object? args,
-        out double horizontalOffset,
-        out double verticalOffset)
-    {
-        switch (args)
-        {
-            case ScrollToRequest request:
-                horizontalOffset = request.HorizontalOffset;
-                verticalOffset = request.VerticalOffset;
-                return true;
-            case ScrollToRequestedEventArgs requestedEventArgs:
-                if (requestedEventArgs.Mode == ScrollToMode.Element
-                    && requestedEventArgs.Element is Element targetElement)
-                {
-                    if (TryComputeTargetOffsets(scrollView, targetElement, out horizontalOffset, out verticalOffset))
-                    {
-                        return true;
-                    }
-                }
-
-                horizontalOffset = requestedEventArgs.ScrollX;
-                verticalOffset = requestedEventArgs.ScrollY;
-                return true;
-            default:
-                horizontalOffset = 0;
-                verticalOffset = 0;
-                return false;
-        }
-    }
-
-    private static bool TryComputeTargetOffsets(IScrollView scrollView, Element targetElement, out double horizontalOffset, out double verticalOffset)
-    {
-        horizontalOffset = 0;
-        verticalOffset = 0;
-
-        if (ResolvePresentedContent(scrollView) is not Element contentRoot)
-        {
-            return false;
+            scrollView.ScrollFinished();
+            return;
         }
 
-        var offsetX = 0d;
-        var offsetY = 0d;
-        Element? current = targetElement;
-        while (current is not null && !ReferenceEquals(current, contentRoot))
-        {
-            if (current is VisualElement visualElement)
-            {
-                if (!double.IsFinite(visualElement.X) || !double.IsFinite(visualElement.Y))
-                {
-                    return false;
-                }
-
-                offsetX += visualElement.X;
-                offsetY += visualElement.Y;
-            }
-
-            current = current.Parent;
-        }
-
-        if (!ReferenceEquals(current, contentRoot) || !double.IsFinite(offsetX) || !double.IsFinite(offsetY))
-        {
-            return false;
-        }
-
-        // In current browser-hosted paths, MAUI may surface element-mode requests before meaningful
-        // arranged offsets are reflected in target X/Y, yielding a false "0,0" location for non-root
-        // section targets. Return false so caller can avoid applying this offset.
-        if (!ReferenceEquals(targetElement, contentRoot)
-            && Math.Abs(offsetX) < 0.5
-            && Math.Abs(offsetY) < 0.5)
-        {
-            return false;
-        }
-
-        horizontalOffset = Math.Max(0, offsetX);
-        verticalOffset = Math.Max(0, offsetY);
-        return true;
+        BeginAwaitingAnimatedScrollCompletion(actualHorizontalOffset, actualVerticalOffset);
     }
 
     private static double NormalizeOffset(double value)
@@ -288,9 +305,257 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
         return Math.Max(0, Math.Min(constraint, contentDimension));
     }
 
+    private static Size ResolveMeasuredSizeWithConstraints(
+        IScrollView scrollView,
+        double widthConstraint,
+        double heightConstraint,
+        double measuredWidth,
+        double measuredHeight)
+    {
+        var clampedWidth = ResolveDesiredDimension(widthConstraint, measuredWidth);
+        var clampedHeight = ResolveDesiredDimension(heightConstraint, measuredHeight);
+        var (requestedWidth, requestedMinimumWidth, requestedMaximumWidth) = ResolveRequestedDimensionRequests(scrollView, isWidth: true);
+        var (requestedHeight, requestedMinimumHeight, requestedMaximumHeight) = ResolveRequestedDimensionRequests(scrollView, isWidth: false);
+        return new Size(
+            ResolveConstraints(clampedWidth, requestedWidth, requestedMinimumWidth, requestedMaximumWidth),
+            ResolveConstraints(clampedHeight, requestedHeight, requestedMinimumHeight, requestedMaximumHeight));
+    }
+
+    private static double ResolveConstraints(double measured, double exact, double min, double max)
+    {
+        var resolved = measured;
+        var resolvedMin = ResolveMinimum(min);
+
+        if (IsExplicitLengthSet(exact))
+        {
+            resolved = exact;
+        }
+
+        if (IsExplicitLengthSet(max) && resolved > max)
+        {
+            resolved = max;
+        }
+
+        if (resolved < resolvedMin)
+        {
+            resolved = resolvedMin;
+        }
+
+        return resolved;
+    }
+
+    private static double ResolveMinimum(double value)
+    {
+        return IsExplicitLengthSet(value)
+            ? value
+            : 0;
+    }
+
+    private static bool IsExplicitLengthSet(double value)
+    {
+        return double.IsFinite(value) && value >= 0;
+    }
+
+    private static (double Exact, double Minimum, double Maximum) ResolveRequestedDimensionRequests(IScrollView scrollView, bool isWidth)
+    {
+        if (scrollView is VisualElement visualElement)
+        {
+            return isWidth
+                ? (visualElement.WidthRequest, visualElement.MinimumWidthRequest, visualElement.MaximumWidthRequest)
+                : (visualElement.HeightRequest, visualElement.MinimumHeightRequest, visualElement.MaximumHeightRequest);
+        }
+
+        return isWidth
+            ? (double.NaN, scrollView.MinimumWidth, scrollView.MaximumWidth)
+            : (double.NaN, scrollView.MinimumHeight, scrollView.MaximumHeight);
+    }
+
     private static IView? ResolvePresentedContent(IScrollView scrollView)
     {
         return scrollView is IContentView contentView ? contentView.PresentedContent : null;
+    }
+
+    private static void SetScrolledPosition(IScrollView scrollView, double horizontalOffset, double verticalOffset)
+    {
+        if (scrollView is ScrollView controlsScrollView)
+        {
+            controlsScrollView.SetScrolledPosition(horizontalOffset, verticalOffset);
+            return;
+        }
+
+        // Fallback for non-Controls IScrollView implementations.
+        scrollView.HorizontalOffset = horizontalOffset;
+        scrollView.VerticalOffset = verticalOffset;
+    }
+
+    private void TryApplyPendingScrollToRequest(IScrollView scrollView)
+    {
+        if (_pendingScrollToRequest is not ScrollToRequest pendingRequest)
+        {
+            return;
+        }
+
+        ApplyScrollRequest(scrollView, pendingRequest, allowDeferral: false);
+    }
+
+    private static bool ShouldDeferScrollRequest(IScrollView scrollView)
+    {
+        if (ResolvePresentedContent(scrollView) is not IView content)
+        {
+            return false;
+        }
+
+        var hasWidth = IsFinitePositive(content.Frame.Width);
+        var hasHeight = IsFinitePositive(content.Frame.Height);
+        return scrollView.Orientation switch
+        {
+            ScrollOrientation.Horizontal => !hasWidth,
+            ScrollOrientation.Vertical => !hasHeight,
+            ScrollOrientation.Both => !hasWidth || !hasHeight,
+            _ => false
+        };
+    }
+
+    private static bool IsFinitePositive(double value)
+    {
+        return double.IsFinite(value) && value > 0;
+    }
+
+    private static Thickness ResolvePadding(IScrollView scrollView)
+    {
+        return scrollView is IPadding paddingView
+            ? paddingView.Padding
+            : Thickness.Zero;
+    }
+
+    private static double ResolveInnerViewportConstraint(double outerConstraint, double paddingThickness)
+    {
+        if (double.IsNaN(outerConstraint) || double.IsInfinity(outerConstraint))
+        {
+            return outerConstraint;
+        }
+
+        return Math.Max(0, outerConstraint - Math.Max(0, paddingThickness));
+    }
+
+    private static bool ShouldCompleteScrollRequestImmediately(
+        IScrollView scrollView,
+        bool appliedViaCoordinator,
+        double previousHorizontalOffset,
+        double previousVerticalOffset,
+        double actualHorizontalOffset,
+        double actualVerticalOffset)
+    {
+        if (!appliedViaCoordinator || ResolvePresentedContent(scrollView) is null)
+        {
+            return true;
+        }
+
+        const double epsilon = 0.001;
+        return Math.Abs(actualHorizontalOffset - previousHorizontalOffset) < epsilon
+               && Math.Abs(actualVerticalOffset - previousVerticalOffset) < epsilon;
+    }
+
+    private bool HasReachedAnimatedScrollTarget(double horizontalOffset, double verticalOffset)
+    {
+        return Math.Abs(horizontalOffset - _awaitedAnimatedHorizontalOffset) <= ScrollCompletionEpsilon
+               && Math.Abs(verticalOffset - _awaitedAnimatedVerticalOffset) <= ScrollCompletionEpsilon;
+    }
+
+    private void BeginAwaitingAnimatedScrollCompletion(double horizontalOffset, double verticalOffset)
+    {
+        _awaitedAnimatedHorizontalOffset = horizontalOffset;
+        _awaitedAnimatedVerticalOffset = verticalOffset;
+        _awaitingAnimatedScrollCompletion = true;
+        var requestVersion = unchecked(++_animatedScrollCompletionRequestVersion);
+        ArmAnimatedScrollCompletionTimeout(requestVersion);
+    }
+
+    private void RefreshAnimatedScrollCompletionTimeout()
+    {
+        if (!_awaitingAnimatedScrollCompletion)
+        {
+            return;
+        }
+
+        ArmAnimatedScrollCompletionTimeout(_animatedScrollCompletionRequestVersion);
+    }
+
+    private void CompleteAnimatedScrollRequest()
+    {
+        CancelAnimatedScrollCompletionTimeout();
+        if (!_awaitingAnimatedScrollCompletion)
+        {
+            return;
+        }
+
+        _awaitingAnimatedScrollCompletion = false;
+        VirtualView.ScrollFinished();
+    }
+
+    private void ArmAnimatedScrollCompletionTimeout(int requestVersion)
+    {
+        CancelAnimatedScrollCompletionTimeout();
+        var timeoutCts = new CancellationTokenSource();
+        _animatedScrollCompletionTimeoutCts = timeoutCts;
+        _ = CompleteAnimatedScrollRequestOnTimeoutAsync(requestVersion, timeoutCts.Token);
+    }
+
+    private void CancelAnimatedScrollCompletionTimeout()
+    {
+        if (_animatedScrollCompletionTimeoutCts is not CancellationTokenSource timeoutCts)
+        {
+            return;
+        }
+
+        _animatedScrollCompletionTimeoutCts = null;
+        timeoutCts.Cancel();
+        timeoutCts.Dispose();
+    }
+
+    private async Task CompleteAnimatedScrollRequestOnTimeoutAsync(int requestVersion, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(AnimatedScrollCompletionTimeoutMs, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        DispatchOnUiThreadIfRequired(() =>
+        {
+            if (cancellationToken.IsCancellationRequested
+                || !_awaitingAnimatedScrollCompletion
+                || requestVersion != _animatedScrollCompletionRequestVersion)
+            {
+                return;
+            }
+
+            CompleteAnimatedScrollRequest();
+        });
+    }
+
+    private void DispatchOnUiThreadIfRequired(Action action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+
+        if (ResolveDispatcher() is not IDispatcher dispatcher || !dispatcher.IsDispatchRequired)
+        {
+            action();
+            return;
+        }
+
+        if (!dispatcher.Dispatch(action))
+        {
+            action();
+        }
+    }
+
+    private IDispatcher? ResolveDispatcher()
+    {
+        return MauiContext?.Services.GetService(typeof(IDispatcher)) as IDispatcher;
     }
 
     private void ApplyScrollStyles(IScrollView scrollView)

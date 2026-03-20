@@ -660,9 +660,11 @@ public sealed class ArchitectureBoundaryTests
         var text = File.ReadAllText(handlerPath);
         Assert.Contains("nameof(IScrollView.RequestScrollTo)", text, StringComparison.Ordinal);
         Assert.Contains("MapRequestScrollTo", text, StringComparison.Ordinal);
-        Assert.Contains("TryResolveScrollRequest", text, StringComparison.Ordinal);
+        Assert.Contains("ScrollToRequest", text, StringComparison.Ordinal);
+        Assert.Contains("ShouldDeferScrollRequest", text, StringComparison.Ordinal);
+        Assert.Contains("TryApplyPendingScrollToRequest", text, StringComparison.Ordinal);
         Assert.Contains("TrySetNodeScrollPosition", text, StringComparison.Ordinal);
-        Assert.Contains("SendScrollFinished", text, StringComparison.Ordinal);
+        Assert.Contains("ScrollFinished", text, StringComparison.Ordinal);
     }
 
     [Fact]

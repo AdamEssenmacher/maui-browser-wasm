@@ -2,10 +2,46 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (ScrollView parity follow-up: atomic runtime scrolled update)
+- Runtime-driven scroll offset updates now use MAUI `ScrollView.SetScrolledPosition(x, y)` when available, so dual-axis offset updates are applied atomically.
+- This avoids emitting intermediate `Scrolled` events with stale single-axis values when both offsets change in one runtime tick.
+- Added integration coverage to assert a single `Scrolled` event for a dual-axis runtime scroll update.
+
+## 2026-03-19 (ScrollView parity follow-up: explicit request constraints must ignore arranged size)
+- `MirageScrollViewHandler.GetDesiredSize` now resolves explicit/min/max constraints from `VisualElement` request properties (`WidthRequest`, `HeightRequest`, etc.) instead of live arranged `Width`/`Height`.
+- This avoids pinning future desired-size calculations to stale arranged dimensions after first layout, preserving re-measure behavior when parent constraints shrink.
+- Added integration coverage that arranges first, then remeasures under tighter constraints to guard against regression.
+
+## 2026-03-19 (ScrollView parity follow-up: target-gated completion with bounded timeout fallback)
+- Animated `ScrollTo` completion remains target-gated (to prevent stale superseded scroll events from completing the newest request early), with a versioned timeout fallback that resets on non-target scroll activity so long-running motion does not complete early.
+- Timeout completion is request-version scoped and dispatcher-safe, so only the active animated request can complete from fallback and superseded timeout work is canceled deterministically.
+- Superseded-request integration coverage now asserts non-successful superseded task outcomes (`Canceled` or pending in this runtime) and adds near-target stale-event plus timeout/fallback activity regressions.
+
+## 2026-03-19 (ScrollView parity follow-up: superseded animated completion + explicit constraint resolution)
+- `MirageScrollViewHandler` no longer calls `ScrollFinished()` when a new scroll request supersedes an in-flight animated request; completion now tracks the active request and remains runtime-signal-driven for non-instant scrolls.
+- `GetDesiredSize` now resolves measured size in two phases (constraint clamp, then explicit/min/max resolution), matching MAUI constraint intent for both content-present and no-content (padding baseline) paths.
+- Added integration regressions covering superseded animated `ScrollToAsync` completion timing and explicit/min/max behavior in both measure branches.
+
 ## 2026-03-19 (ControlsSample FlexLayoutPage Enablement)
 - Promoted upstream `FlexLayoutPage` to a runnable ControlsSample catalog entry and linked its XAML/code-behind into `ControlsSample.Shared`.
 - This page now runs on existing Mirage FlexLayout behavior (semantic container projection plus attached item-property support) without adding sample-specific wrapper logic.
 - Added ControlsSample E2E coverage for catalog visibility and page-level flex semantics (`Direction=Column`, nested row body, `Order=-1`, fixed `Basis`, and content `Grow` behavior).
+
+## 2026-03-19 (ScrollView parity wave: MAUI-shaped mapper/command + deferred request apply)
+- Refactored `MirageScrollViewHandler` toward MAUI handler shape: mapper keys now track MAUI `ScrollViewHandler` surface (`Content`, scrollbar visibility, `Orientation`) with a documented Mirage extension key for `Padding`.
+- `RequestScrollTo` now follows MAUI-style typed command flow (`ScrollToRequest`), with deferred request buffering when scroll requests arrive before content is arranged and deterministic apply during `PlatformArrange`.
+- Scroll runtime events now update `IScrollView` offsets through interface semantics, and command completion flows through `IScrollView.ScrollFinished()` instead of control-type-specific calls.
+- Added explicit parity governance artifacts (`docs/parity/scrollview-parity-contract.json`, `docs/parity/scrollview-parity-divergences.json`) and integration coverage for deferred apply, runtime offset sync, and padding projection.
+
+## 2026-03-19 (ScrollView parity follow-up: animated completion timing + element-target coverage)
+- Non-instant `ScrollTo` requests now defer `ScrollFinished()` until the runtime `scroll` event arrives, matching MAUI’s completion intent more closely than immediate completion.
+- Added deterministic safety fallbacks to avoid hangs when a runtime completion signal is unavailable (no presented content, no runtime set bridge, unchanged position).
+- Added integration coverage for element-targeted `ScrollToAsync(element, ...)` command routing so this path stays locked while handler parity evolves.
+
+## 2026-03-19 (ScrollView parity follow-up: padding-aware viewport measure/arrange)
+- `MirageScrollViewHandler` now subtracts `ScrollView.Padding` thickness from the inner viewport constraints before content measure/arrange, then adds padding back into desired-size projection.
+- This keeps content geometry aligned with browser padded scroll hosts and prevents padded vertical scroll views from arranging child content at full outer width.
+- Added integration coverage to assert padded inner-viewport arrange width behavior.
 
 ## 2026-03-19 (FlexLayout position parity follow-up: MAUI-shape constraint + custom-item toggle coverage)
 - Confirmed and locked the upstream MAUI shape for `FlexLayout.Position`: absolute-position flow applies to nested `FlexLayout` children (via `IFlexLayout.Position`), not arbitrary child controls.
