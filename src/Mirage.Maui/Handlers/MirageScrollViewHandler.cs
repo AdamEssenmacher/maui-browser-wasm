@@ -316,9 +316,11 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
     {
         var clampedWidth = ResolveDesiredDimension(widthConstraint, measuredWidth);
         var clampedHeight = ResolveDesiredDimension(heightConstraint, measuredHeight);
+        var (requestedWidth, requestedMinimumWidth, requestedMaximumWidth) = ResolveRequestedDimensionRequests(scrollView, isWidth: true);
+        var (requestedHeight, requestedMinimumHeight, requestedMaximumHeight) = ResolveRequestedDimensionRequests(scrollView, isWidth: false);
         return new Size(
-            ResolveConstraints(clampedWidth, scrollView.Width, scrollView.MinimumWidth, scrollView.MaximumWidth),
-            ResolveConstraints(clampedHeight, scrollView.Height, scrollView.MinimumHeight, scrollView.MaximumHeight));
+            ResolveConstraints(clampedWidth, requestedWidth, requestedMinimumWidth, requestedMaximumWidth),
+            ResolveConstraints(clampedHeight, requestedHeight, requestedMinimumHeight, requestedMaximumHeight));
     }
 
     private static double ResolveConstraints(double measured, double exact, double min, double max)
@@ -326,12 +328,12 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
         var resolved = measured;
         var resolvedMin = ResolveMinimum(min);
 
-        if (IsExplicitSet(exact))
+        if (IsExplicitLengthSet(exact))
         {
             resolved = exact;
         }
 
-        if (resolved > max)
+        if (IsExplicitLengthSet(max) && resolved > max)
         {
             resolved = max;
         }
@@ -346,14 +348,28 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
 
     private static double ResolveMinimum(double value)
     {
-        return IsExplicitSet(value)
+        return IsExplicitLengthSet(value)
             ? value
             : 0;
     }
 
-    private static bool IsExplicitSet(double value)
+    private static bool IsExplicitLengthSet(double value)
     {
-        return !double.IsNaN(value);
+        return double.IsFinite(value) && value >= 0;
+    }
+
+    private static (double Exact, double Minimum, double Maximum) ResolveRequestedDimensionRequests(IScrollView scrollView, bool isWidth)
+    {
+        if (scrollView is VisualElement visualElement)
+        {
+            return isWidth
+                ? (visualElement.WidthRequest, visualElement.MinimumWidthRequest, visualElement.MaximumWidthRequest)
+                : (visualElement.HeightRequest, visualElement.MinimumHeightRequest, visualElement.MaximumHeightRequest);
+        }
+
+        return isWidth
+            ? (double.NaN, scrollView.MinimumWidth, scrollView.MaximumWidth)
+            : (double.NaN, scrollView.MinimumHeight, scrollView.MaximumHeight);
     }
 
     private static IView? ResolvePresentedContent(IScrollView scrollView)

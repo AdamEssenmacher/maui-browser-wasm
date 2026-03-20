@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-19 (ScrollView parity follow-up: explicit request constraints must ignore arranged size)
+- `MirageScrollViewHandler.GetDesiredSize` now resolves explicit/min/max constraints from `VisualElement` request properties (`WidthRequest`, `HeightRequest`, etc.) instead of live arranged `Width`/`Height`.
+- This avoids pinning future desired-size calculations to stale arranged dimensions after first layout, preserving re-measure behavior when parent constraints shrink.
+- Added integration coverage that arranges first, then remeasures under tighter constraints to guard against regression.
+
 ## 2026-03-19 (ScrollView parity follow-up: target-gated completion with bounded timeout fallback)
 - Animated `ScrollTo` completion remains target-gated (to prevent stale superseded scroll events from completing the newest request early), with a versioned timeout fallback that resets on non-target scroll activity so long-running motion does not complete early.
 - Timeout completion is request-version scoped and dispatcher-safe, so only the active animated request can complete from fallback and superseded timeout work is canceled deterministically.

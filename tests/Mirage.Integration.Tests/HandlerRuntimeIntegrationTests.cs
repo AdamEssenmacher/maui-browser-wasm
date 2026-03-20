@@ -2805,6 +2805,27 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void ScrollViewHandler_GetDesiredSize_DoesNotTreatArrangedSizeAsExplicitRequest()
+    {
+        var probe = new MeasureProbeContentView();
+        var scrollView = new ScrollView
+        {
+            Orientation = ScrollOrientation.Vertical,
+            Content = probe
+        };
+
+        var handler = new MirageScrollViewHandler();
+        ((IElementHandler)handler).SetVirtualView(scrollView);
+        scrollView.Arrange(new Rect(0, 0, 320, 200));
+        Assert.True(scrollView.Width > 0, "Expected arrange to populate current layout size.");
+
+        var desired = handler.GetDesiredSize(180, 120);
+
+        Assert.Equal(180, desired.Width);
+        Assert.Equal(120, desired.Height);
+    }
+
+    [Fact]
     public void ScrollViewHandler_RequestScrollTo_ExecutesThroughCoordinatorRuntimeBridge()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
