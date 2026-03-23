@@ -6,7 +6,8 @@ public enum PropertyTarget
     Attribute,
     InputValue,
     InputChecked,
-    Style
+    Style,
+    Property
 }
 
 public enum PropertyElementTarget

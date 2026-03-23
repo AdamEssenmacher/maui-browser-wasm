@@ -51,7 +51,7 @@ public sealed class LabelParityContractTests
 
         var controlsRemapContract = contract!.Handlers!.Single(entry => string.Equals(entry.Name, "LabelControlsRemap", StringComparison.Ordinal));
         var controlsRemapKeys = new HashSet<string>(controlsRemapContract.PropertyMapperKeys!, StringComparer.Ordinal);
-        var requiredDeferredKeys = new HashSet<string>(MirageLabelHandler.ParityDeferredControlsRemapPropertyKeys, StringComparer.Ordinal);
+        var requiredDivergenceKeys = new HashSet<string>(MirageLabelHandler.ParityDivergenceControlsRemapPropertyKeys, StringComparer.Ordinal);
         var testMethodNames = DiscoverTestMethodNames(repositoryRoot);
 
         var coveredKeys = new HashSet<string>(StringComparer.Ordinal);
@@ -78,8 +78,8 @@ public sealed class LabelParityContractTests
         }
 
         Assert.True(
-            requiredDeferredKeys.SetEquals(coveredKeys),
-            $"Expected deferred key coverage for [{string.Join(", ", requiredDeferredKeys)}] but found [{string.Join(", ", coveredKeys)}].");
+            requiredDivergenceKeys.SetEquals(coveredKeys),
+            $"Expected divergence key coverage for [{string.Join(", ", requiredDivergenceKeys)}] but found [{string.Join(", ", coveredKeys)}].");
     }
 
     private static HashSet<string> DiscoverTestMethodNames(string repositoryRoot)

@@ -443,6 +443,12 @@ public sealed class MirageRuntime : IMirageRuntime
                     propertyTargetElement.Style(styleName!, operation.Value.GetStringOrNull());
                     break;
                 }
+                case PropertyTarget.Property:
+                {
+                    var propertyName = string.IsNullOrWhiteSpace(mapping.Name) ? operation.PropertyName : mapping.Name;
+                    propertyTargetElement.SetProperty(propertyName!, operation.Value);
+                    break;
+                }
                 default:
                     throw new InvalidOperationException($"Unsupported property target: {mapping.Target}");
             }
@@ -511,6 +517,12 @@ public sealed class MirageRuntime : IMirageRuntime
                 {
                     var styleName = string.IsNullOrWhiteSpace(mapping.Name) ? operation.PropertyName : mapping.Name;
                     propertyTargetElement.Style(styleName!, null);
+                    break;
+                }
+                case PropertyTarget.Property:
+                {
+                    var propertyName = string.IsNullOrWhiteSpace(mapping.Name) ? operation.PropertyName : mapping.Name;
+                    propertyTargetElement.RemoveProperty(propertyName!);
                     break;
                 }
                 default:

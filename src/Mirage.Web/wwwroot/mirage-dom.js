@@ -809,7 +809,47 @@ export function setPropertyJson(elementHandle, name, json) {
 
 export function removeProperty(elementHandle, name) {
   const element = fromHandle(elementHandle);
-  delete element[name];
+  if (!name) {
+    return;
+  }
+
+  let prototype = Object.getPrototypeOf(element);
+  let isPrototypeBackedProperty = false;
+  while (prototype) {
+    if (Object.prototype.hasOwnProperty.call(prototype, name)) {
+      isPrototypeBackedProperty = true;
+      break;
+    }
+
+    prototype = Object.getPrototypeOf(prototype);
+  }
+
+  if (!isPrototypeBackedProperty) {
+    delete element[name];
+    return;
+  }
+
+  const current = element[name];
+  try {
+    if (typeof current === "string") {
+      element[name] = "";
+      return;
+    }
+
+    if (typeof current === "boolean") {
+      element[name] = false;
+      return;
+    }
+
+    if (typeof current === "number") {
+      element[name] = 0;
+      return;
+    }
+
+    element[name] = null;
+  } catch {
+    delete element[name];
+  }
 }
 
 export function subscribeEvent(elementHandle, eventName, callback) {
