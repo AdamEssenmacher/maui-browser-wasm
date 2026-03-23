@@ -34,7 +34,7 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Deferred: radial/image/pattern paints remain unsupported fallback with DEBUG diagnostics.
 
 8. Label line-break truncation parity depth
-- Current behavior: `NoWrap`, `WordWrap`, `CharacterWrap`, and truncation modes map to CSS white-space/overflow behaviors, with `MaxLines` projected through line-clamp styles.
+- Current behavior: `NoWrap`, `WordWrap`, `CharacterWrap`, and truncation modes map to deterministic CSS white-space/overflow behaviors, with `MaxLines` projected through line-clamp styles and clamp-aware visibility projection.
 - Deferred: head/middle truncation visual parity and platform-specific truncation glyph placement remain best-effort.
 
 9. Text-input parity depth (`Entry` / `Editor` / `SearchBar`)
@@ -80,7 +80,8 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Deferred: advanced trigger precedence edge cases, full VisualState parity across all control families, and complex style/resource merge-order compatibility are still partial.
 
 19. Label text-source parity depth (`FormattedText` / `TextType` / `TextTransform`)
-- Current behavior: browser `Label` mapping is `ILabel`-surface-first (`Text`/style/alignment/wrap semantics), and the interactive Label depth page exposes deterministic fallback probes for controls-only text-source features.
+- Current behavior: browser `Label` mapping now includes MAUI-aligned core style primitives (`CharacterSpacing`, `TextDecorations`, `LineHeight`, `Padding`) plus controls remap keys for wrap/clamp (`LineBreakMode`, `MaxLines`) while keeping plain-text projection authoritative (`Label.Text` when set, otherwise deterministic flattened span text).
+- Current behavior: controls-only text-source features (`FormattedText`, `TextType`, `TextTransform`) use deterministic unsupported fallbacks with diagnostics and stable plain-text output.
 - Deferred: span-level formatted text projection, HTML text rendering semantics (`TextType.Html`), and controls-layer text-transform parity are explicitly gap-documented in this slice.
 
 ## Gap lifecycle policy

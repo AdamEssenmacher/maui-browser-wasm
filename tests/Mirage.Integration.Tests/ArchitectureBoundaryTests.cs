@@ -130,7 +130,7 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
-    public void PaddingMapping_RemainsContainerOnly()
+    public void PaddingMapping_IncludesLabelParitySurface()
     {
         var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");
         Assert.True(Directory.Exists(handlersPath), $"Handlers path was not found: {handlersPath}");
@@ -145,13 +145,13 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("MapPadding", layoutText, StringComparison.Ordinal);
         Assert.Contains("MapPadding", contentPageText, StringComparison.Ordinal);
         Assert.Contains("MapPadding", contentViewText, StringComparison.Ordinal);
-        Assert.DoesNotContain("MapPadding", labelText, StringComparison.Ordinal);
+        Assert.Contains("MapPadding", labelText, StringComparison.Ordinal);
         Assert.DoesNotContain("MapPadding", entryText, StringComparison.Ordinal);
         Assert.DoesNotContain("MapPadding", buttonText, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void LabelHandler_StaysWithinBasicPhaseOneScope()
+    public void LabelHandler_MapsParitySurfaceAndControlsRemapKeys()
     {
         var labelHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageLabelHandler.cs");
         Assert.True(File.Exists(labelHandlerPath), $"Expected handler file not found: {labelHandlerPath}");
@@ -159,10 +159,16 @@ public sealed class ArchitectureBoundaryTests
         var text = File.ReadAllText(labelHandlerPath);
 
         Assert.Contains("nameof(ILabel.Text)", text, StringComparison.Ordinal);
-        Assert.Contains("nameof(ILabel.Font)", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("nameof(ILabel.FormattedText)", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("nameof(ILabel.LineBreakMode)", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("nameof(ILabel.MaxLines)", text, StringComparison.Ordinal);
+        Assert.Contains("nameof(ITextStyle.CharacterSpacing)", text, StringComparison.Ordinal);
+        Assert.Contains("nameof(ILabel.TextDecorations)", text, StringComparison.Ordinal);
+        Assert.Contains("nameof(ILabel.LineHeight)", text, StringComparison.Ordinal);
+        Assert.Contains("nameof(ILabel.Padding)", text, StringComparison.Ordinal);
+        Assert.Contains("nameof(Label.LineBreakMode)", text, StringComparison.Ordinal);
+        Assert.Contains("nameof(Label.MaxLines)", text, StringComparison.Ordinal);
+        Assert.Contains("nameof(Label.TextType)", text, StringComparison.Ordinal);
+        Assert.Contains("nameof(Label.TextTransform)", text, StringComparison.Ordinal);
+        Assert.Contains("nameof(Label.FormattedText)", text, StringComparison.Ordinal);
+        Assert.Contains("ParityCommandKeys = []", text, StringComparison.Ordinal);
     }
 
     [Fact]
