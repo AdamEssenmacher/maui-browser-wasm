@@ -8,14 +8,51 @@ namespace Maui.Controls.Sample.Pages;
 
 public static class GalleryBuilder
 {
+    private static readonly HashSet<string> MapsGalleryButtonLabels = new(StringComparer.Ordinal)
+    {
+        "Basic Map",
+        "Map Type",
+        "Map Pins",
+        "Pins ItemsSource",
+        "Circle",
+        "Polygon"
+    };
+
+    private static readonly HashSet<string> BorderGalleryButtonLabels = new(StringComparer.Ordinal)
+    {
+        "Border Playground",
+        "Border Clipping Playground",
+        "Border using styles",
+        "Border using Content Layout",
+        "Border Stroke options",
+        "Border without Stroke",
+        "Border resize Content",
+        "Border Alignment"
+    };
+
+    private static readonly HashSet<string> DeferredCollectionViewButtonLabels = new(StringComparer.Ordinal)
+    {
+        "CarouselView Galleries",
+        "DataTemplateSelector",
+        "Filter Items",
+        "EmptyView (String)",
+        "EmptyView (View)",
+        "EmptyView (Template View)",
+        "EmptyView (Swap EmptyView)",
+        "EmptyView (Data Template Selector)",
+        "EmptyView RTL",
+        "Filterable Single Selection"
+    };
+
     public static Button NavButton(string galleryName, Func<Page> gallery, INavigation nav)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(galleryName);
         ArgumentNullException.ThrowIfNull(gallery);
         ArgumentNullException.ThrowIfNull(nav);
 
+        var isCollectionViewContext = IsCollectionViewContext(gallery, nav);
         var slug = ToSlug(galleryName);
-        var automationId = BuildNavButtonAutomationId(galleryName, slug);
+        var automationId = BuildNavButtonAutomationId(galleryName, slug, isCollectionViewContext);
         var button = new Button
         {
             Text = galleryName,
@@ -26,6 +63,12 @@ public static class GalleryBuilder
             Margin = 5,
             Padding = 5
         };
+
+        if (isCollectionViewContext && IsDeferredCollectionViewButton(galleryName))
+        {
+            button.IsVisible = false;
+            button.IsEnabled = false;
+        }
 
         button.Clicked += async (_, _) =>
         {
@@ -43,28 +86,56 @@ public static class GalleryBuilder
         return button;
     }
 
-    private static string BuildNavButtonAutomationId(string galleryName, string slug)
+    private static string BuildNavButtonAutomationId(string galleryName, string slug, bool isCollectionViewContext)
     {
         if (IsMapsGalleryButton(galleryName))
         {
             return $"controls-sample-mapsgallery-open-{slug}";
         }
 
-        return $"controls-sample-borderpage-open-{slug}";
+        if (IsBorderGalleryButton(galleryName))
+        {
+            return $"controls-sample-borderpage-open-{slug}";
+        }
+
+        if (isCollectionViewContext)
+        {
+            return $"controls-sample-collectionviewgallery-open-{slug}";
+        }
+
+        return $"controls-sample-gallery-open-{slug}";
     }
 
     private static bool IsMapsGalleryButton(string galleryName)
     {
-        return galleryName switch
+        return MapsGalleryButtonLabels.Contains(galleryName);
+    }
+
+    private static bool IsBorderGalleryButton(string galleryName)
+    {
+        return BorderGalleryButtonLabels.Contains(galleryName);
+    }
+
+    private static bool IsDeferredCollectionViewButton(string galleryName)
+    {
+        return DeferredCollectionViewButtonLabels.Contains(galleryName);
+    }
+
+    private static bool IsCollectionViewContext(Func<Page> gallery, INavigation nav)
+    {
+        if (IsCollectionViewNamespace(gallery.Method.DeclaringType?.Namespace))
         {
-            "Basic Map" => true,
-            "Map Type" => true,
-            "Map Pins" => true,
-            "Pins ItemsSource" => true,
-            "Circle" => true,
-            "Polygon" => true,
-            _ => false
-        };
+            return true;
+        }
+
+        var currentPageNamespace = nav.NavigationStack.LastOrDefault()?.GetType().Namespace;
+        return IsCollectionViewNamespace(currentPageNamespace);
+    }
+
+    private static bool IsCollectionViewNamespace(string? @namespace)
+    {
+        return !string.IsNullOrWhiteSpace(@namespace)
+               && @namespace.Contains(".CollectionViewGalleries", StringComparison.Ordinal);
     }
 
     private static void InstrumentGalleryPage(Page page)

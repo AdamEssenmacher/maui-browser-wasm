@@ -44,6 +44,7 @@
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\PinItemsSourceGallery.xaml" Link="Vendor\Pages\Controls\MapsGalleries\PinItemsSourceGallery.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\CircleGallery.xaml" Link="Vendor\Pages\Controls\MapsGalleries\CircleGallery.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\PolygonsGallery.xaml" Link="Vendor\Pages\Controls\MapsGalleries\PolygonsGallery.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\CollectionViewGalleries\**\*.xaml" Link="Vendor\Pages\Controls\CollectionViewGalleries\%(RecursiveDir)%(Filename)%(Extension)" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\SliderPage.xaml" Link="Vendor\Pages\Controls\SliderPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\StepperPage.xaml" Link="Vendor\Pages\Controls\StepperPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Compatibility\TabbedPageGalleryMainPage.xaml" Link="Vendor\Pages\Compatibility\TabbedPageGalleryMainPage.xaml" />
@@ -90,6 +91,7 @@
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\PinItemsSourceGallery.xaml.cs" Link="Vendor\Pages\Controls\MapsGalleries\PinItemsSourceGallery.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\CircleGallery.xaml.cs" Link="Vendor\Pages\Controls\MapsGalleries\CircleGallery.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\PolygonsGallery.xaml.cs" Link="Vendor\Pages\Controls\MapsGalleries\PolygonsGallery.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\CollectionViewGalleries\**\*.cs" Link="Vendor\Pages\Controls\CollectionViewGalleries\%(RecursiveDir)%(Filename)%(Extension)" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\SliderPage.xaml.cs" Link="Vendor\Pages\Controls\SliderPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\StepperPage.xaml.cs" Link="Vendor\Pages\Controls\StepperPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Compatibility\TabbedPageGalleryMainPage.xaml.cs" Link="Vendor\Pages\Compatibility\TabbedPageGalleryMainPage.xaml.cs" />
@@ -122,5 +124,6 @@
     <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiPackageVersion)" />
     <PackageReference Include="Microsoft.Maui.Controls.Maps" Version="$(MauiPackageVersion)" />
     <PackageReference Include="Microsoft.Maui.Controls.Xaml" Version="$(MauiPackageVersion)" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.1.0" />
   </ItemGroup>
 </Project>

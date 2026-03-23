@@ -1,4 +1,5 @@
 using Maui.Controls.Sample.Pages;
+using Maui.Controls.Sample.Pages.CollectionViewGalleries;
 using Maui.Controls.Sample.Pages.MapsGalleries;
 using ControlsSample.Shared.App.VendorCompat;
 using Microsoft.Maui.Controls;
@@ -206,7 +207,15 @@ public static class ControlsSampleCatalog
             status: ControlsSampleStatus.Runnable,
             pageType: typeof(MapsGallery),
             description: "Runnable in Mirage today: exercises map gallery navigation with map options, pins, item source, and shape overlays.",
-            pageFactory: CreateMapsGallery)
+            pageFactory: CreateMapsGallery),
+        new(
+            id: "collectionviewgallery",
+            title: "CollectionViewGallery",
+            upstreamPath: "Pages/Controls/CollectionViewGalleries/CollectionViewGallery.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(CollectionViewGallery),
+            description: "Runnable in Mirage today: exercises CollectionView gallery navigation across templates, grouping, selection, scrolling, and layout variations (excluding deferred SearchBar/Carousel/Indicator dependencies).",
+            pageFactory: CreateCollectionViewGallery)
     ];
 
     private static Page CreateButtonPage(IServiceProvider services)
@@ -534,6 +543,33 @@ public static class ControlsSampleCatalog
         SetButtonAutomationIdByText(page, "Pins ItemsSource", "controls-sample-mapsgallery-open-pins-itemssource");
         SetButtonAutomationIdByText(page, "Circle", "controls-sample-mapsgallery-open-circle");
         SetButtonAutomationIdByText(page, "Polygon", "controls-sample-mapsgallery-open-polygon");
+
+        return page;
+    }
+
+    private static Page CreateCollectionViewGallery(IServiceProvider services)
+    {
+        _ = services;
+        var page = new CollectionViewGallery();
+
+        SetButtonAutomationIdByText(page, "Default Text Galleries", "controls-sample-collectionviewgallery-open-default-text-galleries");
+        SetButtonAutomationIdByText(page, "DataTemplate Galleries", "controls-sample-collectionviewgallery-open-datatemplate-galleries");
+        SetButtonAutomationIdByText(page, "Observable Collection Galleries", "controls-sample-collectionviewgallery-open-observable-collection-galleries");
+        SetButtonAutomationIdByText(page, "Snap Points Galleries", "controls-sample-collectionviewgallery-open-snap-points-galleries");
+        SetButtonAutomationIdByText(page, "ScrollTo Galleries", "controls-sample-collectionviewgallery-open-scrollto-galleries");
+        SetButtonAutomationIdByText(page, "EmptyView Galleries", "controls-sample-collectionviewgallery-open-emptyview-galleries");
+        SetButtonAutomationIdByText(page, "Selection Galleries", "controls-sample-collectionviewgallery-open-selection-galleries");
+        SetButtonAutomationIdByText(page, "Propagation Galleries", "controls-sample-collectionviewgallery-open-propagation-galleries");
+        SetButtonAutomationIdByText(page, "Grouping Galleries", "controls-sample-collectionviewgallery-open-grouping-galleries");
+        SetButtonAutomationIdByText(page, "Reordering Galleries", "controls-sample-collectionviewgallery-open-reordering-galleries");
+        SetButtonAutomationIdByText(page, "Item Spacing Galleries", "controls-sample-collectionviewgallery-open-item-spacing-galleries");
+        SetButtonAutomationIdByText(page, "Item Size Galleries", "controls-sample-collectionviewgallery-open-item-size-galleries");
+        SetButtonAutomationIdByText(page, "Scroll Mode Galleries", "controls-sample-collectionviewgallery-open-scroll-mode-galleries");
+        SetButtonAutomationIdByText(page, "Alternate Layout Galleries", "controls-sample-collectionviewgallery-open-alternate-layout-galleries");
+        SetButtonAutomationIdByText(page, "Header/Footer Galleries", "controls-sample-collectionviewgallery-open-header-footer-galleries");
+        SetButtonAutomationIdByText(page, "Nested CollectionViews", "controls-sample-collectionviewgallery-open-nested-collectionviews");
+        SetButtonAutomationIdByText(page, "Online images", "controls-sample-collectionviewgallery-open-online-images");
+        SetButtonAutomationIdByText(page, "Adaptive CollectionView Gallery", "controls-sample-collectionviewgallery-open-adaptive-collectionview-gallery");
 
         return page;
     }
