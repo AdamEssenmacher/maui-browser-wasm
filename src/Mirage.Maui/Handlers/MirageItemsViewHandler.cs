@@ -47,7 +47,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
     private double _suppressedRuntimeScrollLeft;
     private double _suppressedRuntimeScrollTop;
     private int? _preferredSingleSelectionIndexHint;
-    private List<int>? _preferredMultipleSelectionIndexHints;
+    private List<int?>? _preferredMultipleSelectionIndexHints;
 
     internal static readonly string[] ParityPropertyKeys =
     {
@@ -506,11 +506,15 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         platformView.SetProperty("CollectionViewHostRole", "scroll");
     }
 
-    private void RebuildAllContent(bool applyMutationScrollMode = false)
+    private void RebuildAllContent(bool applyMutationScrollMode = false, bool preserveSelectionIndexHints = false)
     {
         using (BeginRenderBatch())
         {
-            ClearSelectionIndexHints();
+            if (!preserveSelectionIndexHints)
+            {
+                ClearSelectionIndexHints();
+            }
+
             DisconnectAllItems();
             DisconnectHostedContent(ref _emptyViewRealization, _emptyHost);
 
@@ -553,34 +557,34 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
             case NotifyCollectionChangedAction.Add:
                 if (!TryApplyAdd(e))
                 {
-                    RebuildAllContent(applyMutationScrollMode: true);
+                    RebuildAllContent(applyMutationScrollMode: true, preserveSelectionIndexHints: true);
                 }
 
                 break;
             case NotifyCollectionChangedAction.Remove:
                 if (!TryApplyRemove(e))
                 {
-                    RebuildAllContent(applyMutationScrollMode: true);
+                    RebuildAllContent(applyMutationScrollMode: true, preserveSelectionIndexHints: true);
                 }
 
                 break;
             case NotifyCollectionChangedAction.Move:
                 if (!TryApplyMove(e))
                 {
-                    RebuildAllContent(applyMutationScrollMode: true);
+                    RebuildAllContent(applyMutationScrollMode: true, preserveSelectionIndexHints: true);
                 }
 
                 break;
             case NotifyCollectionChangedAction.Replace:
                 if (!TryApplyReplace(e))
                 {
-                    RebuildAllContent(applyMutationScrollMode: true);
+                    RebuildAllContent(applyMutationScrollMode: true, preserveSelectionIndexHints: true);
                 }
 
                 break;
             case NotifyCollectionChangedAction.Reset:
             default:
-                RebuildAllContent(applyMutationScrollMode: true);
+                RebuildAllContent(applyMutationScrollMode: true, preserveSelectionIndexHints: true);
                 break;
         }
     }
@@ -622,6 +626,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
             _itemRealizations.Insert(targetIndex, realization);
         }
 
+        AdjustSelectionIndexHintsForInsert(insertionIndex, newItems.Count);
         FinalizeCollectionMutation();
         return true;
     }
@@ -648,6 +653,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
             _itemsSnapshot.RemoveAt(removalIndex);
         }
 
+        AdjustSelectionIndexHintsForRemove(removalIndex, countToRemove);
         FinalizeCollectionMutation();
         return true;
     }
@@ -678,6 +684,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
             return true;
         }
 
+        var originalItemCount = _itemRealizations.Count;
         var movingSnapshots = _itemsSnapshot.GetRange(oldStartingIndex, moveCount);
         var movingRealizations = _itemRealizations.GetRange(oldStartingIndex, moveCount);
 
@@ -689,6 +696,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         _itemRealizations.InsertRange(insertionIndex, movingRealizations);
 
         ReorderItemsDomFromRealizations();
+        AdjustSelectionIndexHintsForMove(oldStartingIndex, moveCount, insertionIndex, originalItemCount);
         FinalizeCollectionMutation();
         return true;
     }
@@ -738,13 +746,13 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
             _itemsHost.InsertChild(insertionIndex, realization.Node);
         }
 
+        AdjustSelectionIndexHintsForReplace(oldStartingIndex, oldCount, newItems.Count);
         FinalizeCollectionMutation();
         return true;
     }
 
     private void FinalizeCollectionMutation()
     {
-        ClearSelectionIndexHints();
         ApplyItemIndexAttributes();
         UpdateEmptyViewState();
         EnsureSelectionModeCoherence();
@@ -1554,7 +1562,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
             return;
         }
 
-        _preferredMultipleSelectionIndexHints = selectedIndexes.ToList();
+        _preferredMultipleSelectionIndexHints = selectedIndexes.Select(static index => (int?)index).ToList();
     }
 
     private bool TryGetPreferredMultipleSelectionIndexHint(int selectionOrder, out int preferredIndex)
@@ -1567,8 +1575,214 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
             return false;
         }
 
-        preferredIndex = _preferredMultipleSelectionIndexHints[selectionOrder];
+        var hintedIndex = _preferredMultipleSelectionIndexHints[selectionOrder];
+        if (!hintedIndex.HasValue)
+        {
+            return false;
+        }
+
+        preferredIndex = hintedIndex.Value;
         return true;
+    }
+
+    private void AdjustSelectionIndexHintsForInsert(int insertionIndex, int insertedCount)
+    {
+        if (insertedCount <= 0)
+        {
+            return;
+        }
+
+        _preferredSingleSelectionIndexHint = AdjustIndexHintForInsert(
+            _preferredSingleSelectionIndexHint,
+            insertionIndex,
+            insertedCount);
+
+        AdjustMultipleSelectionIndexHints(indexHint => AdjustIndexHintForInsert(indexHint, insertionIndex, insertedCount));
+    }
+
+    private void AdjustSelectionIndexHintsForRemove(int removalIndex, int removedCount)
+    {
+        if (removedCount <= 0)
+        {
+            return;
+        }
+
+        _preferredSingleSelectionIndexHint = AdjustIndexHintForRemove(
+            _preferredSingleSelectionIndexHint,
+            removalIndex,
+            removedCount);
+
+        AdjustMultipleSelectionIndexHints(indexHint => AdjustIndexHintForRemove(indexHint, removalIndex, removedCount));
+    }
+
+    private void AdjustSelectionIndexHintsForMove(int oldStartingIndex, int moveCount, int insertionIndex, int originalItemCount)
+    {
+        if (moveCount <= 0)
+        {
+            return;
+        }
+
+        _preferredSingleSelectionIndexHint = AdjustIndexHintForMove(
+            _preferredSingleSelectionIndexHint,
+            oldStartingIndex,
+            moveCount,
+            insertionIndex,
+            originalItemCount);
+
+        AdjustMultipleSelectionIndexHints(indexHint => AdjustIndexHintForMove(
+            indexHint,
+            oldStartingIndex,
+            moveCount,
+            insertionIndex,
+            originalItemCount));
+    }
+
+    private void AdjustSelectionIndexHintsForReplace(int oldStartingIndex, int oldCount, int newCount)
+    {
+        if (oldCount == 0 && newCount == 0)
+        {
+            return;
+        }
+
+        _preferredSingleSelectionIndexHint = AdjustIndexHintForReplace(
+            _preferredSingleSelectionIndexHint,
+            oldStartingIndex,
+            oldCount,
+            newCount);
+
+        AdjustMultipleSelectionIndexHints(indexHint => AdjustIndexHintForReplace(
+            indexHint,
+            oldStartingIndex,
+            oldCount,
+            newCount));
+    }
+
+    private void AdjustMultipleSelectionIndexHints(Func<int?, int?> adjustHint)
+    {
+        if (_preferredMultipleSelectionIndexHints is null)
+        {
+            return;
+        }
+
+        var hasAnyHint = false;
+        for (var i = 0; i < _preferredMultipleSelectionIndexHints.Count; i++)
+        {
+            var adjustedHint = adjustHint(_preferredMultipleSelectionIndexHints[i]);
+            _preferredMultipleSelectionIndexHints[i] = adjustedHint;
+            hasAnyHint |= adjustedHint.HasValue;
+        }
+
+        if (!hasAnyHint)
+        {
+            _preferredMultipleSelectionIndexHints = null;
+        }
+    }
+
+    private static int? AdjustIndexHintForInsert(int? indexHint, int insertionIndex, int insertedCount)
+    {
+        if (!indexHint.HasValue)
+        {
+            return null;
+        }
+
+        var index = indexHint.Value;
+        if (index < insertionIndex)
+        {
+            return index;
+        }
+
+        return index + insertedCount;
+    }
+
+    private static int? AdjustIndexHintForRemove(int? indexHint, int removalIndex, int removedCount)
+    {
+        if (!indexHint.HasValue)
+        {
+            return null;
+        }
+
+        var index = indexHint.Value;
+        if (index < removalIndex)
+        {
+            return index;
+        }
+
+        var removalEndIndexExclusive = removalIndex + removedCount;
+        if (index < removalEndIndexExclusive)
+        {
+            return null;
+        }
+
+        return index - removedCount;
+    }
+
+    private static int? AdjustIndexHintForMove(
+        int? indexHint,
+        int oldStartingIndex,
+        int moveCount,
+        int insertionIndex,
+        int originalItemCount)
+    {
+        if (!indexHint.HasValue)
+        {
+            return null;
+        }
+
+        var index = indexHint.Value;
+        if (index < 0 || index >= originalItemCount)
+        {
+            return null;
+        }
+
+        var movedRangeEndExclusive = oldStartingIndex + moveCount;
+        if (index >= oldStartingIndex && index < movedRangeEndExclusive)
+        {
+            return insertionIndex + (index - oldStartingIndex);
+        }
+
+        if (index >= movedRangeEndExclusive)
+        {
+            index -= moveCount;
+        }
+
+        if (index >= insertionIndex)
+        {
+            index += moveCount;
+        }
+
+        return index;
+    }
+
+    private static int? AdjustIndexHintForReplace(int? indexHint, int oldStartingIndex, int oldCount, int newCount)
+    {
+        if (!indexHint.HasValue)
+        {
+            return null;
+        }
+
+        if (oldCount == 0)
+        {
+            return AdjustIndexHintForInsert(indexHint, oldStartingIndex, newCount);
+        }
+
+        if (newCount == 0)
+        {
+            return AdjustIndexHintForRemove(indexHint, oldStartingIndex, oldCount);
+        }
+
+        var index = indexHint.Value;
+        if (index < oldStartingIndex)
+        {
+            return index;
+        }
+
+        var removedRangeEndExclusive = oldStartingIndex + oldCount;
+        if (index < removedRangeEndExclusive)
+        {
+            return null;
+        }
+
+        return index + (newCount - oldCount);
     }
 
     private static bool AreItemsEquivalent(object? left, object? right)

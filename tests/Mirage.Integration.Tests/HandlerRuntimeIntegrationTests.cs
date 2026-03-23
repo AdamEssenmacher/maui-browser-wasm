@@ -1287,6 +1287,83 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CollectionViewHandler_MultipleSelection_DuplicateReferencePreservesClickedRowAcrossIncrementalMutations()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var leading = new SectionModel(typeof(ContentPage), "Leading", "Leading item");
+        var replacement = new SectionModel(typeof(ContentPage), "Replacement", "Replacement item");
+        var inserted = new SectionModel(typeof(ContentPage), "Inserted", "Inserted item");
+        var duplicate = new SectionModel(typeof(ContentPage), "Duplicate", "Same instance");
+        var trailing = new SectionModel(typeof(ContentPage), "Trailing", "Trailing item");
+        var items = new ObservableCollection<object?> { leading, duplicate, duplicate, trailing };
+
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            SelectionMode = SelectionMode.Multiple
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        var itemNodes = GetCollectionItemNodes(handler);
+        Assert.Equal(4, itemNodes.Count);
+
+        coordinator.OnEvent(itemNodes[2].NodeId, "click", null);
+        AssertDuplicateSelectionState(handler, collectionView, duplicate, expectedSelectedIndex: 2);
+
+        items[0] = replacement;
+        AssertDuplicateSelectionState(handler, collectionView, duplicate, expectedSelectedIndex: 2);
+
+        items.Insert(0, inserted);
+        AssertDuplicateSelectionState(handler, collectionView, duplicate, expectedSelectedIndex: 3);
+
+        items.Move(0, items.Count - 1);
+        AssertDuplicateSelectionState(handler, collectionView, duplicate, expectedSelectedIndex: 2);
+
+        items.RemoveAt(0);
+        AssertDuplicateSelectionState(handler, collectionView, duplicate, expectedSelectedIndex: 1);
+    }
+
+    [Fact]
+    public void CollectionViewHandler_MultipleSelection_DuplicateReferencePreservesClickedRowAcrossResetMutation()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var leading = new SectionModel(typeof(ContentPage), "Leading", "Leading item");
+        var duplicate = new SectionModel(typeof(ContentPage), "Duplicate", "Same instance");
+        var trailing = new SectionModel(typeof(ContentPage), "Trailing", "Trailing item");
+        var items = new ResettableObservableCollection<object?> { leading, duplicate, duplicate, trailing };
+
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            SelectionMode = SelectionMode.Multiple
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        var itemNodes = GetCollectionItemNodes(handler);
+        Assert.Equal(4, itemNodes.Count);
+
+        coordinator.OnEvent(itemNodes[2].NodeId, "click", null);
+        AssertDuplicateSelectionState(handler, collectionView, duplicate, expectedSelectedIndex: 2);
+
+        items.ResetTo(new object?[] { leading, duplicate, duplicate, trailing });
+        AssertDuplicateSelectionState(handler, collectionView, duplicate, expectedSelectedIndex: 2);
+    }
+
+    [Fact]
     public void CollectionViewHandler_ObservableCollectionMutations_ApplyIncrementally()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -4391,6 +4468,30 @@ public sealed class HandlerRuntimeIntegrationTests
         var itemsHost = FindCollectionHost(contentHost!, "items");
         Assert.NotNull(itemsHost);
         return itemsHost!.Children;
+    }
+
+    private static void AssertDuplicateSelectionState(
+        MirageCollectionViewHandler handler,
+        CollectionView collectionView,
+        object expectedSelectedItem,
+        int expectedSelectedIndex)
+    {
+        Assert.NotNull(collectionView.SelectedItems);
+        Assert.Single(collectionView.SelectedItems!);
+        Assert.Same(expectedSelectedItem, collectionView.SelectedItems[0]);
+
+        var itemNodes = GetCollectionItemNodes(handler);
+        Assert.InRange(expectedSelectedIndex, 0, itemNodes.Count - 1);
+        for (var i = 0; i < itemNodes.Count; i++)
+        {
+            if (i == expectedSelectedIndex)
+            {
+                Assert.Equal("2px solid rgba(86,57,176,0.35)", itemNodes[i].GetStyleValue("outline"));
+                continue;
+            }
+
+            Assert.Null(itemNodes[i].GetStyleValue("outline"));
+        }
     }
 
     private static MiragePlatformView? FindCollectionHost(MiragePlatformView parent, string role)
