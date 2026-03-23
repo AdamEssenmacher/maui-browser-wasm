@@ -68,6 +68,7 @@ internal abstract class MirageStructuredItemsViewHandler<TItemsView> : MirageIte
     {
         _ = itemsView;
         handler.ApplyItemsLayout();
+        handler.ApplyScrollStyles();
         handler.RequestRender();
     }
 

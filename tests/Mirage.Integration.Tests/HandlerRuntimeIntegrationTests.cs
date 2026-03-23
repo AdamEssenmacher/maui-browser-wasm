@@ -1391,6 +1391,34 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CollectionViewHandler_ItemsLayoutUpdate_ReappliesScrollOverflowProjection()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new[] { "one", "two" },
+            ItemsLayout = new LinearItemsLayout(ItemsLayoutOrientation.Vertical)
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        Assert.Equal("hidden", handler.PlatformView.GetStyleValue("overflowX"));
+        Assert.Equal("auto", handler.PlatformView.GetStyleValue("overflowY"));
+
+        collectionView.ItemsLayout = new LinearItemsLayout(ItemsLayoutOrientation.Horizontal);
+        MirageStructuredItemsViewHandler<CollectionView>.StructuredItemsViewMapper.UpdateProperty(
+            handler,
+            collectionView,
+            nameof(StructuredItemsView.ItemsLayout));
+
+        Assert.Equal("auto", handler.PlatformView.GetStyleValue("overflowX"));
+        Assert.Equal("hidden", handler.PlatformView.GetStyleValue("overflowY"));
+    }
+
+    [Fact]
     public void CollectionViewHandler_ScrollToRequested_Animated_DefersScrolledUntilRuntimeScrollEvent()
     {
         var dispatcher = new QueuedDispatcher();

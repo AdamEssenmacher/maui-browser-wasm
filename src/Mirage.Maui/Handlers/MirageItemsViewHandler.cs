@@ -1097,7 +1097,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         PlatformView.SetStyle("direction", direction);
     }
 
-    private void ApplyScrollStyles()
+    protected void ApplyScrollStyles()
     {
         var orientation = ResolveItemsLayoutOrientation();
         var horizontalOverflow = ResolveScrollOverflowStyle(VirtualView.HorizontalScrollBarVisibility);
