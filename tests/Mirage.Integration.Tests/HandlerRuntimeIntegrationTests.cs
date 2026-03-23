@@ -210,6 +210,238 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void LabelHandler_MapsCharacterSpacingDecorationsLineHeightAndPadding()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var label = new Label
+        {
+            Text = "Typography",
+            CharacterSpacing = 1.25,
+            TextDecorations = TextDecorations.Underline | TextDecorations.Strikethrough,
+            LineHeight = 1.8,
+            Padding = new Thickness(3, 4, 5, 6)
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+
+        Assert.Equal("1.25px", handler.PlatformView.GetStyleValue("letterSpacing"));
+        Assert.Equal("underline line-through", handler.PlatformView.GetStyleValue("textDecoration"));
+        Assert.Equal("1.8", handler.PlatformView.GetStyleValue("lineHeight"));
+        Assert.Equal("4px 5px 6px 3px", handler.PlatformView.GetStyleValue("padding"));
+
+        label.CharacterSpacing = 1.25;
+        label.TextDecorations = TextDecorations.None;
+        label.LineHeight = double.NaN;
+        label.Padding = new Thickness(double.NaN, 1, double.NaN, 2);
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(ITextStyle.CharacterSpacing));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(ILabel.TextDecorations));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(ILabel.LineHeight));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(ILabel.Padding));
+
+        Assert.Equal("1.25px", handler.PlatformView.GetStyleValue("letterSpacing"));
+        Assert.Null(handler.PlatformView.GetStyleValue("textDecoration"));
+        Assert.Equal("1.3", handler.PlatformView.GetStyleValue("lineHeight"));
+        Assert.Equal("1px 0px 2px 0px", handler.PlatformView.GetStyleValue("padding"));
+    }
+
+    [Fact]
+    public void LabelHandler_MapsLineBreakModeAndMaxLines()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var label = new Label
+        {
+            Text = "Line break projection",
+            LineBreakMode = LineBreakMode.NoWrap,
+            MaxLines = -1
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+        Assert.Equal("nowrap", handler.PlatformView.GetStyleValue("whiteSpace"));
+        Assert.Equal("hidden", handler.PlatformView.GetStyleValue("overflow"));
+        Assert.Equal("clip", handler.PlatformView.GetStyleValue("textOverflow"));
+        Assert.Null(handler.PlatformView.GetStyleValue("webkitLineClamp"));
+        Assert.Equal("flex", handler.PlatformView.GetStyleValue("display"));
+
+        label.LineBreakMode = LineBreakMode.WordWrap;
+        label.MaxLines = 3;
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.LineBreakMode));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.MaxLines));
+
+        Assert.Equal("normal", handler.PlatformView.GetStyleValue("whiteSpace"));
+        Assert.Equal("hidden", handler.PlatformView.GetStyleValue("overflow"));
+        Assert.Equal("ellipsis", handler.PlatformView.GetStyleValue("textOverflow"));
+        Assert.Equal("vertical", handler.PlatformView.GetStyleValue("webkitBoxOrient"));
+        Assert.Equal("3", handler.PlatformView.GetStyleValue("webkitLineClamp"));
+        Assert.Equal("-webkit-box", handler.PlatformView.GetStyleValue("display"));
+
+        label.LineBreakMode = LineBreakMode.CharacterWrap;
+        label.MaxLines = -1;
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.LineBreakMode));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.MaxLines));
+
+        Assert.Equal("normal", handler.PlatformView.GetStyleValue("whiteSpace"));
+        Assert.Equal("visible", handler.PlatformView.GetStyleValue("overflow"));
+        Assert.Equal("clip", handler.PlatformView.GetStyleValue("textOverflow"));
+        Assert.Equal("break-all", handler.PlatformView.GetStyleValue("wordBreak"));
+        Assert.Equal("anywhere", handler.PlatformView.GetStyleValue("overflowWrap"));
+        Assert.Null(handler.PlatformView.GetStyleValue("webkitBoxOrient"));
+        Assert.Null(handler.PlatformView.GetStyleValue("webkitLineClamp"));
+        Assert.Equal("flex", handler.PlatformView.GetStyleValue("display"));
+    }
+
+    [Fact]
+    public void LabelHandler_VisibilityToggle_PreservesLineClampDisplayMode()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var label = new Label
+        {
+            Text = "Clamp visibility",
+            LineBreakMode = LineBreakMode.TailTruncation,
+            MaxLines = 2,
+            IsVisible = true
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+        Assert.Equal("-webkit-box", handler.PlatformView.GetStyleValue("display"));
+        Assert.Equal("visible", handler.PlatformView.GetStyleValue("visibility"));
+
+        label.IsVisible = false;
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, "IsVisible");
+        Assert.Equal("none", handler.PlatformView.GetStyleValue("display"));
+        Assert.Equal("hidden", handler.PlatformView.GetStyleValue("visibility"));
+
+        label.IsVisible = true;
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, "IsVisible");
+        Assert.Equal("-webkit-box", handler.PlatformView.GetStyleValue("display"));
+        Assert.Equal("visible", handler.PlatformView.GetStyleValue("visibility"));
+    }
+
+    [Fact]
+    public void LabelHandler_FormattedText_FallsBackToPlainText()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var formatted = new FormattedString();
+        formatted.Spans.Add(new Span { Text = "Bold", FontAttributes = FontAttributes.Bold });
+        formatted.Spans.Add(new Span { Text = " label" });
+
+        var label = new Label
+        {
+            Text = "Plain fallback",
+            FormattedText = formatted
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+        Assert.Equal("Bold label", handler.PlatformView.GetPropertyString("Text"));
+
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.FormattedText));
+        Assert.Equal("Bold label", handler.PlatformView.GetPropertyString("Text"));
+    }
+
+    [Fact]
+    public void LabelHandler_TextTypeHtml_FallsBackToPlainText()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var label = new Label
+        {
+            Text = "<b>Literal html</b>",
+            TextType = TextType.Html
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+        Assert.Equal("<b>Literal html</b>", handler.PlatformView.GetPropertyString("Text"));
+
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.TextType));
+        Assert.Equal("<b>Literal html</b>", handler.PlatformView.GetPropertyString("Text"));
+    }
+
+    [Fact]
+    public void LabelHandler_TextTransform_FallsBackToPlainText()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var label = new Label
+        {
+            Text = "MiXeD CaSe",
+            TextTransform = TextTransform.Uppercase
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+        Assert.Equal("MiXeD CaSe", handler.PlatformView.GetPropertyString("Text"));
+
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.TextTransform));
+        Assert.Equal("MiXeD CaSe", handler.PlatformView.GetPropertyString("Text"));
+    }
+
+    [Fact]
+    public void LabelHandler_ReapplyingSameValues_IsIdempotent()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var label = new Label
+        {
+            Text = "Stable",
+            CharacterSpacing = 1,
+            TextDecorations = TextDecorations.Underline,
+            LineHeight = 1.4,
+            LineBreakMode = LineBreakMode.WordWrap,
+            MaxLines = 2,
+            Padding = new Thickness(2),
+            TextType = TextType.Text,
+            TextTransform = TextTransform.None
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+
+        var beforeDisplay = handler.PlatformView.GetStyleValue("display");
+        var beforeClamp = handler.PlatformView.GetStyleValue("webkitLineClamp");
+        var beforeWhiteSpace = handler.PlatformView.GetStyleValue("whiteSpace");
+        var beforePadding = handler.PlatformView.GetStyleValue("padding");
+        var beforeText = handler.PlatformView.GetPropertyString("Text");
+
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(ITextStyle.CharacterSpacing));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(ILabel.TextDecorations));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(ILabel.LineHeight));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(ILabel.Padding));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.LineBreakMode));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.MaxLines));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.TextType));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.TextTransform));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.Text));
+
+        Assert.Equal(beforeDisplay, handler.PlatformView.GetStyleValue("display"));
+        Assert.Equal(beforeClamp, handler.PlatformView.GetStyleValue("webkitLineClamp"));
+        Assert.Equal(beforeWhiteSpace, handler.PlatformView.GetStyleValue("whiteSpace"));
+        Assert.Equal(beforePadding, handler.PlatformView.GetStyleValue("padding"));
+        Assert.Equal(beforeText, handler.PlatformView.GetPropertyString("Text"));
+    }
+
+    [Fact]
     public void CommonMapper_CompatibilityAliases_MapBackgroundColorAndFontProperties()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "block");

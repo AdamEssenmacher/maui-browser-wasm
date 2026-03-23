@@ -1,0 +1,31 @@
+{
+  "entries": [
+    {
+      "id": "label-formattedtext-unsupported-fallback",
+      "summary": "FormattedText span styling projection remains deferred in this wave; Mirage uses deterministic plain-text fallback (flattened span text).",
+      "upstreamReference": "src/Controls/src/Core/Label/Label.Mapper.cs",
+      "testReference": "LabelHandler_FormattedText_FallsBackToPlainText",
+      "keys": [
+        "FormattedText"
+      ]
+    },
+    {
+      "id": "label-texttype-html-unsupported-fallback",
+      "summary": "TextType.Html rendering remains deferred in this wave; Mirage preserves raw Text output as deterministic fallback.",
+      "upstreamReference": "src/Controls/src/Core/Label/Label.Mapper.cs",
+      "testReference": "LabelHandler_TextTypeHtml_FallsBackToPlainText",
+      "keys": [
+        "TextType"
+      ]
+    },
+    {
+      "id": "label-texttransform-unsupported-fallback",
+      "summary": "Controls TextTransform remap behavior remains deferred in this wave; Mirage keeps plain Text output without transform mutations.",
+      "upstreamReference": "src/Controls/src/Core/Label/Label.Mapper.cs",
+      "testReference": "LabelHandler_TextTransform_FallsBackToPlainText",
+      "keys": [
+        "TextTransform"
+      ]
+    }
+  ]
+}

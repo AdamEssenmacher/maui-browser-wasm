@@ -2,6 +2,12 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-23 (Label parity wave: MAUI-shaped mapper coverage + deterministic text-source fallbacks)
+- `MirageLabelHandler` now exposes MAUI-aligned core mapper coverage for `Text`, `TextColor`, `Font`, `CharacterSpacing`, text alignment, `TextDecorations`, `LineHeight`, and `Padding`, with an explicit empty command-mapper parity surface.
+- Added controls-remap key coverage for `LineBreakMode` and `MaxLines` with deterministic CSS projection (including line-clamp behavior) and a label-specific visibility mapper so clamp mode preserves the correct display strategy through visible/hidden toggles.
+- `FormattedText`, `TextType(Html)`, and `TextTransform` remain intentionally deferred in this wave; Mirage now keeps plain-text output authoritative (`Label.Text` when present, otherwise deterministic flattened span text) and emits deterministic diagnostics instead of silently diverging.
+- Added Label parity governance artifacts (`docs/parity/label-parity-contract.json`, `docs/parity/label-parity-divergences.json`) with CI-backed integration tests that enforce mapper/contract drift and divergence metadata completeness.
+
 ## 2026-03-23 (CollectionView ScrollTo animation + axis-safe runtime seam)
 - CollectionView `ScrollToRequested` now forwards orientation and animation intent through the generic runtime child-scroll seam so horizontal lists scroll on X and vertical lists scroll on Y without cross-axis drift.
 - Animated requests no longer emit synthetic immediate `SendScrolled` updates; Mirage now relies on runtime `scroll` events for movement-driven updates, including cases where runtime initially reports unchanged offsets.
