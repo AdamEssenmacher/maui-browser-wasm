@@ -40,6 +40,8 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
 
     private bool _updatingSelectionFromDom;
     private bool _updatingSelectionFromHandler;
+    private int? _preferredSingleSelectionIndexHint;
+    private List<int>? _preferredMultipleSelectionIndexHints;
 
     internal static readonly string[] ParityPropertyKeys =
     {
@@ -492,10 +494,11 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         platformView.SetProperty("CollectionViewHostRole", "scroll");
     }
 
-    private void RebuildAllContent()
+    private void RebuildAllContent(bool applyMutationScrollMode = false)
     {
         using var _ = BeginRenderBatch();
 
+        ClearSelectionIndexHints();
         DisconnectAllItems();
         DisconnectHostedContent(ref _emptyViewRealization, _emptyHost);
 
@@ -521,6 +524,11 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         NormalizeSelectionForCurrentItems();
         ApplySelectionInteractivity();
         ApplySelectionFromVirtualView();
+        if (applyMutationScrollMode)
+        {
+            ApplyItemsUpdatingScrollModeAfterMutation();
+        }
+
         RequestRender();
     }
 
@@ -532,34 +540,34 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
             case NotifyCollectionChangedAction.Add:
                 if (!TryApplyAdd(e))
                 {
-                    RebuildAllContent();
+                    RebuildAllContent(applyMutationScrollMode: true);
                 }
 
                 break;
             case NotifyCollectionChangedAction.Remove:
                 if (!TryApplyRemove(e))
                 {
-                    RebuildAllContent();
+                    RebuildAllContent(applyMutationScrollMode: true);
                 }
 
                 break;
             case NotifyCollectionChangedAction.Move:
                 if (!TryApplyMove(e))
                 {
-                    RebuildAllContent();
+                    RebuildAllContent(applyMutationScrollMode: true);
                 }
 
                 break;
             case NotifyCollectionChangedAction.Replace:
                 if (!TryApplyReplace(e))
                 {
-                    RebuildAllContent();
+                    RebuildAllContent(applyMutationScrollMode: true);
                 }
 
                 break;
             case NotifyCollectionChangedAction.Reset:
             default:
-                RebuildAllContent();
+                RebuildAllContent(applyMutationScrollMode: true);
                 break;
         }
     }
@@ -723,6 +731,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
 
     private void FinalizeCollectionMutation()
     {
+        ClearSelectionIndexHints();
         ApplyItemIndexAttributes();
         UpdateEmptyViewState();
         EnsureSelectionModeCoherence();
@@ -1057,6 +1066,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         {
             if (selectableItemsView.SelectionMode == SelectionMode.Single)
             {
+                SetSingleSelectionIndexHint(itemIndex);
                 SetSelectedItemFromHandler(_itemsSnapshot[itemIndex]);
             }
             else
@@ -1067,8 +1077,11 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
                     selectedIndexes.Remove(itemIndex);
                 }
 
-                var selectedItems = selectedIndexes
+                var orderedSelectedIndexes = selectedIndexes
                     .OrderBy(index => index)
+                    .ToList();
+                SetMultipleSelectionIndexHints(orderedSelectedIndexes);
+                var selectedItems = orderedSelectedIndexes
                     .Select(index => _itemsSnapshot[index])
                     .ToList();
                 UpdateSelectedItemsFromHandler(selectedItems);
@@ -1227,7 +1240,11 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         }
 
         var usedIndexes = new bool[_itemsSnapshot.Count];
-        if (TryFindMatchingIndex(selectableItemsView.SelectedItems[0], usedIndexes, out var selectedIndex))
+        if (TryFindMatchingIndex(
+                selectableItemsView.SelectedItems[0],
+                usedIndexes,
+                _preferredSingleSelectionIndexHint,
+                out var selectedIndex))
         {
             SetSelectedItemFromHandler(_itemsSnapshot[selectedIndex]);
             return;
@@ -1246,9 +1263,14 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
 
         var normalizedSelection = new List<object?>();
         var usedIndexes = new bool[_itemsSnapshot.Count];
-        foreach (var selectedItem in selectableItemsView.SelectedItems)
+        for (var selectionOrder = 0; selectionOrder < selectableItemsView.SelectedItems.Count; selectionOrder++)
         {
-            if (!TryFindMatchingIndex(selectedItem, usedIndexes, out var selectedIndex))
+            var selectedItem = selectableItemsView.SelectedItems[selectionOrder];
+            var preferredIndex = TryGetPreferredMultipleSelectionIndexHint(selectionOrder, out var hintedIndex)
+                ? hintedIndex
+                : (int?)null;
+
+            if (!TryFindMatchingIndex(selectedItem, usedIndexes, preferredIndex, out var selectedIndex))
             {
                 continue;
             }
@@ -1299,7 +1321,11 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         var usedIndexes = new bool[_itemsSnapshot.Count];
         if (selectableItemsView.SelectionMode == SelectionMode.Single)
         {
-            if (TryFindMatchingIndex(selectableItemsView.SelectedItem, usedIndexes, out var singleIndex))
+            if (TryFindMatchingIndex(
+                    selectableItemsView.SelectedItem,
+                    usedIndexes,
+                    _preferredSingleSelectionIndexHint,
+                    out var singleIndex))
             {
                 selectedIndexes.Add(singleIndex);
             }
@@ -1312,9 +1338,14 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
             return selectedIndexes;
         }
 
-        foreach (var selectedItem in selectableItemsView.SelectedItems)
+        for (var selectionOrder = 0; selectionOrder < selectableItemsView.SelectedItems.Count; selectionOrder++)
         {
-            if (!TryFindMatchingIndex(selectedItem, usedIndexes, out var selectedIndex))
+            var selectedItem = selectableItemsView.SelectedItems[selectionOrder];
+            var preferredIndex = TryGetPreferredMultipleSelectionIndexHint(selectionOrder, out var hintedIndex)
+                ? hintedIndex
+                : (int?)null;
+
+            if (!TryFindMatchingIndex(selectedItem, usedIndexes, preferredIndex, out var selectedIndex))
             {
                 continue;
             }
@@ -1349,7 +1380,22 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
 
     private bool TryFindMatchingIndex(object? selectedItem, bool[] usedIndexes, out int index)
     {
+        return TryFindMatchingIndex(selectedItem, usedIndexes, preferredIndex: null, out index);
+    }
+
+    private bool TryFindMatchingIndex(object? selectedItem, bool[] usedIndexes, int? preferredIndex, out int index)
+    {
+        if (TryFindPreferredMatchingIndex(selectedItem, usedIndexes, preferredIndex, preferReferenceMatch: true, out index))
+        {
+            return true;
+        }
+
         if (TryFindMatchingIndex(selectedItem, usedIndexes, preferReferenceMatch: true, out index))
+        {
+            return true;
+        }
+
+        if (TryFindPreferredMatchingIndex(selectedItem, usedIndexes, preferredIndex, preferReferenceMatch: false, out index))
         {
             return true;
         }
@@ -1390,6 +1436,82 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
 
         index = -1;
         return false;
+    }
+
+    private bool TryFindPreferredMatchingIndex(
+        object? selectedItem,
+        bool[] usedIndexes,
+        int? preferredIndex,
+        bool preferReferenceMatch,
+        out int index)
+    {
+        if (!preferredIndex.HasValue)
+        {
+            index = -1;
+            return false;
+        }
+
+        var candidateIndex = preferredIndex.Value;
+        if (candidateIndex < 0 || candidateIndex >= _itemsSnapshot.Count || usedIndexes[candidateIndex])
+        {
+            index = -1;
+            return false;
+        }
+
+        if (preferReferenceMatch)
+        {
+            if (!ReferenceEquals(_itemsSnapshot[candidateIndex], selectedItem))
+            {
+                index = -1;
+                return false;
+            }
+        }
+        else if (!AreItemsEquivalent(_itemsSnapshot[candidateIndex], selectedItem))
+        {
+            index = -1;
+            return false;
+        }
+
+        index = candidateIndex;
+        return true;
+    }
+
+    private void ClearSelectionIndexHints()
+    {
+        _preferredSingleSelectionIndexHint = null;
+        _preferredMultipleSelectionIndexHints = null;
+    }
+
+    private void SetSingleSelectionIndexHint(int index)
+    {
+        _preferredSingleSelectionIndexHint = index;
+        _preferredMultipleSelectionIndexHints = null;
+    }
+
+    private void SetMultipleSelectionIndexHints(IReadOnlyList<int> selectedIndexes)
+    {
+        _preferredSingleSelectionIndexHint = null;
+        if (selectedIndexes.Count == 0)
+        {
+            _preferredMultipleSelectionIndexHints = null;
+            return;
+        }
+
+        _preferredMultipleSelectionIndexHints = selectedIndexes.ToList();
+    }
+
+    private bool TryGetPreferredMultipleSelectionIndexHint(int selectionOrder, out int preferredIndex)
+    {
+        preferredIndex = -1;
+        if (_preferredMultipleSelectionIndexHints is null
+            || selectionOrder < 0
+            || selectionOrder >= _preferredMultipleSelectionIndexHints.Count)
+        {
+            return false;
+        }
+
+        preferredIndex = _preferredMultipleSelectionIndexHints[selectionOrder];
+        return true;
     }
 
     private static bool AreItemsEquivalent(object? left, object? right)

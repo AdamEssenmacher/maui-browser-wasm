@@ -11,7 +11,9 @@ using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 using Microsoft.Extensions.DependencyInjection;
+using System.Collections.Specialized;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Reflection;
 using Xunit;
 
@@ -1211,6 +1213,80 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CollectionViewHandler_SingleSelection_DuplicateReferencePreservesClickedRow()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var duplicate = new SectionModel(typeof(ContentPage), "Duplicate", "Same instance");
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new object?[] { duplicate, duplicate },
+            SelectionMode = SelectionMode.Single
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        var itemNodes = GetCollectionItemNodes(handler);
+        Assert.Equal(2, itemNodes.Count);
+
+        coordinator.OnEvent(itemNodes[1].NodeId, "click", null);
+        Assert.Same(duplicate, collectionView.SelectedItem);
+        Assert.Null(itemNodes[0].GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", itemNodes[1].GetStyleValue("outline"));
+
+        MirageSelectableItemsViewHandler<CollectionView>.SelectableItemsViewMapper.UpdateProperty(
+            handler,
+            collectionView,
+            nameof(SelectableItemsView.SelectedItem));
+
+        Assert.Null(itemNodes[0].GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", itemNodes[1].GetStyleValue("outline"));
+    }
+
+    [Fact]
+    public void CollectionViewHandler_MultipleSelection_DuplicateReferencePreservesClickedRow()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var duplicate = new SectionModel(typeof(ContentPage), "Duplicate", "Same instance");
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new object?[] { duplicate, duplicate },
+            SelectionMode = SelectionMode.Multiple
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        var itemNodes = GetCollectionItemNodes(handler);
+        Assert.Equal(2, itemNodes.Count);
+
+        coordinator.OnEvent(itemNodes[1].NodeId, "click", null);
+        Assert.NotNull(collectionView.SelectedItems);
+        Assert.Single(collectionView.SelectedItems!);
+        Assert.Same(duplicate, collectionView.SelectedItems[0]);
+        Assert.Null(itemNodes[0].GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", itemNodes[1].GetStyleValue("outline"));
+
+        MirageSelectableItemsViewHandler<CollectionView>.SelectableItemsViewMapper.UpdateProperty(
+            handler,
+            collectionView,
+            nameof(SelectableItemsView.SelectedItems));
+
+        Assert.Null(itemNodes[0].GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", itemNodes[1].GetStyleValue("outline"));
+    }
+
+    [Fact]
     public void CollectionViewHandler_ObservableCollectionMutations_ApplyIncrementally()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -1691,6 +1767,39 @@ public sealed class HandlerRuntimeIntegrationTests
         items.Add("third");
 
         Assert.Equal(beforeCalls, runtime.ScrollChildIntoViewCallCount);
+    }
+
+    [Fact]
+    public void CollectionViewHandler_ItemsUpdatingScrollMode_KeepLastItemInView_AppliesOnResetRebuild()
+    {
+        var dispatcher = new QueuedDispatcher();
+        var coordinator = new MirageRenderCoordinator(dispatcher);
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var items = new ResettableObservableCollection<string> { "first", "second" };
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            ItemsUpdatingScrollMode = ItemsUpdatingScrollMode.KeepLastItemInView
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        coordinator.SetRoot(handler.PlatformView);
+        dispatcher.FlushAll();
+
+        var beforeCalls = runtime.ScrollChildIntoViewCallCount;
+        items.ResetTo(["alpha", "beta", "gamma"]);
+
+        Assert.Equal(beforeCalls + 1, runtime.ScrollChildIntoViewCallCount);
+        Assert.False(runtime.LastScrollChildIntoViewIsAnimated);
     }
 
     [Fact]
@@ -4235,6 +4344,22 @@ public sealed class HandlerRuntimeIntegrationTests
         }
 
         protected override object CreatePlatformView() => new();
+    }
+
+    private sealed class ResettableObservableCollection<T> : ObservableCollection<T>
+    {
+        public void ResetTo(IEnumerable<T> items)
+        {
+            Items.Clear();
+            foreach (var item in items)
+            {
+                Items.Add(item);
+            }
+
+            OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
+            OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
+            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+        }
     }
 
     private sealed class RuntimeProbe : IMirageRuntime
