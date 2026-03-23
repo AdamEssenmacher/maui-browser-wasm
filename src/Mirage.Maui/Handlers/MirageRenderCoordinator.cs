@@ -145,6 +145,12 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         ScheduleRenderPending();
     }
 
+    public bool DispatchDelayed(TimeSpan delay, Action action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        return _dispatcher.DispatchDelayed(delay, action);
+    }
+
     public IDisposable BeginRenderBatch()
     {
         lock (_batchSync)

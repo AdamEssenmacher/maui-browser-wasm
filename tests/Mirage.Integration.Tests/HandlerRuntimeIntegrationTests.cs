@@ -1467,6 +1467,45 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CollectionViewHandler_ScrollToRequested_NonAnimated_SuppressesDuplicateRuntimeScrolled()
+    {
+        var dispatcher = new QueuedDispatcher();
+        var coordinator = new MirageRenderCoordinator(dispatcher);
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var items = new ObservableCollection<string> { "one", "two", "three" };
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            SelectionMode = SelectionMode.None
+        };
+
+        var scrolledCount = 0;
+        collectionView.Scrolled += (_, _) => scrolledCount++;
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        coordinator.SetRoot(handler.PlatformView);
+        dispatcher.FlushAll();
+        Assert.NotNull(runtime.LastRendered);
+
+        collectionView.ScrollTo(2, position: ScrollToPosition.End, animate: false);
+        Assert.Equal(1, scrolledCount);
+
+        coordinator.OnEvent(handler.PlatformView.NodeId, "scroll", null);
+
+        Assert.Equal(1, scrolledCount);
+    }
+
+    [Fact]
     public void CollectionViewHandler_ItemsLayoutUpdate_ReappliesScrollOverflowProjection()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -1797,8 +1836,53 @@ public sealed class HandlerRuntimeIntegrationTests
 
         var beforeCalls = runtime.ScrollChildIntoViewCallCount;
         items.ResetTo(["alpha", "beta", "gamma"]);
+        Assert.Equal(beforeCalls, runtime.ScrollChildIntoViewCallCount);
+
+        dispatcher.FlushAll();
 
         Assert.Equal(beforeCalls + 1, runtime.ScrollChildIntoViewCallCount);
+        Assert.False(runtime.LastScrollChildIntoViewIsAnimated);
+    }
+
+    [Fact]
+    public void CollectionViewHandler_ItemsUpdatingScrollMode_KeepLastItemInView_DefersUntilRenderedChildExists()
+    {
+        var dispatcher = new QueuedDispatcher();
+        var coordinator = new MirageRenderCoordinator(dispatcher);
+        var runtime = new RuntimeProbe
+        {
+            RequireRenderedChildForScrollChildIntoView = true
+        };
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var items = new ObservableCollection<string> { "first", "second" };
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            ItemsUpdatingScrollMode = ItemsUpdatingScrollMode.KeepLastItemInView
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        coordinator.SetRoot(handler.PlatformView);
+        dispatcher.FlushAll();
+
+        var beforeCalls = runtime.ScrollChildIntoViewCallCount;
+        var beforeSuccesses = runtime.ScrollChildIntoViewSuccessCount;
+        items.Add("third");
+        Assert.Equal(beforeCalls, runtime.ScrollChildIntoViewCallCount);
+        Assert.Equal(beforeSuccesses, runtime.ScrollChildIntoViewSuccessCount);
+
+        dispatcher.FlushAll();
+
+        Assert.Equal(beforeCalls + 1, runtime.ScrollChildIntoViewCallCount);
+        Assert.Equal(beforeSuccesses + 1, runtime.ScrollChildIntoViewSuccessCount);
         Assert.False(runtime.LastScrollChildIntoViewIsAnimated);
     }
 
@@ -4382,6 +4466,10 @@ public sealed class HandlerRuntimeIntegrationTests
 
         public bool KeepScrollPositionOnScrollChildIntoView { get; set; }
 
+        public bool RequireRenderedChildForScrollChildIntoView { get; set; }
+
+        public int ScrollChildIntoViewSuccessCount { get; private set; }
+
         public void SetEventSink(IMirageEventSink? eventSink)
         {
             Sink = eventSink;
@@ -4437,11 +4525,17 @@ public sealed class HandlerRuntimeIntegrationTests
             out double actualLeft,
             out double actualTop)
         {
-            _ = childNodeId;
             _ = scrollToPosition;
             ScrollChildIntoViewCallCount++;
             LastScrollChildIntoViewIsHorizontal = isHorizontalOrientation;
             LastScrollChildIntoViewIsAnimated = isAnimated;
+
+            if (RequireRenderedChildForScrollChildIntoView && !ContainsNodeId(LastRendered, childNodeId))
+            {
+                actualLeft = 0;
+                actualTop = 0;
+                return false;
+            }
 
             if (_scrollPositions.TryGetValue(containerNodeId, out var current))
             {
@@ -4455,11 +4549,35 @@ public sealed class HandlerRuntimeIntegrationTests
             }
 
             _scrollPositions[containerNodeId] = (actualLeft, actualTop);
+            ScrollChildIntoViewSuccessCount++;
             return true;
         }
 
         public void Dispose()
         {
+        }
+
+        private static bool ContainsNodeId(NodeBase? node, string nodeId)
+        {
+            if (node is null)
+            {
+                return false;
+            }
+
+            if (string.Equals(node.NodeId, nodeId, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            for (var i = 0; i < node.Children.Count; i++)
+            {
+                if (ContainsNodeId(node.Children[i], nodeId))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 

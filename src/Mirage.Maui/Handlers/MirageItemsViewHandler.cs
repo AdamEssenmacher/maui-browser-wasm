@@ -17,6 +17,8 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
     where TItemsView : ItemsView
 {
     private const string ScrollEventName = "scroll";
+    private static readonly TimeSpan MutationScrollDispatchDelay = TimeSpan.FromMilliseconds(2);
+    private const double ScrollEventSuppressionTolerance = 0.5;
     private static long s_itemNodeIdCounter;
 
     private readonly List<object?> _itemsSnapshot = [];
@@ -40,6 +42,10 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
 
     private bool _updatingSelectionFromDom;
     private bool _updatingSelectionFromHandler;
+    private int _pendingMutationScrollWorkVersion;
+    private bool _suppressNextRuntimeScrollEvent;
+    private double _suppressedRuntimeScrollLeft;
+    private double _suppressedRuntimeScrollTop;
     private int? _preferredSingleSelectionIndexHint;
     private List<int>? _preferredMultipleSelectionIndexHints;
 
@@ -135,6 +141,8 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         _itemsHost = null;
         _footerHost = null;
         _emptyHost = null;
+        _suppressNextRuntimeScrollEvent = false;
+        Interlocked.Increment(ref _pendingMutationScrollWorkVersion);
 
         base.DisconnectHandler(platformView);
     }
@@ -161,6 +169,11 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         }
 
         if (!Coordinator.TryGetNodeScrollPosition(PlatformView.NodeId, out var left, out var top))
+        {
+            return;
+        }
+
+        if (TryConsumeSuppressedRuntimeScrollEvent(left, top))
         {
             return;
         }
@@ -229,7 +242,6 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
     public static void MapItemsUpdatingScrollMode(MirageItemsViewHandler<TItemsView> handler, TItemsView itemsView)
     {
         handler.ReportUnsupportedItemsUpdatingScrollMode(itemsView.ItemsUpdatingScrollMode);
-        handler.ApplyItemsUpdatingScrollModeAfterMutation();
     }
 
     public static void MapIsEnabled(MirageItemsViewHandler<TItemsView> handler, TItemsView itemsView)
@@ -496,40 +508,41 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
 
     private void RebuildAllContent(bool applyMutationScrollMode = false)
     {
-        using var _ = BeginRenderBatch();
-
-        ClearSelectionIndexHints();
-        DisconnectAllItems();
-        DisconnectHostedContent(ref _emptyViewRealization, _emptyHost);
-
-        _itemsSnapshot.Clear();
-        _itemsSnapshot.AddRange(SnapshotItems(VirtualView.ItemsSource));
-
-        RebuildHeaderContent();
-        RebuildFooterContent();
-
-        var realizations = CreateItemRealizations(_itemsSnapshot);
-        if (realizations is not null)
+        using (BeginRenderBatch())
         {
-            foreach (var realization in realizations)
+            ClearSelectionIndexHints();
+            DisconnectAllItems();
+            DisconnectHostedContent(ref _emptyViewRealization, _emptyHost);
+
+            _itemsSnapshot.Clear();
+            _itemsSnapshot.AddRange(SnapshotItems(VirtualView.ItemsSource));
+
+            RebuildHeaderContent();
+            RebuildFooterContent();
+
+            var realizations = CreateItemRealizations(_itemsSnapshot);
+            if (realizations is not null)
             {
-                _itemsHost?.AddChild(realization.Node);
-                _itemRealizations.Add(realization);
+                foreach (var realization in realizations)
+                {
+                    _itemsHost?.AddChild(realization.Node);
+                    _itemRealizations.Add(realization);
+                }
             }
-        }
 
-        ApplyItemIndexAttributes();
-        UpdateEmptyViewState();
-        EnsureSelectionModeCoherence();
-        NormalizeSelectionForCurrentItems();
-        ApplySelectionInteractivity();
-        ApplySelectionFromVirtualView();
-        if (applyMutationScrollMode)
-        {
-            ApplyItemsUpdatingScrollModeAfterMutation();
+            ApplyItemIndexAttributes();
+            UpdateEmptyViewState();
+            EnsureSelectionModeCoherence();
+            NormalizeSelectionForCurrentItems();
+            ApplySelectionInteractivity();
+            ApplySelectionFromVirtualView();
         }
 
         RequestRender();
+        if (applyMutationScrollMode)
+        {
+            ScheduleItemsUpdatingScrollModeAfterMutation();
+        }
     }
 
     private void OnItemsSourceCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -738,8 +751,8 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         NormalizeSelectionForCurrentItems();
         ApplySelectionInteractivity();
         ApplySelectionFromVirtualView();
-        ApplyItemsUpdatingScrollModeAfterMutation();
         RequestRender();
+        ScheduleItemsUpdatingScrollModeAfterMutation();
     }
 
     private void OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -801,11 +814,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
             return;
         }
 
-        VirtualView.SendScrolled(new ItemsViewScrolledEventArgs
-        {
-            HorizontalOffset = actualLeft,
-            VerticalOffset = actualTop
-        });
+        SendProgrammaticScrolled(actualLeft, actualTop);
     }
 
     private int ResolveScrollToTargetIndex(ScrollToRequestEventArgs request)
@@ -838,6 +847,31 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         }
     }
 
+    private void ScheduleItemsUpdatingScrollModeAfterMutation()
+    {
+        var workVersion = Interlocked.Increment(ref _pendingMutationScrollWorkVersion);
+        if (Coordinator is not null
+            && Coordinator.DispatchDelayed(MutationScrollDispatchDelay, () =>
+            {
+                if (Volatile.Read(ref _pendingMutationScrollWorkVersion) != workVersion)
+                {
+                    return;
+                }
+
+                ApplyItemsUpdatingScrollModeAfterMutation();
+            }))
+        {
+            return;
+        }
+
+        if (Volatile.Read(ref _pendingMutationScrollWorkVersion) != workVersion)
+        {
+            return;
+        }
+
+        ApplyItemsUpdatingScrollModeAfterMutation();
+    }
+
     private void ScrollLastItemIntoView()
     {
         if (_itemRealizations.Count == 0 || Coordinator is null || string.IsNullOrWhiteSpace(PlatformView.NodeId))
@@ -864,11 +898,34 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
             return;
         }
 
+        SendProgrammaticScrolled(actualLeft, actualTop);
+    }
+
+    private void SendProgrammaticScrolled(double horizontalOffset, double verticalOffset)
+    {
+        _suppressNextRuntimeScrollEvent = true;
+        _suppressedRuntimeScrollLeft = horizontalOffset;
+        _suppressedRuntimeScrollTop = verticalOffset;
         VirtualView.SendScrolled(new ItemsViewScrolledEventArgs
         {
-            HorizontalOffset = actualLeft,
-            VerticalOffset = actualTop
+            HorizontalOffset = horizontalOffset,
+            VerticalOffset = verticalOffset
         });
+    }
+
+    private bool TryConsumeSuppressedRuntimeScrollEvent(double left, double top)
+    {
+        if (!_suppressNextRuntimeScrollEvent)
+        {
+            return false;
+        }
+
+        var shouldSuppress = Math.Abs(_suppressedRuntimeScrollLeft - left) <= ScrollEventSuppressionTolerance
+            && Math.Abs(_suppressedRuntimeScrollTop - top) <= ScrollEventSuppressionTolerance;
+        _suppressNextRuntimeScrollEvent = false;
+        _suppressedRuntimeScrollLeft = 0;
+        _suppressedRuntimeScrollTop = 0;
+        return shouldSuppress;
     }
 
     private List<CollectionItemRealization>? CreateItemRealizations(IReadOnlyList<object?> items)
