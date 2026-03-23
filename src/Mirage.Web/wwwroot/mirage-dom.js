@@ -792,13 +792,20 @@ export function getInputChecked(elementHandle) {
 
 export function setScrollPosition(elementHandle, left, top) {
   const element = fromHandle(elementHandle);
-  element.scrollLeft = Number.isFinite(left) ? Math.max(0, left) : 0;
+  const viewportWidth = Number.isFinite(element.clientWidth) ? element.clientWidth : 0;
+  const maxLeft = Math.max(0, (Number.isFinite(element.scrollWidth) ? element.scrollWidth : 0) - viewportWidth);
+  const normalizedLeft = Number.isFinite(left)
+    ? Math.min(Math.max(0, left), maxLeft)
+    : 0;
+  element.scrollLeft = toRawScrollLeft(element, normalizedLeft, maxLeft);
   element.scrollTop = Number.isFinite(top) ? Math.max(0, top) : 0;
 }
 
 export function getScrollPosition(elementHandle) {
   const element = fromHandle(elementHandle);
-  const left = Number.isFinite(element.scrollLeft) ? element.scrollLeft : 0;
+  const viewportWidth = Number.isFinite(element.clientWidth) ? element.clientWidth : 0;
+  const maxLeft = Math.max(0, (Number.isFinite(element.scrollWidth) ? element.scrollWidth : 0) - viewportWidth);
+  const left = readLogicalScrollLeft(element, maxLeft);
   const top = Number.isFinite(element.scrollTop) ? element.scrollTop : 0;
   return [left, top];
 }
@@ -809,7 +816,9 @@ export function scrollChildIntoView(containerHandle, childHandle, scrollToPositi
 
   const containerRect = container.getBoundingClientRect();
   const childRect = child.getBoundingClientRect();
-  const currentLeft = Number.isFinite(container.scrollLeft) ? container.scrollLeft : 0;
+  const viewportWidth = Number.isFinite(container.clientWidth) ? container.clientWidth : 0;
+  const maxLeft = Math.max(0, (Number.isFinite(container.scrollWidth) ? container.scrollWidth : 0) - viewportWidth);
+  const currentLeft = readLogicalScrollLeft(container, maxLeft);
   const currentTop = Number.isFinite(container.scrollTop) ? container.scrollTop : 0;
 
   const relativeLeft = childRect.left - containerRect.left + currentLeft;
@@ -818,7 +827,6 @@ export function scrollChildIntoView(containerHandle, childHandle, scrollToPositi
   const relativeBottom = childRect.bottom - containerRect.top + currentTop;
   const childWidth = Number.isFinite(childRect.width) ? childRect.width : 0;
   const childHeight = Number.isFinite(childRect.height) ? childRect.height : 0;
-  const viewportWidth = Number.isFinite(container.clientWidth) ? container.clientWidth : 0;
   const viewportHeight = Number.isFinite(container.clientHeight) ? container.clientHeight : 0;
 
   let targetLeft = currentLeft;
@@ -869,7 +877,6 @@ export function scrollChildIntoView(containerHandle, childHandle, scrollToPositi
       break;
   }
 
-  const maxLeft = Math.max(0, (Number.isFinite(container.scrollWidth) ? container.scrollWidth : 0) - viewportWidth);
   const maxTop = Math.max(0, (Number.isFinite(container.scrollHeight) ? container.scrollHeight : 0) - viewportHeight);
   const normalizedLeft = Number.isFinite(targetLeft)
     ? Math.min(Math.max(0, targetLeft), maxLeft)
@@ -877,16 +884,100 @@ export function scrollChildIntoView(containerHandle, childHandle, scrollToPositi
   const normalizedTop = Number.isFinite(targetTop)
     ? Math.min(Math.max(0, targetTop), maxTop)
     : 0;
+  const rawLeft = toRawScrollLeft(container, normalizedLeft, maxLeft);
 
   if (Boolean(isAnimated) && typeof container.scrollTo === "function") {
-    container.scrollTo({ left: normalizedLeft, top: normalizedTop, behavior: "smooth" });
+    container.scrollTo({ left: rawLeft, top: normalizedTop, behavior: "smooth" });
   } else {
-    container.scrollLeft = normalizedLeft;
+    container.scrollLeft = rawLeft;
     container.scrollTop = normalizedTop;
   }
-  const actualLeft = Number.isFinite(container.scrollLeft) ? container.scrollLeft : normalizedLeft;
+  const actualLeft = readLogicalScrollLeft(container, maxLeft);
   const actualTop = Number.isFinite(container.scrollTop) ? container.scrollTop : normalizedTop;
   return [actualLeft, actualTop];
+}
+
+let cachedRtlScrollType;
+
+function resolveRtlScrollType() {
+  if (cachedRtlScrollType) {
+    return cachedRtlScrollType;
+  }
+
+  if (typeof document === "undefined" || !document.body) {
+    cachedRtlScrollType = "default";
+    return cachedRtlScrollType;
+  }
+
+  const probe = document.createElement("div");
+  probe.dir = "rtl";
+  probe.style.width = "4px";
+  probe.style.height = "1px";
+  probe.style.overflow = "scroll";
+  probe.style.position = "absolute";
+  probe.style.top = "-9999px";
+
+  const content = document.createElement("div");
+  content.style.width = "8px";
+  content.style.height = "1px";
+  probe.appendChild(content);
+  document.body.appendChild(probe);
+
+  if (probe.scrollLeft > 0) {
+    cachedRtlScrollType = "default";
+  } else {
+    probe.scrollLeft = 1;
+    cachedRtlScrollType = probe.scrollLeft === 0 ? "negative" : "reverse";
+  }
+
+  probe.remove();
+  return cachedRtlScrollType;
+}
+
+function isRtlDirection(element) {
+  if (!element || typeof window === "undefined" || typeof window.getComputedStyle !== "function") {
+    return false;
+  }
+
+  return window.getComputedStyle(element).direction === "rtl";
+}
+
+function readLogicalScrollLeft(element, maxLeft) {
+  const rawLeft = Number.isFinite(element.scrollLeft) ? element.scrollLeft : 0;
+  const cappedMaxLeft = Number.isFinite(maxLeft) ? Math.max(0, maxLeft) : 0;
+  if (!isRtlDirection(element)) {
+    return Math.min(Math.max(0, rawLeft), cappedMaxLeft);
+  }
+
+  switch (resolveRtlScrollType()) {
+    case "negative":
+      return Math.min(Math.max(0, cappedMaxLeft + rawLeft), cappedMaxLeft);
+    case "reverse":
+      return Math.min(Math.max(0, cappedMaxLeft - rawLeft), cappedMaxLeft);
+    case "default":
+    default:
+      return Math.min(Math.max(0, rawLeft), cappedMaxLeft);
+  }
+}
+
+function toRawScrollLeft(element, logicalLeft, maxLeft) {
+  const cappedMaxLeft = Number.isFinite(maxLeft) ? Math.max(0, maxLeft) : 0;
+  const normalizedLeft = Number.isFinite(logicalLeft)
+    ? Math.min(Math.max(0, logicalLeft), cappedMaxLeft)
+    : 0;
+  if (!isRtlDirection(element)) {
+    return normalizedLeft;
+  }
+
+  switch (resolveRtlScrollType()) {
+    case "negative":
+      return normalizedLeft - cappedMaxLeft;
+    case "reverse":
+      return cappedMaxLeft - normalizedLeft;
+    case "default":
+    default:
+      return normalizedLeft;
+  }
 }
 
 const resizeSubscriptions = new Map();
