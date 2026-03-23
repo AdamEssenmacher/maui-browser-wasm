@@ -2,6 +2,17 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-23 (CollectionView ScrollTo animation + axis-safe runtime seam)
+- CollectionView `ScrollToRequested` now forwards orientation and animation intent through the generic runtime child-scroll seam so horizontal lists scroll on X and vertical lists scroll on Y without cross-axis drift.
+- Animated requests no longer emit synthetic immediate `SendScrolled` updates; Mirage now relies on runtime `scroll` events for movement-driven updates, including cases where runtime initially reports unchanged offsets.
+- CollectionView divergence governance now requires each registry entry to reference a concrete test method, and the suite validates that referenced methods exist.
+
+## 2026-03-20 (CollectionView parity governance + MAUI-shaped handler chain in Mirage)
+- Refactored Mirage CollectionView handling into MAUI-shaped layered handlers (`ItemsView` -> `Structured` -> `Selectable` -> `Groupable` -> `Reorderable` -> `CollectionView`) while keeping browser-specific realization logic inside the Mirage runtime path.
+- Collection realization remains intentionally non-virtualized, but collection mutations now flow through deterministic incremental `Add`/`Remove`/`Move`/`Replace` updates with rebuild fallback only for invalid payloads.
+- Added a provider-neutral runtime seam for scrolling a child node into view by node IDs, then routed CollectionView `ScrollToRequested` through that seam instead of handler-local ad hoc DOM logic.
+- Added parity governance artifacts for CollectionView (`docs/parity/collectionview-parity-contract.json`, `docs/parity/collectionview-parity-divergences.json`) with CI tests that enforce mapper/contract coverage and divergence metadata quality.
+
 ## 2026-03-19 (ScrollView parity follow-up: atomic runtime scrolled update)
 - Runtime-driven scroll offset updates now use MAUI `ScrollView.SetScrolledPosition(x, y)` when available, so dual-axis offset updates are applied atomically.
 - This avoids emitting intermediate `Scrolled` events with stale single-axis values when both offsets change in one runtime tick.

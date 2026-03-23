@@ -29,6 +29,11 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageActivityIndicatorHandler.cs" Link="Handlers\MirageActivityIndicatorHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageCheckBoxHandler.cs" Link="Handlers\MirageCheckBoxHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageSwitchHandler.cs" Link="Handlers\MirageSwitchHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageItemsViewHandler.cs" Link="Handlers\MirageItemsViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageStructuredItemsViewHandler.cs" Link="Handlers\MirageStructuredItemsViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageSelectableItemsViewHandler.cs" Link="Handlers\MirageSelectableItemsViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageGroupableItemsViewHandler.cs" Link="Handlers\MirageGroupableItemsViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageReorderableItemsViewHandler.cs" Link="Handlers\MirageReorderableItemsViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageCollectionViewHandler.cs" Link="Handlers\MirageCollectionViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageBoxViewHandler.cs" Link="Handlers\MirageBoxViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageLabelHandler.cs" Link="Handlers\MirageLabelHandler.cs" />

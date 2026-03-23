@@ -123,6 +123,38 @@ public sealed class MirageRuntime : IMirageRuntime
         return true;
     }
 
+    public bool TryScrollNodeChildIntoView(
+        string containerNodeId,
+        string childNodeId,
+        int scrollToPosition,
+        bool isHorizontalOrientation,
+        bool isAnimated,
+        out double actualLeft,
+        out double actualTop)
+    {
+        actualLeft = 0;
+        actualTop = 0;
+
+        if (!_nodes.TryGetValue(containerNodeId, out var containerNode))
+        {
+            return false;
+        }
+
+        if (!_nodes.TryGetValue(childNodeId, out var childNode))
+        {
+            return false;
+        }
+
+        var position = containerNode.Element.ScrollChildIntoView(
+            childNode.Element,
+            scrollToPosition,
+            isHorizontalOrientation,
+            isAnimated);
+        actualLeft = position.Left;
+        actualTop = position.Top;
+        return true;
+    }
+
     public void Dispose()
     {
         foreach (var subscriptionId in _eventSubscriptions.Values.ToArray())

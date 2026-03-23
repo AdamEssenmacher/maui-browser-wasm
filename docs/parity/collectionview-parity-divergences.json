@@ -1,0 +1,37 @@
+{
+  "entries": [
+    {
+      "id": "collectionview-isenabled-extension-mapper-key",
+      "summary": "Mirage retains an explicit CollectionView IsEnabled mapper entry so row interactivity updates deterministically when the host is disabled/enabled.",
+      "upstreamReference": "src/Controls/src/Core/Handlers/Items/ItemsViewHandler.cs",
+      "testReference": "CollectionViewHandler_IsEnabledMapper_DisablesRowSelectionInteractivity",
+      "extensionKeys": [
+        "IsEnabled"
+      ]
+    },
+    {
+      "id": "collectionview-itemsizingstrategy-unsupported-fallback",
+      "summary": "Mirage maps ItemSizingStrategy keys but currently keeps non-virtualized MeasureFirstItem behavior and emits deterministic diagnostics for unsupported sizing strategies.",
+      "upstreamReference": "src/Controls/src/Core/Handlers/Items/StructuredItemsViewHandler.cs",
+      "testReference": "CollectionViewHandler_ItemSizingStrategy_UnsupportedFallback_MaintainsStableRealization"
+    },
+    {
+      "id": "collectionview-grouping-unsupported-fallback",
+      "summary": "Grouping keys are mapped for parity surface coverage, but grouped realization remains deferred; Mirage emits deterministic diagnostics and falls back to flat item realization.",
+      "upstreamReference": "src/Controls/src/Core/Handlers/Items/GroupableItemsViewHandler.cs",
+      "testReference": "CollectionViewHandler_Grouping_UnsupportedFallback_StaysFlatAndStable"
+    },
+    {
+      "id": "collectionview-reorder-unsupported-fallback",
+      "summary": "CanReorderItems is mapped for parity governance, while browser reorder interaction remains deferred and is reported as deterministic unsupported behavior.",
+      "upstreamReference": "src/Controls/src/Core/Handlers/Items/ReorderableItemsViewHandler.cs",
+      "testReference": "CollectionViewHandler_Reorder_UnsupportedFallback_DoesNotMutateRenderedOrder"
+    },
+    {
+      "id": "collectionview-keepitemsinview-fallback",
+      "summary": "ItemsUpdatingScrollMode.KeepItemsInView currently falls back to KeepScrollOffset semantics with deterministic diagnostics until full anchoring parity is implemented.",
+      "upstreamReference": "src/Controls/src/Core/Handlers/Items/ItemsViewHandler.cs",
+      "testReference": "CollectionViewHandler_ItemsUpdatingScrollMode_KeepItemsInView_FallsBackWithoutScrollMutation"
+    }
+  ]
+}

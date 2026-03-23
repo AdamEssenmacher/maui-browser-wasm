@@ -1,0 +1,97 @@
+{
+  "mauiBaselineCommit": "fc1dadc4d68a809a9c14a7d33ff1289037040471",
+  "handlers": [
+    {
+      "name": "ItemsViewHandler",
+      "mirageType": "MirageItemsViewHandler`1",
+      "propertyMapperKeys": [
+        "ItemsSource",
+        "HorizontalScrollBarVisibility",
+        "VerticalScrollBarVisibility",
+        "ItemTemplate",
+        "EmptyView",
+        "EmptyViewTemplate",
+        "FlowDirection",
+        "IsVisible",
+        "ItemsUpdatingScrollMode"
+      ],
+      "commandMapperKeys": [],
+      "mirageExtensionPropertyMapperKeys": [
+        "IsEnabled"
+      ]
+    },
+    {
+      "name": "StructuredItemsViewHandler",
+      "mirageType": "MirageStructuredItemsViewHandler`1",
+      "propertyMapperKeys": [
+        "Header",
+        "HeaderTemplate",
+        "Footer",
+        "FooterTemplate",
+        "ItemsLayout",
+        "ItemSizingStrategy"
+      ],
+      "commandMapperKeys": []
+    },
+    {
+      "name": "SelectableItemsViewHandler",
+      "mirageType": "MirageSelectableItemsViewHandler`1",
+      "propertyMapperKeys": [
+        "SelectionMode",
+        "SelectedItem",
+        "SelectedItems"
+      ],
+      "commandMapperKeys": []
+    },
+    {
+      "name": "GroupableItemsViewHandler",
+      "mirageType": "MirageGroupableItemsViewHandler`1",
+      "propertyMapperKeys": [
+        "IsGrouped",
+        "GroupHeaderTemplate",
+        "GroupFooterTemplate"
+      ],
+      "commandMapperKeys": []
+    },
+    {
+      "name": "ReorderableItemsViewHandler",
+      "mirageType": "MirageReorderableItemsViewHandler`1",
+      "propertyMapperKeys": [
+        "CanReorderItems"
+      ],
+      "commandMapperKeys": []
+    },
+    {
+      "name": "CollectionViewHandler",
+      "mirageType": "MirageCollectionViewHandler",
+      "propertyMapperKeys": [
+        "ItemsSource",
+        "HorizontalScrollBarVisibility",
+        "VerticalScrollBarVisibility",
+        "ItemTemplate",
+        "EmptyView",
+        "EmptyViewTemplate",
+        "FlowDirection",
+        "IsVisible",
+        "ItemsUpdatingScrollMode",
+        "Header",
+        "HeaderTemplate",
+        "Footer",
+        "FooterTemplate",
+        "ItemsLayout",
+        "ItemSizingStrategy",
+        "SelectionMode",
+        "SelectedItem",
+        "SelectedItems",
+        "IsGrouped",
+        "GroupHeaderTemplate",
+        "GroupFooterTemplate",
+        "CanReorderItems"
+      ],
+      "commandMapperKeys": [],
+      "mirageExtensionPropertyMapperKeys": [
+        "IsEnabled"
+      ]
+    }
+  ]
+}

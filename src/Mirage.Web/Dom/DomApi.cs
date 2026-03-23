@@ -113,6 +113,14 @@ internal static partial class DomApi
     [JSImport("getScrollPosition", Module)]
     internal static partial double[] GetScrollPosition(nint element);
 
+    [JSImport("scrollChildIntoView", Module)]
+    internal static partial double[] ScrollChildIntoView(
+        nint containerElement,
+        nint childElement,
+        int scrollToPosition,
+        bool isHorizontalOrientation,
+        bool isAnimated);
+
     [JSImport("subscribeWindowResize", Module)]
     internal static partial int SubscribeWindowResize([JSMarshalAs<JSType.Function>] Action callback);
 

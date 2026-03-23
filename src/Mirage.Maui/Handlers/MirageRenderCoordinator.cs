@@ -145,6 +145,12 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         ScheduleRenderPending();
     }
 
+    public bool DispatchDelayed(TimeSpan delay, Action action)
+    {
+        ArgumentNullException.ThrowIfNull(action);
+        return _dispatcher.DispatchDelayed(delay, action);
+    }
+
     public IDisposable BeginRenderBatch()
     {
         lock (_batchSync)
@@ -177,6 +183,32 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         }
 
         return _runtime.TrySetNodeScrollPosition(nodeId, left, top, out actualLeft, out actualTop);
+    }
+
+    public bool TryScrollNodeChildIntoView(
+        string containerNodeId,
+        string childNodeId,
+        int scrollToPosition,
+        bool isHorizontalOrientation,
+        bool isAnimated,
+        out double actualLeft,
+        out double actualTop)
+    {
+        if (_runtime is null)
+        {
+            actualLeft = 0;
+            actualTop = 0;
+            return false;
+        }
+
+        return _runtime.TryScrollNodeChildIntoView(
+            containerNodeId,
+            childNodeId,
+            scrollToPosition,
+            isHorizontalOrientation,
+            isAnimated,
+            out actualLeft,
+            out actualTop);
     }
 
     public void OnEvent(string nodeId, string eventName, string? payload)

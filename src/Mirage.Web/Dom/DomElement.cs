@@ -112,6 +112,23 @@ public sealed class DomElement
         return (values.Length > 0 ? values[0] : 0, values.Length > 1 ? values[1] : 0);
     }
 
+    public (double Left, double Top) ScrollChildIntoView(
+        DomElement child,
+        int scrollToPosition,
+        bool isHorizontalOrientation,
+        bool isAnimated)
+    {
+        ArgumentNullException.ThrowIfNull(child);
+
+        var values = DomApi.ScrollChildIntoView(
+            Handle,
+            child.Handle,
+            scrollToPosition,
+            isHorizontalOrientation,
+            isAnimated);
+        return (values.Length > 0 ? values[0] : 0, values.Length > 1 ? values[1] : 0);
+    }
+
     public static int SubscribeWindowResize(Action callback) => DomApi.SubscribeWindowResize(callback);
 
     public static void UnsubscribeWindowResize(int subscriptionId) => DomApi.UnsubscribeWindowResize(subscriptionId);
