@@ -727,6 +727,15 @@ internal sealed class MirageLabelHandler : MirageViewHandler<ILabel>
                 break;
             }
 
+            // If another '<' appears before the next '>', the current '<' is literal text.
+            var nestedOpenIndex = html.IndexOf('<', openIndex + 1);
+            if (nestedOpenIndex >= 0 && nestedOpenIndex < closeIndex)
+            {
+                sanitized.Append("&lt;");
+                cursor = openIndex + 1;
+                continue;
+            }
+
             var token = html.Substring(openIndex + 1, closeIndex - openIndex - 1);
             var disposition = TrySanitizeTagToken(token, sanitized, ref strippedMarkup);
             if (disposition == HtmlTokenDisposition.PreserveLiteral)

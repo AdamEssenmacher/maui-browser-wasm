@@ -392,6 +392,30 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void LabelHandler_TextTypeHtml_WithFormattedText_UsesHtmlProjectionFromText()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var formatted = new FormattedString();
+        formatted.Spans.Add(new Span { Text = "Formatted wins only in Text mode" });
+
+        var label = new Label
+        {
+            TextType = TextType.Html,
+            FormattedText = formatted
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+        Assert.Null(handler.PlatformView.GetPropertyString("Text"));
+        var projected = handler.PlatformView.GetPropertyString("TextHtml");
+        Assert.Equal(string.Empty, projected);
+        Assert.DoesNotContain("Formatted wins only in Text mode", projected, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void LabelHandler_TextTypeHtml_PreservesLiteralAngleBracketText()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -407,6 +431,24 @@ public sealed class HandlerRuntimeIntegrationTests
 
         ((IElementHandler)handler).SetVirtualView(label);
         Assert.Equal("1 &lt; 2 &gt; 1 and &lt;3&gt; hearts with <b>bold</b>", handler.PlatformView.GetPropertyString("TextHtml"));
+    }
+
+    [Fact]
+    public void LabelHandler_TextTypeHtml_PreservesLiteralAngleBracketBeforeValidTag()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var label = new Label
+        {
+            Text = "1 < 2 <b>ok</b>",
+            TextType = TextType.Html
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+        Assert.Equal("1 &lt; 2 <b>ok</b>", handler.PlatformView.GetPropertyString("TextHtml"));
     }
 
     [Fact]
