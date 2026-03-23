@@ -803,6 +803,92 @@ export function getScrollPosition(elementHandle) {
   return [left, top];
 }
 
+export function scrollChildIntoView(containerHandle, childHandle, scrollToPosition, isHorizontalOrientation, isAnimated) {
+  const container = fromHandle(containerHandle);
+  const child = fromHandle(childHandle);
+
+  const containerRect = container.getBoundingClientRect();
+  const childRect = child.getBoundingClientRect();
+  const currentLeft = Number.isFinite(container.scrollLeft) ? container.scrollLeft : 0;
+  const currentTop = Number.isFinite(container.scrollTop) ? container.scrollTop : 0;
+
+  const relativeLeft = childRect.left - containerRect.left + currentLeft;
+  const relativeRight = childRect.right - containerRect.left + currentLeft;
+  const relativeTop = childRect.top - containerRect.top + currentTop;
+  const relativeBottom = childRect.bottom - containerRect.top + currentTop;
+  const childWidth = Number.isFinite(childRect.width) ? childRect.width : 0;
+  const childHeight = Number.isFinite(childRect.height) ? childRect.height : 0;
+  const viewportWidth = Number.isFinite(container.clientWidth) ? container.clientWidth : 0;
+  const viewportHeight = Number.isFinite(container.clientHeight) ? container.clientHeight : 0;
+
+  let targetLeft = currentLeft;
+  let targetTop = currentTop;
+
+  const horizontal = Boolean(isHorizontalOrientation);
+
+  switch (scrollToPosition) {
+    // ScrollToPosition.Start
+    case 1:
+      if (horizontal) {
+        targetLeft = relativeLeft;
+      } else {
+        targetTop = relativeTop;
+      }
+      break;
+    // ScrollToPosition.Center
+    case 2:
+      if (horizontal) {
+        targetLeft = relativeLeft - ((viewportWidth - childWidth) / 2);
+      } else {
+        targetTop = relativeTop - ((viewportHeight - childHeight) / 2);
+      }
+      break;
+    // ScrollToPosition.End
+    case 3:
+      if (horizontal) {
+        targetLeft = relativeRight - viewportWidth;
+      } else {
+        targetTop = relativeBottom - viewportHeight;
+      }
+      break;
+    // ScrollToPosition.MakeVisible
+    case 0:
+    default:
+      if (horizontal) {
+        if (relativeLeft < currentLeft) {
+          targetLeft = relativeLeft;
+        } else if (relativeRight > currentLeft + viewportWidth) {
+          targetLeft = relativeRight - viewportWidth;
+        }
+      } else if (relativeTop < currentTop) {
+        targetTop = relativeTop;
+      } else if (relativeBottom > currentTop + viewportHeight) {
+        targetTop = relativeBottom - viewportHeight;
+      }
+
+      break;
+  }
+
+  const maxLeft = Math.max(0, (Number.isFinite(container.scrollWidth) ? container.scrollWidth : 0) - viewportWidth);
+  const maxTop = Math.max(0, (Number.isFinite(container.scrollHeight) ? container.scrollHeight : 0) - viewportHeight);
+  const normalizedLeft = Number.isFinite(targetLeft)
+    ? Math.min(Math.max(0, targetLeft), maxLeft)
+    : 0;
+  const normalizedTop = Number.isFinite(targetTop)
+    ? Math.min(Math.max(0, targetTop), maxTop)
+    : 0;
+
+  if (Boolean(isAnimated) && typeof container.scrollTo === "function") {
+    container.scrollTo({ left: normalizedLeft, top: normalizedTop, behavior: "smooth" });
+  } else {
+    container.scrollLeft = normalizedLeft;
+    container.scrollTop = normalizedTop;
+  }
+  const actualLeft = Number.isFinite(container.scrollLeft) ? container.scrollLeft : normalizedLeft;
+  const actualTop = Number.isFinite(container.scrollTop) ? container.scrollTop : normalizedTop;
+  return [actualLeft, actualTop];
+}
+
 const resizeSubscriptions = new Map();
 let nextResizeSubscriptionId = 1;
 

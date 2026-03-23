@@ -309,6 +309,48 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void BrowserPlatform_RegistersCollectionViewHandler()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var text = File.ReadAllText(hostingPath);
+        Assert.Contains("typeof(CollectionView)", text, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageCollectionViewHandler)", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CollectionViewHandler_UsesMauiShapedHierarchy_AndGenericScrollSeam()
+    {
+        var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime");
+        Assert.True(Directory.Exists(handlersPath), $"Handlers path was not found: {handlersPath}");
+        Assert.True(Directory.Exists(runtimePath), $"Runtime path was not found: {runtimePath}");
+
+        var itemsText = File.ReadAllText(Path.Combine(handlersPath, "MirageItemsViewHandler.cs"));
+        var structuredText = File.ReadAllText(Path.Combine(handlersPath, "MirageStructuredItemsViewHandler.cs"));
+        var selectableText = File.ReadAllText(Path.Combine(handlersPath, "MirageSelectableItemsViewHandler.cs"));
+        var groupableText = File.ReadAllText(Path.Combine(handlersPath, "MirageGroupableItemsViewHandler.cs"));
+        var reorderableText = File.ReadAllText(Path.Combine(handlersPath, "MirageReorderableItemsViewHandler.cs"));
+        var collectionText = File.ReadAllText(Path.Combine(handlersPath, "MirageCollectionViewHandler.cs"));
+        var coordinatorText = File.ReadAllText(Path.Combine(handlersPath, "MirageRenderCoordinator.cs"));
+        var runtimeText = File.ReadAllText(Path.Combine(runtimePath, "MirageRuntime.cs"));
+
+        Assert.Contains("class MirageItemsViewHandler", itemsText, StringComparison.Ordinal);
+        Assert.Contains(": MirageItemsViewHandler<TItemsView>", structuredText, StringComparison.Ordinal);
+        Assert.Contains(": MirageStructuredItemsViewHandler<TItemsView>", selectableText, StringComparison.Ordinal);
+        Assert.Contains(": MirageSelectableItemsViewHandler<TItemsView>", groupableText, StringComparison.Ordinal);
+        Assert.Contains(": MirageGroupableItemsViewHandler<TItemsView>", reorderableText, StringComparison.Ordinal);
+        Assert.Contains(": MirageReorderableItemsViewHandler<CollectionView>", collectionText, StringComparison.Ordinal);
+
+        Assert.Contains("TryScrollNodeChildIntoView(", itemsText, StringComparison.Ordinal);
+        Assert.Contains("TryScrollNodeChildIntoView(", coordinatorText, StringComparison.Ordinal);
+        Assert.Contains("TryScrollNodeChildIntoView(", runtimeText, StringComparison.Ordinal);
+        Assert.DoesNotContain("TryCollectionViewScrollTo", coordinatorText, StringComparison.Ordinal);
+        Assert.DoesNotContain("TryCollectionViewScrollTo", runtimeText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BrowserPlatform_RegistersNavigationPageHandler()
     {
         var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");

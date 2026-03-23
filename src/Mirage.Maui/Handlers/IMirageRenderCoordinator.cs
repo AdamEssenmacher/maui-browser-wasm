@@ -21,4 +21,13 @@ public interface IMirageRenderCoordinator : IMirageEventSink
     bool TryGetNodeScrollPosition(string nodeId, out double left, out double top);
 
     bool TrySetNodeScrollPosition(string nodeId, double left, double top, out double actualLeft, out double actualTop);
+
+    bool TryScrollNodeChildIntoView(
+        string containerNodeId,
+        string childNodeId,
+        int scrollToPosition,
+        bool isHorizontalOrientation,
+        bool isAnimated,
+        out double actualLeft,
+        out double actualTop);
 }

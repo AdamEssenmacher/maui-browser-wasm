@@ -270,19 +270,6 @@ Visual legend:
 | `WebViewFullScreenVideoGallery.xaml` | `Pages/Controls/WebViewGalleries/WebViewFullScreenVideoGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `WebViewGalleries.cs` | `Pages/Controls/WebViewGalleries/WebViewGalleries.cs` | `[ ]` | `[ ]` | `[ ]` |
 | `WebViewGallery.xaml` | `Pages/Controls/WebViewGalleries/WebViewGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `AndExpandPage.xaml` | `Pages/Compatibility/AndExpandPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `ListViewContextActions.xaml` | `Pages/Compatibility/ListViewGalleries/ListViewContextActions.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `ListViewEntryCell.cs` | `Pages/Compatibility/ListViewGalleries/ListViewEntryCell.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `ListViewImageCell.cs` | `Pages/Compatibility/ListViewGalleries/ListViewImageCell.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `ListViewRefresh.cs` | `Pages/Compatibility/ListViewGalleries/ListViewRefresh.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `ListViewSwitchCell.cs` | `Pages/Compatibility/ListViewGalleries/ListViewSwitchCell.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `ListViewTextCell.cs` | `Pages/Compatibility/ListViewGalleries/ListViewTextCell.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `ListViewViewCell.xaml` | `Pages/Compatibility/ListViewGalleries/ListViewViewCell.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `ListViewPage.xaml` | `Pages/Compatibility/ListViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `TabbedPageGallery.xaml` | `Pages/Compatibility/TabbedPageGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `TabbedPageGalleryMainPage.xaml` | `Pages/Compatibility/TabbedPageGalleryMainPage.xaml` | `[x]` | `[x]` | `[ ]` |
-| `TableViewPage.xaml` | `Pages/Compatibility/TableViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `CompatibilityPage.xaml` | `Pages/CompatibilityPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `AnimationPage.xaml` | `Pages/UserInterface/AnimationPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `BehaviorsPage.xaml` | `Pages/UserInterface/BehaviorsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `FontsPage.xaml` | `Pages/UserInterface/FontsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |

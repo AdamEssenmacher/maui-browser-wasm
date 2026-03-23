@@ -1128,15 +1128,14 @@ public sealed class HandlerRuntimeIntegrationTests
         collectionView.SelectionChangedCommand = new Command(() => commandCount++);
 
         ((IElementHandler)handler).SetVirtualView(collectionView);
+        var itemNodes = GetCollectionItemNodes(handler);
+        Assert.Equal(2, itemNodes.Count);
 
-        Assert.Equal(2, handler.PlatformView.Children.Count);
-
-        var firstRowNode = handler.PlatformView.Children[0];
-        coordinator.OnEvent(firstRowNode.NodeId, "click", null);
+        coordinator.OnEvent(itemNodes[0].NodeId, "click", null);
 
         Assert.Same(firstItem, collectionView.SelectedItem);
         Assert.Equal(1, commandCount);
-        Assert.Equal("2px solid rgba(86,57,176,0.35)", firstRowNode.GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", itemNodes[0].GetStyleValue("outline"));
     }
 
     [Fact]
@@ -1160,35 +1159,30 @@ public sealed class HandlerRuntimeIntegrationTests
         };
 
         ((IElementHandler)handler).SetVirtualView(collectionView);
-        Assert.Equal(2, handler.PlatformView.Children.Count);
+        var itemNodes = GetCollectionItemNodes(handler);
+        Assert.Equal(2, itemNodes.Count);
 
-        var firstRowNode = handler.PlatformView.Children[0];
-        var secondRowNode = handler.PlatformView.Children[1];
-
-        coordinator.OnEvent(firstRowNode.NodeId, "click", null);
+        coordinator.OnEvent(itemNodes[0].NodeId, "click", null);
         Assert.NotNull(collectionView.SelectedItems);
         Assert.Single(collectionView.SelectedItems!);
         Assert.Same(firstItem, collectionView.SelectedItems![0]);
 
-        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
+        coordinator.OnEvent(itemNodes[1].NodeId, "click", null);
         Assert.Equal(2, collectionView.SelectedItems!.Count);
         Assert.Same(firstItem, collectionView.SelectedItems[0]);
         Assert.Same(secondItem, collectionView.SelectedItems[1]);
 
-        coordinator.OnEvent(firstRowNode.NodeId, "click", null);
+        coordinator.OnEvent(itemNodes[0].NodeId, "click", null);
         Assert.Single(collectionView.SelectedItems);
         Assert.Same(secondItem, collectionView.SelectedItems[0]);
-        Assert.Equal("2px solid rgba(86,57,176,0.35)", secondRowNode.GetStyleValue("outline"));
-        Assert.Null(firstRowNode.GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", itemNodes[1].GetStyleValue("outline"));
+        Assert.Null(itemNodes[0].GetStyleValue("outline"));
     }
 
     [Fact]
-    public void CollectionViewHandler_SelectionUsesReferenceIdentity_ForValueEqualItems()
+    public void CollectionViewHandler_SelectionUsesEqualityMatching_ForValueEqualItems()
     {
-        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
-        var services = new ServiceCollection()
-            .AddSingleton<IMirageRenderCoordinator>(coordinator)
-            .BuildServiceProvider();
+        var services = new ServiceCollection().BuildServiceProvider();
         var mauiContext = new MauiContext(services);
         var handler = new MirageCollectionViewHandler();
         ((IElementHandler)handler).SetMauiContext(mauiContext);
@@ -1198,150 +1192,36 @@ public sealed class HandlerRuntimeIntegrationTests
         var collectionView = new CollectionView
         {
             ItemsSource = new[] { firstItem, secondItem },
-            SelectionMode = SelectionMode.Multiple,
-            ItemTemplate = new DataTemplate(() => new Label())
-        };
-
-        ((IElementHandler)handler).SetVirtualView(collectionView);
-        var firstRowNode = handler.PlatformView.Children[0];
-        var secondRowNode = handler.PlatformView.Children[1];
-
-        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
-        Assert.NotNull(collectionView.SelectedItems);
-        Assert.Single(collectionView.SelectedItems!);
-        Assert.Same(secondItem, collectionView.SelectedItems![0]);
-        Assert.Null(firstRowNode.GetStyleValue("outline"));
-        Assert.Equal("2px solid rgba(86,57,176,0.35)", secondRowNode.GetStyleValue("outline"));
-    }
-
-    [Fact]
-    public void CollectionViewHandler_DuplicateReferenceRows_UseClickedRowIdentity()
-    {
-        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
-        var services = new ServiceCollection()
-            .AddSingleton<IMirageRenderCoordinator>(coordinator)
-            .BuildServiceProvider();
-        var mauiContext = new MauiContext(services);
-        var handler = new MirageCollectionViewHandler();
-        ((IElementHandler)handler).SetMauiContext(mauiContext);
-
-        var sharedItem = new SectionModel(typeof(ContentPage), "Shared", "Shared item");
-        var collectionView = new CollectionView
-        {
-            ItemsSource = new[] { sharedItem, sharedItem },
-            SelectionMode = SelectionMode.Multiple,
-            ItemTemplate = new DataTemplate(() => new Label())
-        };
-
-        ((IElementHandler)handler).SetVirtualView(collectionView);
-        var firstRowNode = handler.PlatformView.Children[0];
-        var secondRowNode = handler.PlatformView.Children[1];
-
-        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
-        Assert.NotNull(collectionView.SelectedItems);
-        Assert.Single(collectionView.SelectedItems!);
-        Assert.Same(sharedItem, collectionView.SelectedItems![0]);
-        Assert.Null(firstRowNode.GetStyleValue("outline"));
-        Assert.Equal("2px solid rgba(86,57,176,0.35)", secondRowNode.GetStyleValue("outline"));
-
-        coordinator.OnEvent(firstRowNode.NodeId, "click", null);
-        Assert.Equal(2, collectionView.SelectedItems.Count);
-        Assert.Same(sharedItem, collectionView.SelectedItems[0]);
-        Assert.Same(sharedItem, collectionView.SelectedItems[1]);
-        Assert.Equal("2px solid rgba(86,57,176,0.35)", firstRowNode.GetStyleValue("outline"));
-        Assert.Equal("2px solid rgba(86,57,176,0.35)", secondRowNode.GetStyleValue("outline"));
-
-        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
-        Assert.Single(collectionView.SelectedItems);
-        Assert.Same(sharedItem, collectionView.SelectedItems[0]);
-        Assert.Equal("2px solid rgba(86,57,176,0.35)", firstRowNode.GetStyleValue("outline"));
-        Assert.Null(secondRowNode.GetStyleValue("outline"));
-    }
-
-    [Fact]
-    public void CollectionViewHandler_Rebuild_RemovedSelectedItem_ClearsVirtualSelectedItem()
-    {
-        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
-        var services = new ServiceCollection()
-            .AddSingleton<IMirageRenderCoordinator>(coordinator)
-            .BuildServiceProvider();
-        var mauiContext = new MauiContext(services);
-        var handler = new MirageCollectionViewHandler();
-        ((IElementHandler)handler).SetMauiContext(mauiContext);
-
-        var firstItem = new SectionModel(typeof(ContentPage), "First", "First item");
-        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
-        var items = new ObservableCollection<SectionModel> { firstItem, secondItem };
-
-        var collectionView = new CollectionView
-        {
-            ItemsSource = items,
             SelectionMode = SelectionMode.Single,
             ItemTemplate = new DataTemplate(() => new Label())
         };
 
         ((IElementHandler)handler).SetVirtualView(collectionView);
-        var secondRowNode = handler.PlatformView.Children[1];
-        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
+        var itemNodes = GetCollectionItemNodes(handler);
+        Assert.Equal(2, itemNodes.Count);
 
-        Assert.Same(secondItem, collectionView.SelectedItem);
+        collectionView.SelectedItem = new ValueComparableSelectionItem(7, "external");
+        MirageSelectableItemsViewHandler<CollectionView>.SelectableItemsViewMapper.UpdateProperty(
+            handler,
+            collectionView,
+            nameof(SelectableItemsView.SelectedItem));
 
-        items.Remove(secondItem);
-
-        Assert.Null(collectionView.SelectedItem);
-        Assert.Single(handler.PlatformView.Children);
-        Assert.Null(handler.PlatformView.Children[0].GetStyleValue("outline"));
+        Assert.Equal("2px solid rgba(86,57,176,0.35)", itemNodes[0].GetStyleValue("outline"));
+        Assert.Null(itemNodes[1].GetStyleValue("outline"));
     }
 
     [Fact]
-    public void CollectionViewHandler_Rebuild_PreservesDuplicateReferenceRowSelectionIdentity()
-    {
-        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
-        var services = new ServiceCollection()
-            .AddSingleton<IMirageRenderCoordinator>(coordinator)
-            .BuildServiceProvider();
-        var mauiContext = new MauiContext(services);
-        var handler = new MirageCollectionViewHandler();
-        ((IElementHandler)handler).SetMauiContext(mauiContext);
-
-        var sharedItem = new SectionModel(typeof(ContentPage), "Shared", "Shared item");
-        var items = new ObservableCollection<SectionModel> { sharedItem, sharedItem };
-
-        var collectionView = new CollectionView
-        {
-            ItemsSource = items,
-            SelectionMode = SelectionMode.Single,
-            ItemTemplate = new DataTemplate(() => new Label())
-        };
-
-        ((IElementHandler)handler).SetVirtualView(collectionView);
-        var secondRowNode = handler.PlatformView.Children[1];
-        coordinator.OnEvent(secondRowNode.NodeId, "click", null);
-
-        Assert.Same(sharedItem, collectionView.SelectedItem);
-        Assert.Null(handler.PlatformView.Children[0].GetStyleValue("outline"));
-        Assert.Equal("2px solid rgba(86,57,176,0.35)", handler.PlatformView.Children[1].GetStyleValue("outline"));
-
-        items.Add(new SectionModel(typeof(ContentPage), "Third", "Third item"));
-
-        Assert.Equal(3, handler.PlatformView.Children.Count);
-        Assert.Same(sharedItem, collectionView.SelectedItem);
-        Assert.Null(handler.PlatformView.Children[0].GetStyleValue("outline"));
-        Assert.Equal("2px solid rgba(86,57,176,0.35)", handler.PlatformView.Children[1].GetStyleValue("outline"));
-    }
-
-    [Fact]
-    public void CollectionViewHandler_RebuildsWhenObservableItemsSourceChanges()
+    public void CollectionViewHandler_ObservableCollectionMutations_ApplyIncrementally()
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var mauiContext = new MauiContext(services);
         var handler = new MirageCollectionViewHandler();
         ((IElementHandler)handler).SetMauiContext(mauiContext);
 
-        var items = new ObservableCollection<SectionModel>
-        {
-            new(typeof(ContentPage), "First", "First item")
-        };
+        var first = new SectionModel(typeof(ContentPage), "First", "First item");
+        var second = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var third = new SectionModel(typeof(ContentPage), "Third", "Third item");
+        var items = new ObservableCollection<SectionModel> { first, second };
 
         var collectionView = new CollectionView
         {
@@ -1350,10 +1230,28 @@ public sealed class HandlerRuntimeIntegrationTests
         };
 
         ((IElementHandler)handler).SetVirtualView(collectionView);
-        Assert.Single(handler.PlatformView.Children);
+        var initialNodes = GetCollectionItemNodes(handler).ToArray();
+        Assert.Equal(2, initialNodes.Length);
 
-        items.Add(new SectionModel(typeof(ContentPage), "Second", "Second item"));
-        Assert.Equal(2, handler.PlatformView.Children.Count);
+        items.Insert(1, third);
+        var afterInsertNodes = GetCollectionItemNodes(handler).ToArray();
+        Assert.Equal(3, afterInsertNodes.Length);
+        Assert.Same(initialNodes[0], afterInsertNodes[0]);
+        Assert.Same(initialNodes[1], afterInsertNodes[2]);
+
+        items.Move(2, 0);
+        var afterMoveNodes = GetCollectionItemNodes(handler).ToArray();
+        Assert.Equal(3, afterMoveNodes.Length);
+        Assert.Same(initialNodes[1], afterMoveNodes[0]);
+
+        items[1] = new SectionModel(typeof(ContentPage), "Fourth", "Fourth item");
+        var afterReplaceNodes = GetCollectionItemNodes(handler).ToArray();
+        Assert.Equal(3, afterReplaceNodes.Length);
+        Assert.NotSame(afterMoveNodes[1], afterReplaceNodes[1]);
+
+        items.RemoveAt(0);
+        var afterRemoveNodes = GetCollectionItemNodes(handler).ToArray();
+        Assert.Equal(2, afterRemoveNodes.Length);
     }
 
     [Fact]
@@ -1376,14 +1274,13 @@ public sealed class HandlerRuntimeIntegrationTests
         };
 
         ((IElementHandler)handler).SetVirtualView(collectionView);
-        Assert.Equal(3, handler.PlatformView.Children.Count);
+        var itemNodes = GetCollectionItemNodes(handler);
+        Assert.Equal(3, itemNodes.Count);
 
-        var thirdRowNode = handler.PlatformView.Children[2];
-        coordinator.OnEvent(thirdRowNode.NodeId, "click", null);
+        coordinator.OnEvent(itemNodes[2].NodeId, "click", null);
         Assert.Same(secondItem, collectionView.SelectedItem);
 
-        var nullRowNode = handler.PlatformView.Children[1];
-        coordinator.OnEvent(nullRowNode.NodeId, "click", null);
+        coordinator.OnEvent(itemNodes[1].NodeId, "click", null);
         Assert.Null(collectionView.SelectedItem);
     }
 
@@ -1406,17 +1303,16 @@ public sealed class HandlerRuntimeIntegrationTests
         };
 
         ((IElementHandler)handler).SetVirtualView(collectionView);
-        Assert.Equal(3, handler.PlatformView.Children.Count);
+        var itemNodes = GetCollectionItemNodes(handler);
+        Assert.Equal(3, itemNodes.Count);
 
-        var nullRowNode = handler.PlatformView.Children[1];
-        coordinator.OnEvent(nullRowNode.NodeId, "click", null);
+        coordinator.OnEvent(itemNodes[1].NodeId, "click", null);
 
         Assert.NotNull(collectionView.SelectedItems);
         Assert.Single(collectionView.SelectedItems!);
         Assert.Null(collectionView.SelectedItems[0]);
 
-        var thirdRowNode = handler.PlatformView.Children[2];
-        coordinator.OnEvent(thirdRowNode.NodeId, "click", null);
+        coordinator.OnEvent(itemNodes[2].NodeId, "click", null);
 
         Assert.Equal(2, collectionView.SelectedItems!.Count);
         Assert.Null(collectionView.SelectedItems[0]);
@@ -1424,31 +1320,168 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void CollectionViewHandler_MultipleSelection_SyncPreservesNullSelectedItems()
+    public void CollectionViewHandler_ScrollToRequested_UsesGenericChildScrollSeam()
     {
-        var services = new ServiceCollection().BuildServiceProvider();
+        var dispatcher = new QueuedDispatcher();
+        var coordinator = new MirageRenderCoordinator(dispatcher);
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
         var mauiContext = new MauiContext(services);
+
         var handler = new MirageCollectionViewHandler();
         ((IElementHandler)handler).SetMauiContext(mauiContext);
 
-        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
-        var selectedItems = new List<object> { null!, secondItem };
+        var items = new ObservableCollection<string> { "one", "two", "three" };
         var collectionView = new CollectionView
         {
-            ItemsSource = new object?[] { null, secondItem, null },
-            SelectionMode = SelectionMode.Multiple,
-            SelectedItems = selectedItems
+            ItemsSource = items,
+            SelectionMode = SelectionMode.None
         };
 
         ((IElementHandler)handler).SetVirtualView(collectionView);
+        coordinator.SetRoot(handler.PlatformView);
+        dispatcher.FlushAll();
+        Assert.NotNull(runtime.LastRendered);
 
-        Assert.NotNull(collectionView.SelectedItems);
-        Assert.Equal(2, collectionView.SelectedItems!.Count);
-        Assert.Null(collectionView.SelectedItems[0]);
-        Assert.Same(secondItem, collectionView.SelectedItems[1]);
-        Assert.Equal("2px solid rgba(86,57,176,0.35)", handler.PlatformView.Children[0].GetStyleValue("outline"));
-        Assert.Equal("2px solid rgba(86,57,176,0.35)", handler.PlatformView.Children[1].GetStyleValue("outline"));
-        Assert.Null(handler.PlatformView.Children[2].GetStyleValue("outline"));
+        collectionView.ScrollTo(2, position: ScrollToPosition.End, animate: false);
+
+        Assert.Equal(1, runtime.ScrollChildIntoViewCallCount);
+        Assert.False(runtime.LastScrollChildIntoViewIsHorizontal);
+        Assert.False(runtime.LastScrollChildIntoViewIsAnimated);
+    }
+
+    [Fact]
+    public void CollectionViewHandler_ScrollToRequested_HorizontalLayout_UsesHorizontalAxisResolution()
+    {
+        var dispatcher = new QueuedDispatcher();
+        var coordinator = new MirageRenderCoordinator(dispatcher);
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var items = new ObservableCollection<string> { "one", "two", "three" };
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            SelectionMode = SelectionMode.None,
+            ItemsLayout = new LinearItemsLayout(ItemsLayoutOrientation.Horizontal)
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        coordinator.SetRoot(handler.PlatformView);
+        dispatcher.FlushAll();
+        Assert.NotNull(runtime.LastRendered);
+
+        collectionView.ScrollTo(2, position: ScrollToPosition.Center, animate: false);
+
+        Assert.Equal(1, runtime.ScrollChildIntoViewCallCount);
+        Assert.True(runtime.LastScrollChildIntoViewIsHorizontal);
+        Assert.False(runtime.LastScrollChildIntoViewIsAnimated);
+    }
+
+    [Fact]
+    public void CollectionViewHandler_ScrollToRequested_Animated_DefersScrolledUntilRuntimeScrollEvent()
+    {
+        var dispatcher = new QueuedDispatcher();
+        var coordinator = new MirageRenderCoordinator(dispatcher);
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var items = new ObservableCollection<string> { "one", "two", "three" };
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            SelectionMode = SelectionMode.None
+        };
+
+        var scrolledCount = 0;
+        var lastHorizontal = 0d;
+        var lastVertical = 0d;
+        collectionView.Scrolled += (_, args) =>
+        {
+            scrolledCount++;
+            lastHorizontal = args.HorizontalOffset;
+            lastVertical = args.VerticalOffset;
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        coordinator.SetRoot(handler.PlatformView);
+        dispatcher.FlushAll();
+        Assert.NotNull(runtime.LastRendered);
+
+        collectionView.ScrollTo(2, position: ScrollToPosition.End, animate: true);
+
+        Assert.Equal(1, runtime.ScrollChildIntoViewCallCount);
+        Assert.True(runtime.LastScrollChildIntoViewIsAnimated);
+        Assert.Equal(0, scrolledCount);
+
+        coordinator.OnEvent(handler.PlatformView.NodeId, "scroll", null);
+
+        Assert.Equal(1, scrolledCount);
+        Assert.Equal(0d, lastHorizontal);
+        Assert.Equal(10d, lastVertical);
+    }
+
+    [Fact]
+    public void CollectionViewHandler_ScrollToRequested_Animated_NoOpRuntimeResult_DoesNotEmitImmediateScrolled()
+    {
+        var dispatcher = new QueuedDispatcher();
+        var coordinator = new MirageRenderCoordinator(dispatcher);
+        var runtime = new RuntimeProbe
+        {
+            KeepScrollPositionOnScrollChildIntoView = true
+        };
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var items = new ObservableCollection<string> { "one", "two", "three" };
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            SelectionMode = SelectionMode.None
+        };
+
+        var scrolledCount = 0;
+        collectionView.Scrolled += (_, _) => scrolledCount++;
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        coordinator.SetRoot(handler.PlatformView);
+        dispatcher.FlushAll();
+        Assert.NotNull(runtime.LastRendered);
+
+        Assert.True(coordinator.TrySetNodeScrollPosition(handler.PlatformView.NodeId, 0, 42, out _, out _));
+
+        collectionView.ScrollTo(2, position: ScrollToPosition.MakeVisible, animate: true);
+
+        Assert.Equal(1, runtime.ScrollChildIntoViewCallCount);
+        Assert.True(runtime.LastScrollChildIntoViewIsAnimated);
+        Assert.Equal(0, scrolledCount);
     }
 
     [Fact]
@@ -1476,6 +1509,160 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.All(selector.Calls, call => Assert.Same(collectionView, call.Container));
         Assert.True(selector.LabelTemplateCreateCount >= 1);
         Assert.True(selector.ButtonTemplateCreateCount >= 1);
+    }
+
+    [Fact]
+    public void CollectionViewHandler_IsEnabledMapper_DisablesRowSelectionInteractivity()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var firstItem = new SectionModel(typeof(ContentPage), "First", "First item");
+        var secondItem = new SectionModel(typeof(ContentPage), "Second", "Second item");
+        var collectionView = new CollectionView
+        {
+            ItemsSource = new[] { firstItem, secondItem },
+            SelectionMode = SelectionMode.Single
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        var itemNodes = GetCollectionItemNodes(handler);
+        Assert.Equal(2, itemNodes.Count);
+
+        collectionView.IsEnabled = false;
+        MirageCollectionViewHandler.Mapper.UpdateProperty(handler, collectionView, nameof(IView.IsEnabled));
+
+        coordinator.OnEvent(itemNodes[0].NodeId, "click", null);
+
+        Assert.Null(collectionView.SelectedItem);
+        Assert.Equal("none", itemNodes[0].GetStyleValue("pointerEvents"));
+    }
+
+    [Fact]
+    public void CollectionViewHandler_ItemSizingStrategy_UnsupportedFallback_MaintainsStableRealization()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var items = new[] { "first", "second", "third" };
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            ItemSizingStrategy = ItemSizingStrategy.MeasureAllItems
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        var beforeNodes = GetCollectionItemNodes(handler).ToArray();
+        Assert.Equal(3, beforeNodes.Length);
+
+        MirageStructuredItemsViewHandler<CollectionView>.StructuredItemsViewMapper.UpdateProperty(
+            handler,
+            collectionView,
+            nameof(StructuredItemsView.ItemSizingStrategy));
+
+        var afterNodes = GetCollectionItemNodes(handler).ToArray();
+        Assert.Equal(3, afterNodes.Length);
+        Assert.Equal(beforeNodes.Select(static node => node.NodeId), afterNodes.Select(static node => node.NodeId));
+    }
+
+    [Fact]
+    public void CollectionViewHandler_Grouping_UnsupportedFallback_StaysFlatAndStable()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var groupedItems = new ObservableCollection<ObservableCollection<string>>
+        {
+            new(["a1", "a2"]),
+            new(["b1"])
+        };
+
+        var collectionView = new CollectionView
+        {
+            ItemsSource = groupedItems,
+            IsGrouped = true
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        var realizedNodes = GetCollectionItemNodes(handler).ToArray();
+        Assert.Equal(groupedItems.Count, realizedNodes.Length);
+
+        MirageGroupableItemsViewHandler<CollectionView>.GroupableItemsViewMapper.UpdateProperty(
+            handler,
+            collectionView,
+            nameof(GroupableItemsView.IsGrouped));
+
+        var afterNodes = GetCollectionItemNodes(handler).ToArray();
+        Assert.Equal(groupedItems.Count, afterNodes.Length);
+        Assert.Equal(realizedNodes.Select(static node => node.NodeId), afterNodes.Select(static node => node.NodeId));
+    }
+
+    [Fact]
+    public void CollectionViewHandler_Reorder_UnsupportedFallback_DoesNotMutateRenderedOrder()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var items = new[] { "first", "second", "third" };
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            CanReorderItems = true
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        var beforeNodeOrder = GetCollectionItemNodes(handler).Select(static node => node.NodeId).ToArray();
+
+        MirageReorderableItemsViewHandler<CollectionView>.ReorderableItemsViewMapper.UpdateProperty(
+            handler,
+            collectionView,
+            nameof(ReorderableItemsView.CanReorderItems));
+
+        var afterNodeOrder = GetCollectionItemNodes(handler).Select(static node => node.NodeId).ToArray();
+        Assert.Equal(beforeNodeOrder, afterNodeOrder);
+    }
+
+    [Fact]
+    public void CollectionViewHandler_ItemsUpdatingScrollMode_KeepItemsInView_FallsBackWithoutScrollMutation()
+    {
+        var dispatcher = new QueuedDispatcher();
+        var coordinator = new MirageRenderCoordinator(dispatcher);
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageCollectionViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var items = new ObservableCollection<string> { "first", "second" };
+        var collectionView = new CollectionView
+        {
+            ItemsSource = items,
+            ItemsUpdatingScrollMode = ItemsUpdatingScrollMode.KeepItemsInView
+        };
+
+        ((IElementHandler)handler).SetVirtualView(collectionView);
+        coordinator.SetRoot(handler.PlatformView);
+        dispatcher.FlushAll();
+
+        var beforeCalls = runtime.ScrollChildIntoViewCallCount;
+        items.Add("third");
+
+        Assert.Equal(beforeCalls, runtime.ScrollChildIntoViewCallCount);
     }
 
     [Fact]
@@ -3975,6 +4162,29 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal(["second", "first", "third"], root.Children.Select(static child => child.NodeId).ToArray());
     }
 
+    private static IReadOnlyList<MiragePlatformView> GetCollectionItemNodes(MirageCollectionViewHandler handler)
+    {
+        var contentHost = FindCollectionHost(handler.PlatformView, "content");
+        Assert.NotNull(contentHost);
+
+        var itemsHost = FindCollectionHost(contentHost!, "items");
+        Assert.NotNull(itemsHost);
+        return itemsHost!.Children;
+    }
+
+    private static MiragePlatformView? FindCollectionHost(MiragePlatformView parent, string role)
+    {
+        foreach (var child in parent.Children)
+        {
+            if (string.Equals(child.GetPropertyString("CollectionViewHostRole"), role, StringComparison.Ordinal))
+            {
+                return child;
+            }
+        }
+
+        return null;
+    }
+
     private sealed class MapperProbeHandler : ViewHandler<IView, object>, IMiragePlatformHandler
     {
         public MapperProbeHandler(string? defaultDisplayStyle)
@@ -4010,6 +4220,14 @@ public sealed class HandlerRuntimeIntegrationTests
         public IMirageEventSink? Sink { get; private set; }
 
         public Action? RenderCallback { get; set; }
+
+        public int ScrollChildIntoViewCallCount { get; private set; }
+
+        public bool LastScrollChildIntoViewIsHorizontal { get; private set; }
+
+        public bool LastScrollChildIntoViewIsAnimated { get; private set; }
+
+        public bool KeepScrollPositionOnScrollChildIntoView { get; set; }
 
         public void SetEventSink(IMirageEventSink? eventSink)
         {
@@ -4054,6 +4272,36 @@ public sealed class HandlerRuntimeIntegrationTests
             actualLeft = Math.Max(0, left);
             actualTop = Math.Max(0, top);
             _scrollPositions[nodeId] = (actualLeft, actualTop);
+            return true;
+        }
+
+        public bool TryScrollNodeChildIntoView(
+            string containerNodeId,
+            string childNodeId,
+            int scrollToPosition,
+            bool isHorizontalOrientation,
+            bool isAnimated,
+            out double actualLeft,
+            out double actualTop)
+        {
+            _ = childNodeId;
+            _ = scrollToPosition;
+            ScrollChildIntoViewCallCount++;
+            LastScrollChildIntoViewIsHorizontal = isHorizontalOrientation;
+            LastScrollChildIntoViewIsAnimated = isAnimated;
+
+            if (_scrollPositions.TryGetValue(containerNodeId, out var current))
+            {
+                actualLeft = current.Left;
+                actualTop = KeepScrollPositionOnScrollChildIntoView ? current.Top : current.Top + 10;
+            }
+            else
+            {
+                actualLeft = 0;
+                actualTop = KeepScrollPositionOnScrollChildIntoView ? 0 : 10;
+            }
+
+            _scrollPositions[containerNodeId] = (actualLeft, actualTop);
             return true;
         }
 

@@ -51,3 +51,4 @@ Status values:
 - Missing: `GraphicsView`, `CarouselView`, `IndicatorView`, `SwipeView`, `WebView`
 - Shared core substrate: `IView.Clip` (`RectangleGeometry`/`RoundRectangleGeometry`), `IView.Shadow` (solid paint), and `IView.Background` (`SolidPaint` + `LinearGradientPaint`) are implemented in the common browser mapper.
 - Styling/presentation proof: showcase pages (`showcase-page-home`, `showcase-page-text-input`, `showcase-page-form-media`, `showcase-page-layout-collection`) now validate MAUI style-system behavior (`implicit`, `explicit`, `BasedOn`, `StyleClass`, `DynamicResource`) on top of parity handlers.
+- CollectionView note: Mirage now uses a MAUI-shaped handler chain with deterministic incremental updates and equality-based selection sync on the non-virtualized runtime path; grouped/reorder/full anchoring parity remains documented as partial.
