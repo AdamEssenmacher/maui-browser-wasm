@@ -84,6 +84,30 @@
                                 AutomationId="xaml-lab-editor-status"
                                 Text="Ready." />
 
+                            <VerticalStackLayout
+                                AutomationId="xaml-lab-runtime-property-probe"
+                                Spacing="8">
+                                <Label
+                                    AutomationId="xaml-lab-runtime-property-probe-title"
+                                    FontSize="12"
+                                    Opacity="0.8"
+                                    Text="Runtime property clear probe (same label instance)." />
+                                <HorizontalStackLayout Spacing="8">
+                                    <Button
+                                        AutomationId="xaml-lab-runtime-property-html-button"
+                                        Clicked="OnSetRuntimeHtmlProbeClicked"
+                                        Text="HTML mode" />
+                                    <Button
+                                        AutomationId="xaml-lab-runtime-property-plain-button"
+                                        Clicked="OnSetRuntimePlainProbeClicked"
+                                        Text="Plain mode" />
+                                </HorizontalStackLayout>
+                                <Label
+                                    x:Name="RuntimePropertyProbeLabel"
+                                    AutomationId="xaml-lab-runtime-property-label"
+                                    Text="Plain text" />
+                            </VerticalStackLayout>
+
                             <ContentView
                                 x:Name="ErrorPanel"
                                 AutomationId="xaml-lab-error-panel"

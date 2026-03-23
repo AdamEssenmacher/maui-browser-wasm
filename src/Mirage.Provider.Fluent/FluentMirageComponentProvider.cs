@@ -57,7 +57,8 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
                     ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
-                    ["Text"] = new(PropertyTarget.TextContent)
+                    ["Text"] = new(PropertyTarget.TextContent),
+                    ["TextHtml"] = new(PropertyTarget.Property, "innerHTML")
                 }),
             [ComponentKind.Entry] = new(
                 ComponentKind.Entry,

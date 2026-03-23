@@ -60,6 +60,22 @@ public partial class ShowcaseXamlLabPage : ContentPage
         _previewSession.ApplyNow();
     }
 
+    private void OnSetRuntimeHtmlProbeClicked(object? sender, EventArgs e)
+    {
+        _ = sender;
+        _ = e;
+        RuntimePropertyProbeLabel.Text = "<b>Rich</b> text";
+        RuntimePropertyProbeLabel.TextType = TextType.Html;
+    }
+
+    private void OnSetRuntimePlainProbeClicked(object? sender, EventArgs e)
+    {
+        _ = sender;
+        _ = e;
+        RuntimePropertyProbeLabel.Text = "Plain text";
+        RuntimePropertyProbeLabel.TextType = TextType.Text;
+    }
+
     protected override void OnHandlerChanging(HandlerChangingEventArgs args)
     {
         if (args.NewHandler is null)

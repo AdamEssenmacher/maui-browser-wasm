@@ -329,7 +329,7 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void LabelHandler_FormattedText_FallsBackToPlainText()
+    public void LabelHandler_FormattedText_ProjectsRichHtmlAndSpanTransforms()
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var mauiContext = new MauiContext(services);
@@ -337,24 +337,40 @@ public sealed class HandlerRuntimeIntegrationTests
         ((IElementHandler)handler).SetMauiContext(mauiContext);
 
         var formatted = new FormattedString();
-        formatted.Spans.Add(new Span { Text = "Bold", FontAttributes = FontAttributes.Bold });
-        formatted.Spans.Add(new Span { Text = " label" });
+        formatted.Spans.Add(new Span
+        {
+            Text = "Bold",
+            FontAttributes = FontAttributes.Bold,
+            TextColor = Colors.Crimson
+        });
+        formatted.Spans.Add(new Span
+        {
+            Text = " MIXED",
+            TextTransform = TextTransform.Lowercase,
+            CharacterSpacing = 1.5
+        });
 
         var label = new Label
         {
-            Text = "Plain fallback",
+            TextTransform = TextTransform.Uppercase,
             FormattedText = formatted
         };
 
         ((IElementHandler)handler).SetVirtualView(label);
-        Assert.Equal("Bold label", handler.PlatformView.GetPropertyString("Text"));
+        Assert.Null(handler.PlatformView.GetPropertyString("Text"));
+        var projectedHtml = handler.PlatformView.GetPropertyString("TextHtml");
+        Assert.NotNull(projectedHtml);
+        Assert.Contains(">BOLD<", projectedHtml, StringComparison.Ordinal);
+        Assert.Contains("> mixed<", projectedHtml, StringComparison.Ordinal);
+        Assert.Contains("font-weight:700", projectedHtml, StringComparison.Ordinal);
+        Assert.Contains("letter-spacing:1.5px", projectedHtml, StringComparison.Ordinal);
 
         MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.FormattedText));
-        Assert.Equal("Bold label", handler.PlatformView.GetPropertyString("Text"));
+        Assert.Equal(projectedHtml, handler.PlatformView.GetPropertyString("TextHtml"));
     }
 
     [Fact]
-    public void LabelHandler_TextTypeHtml_FallsBackToPlainText()
+    public void LabelHandler_TextTypeHtml_SanitizesDisallowedMarkup()
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var mauiContext = new MauiContext(services);
@@ -363,19 +379,56 @@ public sealed class HandlerRuntimeIntegrationTests
 
         var label = new Label
         {
-            Text = "<b>Literal html</b>",
+            Text = "<b onclick='x'>Bold</b><script>alert(1)</script><i data-x='1'>Italic</i>",
             TextType = TextType.Html
         };
 
         ((IElementHandler)handler).SetVirtualView(label);
-        Assert.Equal("<b>Literal html</b>", handler.PlatformView.GetPropertyString("Text"));
+        Assert.Null(handler.PlatformView.GetPropertyString("Text"));
+        Assert.Equal("<b>Bold</b>alert(1)<i>Italic</i>", handler.PlatformView.GetPropertyString("TextHtml"));
 
         MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.TextType));
-        Assert.Equal("<b>Literal html</b>", handler.PlatformView.GetPropertyString("Text"));
+        Assert.Equal("<b>Bold</b>alert(1)<i>Italic</i>", handler.PlatformView.GetPropertyString("TextHtml"));
     }
 
     [Fact]
-    public void LabelHandler_TextTransform_FallsBackToPlainText()
+    public void LabelHandler_TextTypeHtml_PreservesLiteralAngleBracketText()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var label = new Label
+        {
+            Text = "1 < 2 > 1 and <3> hearts with <b>bold</b>",
+            TextType = TextType.Html
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+        Assert.Equal("1 &lt; 2 &gt; 1 and &lt;3&gt; hearts with <b>bold</b>", handler.PlatformView.GetPropertyString("TextHtml"));
+    }
+
+    [Fact]
+    public void LabelHandler_TextTypeHtml_MalformedTrailingMarkup_IsEncodedDeterministically()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var label = new Label
+        {
+            Text = "<b>start</b><tail",
+            TextType = TextType.Html
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+        Assert.Equal("<b>start</b>&lt;tail", handler.PlatformView.GetPropertyString("TextHtml"));
+    }
+
+    [Fact]
+    public void LabelHandler_TextTransform_ProjectsAcrossPlainHtmlAndFormatted()
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var mauiContext = new MauiContext(services);
@@ -389,10 +442,75 @@ public sealed class HandlerRuntimeIntegrationTests
         };
 
         ((IElementHandler)handler).SetVirtualView(label);
-        Assert.Equal("MiXeD CaSe", handler.PlatformView.GetPropertyString("Text"));
+        Assert.Equal("MIXED CASE", handler.PlatformView.GetPropertyString("Text"));
+        Assert.Null(handler.PlatformView.GetPropertyString("TextHtml"));
 
+        label.Text = "<B>MiXeD</B>";
+        label.TextTransform = TextTransform.Lowercase;
+        label.TextType = TextType.Html;
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.Text));
         MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.TextTransform));
-        Assert.Equal("MiXeD CaSe", handler.PlatformView.GetPropertyString("Text"));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.TextType));
+        Assert.Null(handler.PlatformView.GetPropertyString("Text"));
+        Assert.Equal("<b>mixed</b>", handler.PlatformView.GetPropertyString("TextHtml"));
+
+        var formatted = new FormattedString();
+        formatted.Spans.Add(new Span { Text = "MiXeD" });
+        formatted.Spans.Add(new Span { Text = " AGAIN", TextTransform = TextTransform.Lowercase });
+        label.TextType = TextType.Text;
+        label.TextTransform = TextTransform.Uppercase;
+        label.FormattedText = formatted;
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.TextType));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.TextTransform));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.FormattedText));
+
+        var formattedHtml = handler.PlatformView.GetPropertyString("TextHtml");
+        Assert.Null(handler.PlatformView.GetPropertyString("Text"));
+        Assert.NotNull(formattedHtml);
+        Assert.Contains(">MIXED<", formattedHtml, StringComparison.Ordinal);
+        Assert.Contains("> again<", formattedHtml, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LabelHandler_PlainAndRichModeSwitching_ClearsOppositeProjectionPath()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageLabelHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var label = new Label
+        {
+            Text = "hello",
+            TextType = TextType.Text
+        };
+
+        ((IElementHandler)handler).SetVirtualView(label);
+        Assert.Equal("hello", handler.PlatformView.GetPropertyString("Text"));
+        Assert.Null(handler.PlatformView.GetPropertyString("TextHtml"));
+
+        label.TextType = TextType.Html;
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.TextType));
+        Assert.Null(handler.PlatformView.GetPropertyString("Text"));
+        Assert.Equal("hello", handler.PlatformView.GetPropertyString("TextHtml"));
+
+        var formatted = new FormattedString();
+        formatted.Spans.Add(new Span { Text = "world" });
+        label.TextType = TextType.Text;
+        label.FormattedText = formatted;
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.TextType));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.FormattedText));
+        Assert.Null(handler.PlatformView.GetPropertyString("Text"));
+        var formattedHtml = handler.PlatformView.GetPropertyString("TextHtml");
+        Assert.NotNull(formattedHtml);
+        Assert.Contains("world", formattedHtml, StringComparison.Ordinal);
+
+        label.FormattedText = null;
+        label.Text = "done";
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.FormattedText));
+        MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(Label.Text));
+        Assert.Equal("done", handler.PlatformView.GetPropertyString("Text"));
+        Assert.Null(handler.PlatformView.GetPropertyString("TextHtml"));
     }
 
     [Fact]
@@ -423,6 +541,7 @@ public sealed class HandlerRuntimeIntegrationTests
         var beforeWhiteSpace = handler.PlatformView.GetStyleValue("whiteSpace");
         var beforePadding = handler.PlatformView.GetStyleValue("padding");
         var beforeText = handler.PlatformView.GetPropertyString("Text");
+        var beforeTextHtml = handler.PlatformView.GetPropertyString("TextHtml");
 
         MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(ITextStyle.CharacterSpacing));
         MirageLabelHandler.Mapper.UpdateProperty(handler, label, nameof(ILabel.TextDecorations));
@@ -439,6 +558,7 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal(beforeWhiteSpace, handler.PlatformView.GetStyleValue("whiteSpace"));
         Assert.Equal(beforePadding, handler.PlatformView.GetStyleValue("padding"));
         Assert.Equal(beforeText, handler.PlatformView.GetPropertyString("Text"));
+        Assert.Equal(beforeTextHtml, handler.PlatformView.GetPropertyString("TextHtml"));
     }
 
     [Fact]
