@@ -599,6 +599,41 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     }
 
     [Fact]
+    public async Task XamlLab_LabelHtmlToPlainSwitch_ClearsInnerHtmlProjection()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1360, height: 900);
+        var page = await OpenAsync(
+            context,
+            path: "/xaml-lab",
+            waitForSelector: "[data-automation-id='showcase-page-xaml-lab']");
+
+        await page.Locator("[data-automation-id='xaml-lab-runtime-property-html-button']").ClickAsync();
+
+        await page.WaitForFunctionAsync(
+            @"() => {
+                const probe = document.querySelector('[data-automation-id=""xaml-lab-runtime-property-label""]');
+                if (!probe) {
+                    return false;
+                }
+
+                window.__xamlLabLabelProbe = probe;
+                return (probe.innerHTML ?? '').includes('<b>Rich</b>');
+            }");
+
+        await page.Locator("[data-automation-id='xaml-lab-runtime-property-plain-button']").ClickAsync();
+
+        await page.WaitForFunctionAsync(
+            @"() => {
+                const probe = document.querySelector('[data-automation-id=""xaml-lab-runtime-property-label""]');
+                return !!probe
+                    && probe === window.__xamlLabLabelProbe
+                    && (probe.innerHTML ?? '') === 'Plain text'
+                    && (probe.textContent ?? '') === 'Plain text'
+                    && probe.children.length === 0;
+            }");
+    }
+
+    [Fact]
     public async Task XamlLab_EntryMinHeight_KeepsFluentChromeAligned()
     {
         await using var context = await _fixture.NewContextAsync(width: 1360, height: 900);

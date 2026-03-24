@@ -8,6 +8,18 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Extended wrapper `GalleryBuilder` automation-ID routing with a CollectionView-specific prefix to keep nested gallery navigation deterministic for E2E without changing upstream sources.
 - Added compile-compat stubs for carousel namespace references used by CollectionView gallery sources so the collection tree can compile without importing full CarouselView gallery implementations in this slice.
 
+## 2026-03-23 (Label parity follow-up: rich text projection for FormattedText/TextType/TextTransform)
+- `MirageLabelHandler` now mirrors MAUI controls-remap flow for label text sources by routing `TextType`/`TextTransform` through a `MapTextOrFormattedText` refresh path and resolving projection precedence deterministically (`TextType.Html` first, then formatted spans, then plain text).
+- Added a provider-neutral property-target seam (`PropertyTarget.Property`) so controls can set DOM properties directly when needed; Label now uses this to project `TextHtml` via `innerHTML` while preserving `Text` as plain-text projection.
+- `TextType.Html` now uses an explicit safe-subset sanitizer (allowlisted tags, stripped attributes/disallowed tags, deterministic diagnostics), and `FormattedText` now projects styled span HTML with MAUI-aligned text-transform defaults/overrides.
+- Label parity governance remains strict, with divergences reduced to safe-subset HTML breadth and formatted-span gesture hit-region depth.
+
+## 2026-03-23 (Label parity wave: MAUI-shaped mapper coverage + deterministic text-source fallbacks)
+- `MirageLabelHandler` now exposes MAUI-aligned core mapper coverage for `Text`, `TextColor`, `Font`, `CharacterSpacing`, text alignment, `TextDecorations`, `LineHeight`, and `Padding`, with an explicit empty command-mapper parity surface.
+- Added controls-remap key coverage for `LineBreakMode` and `MaxLines` with deterministic CSS projection (including line-clamp behavior) and a label-specific visibility mapper so clamp mode preserves the correct display strategy through visible/hidden toggles.
+- `FormattedText`, `TextType(Html)`, and `TextTransform` remain intentionally deferred in this wave; Mirage now keeps plain-text output authoritative (`Label.Text` when present, otherwise deterministic flattened span text) and emits deterministic diagnostics instead of silently diverging.
+- Added Label parity governance artifacts (`docs/parity/label-parity-contract.json`, `docs/parity/label-parity-divergences.json`) with CI-backed integration tests that enforce mapper/contract drift and divergence metadata completeness.
+
 ## 2026-03-23 (CollectionView ScrollTo animation + axis-safe runtime seam)
 - CollectionView `ScrollToRequested` now forwards orientation and animation intent through the generic runtime child-scroll seam so horizontal lists scroll on X and vertical lists scroll on Y without cross-axis drift.
 - Animated requests no longer emit synthetic immediate `SendScrolled` updates; Mirage now relies on runtime `scroll` events for movement-driven updates, including cases where runtime initially reports unchanged offsets.

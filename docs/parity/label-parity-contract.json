@@ -1,0 +1,34 @@
+{
+  "mauiBaselineCommit": "fc1dadc4d68a809a9c14a7d33ff1289037040471",
+  "handlers": [
+    {
+      "name": "LabelHandler",
+      "mirageType": "MirageLabelHandler",
+      "propertyMapperKeys": [
+        "Text",
+        "TextColor",
+        "Font",
+        "CharacterSpacing",
+        "HorizontalTextAlignment",
+        "VerticalTextAlignment",
+        "TextDecorations",
+        "LineHeight",
+        "Padding"
+      ],
+      "commandMapperKeys": []
+    },
+    {
+      "name": "LabelControlsRemap",
+      "mirageType": "MirageLabelHandler",
+      "propertyMapperKeys": [
+        "TextType",
+        "TextTransform",
+        "Text",
+        "FormattedText",
+        "LineBreakMode",
+        "MaxLines"
+      ],
+      "commandMapperKeys": []
+    }
+  ]
+}

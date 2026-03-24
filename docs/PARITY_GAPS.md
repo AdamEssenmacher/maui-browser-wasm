@@ -34,7 +34,7 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Deferred: radial/image/pattern paints remain unsupported fallback with DEBUG diagnostics.
 
 8. Label line-break truncation parity depth
-- Current behavior: `NoWrap`, `WordWrap`, `CharacterWrap`, and truncation modes map to CSS white-space/overflow behaviors, with `MaxLines` projected through line-clamp styles.
+- Current behavior: `NoWrap`, `WordWrap`, `CharacterWrap`, and truncation modes map to deterministic CSS white-space/overflow behaviors, with `MaxLines` projected through line-clamp styles and clamp-aware visibility projection.
 - Deferred: head/middle truncation visual parity and platform-specific truncation glyph placement remain best-effort.
 
 9. Text-input parity depth (`Entry` / `Editor` / `SearchBar`)
@@ -80,8 +80,9 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Deferred: advanced trigger precedence edge cases, full VisualState parity across all control families, and complex style/resource merge-order compatibility are still partial.
 
 19. Label text-source parity depth (`FormattedText` / `TextType` / `TextTransform`)
-- Current behavior: browser `Label` mapping is `ILabel`-surface-first (`Text`/style/alignment/wrap semantics), and the interactive Label depth page exposes deterministic fallback probes for controls-only text-source features.
-- Deferred: span-level formatted text projection, HTML text rendering semantics (`TextType.Html`), and controls-layer text-transform parity are explicitly gap-documented in this slice.
+- Current behavior: browser `Label` mapping includes MAUI-aligned core style primitives (`CharacterSpacing`, `TextDecorations`, `LineHeight`, `Padding`), wrap/clamp projection (`LineBreakMode`, `MaxLines`), and controls text-source projection for `FormattedText`, `TextType`, and `TextTransform`.
+- Current behavior: `TextType.Html` uses a deterministic safe-subset sanitizer; unsupported tags/attributes are stripped while preserving text content.
+- Deferred: full HTML breadth parity and span-level gesture hit-region parity for formatted text remain partial in this slice.
 
 ## Gap lifecycle policy
 

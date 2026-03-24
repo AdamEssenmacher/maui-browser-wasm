@@ -1,0 +1,22 @@
+{
+  "entries": [
+    {
+      "id": "label-formattedtext-span-gesture-hit-testing-partial",
+      "summary": "FormattedText now projects visual span rendering, but span gesture hit-region parity remains deferred in this wave.",
+      "upstreamReference": "src/Controls/src/Core/Label/Label.Mapper.cs",
+      "testReference": "LabelHandler_FormattedText_ProjectsRichHtmlAndSpanTransforms",
+      "keys": [
+        "FormattedText"
+      ]
+    },
+    {
+      "id": "label-texttype-html-safe-subset-sanitizer",
+      "summary": "TextType.Html is supported through a deterministic safe-subset sanitizer; unsupported tags and attributes are stripped.",
+      "upstreamReference": "src/Controls/src/Core/Label/Label.Mapper.cs",
+      "testReference": "LabelHandler_TextTypeHtml_SanitizesDisallowedMarkup",
+      "keys": [
+        "TextType"
+      ]
+    }
+  ]
+}
