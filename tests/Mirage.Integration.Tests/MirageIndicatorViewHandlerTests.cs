@@ -121,6 +121,38 @@ public sealed class MirageIndicatorViewHandlerTests
     }
 
     [Fact]
+    public void IndicatorViewHandler_DotClickWithMaximumVisible_UsesCurrentAbsoluteWindow()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var handler = CreateHandler(coordinator);
+        var indicator = new IndicatorView
+        {
+            Count = 10,
+            MaximumVisible = 3,
+            Position = 8,
+            IsEnabled = true
+        };
+
+        ((IElementHandler)handler).SetVirtualView(indicator);
+        var dots = GetDotNodes(handler);
+        Assert.Equal(3, dots.Count);
+        Assert.Equal("Indicator 7", dots[0].Attributes["aria-label"]);
+        Assert.Equal("Indicator 9", dots[2].Attributes["aria-label"]);
+
+        coordinator.OnEvent(dots[0].NodeId, "click", null);
+        Assert.Equal(6, indicator.Position);
+
+        indicator.Position = 9;
+        MirageIndicatorViewHandler.Mapper.UpdateProperty(handler, indicator, nameof(IIndicatorView.Position));
+        dots = GetDotNodes(handler);
+        Assert.Equal("Indicator 8", dots[0].Attributes["aria-label"]);
+        Assert.Equal("Indicator 10", dots[2].Attributes["aria-label"]);
+
+        coordinator.OnEvent(dots[1].NodeId, "click", null);
+        Assert.Equal(8, indicator.Position);
+    }
+
+    [Fact]
     public void IndicatorViewHandler_DoesNotOverrideMappedViewOpacity_OnIndicatorUpdates()
     {
         var handler = CreateHandler();

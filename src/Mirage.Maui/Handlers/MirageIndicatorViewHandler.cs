@@ -182,8 +182,10 @@ internal sealed class MirageIndicatorViewHandler : MirageViewHandler<IIndicatorV
     private bool EnsureDefaultDots(IIndicatorView indicator)
     {
         var visibleCount = GetVisibleIndicatorCount(indicator);
+        var clampedAbsolutePosition = GetClampedAbsolutePosition(indicator);
+        var visibleWindowStart = GetVisibleWindowStart(indicator, visibleCount, clampedAbsolutePosition);
         var normalizedPosition = visibleCount > 0
-            ? Math.Clamp(indicator.Position, 0, visibleCount - 1)
+            ? Math.Clamp(clampedAbsolutePosition - visibleWindowStart, 0, visibleCount - 1)
             : -1;
         var indicatorSize = NormalizeIndicatorSize(indicator.IndicatorSize);
         var indicatorColor = ResolvePaintCssColor(indicator.IndicatorColor, DefaultIndicatorColor, "IndicatorColor");
@@ -208,12 +210,13 @@ internal sealed class MirageIndicatorViewHandler : MirageViewHandler<IIndicatorV
         {
             var dotNode = _dotNodes[index];
             dotNode.EventTarget.Index = index;
+            var absoluteIndex = visibleWindowStart + index;
 
             var selected = index == normalizedPosition;
             changed |= SetAttributeIfChanged(dotNode.PlatformView, "data-mirage-indicator-index", index.ToString(CultureInfo.InvariantCulture));
             changed |= SetAttributeIfChanged(dotNode.PlatformView, "data-mirage-indicator-selected", selected ? "true" : null);
             changed |= SetAttributeIfChanged(dotNode.PlatformView, "aria-current", selected ? "true" : null);
-            changed |= SetAttributeIfChanged(dotNode.PlatformView, "aria-label", $"Indicator {index + 1}");
+            changed |= SetAttributeIfChanged(dotNode.PlatformView, "aria-label", $"Indicator {absoluteIndex + 1}");
             changed |= SetAttributeIfChanged(dotNode.PlatformView, "disabled", indicator.IsEnabled ? null : "disabled");
             changed |= SetStyleIfChanged(dotNode.PlatformView, "width", dotDimension);
             changed |= SetStyleIfChanged(dotNode.PlatformView, "height", dotDimension);
@@ -464,13 +467,35 @@ internal sealed class MirageIndicatorViewHandler : MirageViewHandler<IIndicatorV
             return;
         }
 
-        var nextPosition = Math.Clamp(dotIndex, 0, visibleCount - 1);
+        var clampedAbsolutePosition = GetClampedAbsolutePosition(VirtualView);
+        var visibleWindowStart = GetVisibleWindowStart(VirtualView, visibleCount, clampedAbsolutePosition);
+        var nextPosition = visibleWindowStart + Math.Clamp(dotIndex, 0, visibleCount - 1);
         if (VirtualView.Position == nextPosition)
         {
             return;
         }
 
         VirtualView.Position = nextPosition;
+    }
+
+    private static int GetClampedAbsolutePosition(IIndicatorView indicator)
+    {
+        var count = Math.Max(0, indicator.Count);
+        return count > 0
+            ? Math.Clamp(indicator.Position, 0, count - 1)
+            : 0;
+    }
+
+    private static int GetVisibleWindowStart(IIndicatorView indicator, int visibleCount, int clampedAbsolutePosition)
+    {
+        var count = Math.Max(0, indicator.Count);
+        if (count <= 0 || visibleCount <= 0)
+        {
+            return 0;
+        }
+
+        var maxStart = Math.Max(0, count - visibleCount);
+        return Math.Clamp(clampedAbsolutePosition - (visibleCount - 1), 0, maxStart);
     }
 
     private static void NormalizeTemplateLayoutStyles(MiragePlatformView childPlatformView)
