@@ -86,7 +86,17 @@ public abstract class MirageViewHandler<TVirtualView> : ViewHandler<TVirtualView
 
         var diagnosticsEnabled = MirageDiagnostics.IsEnabled;
         var startTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
-        childHandler = view.ToHandler(MauiContext);
+        try
+        {
+            childHandler = view.ToHandler(MauiContext);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"Failed to create handler for child view type '{view.GetType().FullName}' under parent handler '{GetType().FullName}'.",
+                ex);
+        }
+
         if (diagnosticsEnabled)
         {
             var elapsedMs = MirageDiagnostics.GetElapsedMilliseconds(startTimestamp, MirageDiagnostics.GetTimestamp());

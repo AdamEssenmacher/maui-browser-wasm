@@ -26,19 +26,19 @@ Visual legend:
 | `FlexLayoutPage.xaml` | `Pages/Layouts/FlexLayoutPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `GridPage.xaml` | `Pages/Layouts/GridPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `HorizontalStackLayoutPage.xaml` | `Pages/Layouts/HorizontalStackLayoutPage.xaml` | `[x]` | `[x]` | `[ ]` |
-| `LayoutIsEnabledPage.xaml` | `Pages/Layouts/LayoutIsEnabledPage.xaml` | `[!]` | `[ ]` | `[ ]` |
-| `LayoutUpdatesPage.cs` | `Pages/Layouts/LayoutUpdatesPage.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `RelativeLayoutPage.xaml` | `Pages/Layouts/RelativeLayoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `LayoutIsEnabledPage.xaml` | `Pages/Layouts/LayoutIsEnabledPage.xaml` | `[x]` | `[x]` | `[ ]` |
+| `LayoutUpdatesPage.cs` | `Pages/Layouts/LayoutUpdatesPage.cs` | `[x]` | `[x]` | `[ ]` |
+| `RelativeLayoutPage.xaml` | `Pages/Layouts/RelativeLayoutPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ScrollViewPage.xaml` | `Pages/Layouts/ScrollViewPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ScrollToEndPage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollToEndPage.xaml` | `[x]` | `[ ]` | `[ ]` |
 | `ScrollToFromConstructorPage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollToFromConstructorPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ScrollViewOrientationPage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollViewOrientationPage.xaml` | `[!]` | `[ ]` | `[ ]` |
 | `ScrollViewTemplatePage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollViewTemplatePage.xaml` | `[x]` | `[ ]` | `[ ]` |
 | `StackLayoutPage.xaml` | `Pages/Layouts/StackLayoutPage.xaml` | `[x]` | `[x]` | `[ ]` |
-| `TemplatedViewPage.xaml` | `Pages/Layouts/TemplatedViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `TemplatedViewPage.xaml` | `Pages/Layouts/TemplatedViewPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `VerticalStackLayoutPage.xaml` | `Pages/Layouts/VerticalStackLayoutPage.xaml` | `[x]` | `[x]` | `[ ]` |
-| `ZIndexPage.xaml` | `Pages/Layouts/ZIndexPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `LayoutsPage.xaml` | `Pages/LayoutsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ZIndexPage.xaml` | `Pages/Layouts/ZIndexPage.xaml` | `[x]` | `[x]` | `[ ]` |
+| `LayoutsPage.xaml` | `Pages/LayoutsPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `AlertsPage.xaml` | `Pages/Core/AlertsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `AppThemeBindingPage.xaml` | `Pages/Core/AppThemeBindingPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ApplicationControlPage.xaml` | `Pages/Core/ApplicationControlPage.xaml` | `[ ]` | `[ ]` | `[ ]` |

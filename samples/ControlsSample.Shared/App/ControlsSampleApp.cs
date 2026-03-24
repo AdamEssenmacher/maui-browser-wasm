@@ -1,7 +1,9 @@
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Shapes;
 using Microsoft.Maui.Graphics;
 using Controls.Sample.Converters;
+using Maui.Controls.Sample.Themes;
 using System.Linq;
 
 namespace ControlsSample.Shared.App;
@@ -247,6 +249,8 @@ public class ControlsSampleApp : Application
 
             resources["Subhead"] = subheadStyle;
         }
+
+        EnsureRateResources(resources);
     }
 
     private static void SeedUpstreamConverterResources(ResourceDictionary resources)
@@ -255,6 +259,24 @@ public class ControlsSampleApp : Application
         {
             resources["ThicknessConverter"] = new ThicknessConverter();
         }
+    }
+
+    private static void EnsureRateResources(ResourceDictionary resources)
+    {
+        if (!resources.MergedDictionaries.Any(dictionary => dictionary is Rate))
+        {
+            resources.MergedDictionaries.Add(new Rate());
+        }
+
+        if (resources.ContainsKey("StarGeometry"))
+        {
+            return;
+        }
+
+        var converter = new PathGeometryConverter();
+        var pathData = "M50,0 L61,35 L98,35 L68,57 L79,91 L50,70 L21,91 L32,57 L2,35 L39,35 Z";
+        var starGeometry = converter.ConvertFromInvariantString(pathData) as PathGeometry ?? new PathGeometry();
+        resources["StarGeometry"] = starGeometry;
     }
 
     private static void EnsureColorResource(ResourceDictionary resources, string key, Color value)

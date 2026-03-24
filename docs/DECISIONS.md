@@ -9,6 +9,12 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added parity governance artifacts (`searchbar-parity-contract.json`, `searchbar-parity-divergences.json`) and integration tests locking mapper coverage, divergence metadata completeness, and behavioral regressions.
 - Follow-up hardening fixed style ownership so SearchBar mapper updates no longer overwrite common visibility/size-request projection, and added a generic runtime focus seam so SearchBar focus/unfocus commands target the realized input node deterministically.
 
+## 2026-03-24 (ControlsSample LayoutsPage + remaining layout sub-pages runnable)
+- Promoted `LayoutsPage` plus the remaining upstream layout sub-pages (`LayoutUpdatesPage`, `RelativeLayoutPage`, `TemplatedViewPage`, `ZIndexPage`, and `LayoutIsEnabledPage`) to runnable entries in the wrapper catalog.
+- Added wrapper page-factory instrumentation for layout gallery selectors and interactive controls so these pages are deterministic to target in E2E without editing vendor sources.
+- Seeded missing `Rate` control resources (`Maui.Controls.Sample.Themes.Rate` merged dictionary and `StarGeometry`) in `ControlsSampleApp` to keep templated-layout scenarios loading reliably in both browser and native hosts.
+- Kept implementation framework-first: no `index.html` overrides or sample-specific DOM hacks were introduced.
+
 ## 2026-03-23 (ControlsSample CollectionView galleries runnable with deferred dependency policy)
 - Promoted `CollectionViewGallery` to runnable in ControlsSample and imported the full `Pages/Controls/CollectionViewGalleries/**` source set so browser/native wrappers track upstream pages without vendor edits.
 - Added a single wrapper compat defer policy that hides known CollectionView sub-pages requiring `SearchBar`, `CarouselView`, or `IndicatorView` while keeping all other gallery paths visible and runnable.

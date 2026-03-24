@@ -1,5 +1,10 @@
 using System.Diagnostics;
 using ControlsSample.Shared.App;
+using Maui.Controls.Sample.Pages;
+using Mirage.Maui.Hosting;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Dispatching;
 using Xunit;
 
 namespace Mirage.Integration.Tests;
@@ -57,6 +62,41 @@ public sealed class ControlsSampleImportTests
         Assert.DoesNotContain("error", stderr, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Fact]
+    public void TemplatedViewCatalogEntry_CanBeInstantiated()
+    {
+        var originalSynchronizationContext = SynchronizationContext.Current;
+        var originalDispatcherProvider = DispatcherProvider.Current;
+        Exception? exception = null;
+
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(new ImmediateSynchronizationContext());
+            DispatcherProvider.SetCurrent(new BrowserDispatcherProvider());
+
+            var dispatcher = Dispatcher.GetForCurrentThread();
+            Assert.NotNull(dispatcher);
+
+            var dispatchSucceeded = dispatcher!.Dispatch(() =>
+            {
+                _ = new ControlsSampleApp();
+#pragma warning disable CS0612 // IFontNamedSizeService is required for upstream sample compatibility controls.
+                DependencyService.Register<IFontNamedSizeService, TestFontNamedSizeService>();
+#pragma warning restore CS0612
+                exception = Record.Exception(() => _ = new TemplatedViewPage());
+            });
+
+            Assert.True(dispatchSucceeded);
+        }
+        finally
+        {
+            DispatcherProvider.SetCurrent(originalDispatcherProvider);
+            SynchronizationContext.SetSynchronizationContext(originalSynchronizationContext);
+        }
+
+        Assert.Null(exception);
+    }
+
     private static string FindRepoRoot()
     {
         var current = new DirectoryInfo(AppContext.BaseDirectory);
@@ -72,5 +112,37 @@ public sealed class ControlsSampleImportTests
         }
 
         throw new DirectoryNotFoundException("Unable to locate repository root containing Mirage.sln.");
+    }
+
+#pragma warning disable CS0612
+    private sealed class TestFontNamedSizeService : IFontNamedSizeService
+    {
+        public double GetNamedSize(NamedSize size, Type targetElementType, bool useOldSizes)
+        {
+            _ = targetElementType;
+            _ = useOldSizes;
+            return size switch
+            {
+                NamedSize.Micro => 10,
+                NamedSize.Small => 12,
+                NamedSize.Medium => 14,
+                NamedSize.Large => 18,
+                _ => 14
+            };
+        }
+    }
+#pragma warning restore CS0612
+
+    private sealed class ImmediateSynchronizationContext : SynchronizationContext
+    {
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            d(state);
+        }
+
+        public override void Send(SendOrPostCallback d, object? state)
+        {
+            d(state);
+        }
     }
 }

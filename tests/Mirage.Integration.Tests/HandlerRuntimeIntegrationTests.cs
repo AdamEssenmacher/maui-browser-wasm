@@ -5056,6 +5056,56 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal(["second", "first", "third"], root.Children.Select(static child => child.NodeId).ToArray());
     }
 
+    [Fact]
+    public void PathHandler_ProjectsViewBoxFromGeometryBounds_AndAspect()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MiragePathHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var converter = new PathGeometryConverter();
+        var geometry = converter.ConvertFromInvariantString("M10,20 L110,20 L110,70 L10,70 Z") as Geometry;
+        Assert.NotNull(geometry);
+
+        var path = new Microsoft.Maui.Controls.Shapes.Path
+        {
+            Data = geometry,
+            Aspect = Stretch.UniformToFill
+        };
+
+        ((IElementHandler)handler).SetVirtualView(path);
+
+        Assert.Equal("10 20 100 50", handler.PlatformView.Attributes["viewBox"]);
+        Assert.Equal("xMidYMid slice", handler.PlatformView.Attributes["preserveAspectRatio"]);
+    }
+
+    [Fact]
+    public void PathHandler_ClearsViewBox_WhenDataBecomesNull()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MiragePathHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var converter = new PathGeometryConverter();
+        var geometry = converter.ConvertFromInvariantString("M0,0 L8,0 L8,4 L0,4 Z") as Geometry;
+        Assert.NotNull(geometry);
+
+        var path = new Microsoft.Maui.Controls.Shapes.Path
+        {
+            Data = geometry
+        };
+
+        ((IElementHandler)handler).SetVirtualView(path);
+        Assert.Equal("0 0 8 4", handler.PlatformView.Attributes["viewBox"]);
+
+        path.Data = null;
+        MiragePathHandler.Mapper.UpdateProperty(handler, path, nameof(Microsoft.Maui.Controls.Shapes.Path.Data));
+
+        Assert.False(handler.PlatformView.Attributes.ContainsKey("viewBox"));
+    }
+
     private static IReadOnlyList<MiragePlatformView> GetCollectionItemNodes(MirageCollectionViewHandler handler)
     {
         var contentHost = FindCollectionHost(handler.PlatformView, "content");

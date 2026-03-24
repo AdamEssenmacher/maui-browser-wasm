@@ -1,4 +1,5 @@
 using ControlsSample.Shared.App;
+using Microsoft.Maui.Controls.Compatibility.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Hosting;
 
@@ -11,6 +12,7 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseMauiApp<App>()
+            .UseMauiCompatibility()
             .UseMauiMaps()
             .ConfigureFonts(fonts =>
             {

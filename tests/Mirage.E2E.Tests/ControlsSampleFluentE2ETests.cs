@@ -107,10 +107,16 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-customlayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-flexlayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-gridpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-layoutspage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-layoutupdatespage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-relativelayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-horizontalstacklayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stacklayoutpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-templatedviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-verticalstacklayoutpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-zindexpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-scrollviewpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-layoutisenabledpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-boxviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-buttonpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-activityindicatorpage']").CountAsync());
@@ -124,7 +130,6 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-collectionviewgallery']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-indicatorviewparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
-        Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-layoutisenabledpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
 
         await NavigateWithDiagnosticsAsync(
@@ -751,6 +756,89 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal("6", layoutSnapshot[4]);
         Assert.Equal("6", layoutSnapshot[5]);
         Assert.Equal("6", layoutSnapshot[6]);
+    }
+
+    [Fact]
+    public async Task LayoutsPage_IsRunnable_AndNavigatesToRemainingLayoutSubPages()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1024, height: 900);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        const string layoutsHostSelector = "[data-automation-id='controls-sample-page-layoutspage']";
+        const string sectionsSelector = "[data-automation-id='controls-sample-layoutspage-sections']";
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-layoutspage']").ClickAsync();
+                await page.WaitForSelectorAsync(layoutsHostSelector);
+                await page.WaitForSelectorAsync(sectionsSelector);
+            });
+
+        var expectedSectionTitles = new[]
+        {
+            "RelativeLayout",
+            "Layout Updates",
+            "TemplatedView",
+            "Z-Index",
+            "Layout IsEnabled"
+        };
+
+        foreach (var title in expectedSectionTitles)
+        {
+            var count = await page.Locator($"{sectionsSelector} span").Filter(new() { HasTextString = title }).CountAsync();
+            Assert.True(count > 0, $"Expected LayoutsPage section '{title}' to render.");
+        }
+
+        var navigationMatrix = new (string Title, string HostId)[]
+        {
+            ("RelativeLayout", "controls-sample-page-relativelayoutpage"),
+            ("Layout Updates", "controls-sample-page-layoutupdatespage"),
+            ("TemplatedView", "controls-sample-page-templatedviewpage"),
+            ("Z-Index", "controls-sample-page-zindexpage"),
+            ("Layout IsEnabled", "controls-sample-page-layoutisenabledpage")
+        };
+
+        foreach (var (title, hostId) in navigationMatrix)
+        {
+            await NavigateWithDiagnosticsAsync(
+                page,
+                diagnostics,
+                async () =>
+                {
+                    await page.Locator($"{sectionsSelector} span").Filter(new() { HasTextString = title }).First.ClickAsync();
+                    await page.WaitForSelectorAsync($"[data-automation-id='{hostId}']");
+                });
+
+            await NavigateWithDiagnosticsAsync(
+                page,
+                diagnostics,
+                async () =>
+                {
+                    await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                    await page.WaitForSelectorAsync(layoutsHostSelector);
+                });
+        }
+    }
+
+    [Fact]
+    public async Task TemplatedViewPage_IsRunnable_FromCatalog()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1024, height: 900);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                var button = page.Locator("[data-automation-id='controls-sample-open-templatedviewpage']");
+                await button.ScrollIntoViewIfNeededAsync();
+                await button.ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-templatedviewpage']");
+            });
     }
 
     [Fact]
