@@ -122,6 +122,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-borderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-mapsgallery']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-collectionviewgallery']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-indicatorviewparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-layoutisenabledpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
@@ -352,6 +353,60 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
 
         Assert.Equal("controls-sample-absolutelayout-parity-a", topAfterToggle);
         Assert.NotEqual(topBeforeToggle, topAfterToggle);
+    }
+
+    [Fact]
+    public async Task IndicatorViewParityProbe_ProjectsDotsAndInteractions()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1120, height: 860);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-indicatorviewparitypage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-indicatorviewparitypage']");
+            });
+
+        const string hostSelector = "[data-automation-id='controls-sample-indicatorview-parity-host']";
+        await page.WaitForSelectorAsync(hostSelector);
+        Assert.Equal("IndicatorView", await page.GetAttributeAsync(hostSelector, "data-mirage-kind"));
+
+        Assert.Equal(5, await CountIndicatorDotsAsync(page, hostSelector));
+
+        await page.Locator("[data-automation-id='controls-sample-indicatorview-parity-toggle-max-visible']").ClickAsync();
+        await WaitForIndicatorDotCountAsync(page, hostSelector, expectedCount: 3);
+
+        await page.Locator($"{hostSelector} .mirage-indicator-dot").Nth(2).ClickAsync();
+        await WaitForLabelTextContainsAsync(
+            page,
+            "[data-automation-id='controls-sample-indicatorview-parity-position']",
+            "position=2");
+
+        await page.Locator("[data-automation-id='controls-sample-indicatorview-parity-set-count-one']").ClickAsync();
+        await WaitForIndicatorDotCountAsync(page, hostSelector, expectedCount: 1);
+
+        await page.Locator("[data-automation-id='controls-sample-indicatorview-parity-toggle-hide-single']").ClickAsync();
+        await WaitForIndicatorDotCountAsync(page, hostSelector, expectedCount: 0);
+
+        await page.Locator("[data-automation-id='controls-sample-indicatorview-parity-toggle-hide-single']").ClickAsync();
+        await WaitForIndicatorDotCountAsync(page, hostSelector, expectedCount: 1);
+
+        await page.Locator("[data-automation-id='controls-sample-indicatorview-parity-toggle-template']").ClickAsync();
+        await WaitForLabelTextContainsAsync(
+            page,
+            "[data-automation-id='controls-sample-indicatorview-parity-mode']",
+            "template=on");
+        await WaitForIndicatorDotCountAsync(page, hostSelector, expectedCount: 0);
+
+        await page.Locator("[data-automation-id='controls-sample-indicatorview-parity-toggle-template']").ClickAsync();
+        await WaitForLabelTextContainsAsync(
+            page,
+            "[data-automation-id='controls-sample-indicatorview-parity-mode']",
+            "template=off");
+        await WaitForIndicatorDotCountAsync(page, hostSelector, expectedCount: 1);
     }
 
     [Fact]
@@ -2546,6 +2601,69 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 return topElement?.closest("[data-automation-id]")?.getAttribute("data-automation-id") ?? "__none__";
             }
             """);
+    }
+
+    private static async Task<int> CountIndicatorDotsAsync(IPage page, string hostSelector)
+    {
+        return await page.EvaluateAsync<int>(
+            """
+            (selector) => {
+                const host = document.querySelector(selector);
+                if (!host) {
+                    return -1;
+                }
+
+                return host.querySelectorAll(".mirage-indicator-dot").length;
+            }
+            """,
+            hostSelector);
+    }
+
+    private static async Task WaitForIndicatorDotCountAsync(
+        IPage page,
+        string hostSelector,
+        int expectedCount,
+        int timeoutMs = 3000,
+        int pollMs = 50)
+    {
+        var elapsedMs = 0;
+        while (elapsedMs < timeoutMs)
+        {
+            var count = await CountIndicatorDotsAsync(page, hostSelector);
+            if (count == expectedCount)
+            {
+                return;
+            }
+
+            await page.WaitForTimeoutAsync(pollMs);
+            elapsedMs += pollMs;
+        }
+
+        Assert.Equal(expectedCount, await CountIndicatorDotsAsync(page, hostSelector));
+    }
+
+    private static async Task WaitForLabelTextContainsAsync(
+        IPage page,
+        string selector,
+        string expectedSubstring,
+        int timeoutMs = 3000,
+        int pollMs = 50)
+    {
+        var elapsedMs = 0;
+        while (elapsedMs < timeoutMs)
+        {
+            var text = await page.Locator(selector).TextContentAsync() ?? string.Empty;
+            if (text.Contains(expectedSubstring, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            await page.WaitForTimeoutAsync(pollMs);
+            elapsedMs += pollMs;
+        }
+
+        var finalText = await page.Locator(selector).TextContentAsync() ?? string.Empty;
+        Assert.Contains(expectedSubstring, finalText, StringComparison.Ordinal);
     }
 
     private static async Task SetSelectIndexAsync(IPage page, string selector, int selectedIndex)

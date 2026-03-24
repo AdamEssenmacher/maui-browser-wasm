@@ -258,6 +258,39 @@ input[data-mirage-kind="Switch"][type="checkbox"]:disabled {
   cursor: default;
 }
 
+[data-mirage-kind="IndicatorView"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+[data-mirage-kind="IndicatorView"] .mirage-indicator-dot {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  margin: 0;
+  background: rgba(148,163,184,0.55);
+  cursor: pointer;
+  user-select: none;
+}
+
+[data-mirage-kind="IndicatorView"] .mirage-indicator-dot:focus-visible {
+  outline: 2px solid rgba(59,130,246,0.78);
+  outline-offset: 2px;
+}
+
+[data-mirage-kind="IndicatorView"] .mirage-indicator-dot[disabled] {
+  cursor: default;
+}
+
+[data-mirage-kind="IndicatorView"] .mirage-indicator-dot[data-mirage-indicator-selected="true"] {
+  opacity: 1;
+}
+
 [data-mirage-kind="Map"] {
   position: relative;
   overflow: hidden;

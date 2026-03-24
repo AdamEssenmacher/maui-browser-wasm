@@ -21,5 +21,6 @@ public enum ComponentKind
     Slider,
     Picker,
     Stepper,
+    IndicatorView,
     Map
 }
