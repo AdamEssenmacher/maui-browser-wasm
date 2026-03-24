@@ -4,11 +4,13 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 default_output_file="$repo_root/docs/HANDLER_PARITY_MATRIX.md"
 mirage_hosting_file="$repo_root/src/Mirage.Maui/Hosting/MirageHostingExtensions.cs"
+modern_inventory_file="$repo_root/tools/parity/maui-modern-controls.tsv"
 
 maui_repo="dotnet/maui"
 maui_baseline_commit="fc1dadc4d68a809a9c14a7d33ff1289037040471"
 controls_registration_path="src/Controls/src/Core/Hosting/AppHostBuilderExtensions.cs"
 maps_registration_path="src/Controls/Maps/src/AppHostBuilderExtensions.cs"
+core_public_api_path="src/Core/src/PublicAPI/net/PublicAPI.Shipped.txt"
 
 mode="write"
 output_file="$default_output_file"
@@ -69,6 +71,7 @@ trap 'rm -rf "$tmp_dir"' EXIT
 
 controls_file="$tmp_dir/controls.cs"
 maps_file="$tmp_dir/maps.cs"
+core_public_api_file="$tmp_dir/core-publicapi.txt"
 registrations_file="$tmp_dir/maui-registrations.tsv"
 row_order_file="$tmp_dir/row-order.tsv"
 platform_records_file="$tmp_dir/platform-records.tsv"
@@ -76,6 +79,7 @@ tree_file="$tmp_dir/maui-tree-paths.txt"
 mirage_records_file="$tmp_dir/mirage-records.tsv"
 handler_paths_file="$tmp_dir/handler-paths.tsv"
 output_tmp="$tmp_dir/handler-parity-matrix.md"
+modern_control_types_file="$tmp_dir/modern-control-types.txt"
 
 fetch_maui_file() {
     local maui_path="$1"
@@ -109,6 +113,18 @@ normalize_type_key() {
         t="${t##*.}"
     fi
 
+    case "$t" in
+        IBorderView) t="Border" ;;
+        IProgress) t="ProgressBar" ;;
+        IStackNavigationView) t="NavigationPage" ;;
+        ITabbedView) t="TabbedPage" ;;
+        IFlyoutView) t="FlyoutPage" ;;
+    esac
+
+    if [[ "$t" =~ ^I[A-Z] ]]; then
+        t="${t#I}"
+    fi
+
     echo "$t"
 }
 
@@ -125,16 +141,11 @@ type_display_name() {
 is_in_scope_type_key() {
     local key="$1"
     case "$key" in
-        Application|IContentView) return 1 ;;
+        Application) return 1 ;;
         MenuBar|MenuBarItem|MenuFlyout|MenuFlyoutItem|MenuFlyoutSeparator|MenuFlyoutSubItem) return 1 ;;
         ShellItem|ShellSection|ShellContent|SwipeItem|Toolbar) return 1 ;;
         ListView|Cell|ImageCell|EntryCell|TextCell|ViewCell|SwitchCell|TableView) return 1 ;;
     esac
-
-    # Exclude interface-shaped type keys only; do not drop concrete controls like Image/ImageButton/IndicatorView.
-    if [[ "$key" =~ ^I[A-Z] ]]; then
-        return 1
-    fi
 
     return 0
 }
@@ -242,6 +253,27 @@ contains_handler_for_row_platform() {
         ' "$platform_records_file"
     )"
     [[ "$count" -gt 0 ]]
+}
+
+row_key_exists() {
+    local key="$1"
+    if [[ ! -f "$tmp_dir/rows-seen.tsv" ]]; then
+        return 1
+    fi
+
+    awk -F'\t' -v key="$key" '
+        $1 == key { found = 1; exit }
+        END { exit(found ? 0 : 1) }
+    ' "$tmp_dir/rows-seen.tsv"
+}
+
+is_modern_inventory_type() {
+    local key="$1"
+    if [[ ! -f "$modern_control_types_file" ]]; then
+        return 1
+    fi
+
+    grep -Fxq "$key" "$modern_control_types_file"
 }
 
 shape_grade_for_type() {
@@ -362,7 +394,14 @@ material3_annotation() {
 
 fetch_maui_file "$controls_registration_path" > "$controls_file"
 fetch_maui_file "$maps_registration_path" > "$maps_file"
+fetch_maui_file "$core_public_api_path" > "$core_public_api_file"
 gh api "repos/$maui_repo/git/trees/$maui_baseline_commit?recursive=1" --jq '.tree[] | select(.path != null) | .path' > "$tree_file"
+
+if [[ -f "$modern_inventory_file" ]]; then
+    awk -F'\t' '
+        NF >= 1 && $1 !~ /^#/ && $1 != "" { print $1 }
+    ' "$modern_inventory_file" | awk '!seen[$0]++' > "$modern_control_types_file"
+fi
 
 parse_registrations() {
     local source="$1"
@@ -458,9 +497,20 @@ parse_registrations() {
     ' "$file"
 }
 
+parse_public_api_mappers() {
+    local source="$1"
+    local file="$2"
+    perl -ne '
+        if (/^static Microsoft\.Maui\.Handlers\.([A-Za-z0-9_]+)\.Mapper -> Microsoft\.Maui\.IPropertyMapper<Microsoft\.Maui\.([A-Za-z0-9_.]+)!/) {
+            print "'"$source"'\t$2\t$1\t\n";
+        }
+    ' "$file"
+}
+
 {
     parse_registrations "controls" "$controls_file"
     parse_registrations "maps" "$maps_file"
+    parse_public_api_mappers "publicapi" "$core_public_api_file"
 } > "$registrations_file"
 
 awk -F'\t' '
@@ -476,6 +526,17 @@ while IFS=$'\t' read -r source raw_type raw_handler condition; do
 
     display="$(type_display_name "$key")"
     handler="$(normalize_handler_name "$raw_handler")"
+
+    if [[ "$source" == "publicapi" ]]; then
+        # Public API mapper extraction is a supplement source:
+        # only add missing control rows, and only for controls in the local modern-control inventory.
+        if ! is_modern_inventory_type "$display"; then
+            continue
+        fi
+        if row_key_exists "$key"; then
+            continue
+        fi
+    fi
 
     if [[ "$mode" == "emit-types" ]]; then
         printf '%s\t%s\n' "$key" "$display" >> "$tmp_dir/rows-seen.tsv"

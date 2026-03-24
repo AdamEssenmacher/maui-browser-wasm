@@ -3,15 +3,15 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 matrix_file="$repo_root/docs/HANDLER_PARITY_MATRIX.md"
-generator="$repo_root/tools/parity/generate_handler_parity_matrix.sh"
+required_types_file="$repo_root/tools/parity/handler-parity-required-types.txt"
 
 if [[ ! -f "$matrix_file" ]]; then
     echo "Missing matrix file: $matrix_file" >&2
     exit 1
 fi
 
-if [[ ! -x "$generator" ]]; then
-    echo "Missing generator script: $generator" >&2
+if [[ ! -f "$required_types_file" ]]; then
+    echo "Missing required types file: $required_types_file" >&2
     exit 1
 fi
 
@@ -21,7 +21,9 @@ trap 'rm -rf "$tmp_dir"' EXIT
 expected_types_file="$tmp_dir/expected-types.txt"
 actual_types_file="$tmp_dir/actual-types.txt"
 
-bash "$generator" --emit-types > "$expected_types_file"
+awk '
+    NF > 0 && $1 !~ /^#/ { print $1 }
+' "$required_types_file" | awk '!seen[$0]++' > "$expected_types_file"
 
 awk -F'|' '
     /^\| `[^`]+` \|/ {
