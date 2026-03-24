@@ -177,6 +177,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(TabbedPageGalleryMainPage),
             description: "Runnable in Mirage today: uses ScrollView + VerticalStackLayout + Button."),
         new(
+            id: "indicatorviewparitypage",
+            title: "IndicatorViewParityProbePage",
+            upstreamPath: "App/IndicatorViewParityProbePage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(IndicatorViewParityProbePage),
+            description: "Mirage parity probe: exercises IndicatorView count/position/max-visible/hide-single behavior, shape/color updates, and template override hosting."),
+        new(
             id: "layoutisenabledpage",
             title: "LayoutIsEnabledPage",
             upstreamPath: "Pages/Layouts/LayoutIsEnabledPage.xaml",

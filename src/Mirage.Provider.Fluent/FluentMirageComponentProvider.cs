@@ -252,6 +252,10 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 valueElementTagName: "button",
                 secondaryElementTagName: "button",
                 stretchValueElementWidth: false),
+            [ComponentKind.IndicatorView] = new(
+                ComponentKind.IndicatorView,
+                "div",
+                propertyMappings: CommonProperties),
             [ComponentKind.Map] = new(
                 ComponentKind.Map,
                 "div",

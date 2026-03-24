@@ -84,6 +84,11 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Current behavior: `TextType.Html` uses a deterministic safe-subset sanitizer; unsupported tags/attributes are stripped while preserving text content.
 - Deferred: full HTML breadth parity and span-level gesture hit-region parity for formatted text remain partial in this slice.
 
+20. IndicatorView parity depth
+- Current behavior: `IndicatorView` is mapped through a dedicated Mirage handler with MAUI-aligned mapper keys (`Count`, `Position`, `HideSingle`, `MaximumVisible`, `IndicatorSize`, `IndicatorColor`, `SelectedIndicatorColor`, `IndicatorsShape`) and deterministic default-dot projection on the ControlNode path.
+- Current behavior: template hosting is supported through `ITemplatedIndicatorView.IndicatorsLayoutOverride` with a stable host pipeline that suppresses default dots while template layout is active.
+- Deferred: non-solid indicator paint parity and deeper templated-indicator interaction parity remain partial; unsupported paints currently fall back deterministically to default solid colors.
+
 ## Gap lifecycle policy
 
 1. Any new gap requires:

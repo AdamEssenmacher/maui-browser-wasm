@@ -8,6 +8,13 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Extended wrapper `GalleryBuilder` automation-ID routing with a CollectionView-specific prefix to keep nested gallery navigation deterministic for E2E without changing upstream sources.
 - Added compile-compat stubs for carousel namespace references used by CollectionView gallery sources so the collection tree can compile without importing full CarouselView gallery implementations in this slice.
 
+## 2026-03-23 (IndicatorView parity wave: MAUI-shaped handler + template hosting on ControlNode path)
+- Added `MirageIndicatorViewHandler` with a MAUI-aligned mapper surface for `IIndicatorView` (`Count`, `Position`, `HideSingle`, `MaximumVisible`, `IndicatorSize`, `IndicatorColor`, `SelectedIndicatorColor`, `IndicatorsShape`) and an explicit empty command mapper.
+- `IndicatorView` now maps as a built-in `ComponentKind.IndicatorView` control-node in the Fluent provider and browser host registration path (`UseMirageBrowserPlatform`), rather than falling back to ad hoc page-level web nodes.
+- Default indicator dots are realized deterministically as child nodes under one stable IndicatorView host, with click-to-position updates and explicit enabled/disabled interaction gating.
+- Template and non-template realization are now mutually exclusive: when `ITemplatedIndicatorView.IndicatorsLayoutOverride` is present, Mirage hosts that layout and suppresses default dots, then restores dot projection when template override is removed.
+- Added parity governance artifacts (`indicatorview-parity-contract.json`, `indicatorview-parity-divergences.json`) plus integration/E2E probe coverage in ControlsSample to lock this behavior in CI.
+
 ## 2026-03-23 (Label parity follow-up: rich text projection for FormattedText/TextType/TextTransform)
 - `MirageLabelHandler` now mirrors MAUI controls-remap flow for label text sources by routing `TextType`/`TextTransform` through a `MapTextOrFormattedText` refresh path and resolving projection precedence deterministically (`TextType.Html` first, then formatted spans, then plain text).
 - Added a provider-neutral property-target seam (`PropertyTarget.Property`) so controls can set DOM properties directly when needed; Label now uses this to project `TextHtml` via `innerHTML` while preserving `Text` as plain-text projection.

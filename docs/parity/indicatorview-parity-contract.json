@@ -1,0 +1,26 @@
+{
+  "mauiBaselineCommit": "fc1dadc4d68a809a9c14a7d33ff1289037040471",
+  "handlers": [
+    {
+      "name": "IndicatorViewHandler",
+      "mirageType": "MirageIndicatorViewHandler",
+      "propertyMapperKeys": [
+        "Count",
+        "Position",
+        "HideSingle",
+        "MaximumVisible",
+        "IndicatorSize",
+        "IndicatorColor",
+        "SelectedIndicatorColor",
+        "IndicatorsShape"
+      ],
+      "commandMapperKeys": [],
+      "mirageExtensionPropertyMapperKeys": [
+        "IsEnabled",
+        "IndicatorTemplate",
+        "IndicatorLayout",
+        "IndicatorsLayoutOverride"
+      ]
+    }
+  ]
+}

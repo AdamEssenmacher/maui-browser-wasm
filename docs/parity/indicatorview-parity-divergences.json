@@ -1,0 +1,30 @@
+{
+  "entries": [
+    {
+      "id": "indicatorview-extension-isenabled-interaction-gate",
+      "summary": "Mirage maps IsEnabled explicitly so dot-click interactivity is deterministic across browser runtimes.",
+      "upstreamReference": "src/Core/src/Handlers/IndicatorView/IndicatorViewHandler.Android.cs",
+      "testReference": "IndicatorViewHandler_DotClickDisabled_DoesNotUpdatePosition",
+      "extensionKeys": [
+        "IsEnabled"
+      ]
+    },
+    {
+      "id": "indicatorview-extension-template-layout-override-hosting",
+      "summary": "Mirage uses explicit template-layout hosting keys so IndicatorsLayoutOverride can switch between template and default-dot realization without node churn.",
+      "upstreamReference": "src/Core/src/Handlers/IndicatorView/IndicatorViewHandler.iOS.cs",
+      "testReference": "IndicatorViewHandler_TemplateLayoutOverride_SuppressesDefaultDotsAndHostsLayout",
+      "extensionKeys": [
+        "IndicatorTemplate",
+        "IndicatorLayout",
+        "IndicatorsLayoutOverride"
+      ]
+    },
+    {
+      "id": "indicatorview-solid-paint-fallback",
+      "summary": "Indicator paint projection currently supports SolidPaint with deterministic fallback colors for unsupported paint types.",
+      "upstreamReference": "src/Core/src/Handlers/IndicatorView/IndicatorViewHandler.cs",
+      "testReference": "IndicatorViewHandler_UnsupportedPaintsUseDeterministicFallback"
+    }
+  ]
+}

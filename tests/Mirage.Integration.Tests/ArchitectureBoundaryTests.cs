@@ -299,6 +299,23 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void BrowserPlatform_RegistersIndicatorViewHandlerAsBuiltInControlNode()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var indicatorHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageIndicatorViewHandler.cs");
+        Assert.True(File.Exists(indicatorHandlerPath), $"Expected indicator handler file not found: {indicatorHandlerPath}");
+
+        var hostingText = File.ReadAllText(hostingPath);
+        var indicatorHandlerText = File.ReadAllText(indicatorHandlerPath);
+
+        Assert.Contains("typeof(IndicatorView)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageIndicatorViewHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.IndicatorView", indicatorHandlerText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BrowserPlatform_RegistersStackLayoutImageAndBorderHandlers()
     {
         var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
