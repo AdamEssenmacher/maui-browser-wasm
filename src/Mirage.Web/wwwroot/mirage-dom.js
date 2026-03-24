@@ -57,6 +57,14 @@ function ensureMirageFrameworkStyles() {
   animation-play-state: paused;
 }
 
+input.mirage-searchbar-input::placeholder {
+  color: var(--mirage-searchbar-placeholder-color);
+}
+
+input.mirage-searchbar-input::-webkit-input-placeholder {
+  color: var(--mirage-searchbar-placeholder-color);
+}
+
 input[data-mirage-kind="Slider"][type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -991,6 +999,33 @@ export function setInputChecked(elementHandle, value) {
 export function getInputChecked(elementHandle) {
   const element = fromHandle(elementHandle);
   return Boolean(element.checked);
+}
+
+export function focusElement(elementHandle) {
+  const element = fromHandle(elementHandle);
+  if (!element || typeof element.focus !== "function") {
+    return false;
+  }
+
+  try {
+    element.focus();
+    return document.activeElement === element;
+  } catch {
+    return false;
+  }
+}
+
+export function blurElement(elementHandle) {
+  const element = fromHandle(elementHandle);
+  if (!element || typeof element.blur !== "function") {
+    return;
+  }
+
+  try {
+    element.blur();
+  } catch {
+    // no-op: deterministic failure behavior lives at handler/runtime layer
+  }
 }
 
 export function setScrollPosition(elementHandle, left, top) {

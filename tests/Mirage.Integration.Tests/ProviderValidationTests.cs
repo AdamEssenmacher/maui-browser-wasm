@@ -45,6 +45,16 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentSearchBarDescriptor_MapsToMirageOwnedSearchBarHost()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.SearchBar);
+
+        Assert.Equal("div", descriptor.ElementTagName);
+        Assert.True(descriptor.PropertyMappings.ContainsKey("AutomationId"));
+    }
+
+    [Fact]
     public void FluentButtonDescriptor_MapsToMirageOwnedButtonShell()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();

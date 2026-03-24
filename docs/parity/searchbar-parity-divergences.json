@@ -1,0 +1,19 @@
+{
+  "entries": [
+    {
+      "id": "searchbar-extension-isenabled-interaction-gate",
+      "summary": "Mirage maps IsEnabled explicitly so input/read-only/search/clear interactivity remains deterministic across browser runtimes.",
+      "upstreamReference": "src/Core/src/Handlers/SearchBar/SearchBarHandler.iOS.cs",
+      "testReference": "SearchBarHandler_DisabledState_PreventsSearchAndClearActions",
+      "extensionKeys": [
+        "IsEnabled"
+      ]
+    },
+    {
+      "id": "searchbar-icon-channels-map-to-text-button-colors",
+      "summary": "Mirage currently projects cancel/search icon color channels to clear/search button text color on the browser host rather than native platform icon glyph channels.",
+      "upstreamReference": "src/Core/src/Handlers/SearchBar/SearchBarHandler.Android.cs",
+      "testReference": "SearchBarHandler_ColorChannels_ProjectToDeterministicButtonStyles"
+    }
+  ]
+}

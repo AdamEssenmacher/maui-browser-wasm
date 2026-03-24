@@ -155,6 +155,22 @@ public sealed class MirageRuntime : IMirageRuntime
         return true;
     }
 
+    public bool TrySetNodeFocus(string nodeId, bool isFocused)
+    {
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        if (isFocused)
+        {
+            return node.Element.Focus();
+        }
+
+        node.Element.Blur();
+        return true;
+    }
+
     public void Dispose()
     {
         foreach (var subscriptionId in _eventSubscriptions.Values.ToArray())

@@ -11,6 +11,7 @@ public enum ComponentKind
     Layout,
     Label,
     Entry,
+    SearchBar,
     Button,
     ActivityIndicator,
     Image,

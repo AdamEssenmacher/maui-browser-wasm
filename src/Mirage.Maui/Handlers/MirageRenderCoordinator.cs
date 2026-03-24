@@ -211,6 +211,16 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
             out actualTop);
     }
 
+    public bool TrySetNodeFocus(string nodeId, bool isFocused)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TrySetNodeFocus(nodeId, isFocused);
+    }
+
     public void OnEvent(string nodeId, string eventName, string? payload)
     {
         if (!_eventTargetsByNodeId.TryGetValue(nodeId, out var target))
