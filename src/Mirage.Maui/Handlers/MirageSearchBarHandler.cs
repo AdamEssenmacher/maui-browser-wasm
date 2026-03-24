@@ -508,9 +508,23 @@ internal sealed class MirageSearchBarHandler : MirageViewHandler<ISearchBar>
                 OnTextChangedFromRuntime(payload ?? string.Empty);
                 return;
             case "search":
-                OnTextChangedFromRuntime(payload ?? string.Empty);
-                OnSearchInvoked();
+            {
+                var runtimeValue = payload ?? string.Empty;
+                var hadTextBeforeEvent = !string.IsNullOrEmpty(VirtualView.Text);
+                var valueChanged = !string.Equals(VirtualView.Text, runtimeValue, StringComparison.Ordinal);
+
+                OnTextChangedFromRuntime(runtimeValue);
+
+                // Browsers can fire `search` when the native clear affordance is clicked.
+                // Treat "value changed from non-empty to empty" as clear, not submit.
+                var clearLikeSearchEvent = valueChanged && hadTextBeforeEvent && runtimeValue.Length == 0;
+                if (!clearLikeSearchEvent)
+                {
+                    OnSearchInvoked();
+                }
+
                 return;
+            }
             case "focus":
                 if (!VirtualView.IsFocused)
                 {

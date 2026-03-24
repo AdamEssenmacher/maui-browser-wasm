@@ -105,6 +105,27 @@ public sealed class MirageSearchBarHandlerTests
     }
 
     [Fact]
+    public void SearchBarHandler_SearchEventFromClearTransition_DoesNotInvokeSearch()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var handler = CreateHandler(coordinator);
+        var searchCount = 0;
+        var searchBar = new SearchBar
+        {
+            Text = "alpha"
+        };
+        searchBar.SearchButtonPressed += (_, _) => searchCount++;
+
+        ((IElementHandler)handler).SetVirtualView(searchBar);
+        var inputNode = GetInputNode(handler);
+
+        coordinator.OnEvent(inputNode.NodeId, "search", string.Empty);
+
+        Assert.Equal(string.Empty, searchBar.Text);
+        Assert.Equal(0, searchCount);
+    }
+
+    [Fact]
     public void SearchBarHandler_DisabledState_PreventsSearchAndClearActions()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
