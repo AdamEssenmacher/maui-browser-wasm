@@ -258,6 +258,57 @@ public sealed class MirageSearchBarHandlerTests
         Assert.Equal(1, searchCount);
     }
 
+    [Theory]
+    [InlineData("FontFamily")]
+    [InlineData("FontSize")]
+    [InlineData("FontAttributes")]
+    [InlineData("FontAutoScalingEnabled")]
+    public void SearchBarHandler_FontAliasMapperKeys_UpdateInnerInputProjection(string mapperKey)
+    {
+        var handler = CreateHandler();
+        var searchBar = new SearchBar
+        {
+            Text = "value",
+            FontFamily = "OpenSansRegular",
+            FontSize = 19,
+            FontAttributes = FontAttributes.Bold | FontAttributes.Italic,
+            FontAutoScalingEnabled = true
+        };
+
+        ((IElementHandler)handler).SetVirtualView(searchBar);
+        var inputNode = GetInputNode(handler);
+
+        inputNode.SetStyle("fontFamily", "\"stale\", sans-serif");
+        inputNode.SetStyle("fontSize", "1px");
+        inputNode.SetStyle("fontWeight", "100");
+        inputNode.SetStyle("fontStyle", "normal");
+
+        switch (mapperKey)
+        {
+            case "FontFamily":
+                searchBar.FontFamily = "Space Grotesk";
+                break;
+            case "FontSize":
+                searchBar.FontSize = 27;
+                break;
+            case "FontAttributes":
+                searchBar.FontAttributes = FontAttributes.Bold;
+                break;
+            case "FontAutoScalingEnabled":
+                searchBar.FontAutoScalingEnabled = false;
+                break;
+            default:
+                throw new InvalidOperationException($"Unexpected mapper key '{mapperKey}'.");
+        }
+
+        MirageSearchBarHandler.Mapper.UpdateProperty(handler, searchBar, mapperKey);
+
+        Assert.Equal(handler.PlatformView.GetStyleValue("fontFamily"), inputNode.GetStyleValue("fontFamily"));
+        Assert.Equal(handler.PlatformView.GetStyleValue("fontSize"), inputNode.GetStyleValue("fontSize"));
+        Assert.Equal(handler.PlatformView.GetStyleValue("fontWeight"), inputNode.GetStyleValue("fontWeight"));
+        Assert.Equal(handler.PlatformView.GetStyleValue("fontStyle"), inputNode.GetStyleValue("fontStyle"));
+    }
+
     [Fact]
     public void SearchBarHandler_MapsPlaceholderColorToken()
     {
