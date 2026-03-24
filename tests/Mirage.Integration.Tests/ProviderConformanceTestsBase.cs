@@ -71,4 +71,14 @@ public abstract class ProviderConformanceTestsBase
         Assert.Equal(EventPayloadKind.InputValue, mapping.PayloadKind);
         Assert.Equal(ProviderEventPayloadSupport.InputValueString, provider.Capabilities.Features.EventPayloadSupport);
     }
+
+    [Fact]
+    public void Conformance_WebInputNodeInputEventHasInputPayloadMapping()
+    {
+        var provider = CreateProvider();
+        var input = provider.ResolveWebNode("input");
+
+        Assert.True(input.EventMappings.TryGetValue("input", out var mapping));
+        Assert.Equal(EventPayloadKind.InputValue, mapping.PayloadKind);
+    }
 }

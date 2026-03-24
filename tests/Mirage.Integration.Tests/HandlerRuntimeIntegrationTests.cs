@@ -5250,6 +5250,13 @@ public sealed class HandlerRuntimeIntegrationTests
             return true;
         }
 
+        public bool TrySetNodeFocus(string nodeId, bool isFocused)
+        {
+            _ = nodeId;
+            _ = isFocused;
+            return true;
+        }
+
         public void Dispose()
         {
         }

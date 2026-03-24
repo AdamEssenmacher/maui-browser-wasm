@@ -32,4 +32,6 @@ public interface IMirageRenderCoordinator : IMirageEventSink
         bool isAnimated,
         out double actualLeft,
         out double actualTop);
+
+    bool TrySetNodeFocus(string nodeId, bool isFocused);
 }

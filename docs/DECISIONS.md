@@ -2,6 +2,13 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-24 (SearchBar parity wave: MAUI-shaped handler + contract governance)
+- Added `MirageSearchBarHandler` with MAUI-aligned `SearchBarHandler` mapper coverage (`Background`, text style/alignment, placeholder/text channels, keyboard/return behavior, read-only, prediction/spellcheck, max-length, and color channels) plus deterministic runtime interactions for input/search/clear behavior.
+- `SearchBar` now registers as a built-in Mirage handler (`UseMirageBrowserPlatform`) and projects through `ComponentKind.SearchBar` on the ControlNode path with a stable host structure (`input`, clear button, search button).
+- Added provider/runtime support so handler-created web `<input>` nodes can emit `input` payload values deterministically, and added framework CSS hooks for SearchBar placeholder-color projection.
+- Added parity governance artifacts (`searchbar-parity-contract.json`, `searchbar-parity-divergences.json`) and integration tests locking mapper coverage, divergence metadata completeness, and behavioral regressions.
+- Follow-up hardening fixed style ownership so SearchBar mapper updates no longer overwrite common visibility/size-request projection, and added a generic runtime focus seam so SearchBar focus/unfocus commands target the realized input node deterministically.
+
 ## 2026-03-23 (ControlsSample CollectionView galleries runnable with deferred dependency policy)
 - Promoted `CollectionViewGallery` to runnable in ControlsSample and imported the full `Pages/Controls/CollectionViewGalleries/**` source set so browser/native wrappers track upstream pages without vendor edits.
 - Added a single wrapper compat defer policy that hides known CollectionView sub-pages requiring `SearchBar`, `CarouselView`, or `IndicatorView` while keeping all other gallery paths visible and runnable.

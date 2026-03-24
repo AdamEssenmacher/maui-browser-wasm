@@ -38,8 +38,8 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Deferred: head/middle truncation visual parity and platform-specific truncation glyph placement remain best-effort.
 
 9. Text-input parity depth (`Entry` / `Editor` / `SearchBar`)
-- Current behavior: text/placeholder/placeholder-color, read-only, keyboard hinting, max-length, spell-check, prediction, and return/search events are handler-mapped.
-- Deferred: cursor-position/selection-length mapping, IME composition edge cases, and native search-icon/cancel-button parity remain partial.
+- Current behavior: `Entry` and `SearchBar` map text/placeholder/placeholder-color, read-only, keyboard hinting, max-length, spell-check, prediction, return/search events, and deterministic browser clear/search button interactions on the ControlNode path.
+- Deferred: cursor-position/selection-length mapping, IME composition edge cases, and native icon-channel fidelity for `SearchBar` (`CancelButtonColor`/`SearchIconColor` projected to button text-color channels) remain partial.
 
 10. Date/time format parity depth
 - Current behavior: `DatePicker` and `TimePicker` map to browser-native date/time inputs using deterministic ISO wire formats.

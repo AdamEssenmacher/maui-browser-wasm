@@ -107,6 +107,12 @@ internal static partial class DomApi
     [JSImport("getInputChecked", Module)]
     internal static partial bool GetInputChecked(nint element);
 
+    [JSImport("focusElement", Module)]
+    internal static partial bool FocusElement(nint element);
+
+    [JSImport("blurElement", Module)]
+    internal static partial void BlurElement(nint element);
+
     [JSImport("setScrollPosition", Module)]
     internal static partial void SetScrollPosition(nint element, double left, double top);
 

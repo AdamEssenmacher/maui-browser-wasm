@@ -343,6 +343,32 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void BrowserPlatform_RegistersSearchBarHandlerAsBuiltInControlNode()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var searchBarHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageSearchBarHandler.cs");
+        Assert.True(File.Exists(searchBarHandlerPath), $"Expected SearchBar handler file not found: {searchBarHandlerPath}");
+
+        var hostingText = File.ReadAllText(hostingPath);
+        var searchBarHandlerText = File.ReadAllText(searchBarHandlerPath);
+        var coordinatorPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageRenderCoordinator.cs");
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(coordinatorPath), $"Expected render coordinator file not found: {coordinatorPath}");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+        var coordinatorText = File.ReadAllText(coordinatorPath);
+        var runtimeText = File.ReadAllText(runtimePath);
+
+        Assert.Contains("typeof(SearchBar)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageSearchBarHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.SearchBar", searchBarHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TrySetNodeFocus(", searchBarHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TrySetNodeFocus(", coordinatorText, StringComparison.Ordinal);
+        Assert.Contains("TrySetNodeFocus(", runtimeText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CollectionViewHandler_UsesMauiShapedHierarchy_AndGenericScrollSeam()
     {
         var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");

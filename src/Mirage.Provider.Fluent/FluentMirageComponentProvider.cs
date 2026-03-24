@@ -73,6 +73,10 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 {
                     ["input"] = new("input", EventTarget.Self, EventPayloadKind.InputValue)
                 }),
+            [ComponentKind.SearchBar] = new(
+                ComponentKind.SearchBar,
+                "div",
+                propertyMappings: CommonProperties),
             [ComponentKind.Button] = new(
                 ComponentKind.Button,
                 "button",
@@ -300,6 +304,23 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
     public WebComponentDescriptor ResolveWebNode(string elementName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(elementName);
+
+        if (string.Equals(elementName, "input", StringComparison.OrdinalIgnoreCase))
+        {
+            return new WebComponentDescriptor(
+                elementName,
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["input"] = new("input", EventTarget.Self, EventPayloadKind.InputValue),
+                    ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue),
+                    ["search"] = new("search", EventTarget.Self, EventPayloadKind.InputValue)
+                },
+                supportsAttributes: true,
+                supportsProperties: true,
+                supportsStyles: true,
+                supportsClasses: true,
+                supportsEvents: true);
+        }
 
         if (string.Equals(elementName, "mirage-monaco-editor", StringComparison.Ordinal))
         {
