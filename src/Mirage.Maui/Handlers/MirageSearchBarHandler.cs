@@ -1,5 +1,6 @@
 using Mirage.Core.Diagnostics;
 using Mirage.Core.Semantics;
+using System.Diagnostics;
 using System.Globalization;
 using Microsoft.Maui;
 using Microsoft.Maui.Graphics;
@@ -12,6 +13,7 @@ internal sealed class MirageSearchBarHandler : MirageViewHandler<ISearchBar>
     private const string InputNodeClass = "mirage-searchbar-input";
     private const string ClearButtonNodeClass = "mirage-searchbar-clear";
     private const string SubmitButtonNodeClass = "mirage-searchbar-submit";
+    private static readonly TimeSpan ClearLikeSearchSuppressionWindow = TimeSpan.FromMilliseconds(250);
     private static int s_childNodeIdCounter;
     private static readonly HashSet<string> UnsupportedWarnings = [];
 
@@ -22,6 +24,7 @@ internal sealed class MirageSearchBarHandler : MirageViewHandler<ISearchBar>
     private SearchBarButtonRuntimeEventTarget? _clearButtonEventTarget;
     private SearchBarButtonRuntimeEventTarget? _submitButtonEventTarget;
     private bool _isApplyingRuntimeInput;
+    private long? _lastClearLikeInputTimestamp;
 
     internal static readonly string[] ParityPropertyKeys =
     {
@@ -505,8 +508,24 @@ internal sealed class MirageSearchBarHandler : MirageViewHandler<ISearchBar>
         switch (eventName)
         {
             case "input":
-                OnTextChangedFromRuntime(payload ?? string.Empty);
+            {
+                var runtimeValue = payload ?? string.Empty;
+                var hadTextBeforeEvent = !string.IsNullOrEmpty(VirtualView.Text);
+                var valueChanged = !string.Equals(VirtualView.Text, runtimeValue, StringComparison.Ordinal);
+
+                OnTextChangedFromRuntime(runtimeValue);
+
+                if (valueChanged && hadTextBeforeEvent && runtimeValue.Length == 0)
+                {
+                    _lastClearLikeInputTimestamp = Stopwatch.GetTimestamp();
+                }
+                else
+                {
+                    _lastClearLikeInputTimestamp = null;
+                }
+
                 return;
+            }
             case "search":
             {
                 var runtimeValue = payload ?? string.Empty;
@@ -517,12 +536,15 @@ internal sealed class MirageSearchBarHandler : MirageViewHandler<ISearchBar>
 
                 // Browsers can fire `search` when the native clear affordance is clicked.
                 // Treat "value changed from non-empty to empty" as clear, not submit.
-                var clearLikeSearchEvent = valueChanged && hadTextBeforeEvent && runtimeValue.Length == 0;
+                var clearLikeSearchEvent = (valueChanged && hadTextBeforeEvent && runtimeValue.Length == 0)
+                    || (runtimeValue.Length == 0 && IsWithinClearSuppressionWindow());
+
                 if (!clearLikeSearchEvent)
                 {
                     OnSearchInvoked();
                 }
 
+                _lastClearLikeInputTimestamp = null;
                 return;
             }
             case "focus":
@@ -739,6 +761,17 @@ internal sealed class MirageSearchBarHandler : MirageViewHandler<ISearchBar>
 
         node.SetAttribute(attributeName, value);
         return true;
+    }
+
+    private bool IsWithinClearSuppressionWindow()
+    {
+        if (_lastClearLikeInputTimestamp is not { } clearLikeInputTimestamp)
+        {
+            return false;
+        }
+
+        var elapsed = Stopwatch.GetElapsedTime(clearLikeInputTimestamp, Stopwatch.GetTimestamp());
+        return elapsed <= ClearLikeSearchSuppressionWindow;
     }
 
     private static void LogUnsupportedSearchColor(string colorTypeName)
