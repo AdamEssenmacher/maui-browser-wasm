@@ -2,6 +2,12 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-23 (ControlsSample CollectionView galleries runnable with deferred dependency policy)
+- Promoted `CollectionViewGallery` to runnable in ControlsSample and imported the full `Pages/Controls/CollectionViewGalleries/**` source set so browser/native wrappers track upstream pages without vendor edits.
+- Added a single wrapper compat defer policy that hides known CollectionView sub-pages requiring `SearchBar`, `CarouselView`, or `IndicatorView` while keeping all other gallery paths visible and runnable.
+- Extended wrapper `GalleryBuilder` automation-ID routing with a CollectionView-specific prefix to keep nested gallery navigation deterministic for E2E without changing upstream sources.
+- Added compile-compat stubs for carousel namespace references used by CollectionView gallery sources so the collection tree can compile without importing full CarouselView gallery implementations in this slice.
+
 ## 2026-03-23 (Label parity follow-up: rich text projection for FormattedText/TextType/TextTransform)
 - `MirageLabelHandler` now mirrors MAUI controls-remap flow for label text sources by routing `TextType`/`TextTransform` through a `MapTextOrFormattedText` refresh path and resolving projection precedence deterministically (`TextType.Html` first, then formatted spans, then plain text).
 - Added a provider-neutral property-target seam (`PropertyTarget.Property`) so controls can set DOM properties directly when needed; Label now uses this to project `TextHtml` via `innerHTML` while preserving `Text` as plain-text projection.

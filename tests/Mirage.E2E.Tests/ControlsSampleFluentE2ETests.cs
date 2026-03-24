@@ -8,6 +8,85 @@ namespace Mirage.E2E.Tests;
 
 public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleHostFixture>
 {
+    private static readonly string[] ExpectedCollectionViewReachablePageHosts =
+    [
+        "controls-sample-page-adaptivecollectionview",
+        "controls-sample-page-alternatelayoutgallery",
+        "controls-sample-page-basicgrouping",
+        "controls-sample-page-chatexample",
+        "controls-sample-page-collectionviewgallery",
+        "controls-sample-page-datatemplategallery",
+        "controls-sample-page-defaulttextgallery",
+        "controls-sample-page-dynamicitemsizegallery",
+        "controls-sample-page-emptyviewgallery",
+        "controls-sample-page-emptyviewloadsimulategallery",
+        "controls-sample-page-emptyviewnullgallery",
+        "controls-sample-page-footeronlystring",
+        "controls-sample-page-gridgrouping",
+        "controls-sample-page-groupedreorderinggallery",
+        "controls-sample-page-groupinggallery",
+        "controls-sample-page-groupingnotemplates",
+        "controls-sample-page-groupingplusselection",
+        "controls-sample-page-headerfootergallery",
+        "controls-sample-page-headerfootergrid",
+        "controls-sample-page-headerfootergridhorizontal",
+        "controls-sample-page-headerfooterstring",
+        "controls-sample-page-headerfootertemplate",
+        "controls-sample-page-headerfooterview",
+        "controls-sample-page-itemssizegallery",
+        "controls-sample-page-itemsspacinggallery",
+        "controls-sample-page-itemsupdatingscrollmodegallery",
+        "controls-sample-page-multipleboundselection",
+        "controls-sample-page-nestedcollectionviewgallery",
+        "controls-sample-page-observablecodecollectionviewgallery",
+        "controls-sample-page-observablecollectiongallery",
+        "controls-sample-page-observablecollectionresetgallery",
+        "controls-sample-page-observablemultiitemcollectionviewgallery",
+        "controls-sample-page-onlineimages",
+        "controls-sample-page-preselecteditemgallery",
+        "controls-sample-page-preselecteditemsgallery",
+        "controls-sample-page-propagatecodegallery",
+        "controls-sample-page-propagationgallery",
+        "controls-sample-page-reorderinggallery",
+        "controls-sample-page-scrollmodegallery",
+        "controls-sample-page-scrollmodetestgallery",
+        "controls-sample-page-scrolltocodegallery",
+        "controls-sample-page-scrolltogallery",
+        "controls-sample-page-scrolltogroup",
+        "controls-sample-page-selectionchangedcommandparameter",
+        "controls-sample-page-selectiongallery",
+        "controls-sample-page-selectionmodegallery",
+        "controls-sample-page-selectionsynchronization",
+        "controls-sample-page-singleboundselection",
+        "controls-sample-page-snappointscodegallery",
+        "controls-sample-page-snappointsgallery",
+        "controls-sample-page-someemptygroups",
+        "controls-sample-page-spacinggallery",
+        "controls-sample-page-switchgrouping",
+        "controls-sample-page-templatecodecollectionviewgallery",
+        "controls-sample-page-templatecodecollectionviewgridgallery",
+        "controls-sample-page-textcodecollectionviewgallery",
+        "controls-sample-page-textcodecollectionviewgridgallery",
+        "controls-sample-page-ungroupedreorderinggallery",
+        "controls-sample-page-variablesizetemplategridgallery",
+        "controls-sample-page-variedsizedatatemplateselectorgallery",
+        "controls-sample-page-visualstatesgallery"
+    ];
+
+    private static readonly string[] DeferredCollectionViewButtonAutomationIds =
+    [
+        "controls-sample-collectionviewgallery-open-carouselview-galleries",
+        "controls-sample-collectionviewgallery-open-datatemplateselector",
+        "controls-sample-collectionviewgallery-open-filter-items",
+        "controls-sample-collectionviewgallery-open-emptyview-string",
+        "controls-sample-collectionviewgallery-open-emptyview-view",
+        "controls-sample-collectionviewgallery-open-emptyview-template-view",
+        "controls-sample-collectionviewgallery-open-emptyview-swap-emptyview",
+        "controls-sample-collectionviewgallery-open-emptyview-data-template-selector",
+        "controls-sample-collectionviewgallery-open-emptyview-rtl",
+        "controls-sample-collectionviewgallery-open-filterable-single-selection"
+    ];
+
     private readonly ControlsSampleHostFixture _fixture;
 
     public ControlsSampleFluentE2ETests(ControlsSampleHostFixture fixture)
@@ -42,6 +121,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-transformationspage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-borderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-mapsgallery']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-collectionviewgallery']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-layoutisenabledpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
@@ -2210,6 +2290,30 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
+    public async Task CollectionViewGallery_IsRunnable_AndNavigatesAllNonDeferredLeafPages()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1440, height: 1600);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-collectionviewgallery']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-collectionviewgallery']");
+            });
+
+        var openedPageHosts = new HashSet<string>(StringComparer.Ordinal);
+        await TraverseCollectionViewGalleryTreeAsync(page, diagnostics, openedPageHosts, depth: 0, maxDepth: 8);
+
+        var missingHosts = ExpectedCollectionViewReachablePageHosts
+            .Where(expectedHost => !openedPageHosts.Contains(expectedHost))
+            .ToArray();
+        Assert.Empty(missingHosts);
+    }
+
+    [Fact]
     public async Task ClippingPage_GridFrame_RendersAtExpectedSize_AndIsHorizontallyCentered()
     {
         await using var context = await _fixture.NewContextAsync();
@@ -2649,5 +2753,119 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             }
             """,
             selector);
+    }
+
+    private async Task TraverseCollectionViewGalleryTreeAsync(
+        IPage page,
+        ConcurrentQueue<string> diagnostics,
+        HashSet<string> openedPageHosts,
+        int depth,
+        int maxDepth)
+    {
+        if (depth > maxDepth)
+        {
+            throw new InvalidOperationException($"CollectionView gallery traversal exceeded max depth {maxDepth}.");
+        }
+
+        await AssertDeferredCollectionButtonsHiddenAsync(page);
+
+        var currentHostAutomationId = await ReadCurrentControlsSamplePageHostAutomationIdAsync(page);
+        if (!string.IsNullOrWhiteSpace(currentHostAutomationId))
+        {
+            openedPageHosts.Add(currentHostAutomationId);
+        }
+
+        var navButtonIds = await ReadVisibleCollectionViewNavButtonIdsAsync(page);
+        foreach (var navButtonId in navButtonIds)
+        {
+            var parentHostAutomationId = await ReadCurrentControlsSamplePageHostAutomationIdAsync(page);
+            Assert.False(string.IsNullOrWhiteSpace(parentHostAutomationId));
+
+            await NavigateWithDiagnosticsAsync(
+                page,
+                diagnostics,
+                async () =>
+                {
+                    await page.Locator($"[data-automation-id='{navButtonId}']").ClickAsync();
+                    await page.WaitForFunctionAsync(
+                        """
+                        (previousHostId) => {
+                            const activeHost = document.querySelector("[data-automation-id^='controls-sample-page-']");
+                            if (!(activeHost instanceof HTMLElement)) {
+                                return false;
+                            }
+
+                            const currentId = activeHost.getAttribute("data-automation-id") ?? "";
+                            return currentId.length > 0 && currentId !== previousHostId;
+                        }
+                        """,
+                        parentHostAutomationId,
+                        new()
+                        {
+                            Timeout = 15000
+                        });
+                });
+
+            await TraverseCollectionViewGalleryTreeAsync(page, diagnostics, openedPageHosts, depth + 1, maxDepth);
+
+            await NavigateWithDiagnosticsAsync(
+                page,
+                diagnostics,
+                async () =>
+                {
+                    await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                    await page.WaitForSelectorAsync($"[data-automation-id='{parentHostAutomationId}']");
+                });
+        }
+    }
+
+    private async Task AssertDeferredCollectionButtonsHiddenAsync(IPage page)
+    {
+        foreach (var deferredButtonAutomationId in DeferredCollectionViewButtonAutomationIds)
+        {
+            var selector = $"[data-automation-id='{deferredButtonAutomationId}']";
+            Assert.Equal(
+                0,
+                await page.Locator($"{selector}:visible").CountAsync());
+        }
+    }
+
+    private static async Task<string[]> ReadVisibleCollectionViewNavButtonIdsAsync(IPage page)
+    {
+        return await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const ids = Array.from(document.querySelectorAll("[data-automation-id^='controls-sample-collectionviewgallery-open-']"))
+                    .filter(element => {
+                        if (!(element instanceof HTMLElement)) {
+                            return false;
+                        }
+
+                        const style = window.getComputedStyle(element);
+                        const hiddenByStyle = style.display === "none" || style.visibility === "hidden";
+                        return !hiddenByStyle && element.offsetParent !== null;
+                    })
+                    .map(element => element.getAttribute("data-automation-id") ?? "")
+                    .filter(id => id.length > 0)
+                    .sort();
+
+                return [...new Set(ids)];
+            }
+            """);
+    }
+
+    private static async Task<string> ReadCurrentControlsSamplePageHostAutomationIdAsync(IPage page)
+    {
+        return await page.EvaluateAsync<string>(
+            """
+            () => {
+                const host = document.querySelector("[data-automation-id^='controls-sample-page-']");
+                if (!(host instanceof HTMLElement)) {
+                    return "";
+                }
+
+                return host.getAttribute("data-automation-id") ?? "";
+            }
+            """);
     }
 }

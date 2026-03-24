@@ -118,18 +118,18 @@ Visual legend:
 | `EmptyCarouselGallery.xaml` | `Pages/Controls/CarouselViewGalleries/EmptyCarouselGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ExampleTemplateCarousel.xaml` | `Pages/Controls/CarouselViewGalleries/ExampleTemplateCarousel.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `IndicatorCodeGallery.cs` | `Pages/Controls/CarouselViewGalleries/IndicatorCodeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `AdaptiveCollectionView.xaml` | `Pages/Controls/CollectionViewGalleries/AdaptiveCollectionView.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `AlternateLayoutGallery.cs` | `Pages/Controls/CollectionViewGalleries/AlternateLayoutGalleries/AlternateLayoutGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `AdaptiveCollectionView.xaml` | `Pages/Controls/CollectionViewGalleries/AdaptiveCollectionView.xaml` | `[x]` | `[x]` | `[ ]` |
+| `AlternateLayoutGallery.cs` | `Pages/Controls/CollectionViewGalleries/AlternateLayoutGalleries/AlternateLayoutGallery.cs` | `[x]` | `[x]` | `[ ]` |
 | `StaggeredLayout.xaml` | `Pages/Controls/CollectionViewGalleries/AlternateLayoutGalleries/StaggeredLayout.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `CarouselViewPage.xaml` | `Pages/Controls/CollectionViewGalleries/CarouselViewGalleries/CarouselViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `CollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/CollectionViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `DataTemplateGallery.cs` | `Pages/Controls/CollectionViewGalleries/DataTemplateGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `VariedSizeDataTemplateSelectorGallery.xaml` | `Pages/Controls/CollectionViewGalleries/DataTemplateSelectorGalleries/VariedSizeDataTemplateSelectorGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `CollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/CollectionViewGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `DataTemplateGallery.cs` | `Pages/Controls/CollectionViewGalleries/DataTemplateGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `VariedSizeDataTemplateSelectorGallery.xaml` | `Pages/Controls/CollectionViewGalleries/DataTemplateSelectorGalleries/VariedSizeDataTemplateSelectorGallery.xaml` | `[x]` | `[x]` | `[ ]` |
 | `DataTemplateSelectorGallery.xaml` | `Pages/Controls/CollectionViewGalleries/DataTemplateSelectorGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `DefaultTextGallery.cs` | `Pages/Controls/CollectionViewGalleries/DefaultTextGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `EmptyViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `EmptyViewLoadSimulateGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewLoadSimulateGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `EmptyViewNullGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewNullGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `DefaultTextGallery.cs` | `Pages/Controls/CollectionViewGalleries/DefaultTextGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `EmptyViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `EmptyViewLoadSimulateGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewLoadSimulateGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `EmptyViewNullGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewNullGallery.xaml` | `[x]` | `[x]` | `[ ]` |
 | `EmptyViewRTLGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewRTLGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `EmptyViewStringGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewStringGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `EmptyViewSwapGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewSwapGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
@@ -137,61 +137,61 @@ Visual legend:
 | `EmptyViewViewGallery.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewViewGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `EmptyViewWithDataTemplateSelector.xaml` | `Pages/Controls/CollectionViewGalleries/EmptyViewGalleries/EmptyViewWithDataTemplateSelector.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `FilterCollectionView.xaml` | `Pages/Controls/CollectionViewGalleries/FilterCollectionView.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `BasicGrouping.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/BasicGrouping.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `GridGrouping.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/GridGrouping.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `GroupingGallery.cs` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/GroupingGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `GroupingNoTemplates.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/GroupingNoTemplates.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `GroupingPlusSelection.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/GroupingPlusSelection.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `BasicGrouping.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/BasicGrouping.xaml` | `[x]` | `[x]` | `[ ]` |
+| `GridGrouping.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/GridGrouping.xaml` | `[x]` | `[x]` | `[ ]` |
+| `GroupingGallery.cs` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/GroupingGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `GroupingNoTemplates.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/GroupingNoTemplates.xaml` | `[x]` | `[x]` | `[ ]` |
+| `GroupingPlusSelection.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/GroupingPlusSelection.xaml` | `[x]` | `[x]` | `[ ]` |
 | `MeasureFirstStrategy.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/MeasureFirstStrategy.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `ObservableGrouping.cs` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/ObservableGrouping.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `SomeEmptyGroups.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/SomeEmptyGroups.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `SwitchGrouping.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/SwitchGrouping.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `FooterOnlyString.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/FooterOnlyString.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `HeaderFooterGallery.cs` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `HeaderFooterGrid.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterGrid.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `HeaderFooterGridHorizontal.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterGridHorizontal.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `HeaderFooterString.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterString.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `HeaderFooterTemplate.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterTemplate.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `HeaderFooterView.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterView.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `ChatExample.xaml` | `Pages/Controls/CollectionViewGalleries/ItemSizeGalleries/ChatExample.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `DynamicItemSizeGallery.cs` | `Pages/Controls/CollectionViewGalleries/ItemSizeGalleries/DynamicItemSizeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `ItemsSizeGallery.cs` | `Pages/Controls/CollectionViewGalleries/ItemSizeGalleries/ItemsSizeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `VariableSizeTemplateGridGallery.cs` | `Pages/Controls/CollectionViewGalleries/ItemSizeGalleries/VariableSizeTemplateGridGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `NestedCollectionViewGallery.xaml` | `Pages/Controls/CollectionViewGalleries/NestedGalleries/NestedCollectionViewGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `ObservableCodeCollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/ObservableCodeCollectionViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `ObservableCollectionGallery.cs` | `Pages/Controls/CollectionViewGalleries/ObservableCollectionGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `ObservableCollectionResetGallery.cs` | `Pages/Controls/CollectionViewGalleries/ObservableCollectionResetGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `ObservableMultiItemCollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/ObservableMultiItemCollectionViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `OnlineImages.xaml` | `Pages/Controls/CollectionViewGalleries/OnlineImages.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `PropagateCodeGallery.cs` | `Pages/Controls/CollectionViewGalleries/PropagateCodeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `PropagationGallery.cs` | `Pages/Controls/CollectionViewGalleries/PropagationGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `GroupedReorderingGallery.cs` | `Pages/Controls/CollectionViewGalleries/ReorderingGalleries/GroupedReorderingGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `ReorderingGallery.cs` | `Pages/Controls/CollectionViewGalleries/ReorderingGalleries/ReorderingGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `UngroupedReorderingGallery.cs` | `Pages/Controls/CollectionViewGalleries/ReorderingGalleries/UngroupedReorderingGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `ItemsUpdatingScrollModeGallery.xaml` | `Pages/Controls/CollectionViewGalleries/ScrollModeGalleries/ItemsUpdatingScrollModeGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `ScrollModeGallery.cs` | `Pages/Controls/CollectionViewGalleries/ScrollModeGalleries/ScrollModeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `ScrollModeTestGallery.xaml` | `Pages/Controls/CollectionViewGalleries/ScrollModeGalleries/ScrollModeTestGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `ScrollToCodeGallery.cs` | `Pages/Controls/CollectionViewGalleries/ScrollToCodeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `ScrollToGroup.xaml` | `Pages/Controls/CollectionViewGalleries/ScrollToGalleries/ScrollToGroup.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `ScrollToGallery.cs` | `Pages/Controls/CollectionViewGalleries/ScrollToGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ObservableGrouping.cs` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/ObservableGrouping.cs` | `[x]` | `[x]` | `[ ]` |
+| `SomeEmptyGroups.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/SomeEmptyGroups.xaml` | `[x]` | `[x]` | `[ ]` |
+| `SwitchGrouping.xaml` | `Pages/Controls/CollectionViewGalleries/GroupingGalleries/SwitchGrouping.xaml` | `[x]` | `[x]` | `[ ]` |
+| `FooterOnlyString.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/FooterOnlyString.xaml` | `[x]` | `[x]` | `[ ]` |
+| `HeaderFooterGallery.cs` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `HeaderFooterGrid.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterGrid.xaml` | `[x]` | `[x]` | `[ ]` |
+| `HeaderFooterGridHorizontal.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterGridHorizontal.xaml` | `[x]` | `[x]` | `[ ]` |
+| `HeaderFooterString.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterString.xaml` | `[x]` | `[x]` | `[ ]` |
+| `HeaderFooterTemplate.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterTemplate.xaml` | `[x]` | `[x]` | `[ ]` |
+| `HeaderFooterView.xaml` | `Pages/Controls/CollectionViewGalleries/HeaderFooterGalleries/HeaderFooterView.xaml` | `[x]` | `[x]` | `[ ]` |
+| `ChatExample.xaml` | `Pages/Controls/CollectionViewGalleries/ItemSizeGalleries/ChatExample.xaml` | `[x]` | `[x]` | `[ ]` |
+| `DynamicItemSizeGallery.cs` | `Pages/Controls/CollectionViewGalleries/ItemSizeGalleries/DynamicItemSizeGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `ItemsSizeGallery.cs` | `Pages/Controls/CollectionViewGalleries/ItemSizeGalleries/ItemsSizeGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `VariableSizeTemplateGridGallery.cs` | `Pages/Controls/CollectionViewGalleries/ItemSizeGalleries/VariableSizeTemplateGridGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `NestedCollectionViewGallery.xaml` | `Pages/Controls/CollectionViewGalleries/NestedGalleries/NestedCollectionViewGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `ObservableCodeCollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/ObservableCodeCollectionViewGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `ObservableCollectionGallery.cs` | `Pages/Controls/CollectionViewGalleries/ObservableCollectionGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `ObservableCollectionResetGallery.cs` | `Pages/Controls/CollectionViewGalleries/ObservableCollectionResetGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `ObservableMultiItemCollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/ObservableMultiItemCollectionViewGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `OnlineImages.xaml` | `Pages/Controls/CollectionViewGalleries/OnlineImages.xaml` | `[x]` | `[x]` | `[ ]` |
+| `PropagateCodeGallery.cs` | `Pages/Controls/CollectionViewGalleries/PropagateCodeGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `PropagationGallery.cs` | `Pages/Controls/CollectionViewGalleries/PropagationGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `GroupedReorderingGallery.cs` | `Pages/Controls/CollectionViewGalleries/ReorderingGalleries/GroupedReorderingGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `ReorderingGallery.cs` | `Pages/Controls/CollectionViewGalleries/ReorderingGalleries/ReorderingGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `UngroupedReorderingGallery.cs` | `Pages/Controls/CollectionViewGalleries/ReorderingGalleries/UngroupedReorderingGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `ItemsUpdatingScrollModeGallery.xaml` | `Pages/Controls/CollectionViewGalleries/ScrollModeGalleries/ItemsUpdatingScrollModeGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `ScrollModeGallery.cs` | `Pages/Controls/CollectionViewGalleries/ScrollModeGalleries/ScrollModeGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `ScrollModeTestGallery.xaml` | `Pages/Controls/CollectionViewGalleries/ScrollModeGalleries/ScrollModeTestGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `ScrollToCodeGallery.cs` | `Pages/Controls/CollectionViewGalleries/ScrollToCodeGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `ScrollToGroup.xaml` | `Pages/Controls/CollectionViewGalleries/ScrollToGalleries/ScrollToGroup.xaml` | `[x]` | `[x]` | `[ ]` |
+| `ScrollToGallery.cs` | `Pages/Controls/CollectionViewGalleries/ScrollToGallery.cs` | `[x]` | `[x]` | `[ ]` |
 | `FilterSelection.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/FilterSelection.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `MultipleBoundSelection.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/MultipleBoundSelection.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `PreselectedItemGallery.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/PreselectedItemGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `PreselectedItemsGallery.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/PreselectedItemsGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `SelectionChangedCommandParameter.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SelectionChangedCommandParameter.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `SelectionGallery.cs` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SelectionGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `SelectionModeGallery.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SelectionModeGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `SelectionSynchronization.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SelectionSynchronization.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `SingleBoundSelection.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SingleBoundSelection.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `VisualStatesGallery.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/VisualStatesGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `SnapPointsCodeGallery.cs` | `Pages/Controls/CollectionViewGalleries/SnapPointsCodeGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `SnapPointsGallery.cs` | `Pages/Controls/CollectionViewGalleries/SnapPointsGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `ItemsSpacingGallery.cs` | `Pages/Controls/CollectionViewGalleries/SpacingGalleries/ItemsSpacingGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `SpacingGallery.cs` | `Pages/Controls/CollectionViewGalleries/SpacingGalleries/SpacingGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `TemplateCodeCollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/TemplateCodeCollectionViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `TemplateCodeCollectionViewGridGallery.cs` | `Pages/Controls/CollectionViewGalleries/TemplateCodeCollectionViewGridGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `TextCodeCollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/TextCodeCollectionViewGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `TextCodeCollectionViewGridGallery.cs` | `Pages/Controls/CollectionViewGalleries/TextCodeCollectionViewGridGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `MultipleBoundSelection.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/MultipleBoundSelection.xaml` | `[x]` | `[x]` | `[ ]` |
+| `PreselectedItemGallery.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/PreselectedItemGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `PreselectedItemsGallery.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/PreselectedItemsGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `SelectionChangedCommandParameter.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SelectionChangedCommandParameter.xaml` | `[x]` | `[x]` | `[ ]` |
+| `SelectionGallery.cs` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SelectionGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `SelectionModeGallery.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SelectionModeGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `SelectionSynchronization.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SelectionSynchronization.xaml` | `[x]` | `[x]` | `[ ]` |
+| `SingleBoundSelection.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/SingleBoundSelection.xaml` | `[x]` | `[x]` | `[ ]` |
+| `VisualStatesGallery.xaml` | `Pages/Controls/CollectionViewGalleries/SelectionGalleries/VisualStatesGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `SnapPointsCodeGallery.cs` | `Pages/Controls/CollectionViewGalleries/SnapPointsCodeGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `SnapPointsGallery.cs` | `Pages/Controls/CollectionViewGalleries/SnapPointsGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `ItemsSpacingGallery.cs` | `Pages/Controls/CollectionViewGalleries/SpacingGalleries/ItemsSpacingGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `SpacingGallery.cs` | `Pages/Controls/CollectionViewGalleries/SpacingGalleries/SpacingGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `TemplateCodeCollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/TemplateCodeCollectionViewGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `TemplateCodeCollectionViewGridGallery.cs` | `Pages/Controls/CollectionViewGalleries/TemplateCodeCollectionViewGridGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `TextCodeCollectionViewGallery.cs` | `Pages/Controls/CollectionViewGalleries/TextCodeCollectionViewGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `TextCodeCollectionViewGridGallery.cs` | `Pages/Controls/CollectionViewGalleries/TextCodeCollectionViewGridGallery.cs` | `[x]` | `[x]` | `[ ]` |
 | `ContentProperties.xaml` | `Pages/Controls/RadioButtonGalleries/ContentProperties.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `RadioButtonBorder.xaml` | `Pages/Controls/RadioButtonGalleries/RadioButtonBorder.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `RadioButtonContentGallery.xaml` | `Pages/Controls/RadioButtonGalleries/RadioButtonContentGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
