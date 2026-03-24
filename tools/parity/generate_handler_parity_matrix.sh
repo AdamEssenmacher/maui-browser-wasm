@@ -131,7 +131,8 @@ is_in_scope_type_key() {
         ListView|Cell|ImageCell|EntryCell|TextCell|ViewCell|SwitchCell|TableView) return 1 ;;
     esac
 
-    if [[ "$key" == I* ]]; then
+    # Exclude interface-shaped type keys only; do not drop concrete controls like Image/ImageButton/IndicatorView.
+    if [[ "$key" =~ ^I[A-Z] ]]; then
         return 1
     fi
 
