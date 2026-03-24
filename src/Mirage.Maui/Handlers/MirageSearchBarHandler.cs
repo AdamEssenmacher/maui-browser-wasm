@@ -640,42 +640,33 @@ internal sealed class MirageSearchBarHandler : MirageViewHandler<ISearchBar>
 
     private static (string InputType, string InputMode) ResolveKeyboard(Keyboard keyboard)
     {
+        // Keep SearchBar as type=search so browser submit semantics remain stable and
+        // the runtime "search" event still fires when users submit from the keyboard.
         var inputType = "search";
         var inputMode = "text";
 
-        if (keyboard == Keyboard.Password || keyboard.Equals(Keyboard.Password))
+        if (keyboard == Keyboard.Numeric || keyboard.Equals(Keyboard.Numeric))
         {
-            inputType = "password";
-            inputMode = "text";
-        }
-        else if (keyboard == Keyboard.Numeric || keyboard.Equals(Keyboard.Numeric))
-        {
-            inputType = "text";
             inputMode = "decimal";
         }
         else if (keyboard == Keyboard.Email || keyboard.Equals(Keyboard.Email))
         {
-            inputType = "email";
             inputMode = "email";
         }
         else if (keyboard == Keyboard.Telephone || keyboard.Equals(Keyboard.Telephone))
         {
-            inputType = "tel";
             inputMode = "tel";
         }
         else if (keyboard == Keyboard.Url || keyboard.Equals(Keyboard.Url))
         {
-            inputType = "url";
             inputMode = "url";
         }
         else if (keyboard == Keyboard.Date || keyboard.Equals(Keyboard.Date))
         {
-            inputType = "date";
             inputMode = "numeric";
         }
         else if (keyboard == Keyboard.Time || keyboard.Equals(Keyboard.Time))
         {
-            inputType = "time";
             inputMode = "numeric";
         }
 

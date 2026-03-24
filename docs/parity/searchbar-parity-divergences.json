@@ -14,6 +14,12 @@
       "summary": "Mirage currently projects cancel/search icon color channels to clear/search button text color on the browser host rather than native platform icon glyph channels.",
       "upstreamReference": "src/Core/src/Handlers/SearchBar/SearchBarHandler.Android.cs",
       "testReference": "SearchBarHandler_ColorChannels_ProjectToDeterministicButtonStyles"
+    },
+    {
+      "id": "searchbar-keyboard-uses-inputmode-while-preserving-search-type",
+      "summary": "Mirage keeps DOM input type as search and varies inputmode for keyboard hints so browser keyboard-submit continues to emit the search event across keyboard modes.",
+      "upstreamReference": "src/Core/src/Handlers/SearchBar/SearchBar.Android.cs",
+      "testReference": "SearchBarHandler_NonDefaultKeyboard_StillSupportsKeyboardSearchSubmitEvent"
     }
   ]
 }

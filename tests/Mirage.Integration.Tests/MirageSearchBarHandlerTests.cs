@@ -180,7 +180,7 @@ public sealed class MirageSearchBarHandlerTests
         ((IElementHandler)handler).SetVirtualView(searchBar);
         var inputNode = GetInputNode(handler);
 
-        Assert.Equal("email", inputNode.Attributes["type"]);
+        Assert.Equal("search", inputNode.Attributes["type"]);
         Assert.Equal("email", inputNode.Attributes["inputmode"]);
         Assert.Equal("search", inputNode.Attributes["enterkeyhint"]);
         Assert.Equal("off", inputNode.Attributes["autocorrect"]);
@@ -190,6 +190,29 @@ public sealed class MirageSearchBarHandlerTests
         Assert.Equal("center", inputNode.GetStyleValue("textAlign"));
         Assert.Equal("6px", inputNode.GetStyleValue("paddingTop"));
         Assert.Equal("2px", inputNode.GetStyleValue("paddingBottom"));
+    }
+
+    [Fact]
+    public void SearchBarHandler_NonDefaultKeyboard_StillSupportsKeyboardSearchSubmitEvent()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var handler = CreateHandler(coordinator);
+        var searchCount = 0;
+        var searchBar = new SearchBar
+        {
+            Keyboard = Keyboard.Email,
+            Text = "alpha"
+        };
+        searchBar.SearchButtonPressed += (_, _) => searchCount++;
+
+        ((IElementHandler)handler).SetVirtualView(searchBar);
+        var inputNode = GetInputNode(handler);
+
+        Assert.Equal("search", inputNode.Attributes["type"]);
+        Assert.Equal("email", inputNode.Attributes["inputmode"]);
+
+        coordinator.OnEvent(inputNode.NodeId, "search", "alpha");
+        Assert.Equal(1, searchCount);
     }
 
     [Fact]
