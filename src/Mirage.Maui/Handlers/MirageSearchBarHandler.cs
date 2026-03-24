@@ -223,6 +223,7 @@ internal sealed class MirageSearchBarHandler : MirageViewHandler<ISearchBar>
             _inputNode.SetAttribute("type", "search");
             _inputNode.SetEvent("input", enabled: true);
             _inputNode.SetEvent("search", enabled: true);
+            _inputNode.SetEvent("keydown", enabled: true);
             _inputNode.SetEvent("focus", enabled: true);
             _inputNode.SetEvent("blur", enabled: true);
             _inputEventTarget = new SearchBarInputRuntimeEventTarget(this);
@@ -551,6 +552,12 @@ internal sealed class MirageSearchBarHandler : MirageViewHandler<ISearchBar>
                 _lastClearLikeInputTimestamp = null;
                 return;
             }
+            case "keydown":
+                // Any keyboard interaction after an emptying input transition indicates user intent.
+                // Keep clear-affordance suppression for native clear events, but do not suppress
+                // a subsequent explicit keyboard submit (Enter) for empty queries.
+                _lastClearLikeInputTimestamp = null;
+                return;
             case "focus":
                 if (!VirtualView.IsFocused)
                 {
