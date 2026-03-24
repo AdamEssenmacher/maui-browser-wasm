@@ -88,7 +88,7 @@ public sealed class MirageIndicatorViewHandlerTests
 
         indicator.IndicatorsShape = IndicatorShape.Square;
         MirageIndicatorViewHandler.Mapper.UpdateProperty(handler, indicator, nameof(IIndicatorView.IndicatorsShape));
-        Assert.NotEqual("999px", GetDotNodes(handler)[0].GetStyleValue("borderRadius"));
+        Assert.Equal("0px", GetDotNodes(handler)[0].GetStyleValue("borderRadius"));
 
         indicator.IndicatorSize = -1;
         MirageIndicatorViewHandler.Mapper.UpdateProperty(handler, indicator, nameof(IIndicatorView.IndicatorSize));

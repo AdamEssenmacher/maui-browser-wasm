@@ -191,7 +191,7 @@ internal sealed class MirageIndicatorViewHandler : MirageViewHandler<IIndicatorV
         var isCircleShape = ResolveIsCircleShape(indicator);
         var dotBorderRadius = isCircleShape
             ? "999px"
-            : MirageViewMapper.ToPx(Math.Max(1d, Math.Floor(indicatorSize * 0.2d)));
+            : "0px";
         var dotDimension = MirageViewMapper.ToPx(indicatorSize);
         var gapSize = MirageViewMapper.ToPx(Math.Max(0d, indicatorSize * 0.5d));
         var hostMinHeight = visibleCount > 0 ? dotDimension : null;
