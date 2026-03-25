@@ -353,7 +353,7 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
             changed |= SetAttributeIfChanged(
                 _pathNode,
                 "stroke-dashoffset",
-                shapeView.StrokeDashOffset > 0 && double.IsFinite(shapeView.StrokeDashOffset)
+                double.IsFinite(shapeView.StrokeDashOffset)
                     ? CssNumber(shapeView.StrokeDashOffset)
                     : null);
             changed |= SetAttributeIfChanged(_pathNode, "stroke-linecap", ToSvgLineCap(shapeView.StrokeLineCap));
@@ -990,13 +990,69 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
             AddBrushImageSource(nextSources, shape.Stroke);
         }
 
+        HashSet<string>? staleManagedUrlsToRelease = null;
         lock (_asyncImageProjectionSync)
         {
+            if (_activeAsyncImageSources.Count > 0)
+            {
+                var activeManagedUrls = new HashSet<string>(StringComparer.Ordinal);
+                foreach (var activeSource in nextSources)
+                {
+                    if (!_asyncImageProjectionCache.TryGetValue(activeSource, out var activeProjection)
+                        || !activeProjection.IsManagedObjectUrl
+                        || string.IsNullOrWhiteSpace(activeProjection.BrowserUrl))
+                    {
+                        continue;
+                    }
+
+                    activeManagedUrls.Add(activeProjection.BrowserUrl);
+                }
+
+                foreach (var previousSource in _activeAsyncImageSources)
+                {
+                    if (nextSources.Contains(previousSource))
+                    {
+                        continue;
+                    }
+
+                    if (_asyncImageProjectionCache.TryGetValue(previousSource, out var previousProjection))
+                    {
+                        _asyncImageProjectionCache.Remove(previousSource);
+                        if (previousProjection.IsManagedObjectUrl
+                            && !string.IsNullOrWhiteSpace(previousProjection.BrowserUrl)
+                            && !activeManagedUrls.Contains(previousProjection.BrowserUrl!)
+                            && !_ownedObjectUrls.Contains(previousProjection.BrowserUrl!))
+                        {
+                            staleManagedUrlsToRelease ??= new HashSet<string>(StringComparer.Ordinal);
+                            staleManagedUrlsToRelease.Add(previousProjection.BrowserUrl!);
+                        }
+                    }
+
+                    _asyncImageProjectionRetryNotBeforeUtc.Remove(previousSource);
+                }
+            }
+
             _activeAsyncImageSources.Clear();
             foreach (var source in nextSources)
             {
                 _activeAsyncImageSources.Add(source);
             }
+        }
+
+        if (staleManagedUrlsToRelease is null || staleManagedUrlsToRelease.Count == 0)
+        {
+            return;
+        }
+
+        var resolver = GetImageSourceResolver();
+        if (resolver is null)
+        {
+            return;
+        }
+
+        foreach (var staleManagedUrl in staleManagedUrlsToRelease)
+        {
+            resolver.Release(staleManagedUrl);
         }
     }
 

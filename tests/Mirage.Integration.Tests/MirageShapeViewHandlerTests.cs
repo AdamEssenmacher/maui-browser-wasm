@@ -80,6 +80,10 @@ public sealed class MirageShapeViewHandlerTests
         Assert.Equal("1", pathNode.Attributes["stroke-dashoffset"]);
         Assert.Equal("round", pathNode.Attributes["stroke-linecap"]);
         Assert.Equal("bevel", pathNode.Attributes["stroke-linejoin"]);
+
+        line.StrokeDashOffset = -2;
+        MirageLineHandler.Mapper.UpdateProperty(handler, line, nameof(IShapeView.StrokeDashOffset));
+        Assert.Equal("-2", pathNode.Attributes["stroke-dashoffset"]);
     }
 
     [Fact]
@@ -549,6 +553,36 @@ public sealed class MirageShapeViewHandlerTests
             : string.Empty;
         Assert.False(
             fillAttribute.StartsWith("url(#", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ShapeViewHandler_InactiveUnresolvedStreamSource_IsEvictedFromAsyncCache()
+    {
+        var resolver = new StubImageSourceResolver();
+        resolver.EnqueueStreamUnresolvedResult("first unresolved");
+        resolver.EnqueueStreamUnresolvedResult("second unresolved");
+        var handler = CreateHandler(services => services.AddSingleton<IMirageImageSourceResolver>(resolver));
+
+        var streamBrush = CreateImageBrushFromStream();
+        var rectangle = new Rectangle
+        {
+            Fill = streamBrush
+        };
+
+        ((IElementHandler)handler).SetVirtualView(rectangle);
+        handler.PlatformArrange(new Rect(0, 0, 160, 90));
+
+        await WaitForAsync(() => resolver.StreamResolveAsyncCallCount >= 1, timeout: TimeSpan.FromSeconds(2));
+        Assert.Equal(1, resolver.StreamResolveAsyncCallCount);
+        await Task.Delay(50);
+
+        rectangle.Fill = Brush.Blue;
+        MirageShapeViewHandler.Mapper.UpdateProperty(handler, rectangle, nameof(IShapeView.Fill));
+
+        rectangle.Fill = streamBrush;
+        MirageShapeViewHandler.Mapper.UpdateProperty(handler, rectangle, nameof(IShapeView.Fill));
+
+        await WaitForAsync(() => resolver.StreamResolveAsyncCallCount >= 2, timeout: TimeSpan.FromSeconds(2));
     }
 
     [Fact]
