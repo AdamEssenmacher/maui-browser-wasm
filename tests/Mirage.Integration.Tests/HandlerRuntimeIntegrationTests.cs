@@ -3,7 +3,10 @@ using Mirage.Maui.Handlers;
 using Mirage.Maui.Hosting;
 using Mirage.Maui.Images;
 using Mirage.Web.Runtime;
+using ControlsSample.Shared.App.VendorCompat;
 using Maui.Controls.Sample.Models;
+using Maui.Controls.Sample.Pages.Base;
+using Maui.Controls.Sample.Pages.ScrollViewPages;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Shapes;
@@ -14,6 +17,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Specialized;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Reflection;
 using Xunit;
 
@@ -3827,6 +3831,68 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal(72, actualTop);
         Assert.Equal(18, currentLeft);
         Assert.Equal(72, currentTop);
+    }
+
+    [Fact]
+    public void BasePage_InstrumentPage_AssignsScrollViewOrientationAutomationIds()
+    {
+        var page = Assert.IsType<ScrollViewOrientationPage>(
+            RuntimeHelpers.GetUninitializedObject(typeof(ScrollViewOrientationPage)));
+        var orientationPicker = new Picker();
+        var scrollViewer = new ScrollView();
+        var fieldFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+        var orientationField = typeof(ScrollViewOrientationPage).GetField("Orientation", fieldFlags);
+        var scrollViewerField = typeof(ScrollViewOrientationPage).GetField("ScrollViewer", fieldFlags);
+        Assert.NotNull(orientationField);
+        Assert.NotNull(scrollViewerField);
+
+        orientationField!.SetValue(page, orientationPicker);
+        scrollViewerField!.SetValue(page, scrollViewer);
+
+        var instrumentPage = typeof(BasePage).GetMethod(
+            "InstrumentPage",
+            BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(instrumentPage);
+
+        instrumentPage!.Invoke(null, [page]);
+
+        Assert.Equal("controls-sample-scrollvieworientationpage-orientation-picker", orientationPicker.AutomationId);
+        Assert.Equal("controls-sample-scrollvieworientationpage-scrollview", scrollViewer.AutomationId);
+    }
+
+    [Fact]
+    public void MirageScrollViewOptionsModel_IncludesOrientationSection()
+    {
+        SectionModel[]? items = null;
+        Exception? failure = null;
+        var worker = new Thread(() =>
+        {
+            try
+            {
+                var model = new MirageScrollViewOptionsModel();
+                items = model.Items?.ToArray();
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+            }
+        })
+        {
+            IsBackground = true
+        };
+
+        worker.Start();
+        var completed = worker.Join(TimeSpan.FromSeconds(5));
+        Assert.True(completed, "MirageScrollViewOptionsModel construction timed out.");
+        Assert.Null(failure);
+        Assert.NotNull(items);
+
+        var orientation = items!.SingleOrDefault(item =>
+            item.Type == typeof(ScrollViewOrientationPage)
+            && string.Equals(item.Title, "Orientation", StringComparison.Ordinal));
+
+        Assert.NotNull(orientation);
     }
 
     [Theory]

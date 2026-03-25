@@ -32,7 +32,7 @@ Visual legend:
 | `ScrollViewPage.xaml` | `Pages/Layouts/ScrollViewPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ScrollToEndPage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollToEndPage.xaml` | `[x]` | `[ ]` | `[ ]` |
 | `ScrollToFromConstructorPage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollToFromConstructorPage.xaml` | `[x]` | `[x]` | `[ ]` |
-| `ScrollViewOrientationPage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollViewOrientationPage.xaml` | `[!]` | `[ ]` | `[ ]` |
+| `ScrollViewOrientationPage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollViewOrientationPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ScrollViewTemplatePage.xaml` | `Pages/Layouts/ScrollViewPages/ScrollViewTemplatePage.xaml` | `[x]` | `[ ]` | `[ ]` |
 | `StackLayoutPage.xaml` | `Pages/Layouts/StackLayoutPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `TemplatedViewPage.xaml` | `Pages/Layouts/TemplatedViewPage.xaml` | `[x]` | `[x]` | `[ ]` |

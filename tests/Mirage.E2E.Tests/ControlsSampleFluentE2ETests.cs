@@ -889,6 +889,125 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
+    public async Task ScrollViewPage_OrientationScenario_UpdatesOverflowAxes()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1000, height: 1400);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-scrollviewpage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-scrollviewpage']");
+            });
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page
+                    .Locator("[data-automation-id='controls-sample-scrollviewpage-sections'] span")
+                    .Filter(new() { HasTextString = "Orientation" })
+                    .First
+                    .ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-scrollvieworientationpage']");
+            });
+
+        const string orientationPicker = "[data-automation-id='controls-sample-scrollvieworientationpage-orientation-picker']";
+        const string scrollViewer = "[data-automation-id='controls-sample-scrollvieworientationpage-scrollview']";
+
+        Assert.Equal(1, await page.Locator(orientationPicker).CountAsync());
+        Assert.Equal(1, await page.Locator(scrollViewer).CountAsync());
+
+        async Task<(string X, string Y)> ReadOverflowAxesAsync()
+        {
+            var overflow = await page.EvaluateAsync<string[]>(
+                """
+                (selector) => {
+                    const node = document.querySelector(selector);
+                    if (!(node instanceof HTMLElement)) {
+                        return ["__missing__", "__missing__"];
+                    }
+
+                    const style = getComputedStyle(node);
+                    return [style.overflowX ?? "", style.overflowY ?? ""];
+                }
+                """,
+                scrollViewer);
+
+            return (overflow[0], overflow[1]);
+        }
+
+        async Task SelectOrientationByTextAsync(string label)
+        {
+            var result = await page.EvaluateAsync<string>(
+                """
+                (payload) => {
+                    const control = document.querySelector(payload.selector);
+                    if (!(control instanceof HTMLSelectElement)) {
+                        return "__missing__";
+                    }
+
+                    const targetIndex = Array.from(control.options)
+                        .findIndex(option => (option.textContent ?? "").trim() === payload.label);
+                    if (targetIndex < 0) {
+                        return "__not_found__";
+                    }
+
+                    const targetValue = control.options[targetIndex]?.value ?? "";
+                    control.value = targetValue;
+                    control.selectedIndex = targetIndex;
+                    control.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+                    control.dispatchEvent(new Event("change", { bubbles: true, composed: true }));
+                    return control.value ?? "";
+                }
+                """,
+                new
+                {
+                    selector = orientationPicker,
+                    label
+                });
+
+            Assert.NotEqual("__missing__", result);
+            Assert.NotEqual("__not_found__", result);
+        }
+
+        async Task AssertOrientationOverflowAsync(string label, string expectedX, string expectedY)
+        {
+            await SelectOrientationByTextAsync(label);
+
+            const int timeoutMs = 2000;
+            const int pollMs = 50;
+            var elapsedMs = 0;
+            (string X, string Y) observed = ("", "");
+
+            while (elapsedMs <= timeoutMs)
+            {
+                observed = await ReadOverflowAxesAsync();
+                if (string.Equals(observed.X, expectedX, StringComparison.Ordinal)
+                    && string.Equals(observed.Y, expectedY, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                await page.WaitForTimeoutAsync(pollMs);
+                elapsedMs += pollMs;
+            }
+
+            Assert.Equal(expectedX, observed.X);
+            Assert.Equal(expectedY, observed.Y);
+        }
+
+        await AssertOrientationOverflowAsync("Vertical", "hidden", "auto");
+        await AssertOrientationOverflowAsync("Horizontal", "auto", "hidden");
+        await AssertOrientationOverflowAsync("Both", "auto", "auto");
+        await AssertOrientationOverflowAsync("Neither", "hidden", "hidden");
+    }
+
+    [Fact]
     public async Task ButtonPage_IsRunnable_AndExercisesCoreScenarios()
     {
         await using var context = await _fixture.NewContextAsync(width: 760, height: 980);
