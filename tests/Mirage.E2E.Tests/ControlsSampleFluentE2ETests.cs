@@ -103,6 +103,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-clippingpage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-clippage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-contentviewpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-customlayoutpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-flexlayoutpage']").CountAsync());
@@ -2513,6 +2514,95 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.InRange(width, 398d, 402d);
         Assert.InRange(height, 198d, 202d);
         Assert.True(centerDelta <= 12d, $"Expected clipping grid to be horizontally centered; center delta was {centerDelta:0.###}.");
+    }
+
+    [Fact]
+    public async Task ClipPage_IsRunnable_AndProjectsExpectedClipScenarios()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1024, height: 1400);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-clippage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-clippage']");
+            });
+
+        var imageIds = new[]
+        {
+            "controls-sample-clippage-image-default",
+            "controls-sample-clippage-image-rectangle",
+            "controls-sample-clippage-image-ellipse",
+            "controls-sample-clippage-image-geometry-group",
+            "controls-sample-clippage-image-path"
+        };
+
+        foreach (var imageId in imageIds)
+        {
+            Assert.Equal(1, await page.Locator($"[data-automation-id='{imageId}']").CountAsync());
+        }
+
+        var clipSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            () => {
+                const read = (id) => {
+                    const node = document.querySelector(`[data-automation-id='${id}']`);
+                    if (!(node instanceof HTMLElement)) {
+                        return "__missing__";
+                    }
+
+                    const inline = node.style.clipPath ?? "";
+                    const computed = getComputedStyle(node).clipPath ?? "";
+                    return `${inline}|||${computed}`;
+                };
+
+                return [
+                    read("controls-sample-clippage-image-default"),
+                    read("controls-sample-clippage-image-rectangle"),
+                    read("controls-sample-clippage-image-ellipse"),
+                    read("controls-sample-clippage-image-geometry-group"),
+                    read("controls-sample-clippage-image-path")
+                ];
+            }
+            """);
+
+        static (string Inline, string Computed) split(string value)
+        {
+            var parts = value.Split("|||", StringSplitOptions.None);
+            return parts.Length == 2 ? (parts[0], parts[1]) : (value, value);
+        }
+
+        static bool IsNoClip(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return true;
+            }
+
+            return value.Trim().ToLowerInvariant() is "none" or "initial" or "unset" or "revert" or "revert-layer";
+        }
+
+        var defaultClip = split(clipSnapshot[0]);
+        Assert.True(
+            IsNoClip(defaultClip.Inline) && IsNoClip(defaultClip.Computed),
+            $"Expected default ClipPage image to be unclipped but got inline='{defaultClip.Inline}' computed='{defaultClip.Computed}'.");
+
+        for (var i = 1; i < clipSnapshot.Length; i++)
+        {
+            var clip = split(clipSnapshot[i]);
+            Assert.True(
+                !IsNoClip(clip.Inline) || !IsNoClip(clip.Computed),
+                $"Expected clipped image at index {i} to have a clip path but got inline='{clip.Inline}' computed='{clip.Computed}'.");
+        }
+
+        var groupClip = split(clipSnapshot[3]);
+        Assert.True(
+            groupClip.Inline.Contains("evenodd", StringComparison.OrdinalIgnoreCase)
+            || groupClip.Computed.Contains("evenodd", StringComparison.OrdinalIgnoreCase),
+            $"Expected GeometryGroup clip-path to preserve even-odd fill rule but got inline='{groupClip.Inline}' computed='{groupClip.Computed}'.");
     }
 
     private async Task<(IPage Page, ConcurrentQueue<string> Diagnostics)> OpenAsync(IBrowserContext context)

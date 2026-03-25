@@ -101,6 +101,14 @@ public static class ControlsSampleCatalog
             description: "Runnable in Mirage today: exercises ScrollView navigation scenarios across constructor scroll, scroll-to-end, template, and orientation variants.",
             pageFactory: CreateScrollViewPage),
         new(
+            id: "clippage",
+            title: "ClipPage",
+            upstreamPath: "Pages/Core/ClipPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(ClipPage),
+            description: "Runnable in Mirage today: exercises Image clipping with RectangleGeometry, EllipseGeometry, GeometryGroup, and PathGeometry scenarios.",
+            pageFactory: CreateClipPage),
+        new(
             id: "brushespage",
             title: "BrushesPage",
             upstreamPath: "Pages/Core/BrushesPage.xaml",
@@ -329,6 +337,32 @@ public static class ControlsSampleCatalog
         if (checkBoxes.Length > 2 && string.IsNullOrWhiteSpace(checkBoxes[2].AutomationId))
         {
             checkBoxes[2].AutomationId = "controls-sample-layoutisenabledpage-bind-command-enabled";
+        }
+
+        return page;
+    }
+
+    private static Page CreateClipPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new ClipPage();
+
+        var images = FindDescendants<Image>(page).ToArray();
+        var automationIds = new[]
+        {
+            "controls-sample-clippage-image-default",
+            "controls-sample-clippage-image-rectangle",
+            "controls-sample-clippage-image-ellipse",
+            "controls-sample-clippage-image-geometry-group",
+            "controls-sample-clippage-image-path"
+        };
+
+        for (var i = 0; i < images.Length && i < automationIds.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(images[i].AutomationId))
+            {
+                images[i].AutomationId = automationIds[i];
+            }
         }
 
         return page;
