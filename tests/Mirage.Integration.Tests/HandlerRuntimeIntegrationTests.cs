@@ -3350,6 +3350,25 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CommonMapper_MapsImageClip_AndClearsProjectionWhenUnset()
+    {
+        var handler = new MapperProbeHandler(defaultDisplayStyle: "block");
+        var image = new Image
+        {
+            Clip = new RectangleGeometry(new Rect(0, 0, 100, 80))
+        };
+
+        MirageViewMapper.MapClip(handler, image);
+        var clipPath = handler.Node.GetStyleValue("clipPath");
+        Assert.False(string.IsNullOrWhiteSpace(clipPath));
+        Assert.Contains("path('M", clipPath, StringComparison.Ordinal);
+
+        image.Clip = null;
+        MirageViewMapper.MapClip(handler, image);
+        Assert.Null(handler.Node.GetStyleValue("clipPath"));
+    }
+
+    [Fact]
     public void CommonMapper_MapClip_InvalidOrUnsupportedGeometry_ThrowsDeterministically()
     {
         var handler = new MapperProbeHandler(defaultDisplayStyle: "block");

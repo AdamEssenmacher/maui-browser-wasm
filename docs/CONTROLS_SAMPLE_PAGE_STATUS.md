@@ -52,7 +52,7 @@ Visual legend:
 | `BorderStyles.xaml` | `Pages/Core/BorderGalleries/BorderStyles.xaml` | `[x]` | `[x]` | `[ ]` |
 | `Borderless.xaml` | `Pages/Core/BorderGalleries/Borderless.xaml` | `[x]` | `[x]` | `[ ]` |
 | `BrushesPage.xaml` | `Pages/Core/BrushesPage.xaml` | `[x]` | `[x]` | `[ ]` |
-| `ClipPage.xaml` | `Pages/Core/ClipPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ClipPage.xaml` | `Pages/Core/ClipPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ContentPageBackgroundGallery.xaml` | `Pages/Core/ContentPageGalleries/ContentPageBackgroundGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ContentPageBackgroundImageGallery.xaml` | `Pages/Core/ContentPageGalleries/ContentPageBackgroundImageGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ContentPageGallery.cs` | `Pages/Core/ContentPageGalleries/ContentPageGallery.cs` | `[ ]` | `[ ]` | `[ ]` |

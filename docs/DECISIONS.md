@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-25 (ControlsSample ClipPage runnable on shared clip projection path)
+- Promoted upstream `ClipPage` to runnable in the ControlsSample wrappers and added deterministic automation IDs for its five image scenarios.
+- Kept implementation framework-first: `ClipPage` relies on the existing shared `IView.Clip` projection pipeline (`MirageCommonViewProjection.MapClip`) rather than page-specific rendering logic.
+- Added integration and E2E coverage for clip lifecycle and scenario validation (including `GeometryGroup` even-odd clip projection) to prevent regressions while keeping vendor sources unchanged.
+
 ## 2026-03-24 (SearchBar parity wave: MAUI-shaped handler + contract governance)
 - Added `MirageSearchBarHandler` with MAUI-aligned `SearchBarHandler` mapper coverage (`Background`, text style/alignment, placeholder/text channels, keyboard/return behavior, read-only, prediction/spellcheck, max-length, and color channels) plus deterministic runtime interactions for input/search/clear behavior.
 - `SearchBar` now registers as a built-in Mirage handler (`UseMirageBrowserPlatform`) and projects through `ComponentKind.SearchBar` on the ControlNode path with a stable host structure (`input`, clear button, search button).
