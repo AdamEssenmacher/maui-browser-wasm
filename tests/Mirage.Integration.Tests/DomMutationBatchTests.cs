@@ -31,25 +31,37 @@ public sealed class DomMutationBatchTests
 
         var element = payload.Elements[0];
         Assert.Equal(12L, element.Handle);
-        Assert.True(element.HasText);
-        Assert.Equal("after", element.Text);
-
-        var style = Assert.Single(element.Styles);
-        Assert.Equal("color", style.Name);
-        Assert.Equal("blue", style.Value);
-
-        var attribute = Assert.Single(element.Attributes);
-        Assert.Equal("role", attribute.Name);
-        Assert.Equal("button", attribute.Value);
-
-        var property = Assert.Single(element.Properties);
-        Assert.Equal("value", property.Name);
-        Assert.Equal("string", property.Kind);
-        Assert.Equal("second", property.StringValue);
-
-        var addedClass = Assert.Single(element.ClassesToAdd);
-        Assert.Equal("active", addedClass.Name);
-        Assert.Empty(element.ClassesToRemove);
+        Assert.Collection(
+            element.Operations,
+            operation =>
+            {
+                Assert.Equal("style", operation.Kind);
+                Assert.Equal("color", operation.Name);
+                Assert.Equal("blue", operation.StringValue);
+            },
+            operation =>
+            {
+                Assert.Equal("text", operation.Kind);
+                Assert.Null(operation.Name);
+                Assert.Equal("after", operation.StringValue);
+            },
+            operation =>
+            {
+                Assert.Equal("attribute", operation.Kind);
+                Assert.Equal("role", operation.Name);
+                Assert.Equal("button", operation.StringValue);
+            },
+            operation =>
+            {
+                Assert.Equal("property-string", operation.Kind);
+                Assert.Equal("value", operation.Name);
+                Assert.Equal("second", operation.StringValue);
+            },
+            operation =>
+            {
+                Assert.Equal("class-add", operation.Kind);
+                Assert.Equal("active", operation.Name);
+            });
     }
 
     [Fact]
@@ -80,13 +92,48 @@ public sealed class DomMutationBatchTests
         batch.QueueInputChecked((nint)1, value: true);
 
         var payload = batch.Drain();
-        var properties = Assert.Single(payload.Elements).Properties.ToDictionary(property => property.Name, StringComparer.Ordinal);
+        var properties = Assert.Single(payload.Elements).Operations.ToDictionary(operation => operation.Name!, StringComparer.Ordinal);
 
-        Assert.Equal("remove", properties["dataset"].Kind);
-        Assert.Equal("input-value", properties["value"].Kind);
+        Assert.Equal("property-remove", properties["dataset"].Kind);
+        Assert.Equal("property-input-value", properties["value"].Kind);
         Assert.Null(properties["value"].StringValue);
-        Assert.Equal("input-checked", properties["checked"].Kind);
+        Assert.Equal("property-input-checked", properties["checked"].Kind);
         Assert.True(properties["checked"].BoolValue);
+    }
+
+    [Fact]
+    public void Drain_PreservesLastEffectiveMutationOrderPerHandle()
+    {
+        var batch = new DomMutationBatch();
+
+        batch.QueueProperty((nint)3, "value", MirageValue.String("first"));
+        batch.QueueAttribute((nint)3, "role", "button");
+        batch.QueueProperty((nint)3, "value", MirageValue.String("second"));
+        batch.QueueStyle((nint)3, "color", "red");
+        batch.QueueAttribute((nint)3, "role", "link");
+
+        var element = Assert.Single(batch.Drain().Elements);
+
+        Assert.Collection(
+            element.Operations,
+            operation =>
+            {
+                Assert.Equal("property-string", operation.Kind);
+                Assert.Equal("value", operation.Name);
+                Assert.Equal("second", operation.StringValue);
+            },
+            operation =>
+            {
+                Assert.Equal("style", operation.Kind);
+                Assert.Equal("color", operation.Name);
+                Assert.Equal("red", operation.StringValue);
+            },
+            operation =>
+            {
+                Assert.Equal("attribute", operation.Kind);
+                Assert.Equal("role", operation.Name);
+                Assert.Equal("link", operation.StringValue);
+            });
     }
 
     [Fact]
@@ -105,16 +152,20 @@ public sealed class DomMutationBatchTests
         var root = document.RootElement;
         var element = Assert.Single(root.GetProperty("elements").EnumerateArray());
         Assert.Equal(9, element.GetProperty("handle").GetInt32());
-        Assert.True(element.GetProperty("hasText").GetBoolean());
-        Assert.Equal("hello", element.GetProperty("text").GetString());
-        Assert.Equal("role", element.GetProperty("attributes")[0].GetProperty("name").GetString());
-        Assert.Equal("button", element.GetProperty("attributes")[0].GetProperty("value").GetString());
-        Assert.Equal("color", element.GetProperty("styles")[0].GetProperty("name").GetString());
-        Assert.Equal("red", element.GetProperty("styles")[0].GetProperty("value").GetString());
-        Assert.Equal("count", element.GetProperty("properties")[0].GetProperty("name").GetString());
-        Assert.Equal("number", element.GetProperty("properties")[0].GetProperty("kind").GetString());
-        Assert.Equal(3, element.GetProperty("properties")[0].GetProperty("numberValue").GetInt32());
-        Assert.Equal("active", element.GetProperty("classesToAdd")[0].GetProperty("name").GetString());
-        Assert.Equal(JsonValueKind.Array, element.GetProperty("classesToRemove").ValueKind);
+        var operations = element.GetProperty("operations");
+        Assert.Equal(5, operations.GetArrayLength());
+        Assert.Equal("text", operations[0].GetProperty("kind").GetString());
+        Assert.Equal("hello", operations[0].GetProperty("stringValue").GetString());
+        Assert.Equal("attribute", operations[1].GetProperty("kind").GetString());
+        Assert.Equal("role", operations[1].GetProperty("name").GetString());
+        Assert.Equal("button", operations[1].GetProperty("stringValue").GetString());
+        Assert.Equal("style", operations[2].GetProperty("kind").GetString());
+        Assert.Equal("color", operations[2].GetProperty("name").GetString());
+        Assert.Equal("red", operations[2].GetProperty("stringValue").GetString());
+        Assert.Equal("property-number", operations[3].GetProperty("kind").GetString());
+        Assert.Equal("count", operations[3].GetProperty("name").GetString());
+        Assert.Equal(3, operations[3].GetProperty("numberValue").GetInt32());
+        Assert.Equal("class-add", operations[4].GetProperty("kind").GetString());
+        Assert.Equal("active", operations[4].GetProperty("name").GetString());
     }
 }

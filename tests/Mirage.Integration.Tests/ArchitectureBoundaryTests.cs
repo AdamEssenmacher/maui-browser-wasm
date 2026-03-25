@@ -588,6 +588,27 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void MirageRuntimeModule_ReplaysBatchedNodeMutationsInRecordedOrder()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Web",
+            "wwwroot",
+            "mirage-dom.js");
+        var batchPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "DomMutationBatch.cs");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+        Assert.True(File.Exists(batchPath), $"Expected batch file not found: {batchPath}");
+
+        var runtimeText = File.ReadAllText(runtimeModulePath);
+        var batchText = File.ReadAllText(batchPath);
+        Assert.Contains("function applyMutationOperation(element, operation)", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("if (Array.isArray(mutation.operations))", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("applyMutationOperation(element, operation);", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("IReadOnlyList<DomMutationOperation> Operations", batchText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BrowserRuntimeModuleSync_UsesProviderDeclaredModuleItems()
     {
         var targetsPath = Path.Combine(GetRepositoryRoot(), "Directory.Build.targets");

@@ -961,6 +961,84 @@ function applyPropertyMutation(element, mutation) {
   }
 }
 
+function applyMutationOperation(element, operation) {
+  if (!element || !operation || typeof operation.kind !== "string" || operation.kind.length === 0) {
+    return;
+  }
+
+  switch (operation.kind) {
+    case "text":
+      element.textContent = operation.stringValue ?? "";
+      return;
+    case "attribute":
+      if (typeof operation.name !== "string" || operation.name.length === 0) {
+        return;
+      }
+
+      if (operation.stringValue == null) {
+        element.removeAttribute(operation.name);
+      } else {
+        element.setAttribute(operation.name, operation.stringValue);
+      }
+      return;
+    case "style":
+      if (typeof operation.name !== "string" || operation.name.length === 0) {
+        return;
+      }
+
+      {
+        const hasExplicitCssName = operation.name.startsWith("--") || operation.name.includes("-");
+        if (hasExplicitCssName) {
+          if (operation.stringValue == null || operation.stringValue === "") {
+            element.style.removeProperty(operation.name);
+          } else {
+            element.style.setProperty(operation.name, operation.stringValue);
+          }
+          return;
+        }
+
+        element.style[operation.name] = operation.stringValue ?? "";
+        return;
+      }
+    case "class-add":
+      if (operation.name) {
+        element.classList.add(operation.name);
+      }
+      return;
+    case "class-remove":
+      if (operation.name) {
+        element.classList.remove(operation.name);
+      }
+      return;
+    case "property-string":
+      applyPropertyMutation(element, { name: operation.name, kind: "string", stringValue: operation.stringValue });
+      return;
+    case "property-bool":
+      applyPropertyMutation(element, { name: operation.name, kind: "bool", boolValue: operation.boolValue });
+      return;
+    case "property-number":
+      applyPropertyMutation(element, { name: operation.name, kind: "number", numberValue: operation.numberValue });
+      return;
+    case "property-json":
+      applyPropertyMutation(element, { name: operation.name, kind: "json", stringValue: operation.stringValue });
+      return;
+    case "property-null":
+      applyPropertyMutation(element, { name: operation.name, kind: "null" });
+      return;
+    case "property-remove":
+      applyPropertyMutation(element, { name: operation.name, kind: "remove" });
+      return;
+    case "property-input-value":
+      applyPropertyMutation(element, { name: operation.name, kind: "input-value", stringValue: operation.stringValue });
+      return;
+    case "property-input-checked":
+      applyPropertyMutation(element, { name: operation.name, kind: "input-checked", boolValue: operation.boolValue });
+      return;
+    default:
+      return;
+  }
+}
+
 export function applyMutationBatch(batchJson) {
   if (typeof batchJson !== "string" || batchJson.length === 0) {
     return;
@@ -984,67 +1062,9 @@ export function applyMutationBatch(batchJson) {
       continue;
     }
 
-    if (mutation.hasText) {
-      element.textContent = mutation.text ?? "";
-    }
-
-    if (Array.isArray(mutation.attributes)) {
-      for (const attribute of mutation.attributes) {
-        if (!attribute || typeof attribute.name !== "string" || attribute.name.length === 0) {
-          continue;
-        }
-
-        if (attribute.value == null) {
-          element.removeAttribute(attribute.name);
-        } else {
-          element.setAttribute(attribute.name, attribute.value);
-        }
-      }
-    }
-
-    if (Array.isArray(mutation.styles)) {
-      for (const style of mutation.styles) {
-        if (!style || typeof style.name !== "string" || style.name.length === 0) {
-          continue;
-        }
-
-        const hasExplicitCssName = style.name.startsWith("--") || style.name.includes("-");
-        if (hasExplicitCssName) {
-          if (style.value == null || style.value === "") {
-            element.style.removeProperty(style.name);
-          } else {
-            element.style.setProperty(style.name, style.value);
-          }
-          continue;
-        }
-
-        element.style[style.name] = style.value ?? "";
-      }
-    }
-
-    if (Array.isArray(mutation.properties)) {
-      for (const property of mutation.properties) {
-        applyPropertyMutation(element, property);
-      }
-    }
-
-    if (Array.isArray(mutation.classesToAdd)) {
-      for (const classMutation of mutation.classesToAdd) {
-        if (!classMutation || !classMutation.name) {
-          continue;
-        }
-
-        element.classList.add(classMutation.name);
-      }
-    }
-
-    if (Array.isArray(mutation.classesToRemove)) {
-      for (const classMutation of mutation.classesToRemove) {
-        if (!classMutation || !classMutation.name) {
-          continue;
-        }
-
-        element.classList.remove(classMutation.name);
+    if (Array.isArray(mutation.operations)) {
+      for (const operation of mutation.operations) {
+        applyMutationOperation(element, operation);
       }
     }
   }

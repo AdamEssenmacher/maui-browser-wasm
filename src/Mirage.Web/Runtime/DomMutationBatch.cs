@@ -91,19 +91,12 @@ internal sealed class DomMutationBatch
 
     private sealed class PendingElementMutation
     {
-        private readonly Dictionary<string, string?> _attributes = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, string?> _styles = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, DomPropertyMutation> _properties = new(StringComparer.Ordinal);
-        private readonly HashSet<string> _classesToAdd = new(StringComparer.Ordinal);
-        private readonly HashSet<string> _classesToRemove = new(StringComparer.Ordinal);
-
-        private bool _hasText;
-        private string? _text;
+        private readonly Dictionary<MutationKey, PendingMutation> _mutations = new();
+        private int _nextSequence;
 
         public void SetText(string? text)
         {
-            _hasText = true;
-            _text = text;
+            SetMutation(MutationKey.Text, DomMutationOperation.Text(text));
         }
 
         public void SetAttribute(string name, string? value)
@@ -113,7 +106,7 @@ internal sealed class DomMutationBatch
                 return;
             }
 
-            _attributes[name] = value;
+            SetMutation(MutationKey.Attribute(name), DomMutationOperation.Attribute(name, value));
         }
 
         public void SetStyle(string name, string? value)
@@ -123,7 +116,7 @@ internal sealed class DomMutationBatch
                 return;
             }
 
-            _styles[name] = value;
+            SetMutation(MutationKey.Style(name), DomMutationOperation.Style(name, value));
         }
 
         public void AddClass(string className)
@@ -133,8 +126,7 @@ internal sealed class DomMutationBatch
                 return;
             }
 
-            _classesToRemove.Remove(className);
-            _classesToAdd.Add(className);
+            SetMutation(MutationKey.Class(className), DomMutationOperation.ClassAdd(className));
         }
 
         public void RemoveClass(string className)
@@ -144,8 +136,7 @@ internal sealed class DomMutationBatch
                 return;
             }
 
-            _classesToAdd.Remove(className);
-            _classesToRemove.Add(className);
+            SetMutation(MutationKey.Class(className), DomMutationOperation.ClassRemove(className));
         }
 
         public void SetProperty(string name, DomPropertyMutation mutation)
@@ -155,22 +146,40 @@ internal sealed class DomMutationBatch
                 return;
             }
 
-            _properties[name] = mutation;
+            SetMutation(MutationKey.Property(name), DomMutationOperation.Property(mutation));
         }
 
         public DomElementMutation ToMutation(long handle)
         {
-            return new DomElementMutation(
-                handle,
-                _hasText,
-                _text,
-                _attributes.Count == 0 ? [] : _attributes.Select(static pair => new DomStringMutation(pair.Key, pair.Value)).ToArray(),
-                _styles.Count == 0 ? [] : _styles.Select(static pair => new DomStringMutation(pair.Key, pair.Value)).ToArray(),
-                _properties.Count == 0 ? [] : _properties.Values.ToArray(),
-                _classesToAdd.Count == 0 ? [] : _classesToAdd.Select(static name => new DomClassMutation(name, true)).ToArray(),
-                _classesToRemove.Count == 0 ? [] : _classesToRemove.Select(static name => new DomClassMutation(name, false)).ToArray());
+            var operations = _mutations
+                .Values
+                .OrderBy(static mutation => mutation.Sequence)
+                .Select(static mutation => mutation.Operation)
+                .ToArray();
+
+            return new DomElementMutation(handle, operations);
+        }
+
+        private void SetMutation(MutationKey key, DomMutationOperation operation)
+        {
+            _mutations[key] = new PendingMutation(_nextSequence++, operation);
         }
     }
+
+    private readonly record struct MutationKey(string Kind, string Name)
+    {
+        public static MutationKey Text => new("text", string.Empty);
+
+        public static MutationKey Attribute(string name) => new("attribute", name);
+
+        public static MutationKey Style(string name) => new("style", name);
+
+        public static MutationKey Property(string name) => new("property", name);
+
+        public static MutationKey Class(string name) => new("class", name);
+    }
+
+    private readonly record struct PendingMutation(int Sequence, DomMutationOperation Operation);
 }
 
 internal sealed record DomMutationBatchPayload(IReadOnlyList<DomElementMutation> Elements, int MutationCount)
@@ -200,79 +209,44 @@ internal sealed record DomMutationBatchPayload(IReadOnlyList<DomElementMutation>
     {
         writer.WriteStartObject();
         writer.WriteNumber("handle", element.Handle);
-        writer.WriteBoolean("hasText", element.HasText);
-
-        if (element.HasText)
-        {
-            WriteNullableString(writer, "text", element.Text);
-        }
-
-        WriteStringMutationArray(writer, "attributes", element.Attributes);
-        WriteStringMutationArray(writer, "styles", element.Styles);
-        WritePropertyMutationArray(writer, "properties", element.Properties);
-        WriteClassMutationArray(writer, "classesToAdd", element.ClassesToAdd);
-        WriteClassMutationArray(writer, "classesToRemove", element.ClassesToRemove);
+        WriteOperationArray(writer, "operations", element.Operations);
         writer.WriteEndObject();
     }
 
-    private static void WriteStringMutationArray(Utf8JsonWriter writer, string propertyName, IReadOnlyList<DomStringMutation> values)
+    private static void WriteOperationArray(Utf8JsonWriter writer, string propertyName, IReadOnlyList<DomMutationOperation> operations)
     {
         writer.WritePropertyName(propertyName);
         writer.WriteStartArray();
 
-        foreach (var value in values)
+        foreach (var operation in operations)
         {
             writer.WriteStartObject();
-            writer.WriteString("name", value.Name);
-            WriteNullableString(writer, "value", value.Value);
-            writer.WriteEndObject();
-        }
+            writer.WriteString("kind", operation.Kind);
 
-        writer.WriteEndArray();
-    }
-
-    private static void WritePropertyMutationArray(Utf8JsonWriter writer, string propertyName, IReadOnlyList<DomPropertyMutation> values)
-    {
-        writer.WritePropertyName(propertyName);
-        writer.WriteStartArray();
-
-        foreach (var value in values)
-        {
-            writer.WriteStartObject();
-            writer.WriteString("name", value.Name);
-            writer.WriteString("kind", value.Kind);
-
-            switch (value.Kind)
+            if (!string.IsNullOrWhiteSpace(operation.Name))
             {
-                case "string":
-                case "json":
-                case "input-value":
-                    WriteNullableString(writer, "stringValue", value.StringValue);
+                writer.WriteString("name", operation.Name);
+            }
+
+            switch (operation.Kind)
+            {
+                case "text":
+                case "attribute":
+                case "style":
+                case "property-string":
+                case "property-json":
+                case "property-input-value":
+                    WriteNullableString(writer, "stringValue", operation.StringValue);
                     break;
-                case "bool":
-                case "input-checked":
-                    writer.WriteBoolean("boolValue", value.BoolValue);
+                case "property-bool":
+                case "property-input-checked":
+                    writer.WriteBoolean("boolValue", operation.BoolValue);
                     break;
-                case "number":
-                    writer.WriteNumber("numberValue", value.NumberValue);
+                case "property-number":
+                    writer.WriteNumber("numberValue", operation.NumberValue);
                     break;
             }
 
-            writer.WriteEndObject();
-        }
-
-        writer.WriteEndArray();
-    }
-
-    private static void WriteClassMutationArray(Utf8JsonWriter writer, string propertyName, IReadOnlyList<DomClassMutation> values)
-    {
-        writer.WritePropertyName(propertyName);
-        writer.WriteStartArray();
-
-        foreach (var value in values)
-        {
-            writer.WriteStartObject();
-            writer.WriteString("name", value.Name);
             writer.WriteEndObject();
         }
 
@@ -293,28 +267,47 @@ internal sealed record DomMutationBatchPayload(IReadOnlyList<DomElementMutation>
 
 internal sealed record DomElementMutation(
     long Handle,
-    bool HasText,
-    string? Text,
-    IReadOnlyList<DomStringMutation> Attributes,
-    IReadOnlyList<DomStringMutation> Styles,
-    IReadOnlyList<DomPropertyMutation> Properties,
-    IReadOnlyList<DomClassMutation> ClassesToAdd,
-    IReadOnlyList<DomClassMutation> ClassesToRemove)
+    IReadOnlyList<DomMutationOperation> Operations)
 {
     public int CountMutations()
     {
-        return (HasText ? 1 : 0)
-               + Attributes.Count
-               + Styles.Count
-               + Properties.Count
-               + ClassesToAdd.Count
-               + ClassesToRemove.Count;
+        return Operations.Count;
     }
 }
 
-internal sealed record DomStringMutation(string Name, string? Value);
+internal sealed record DomMutationOperation(
+    string Kind,
+    string? Name = null,
+    string? StringValue = null,
+    double NumberValue = 0,
+    bool BoolValue = false)
+{
+    public static DomMutationOperation Text(string? value) => new("text", StringValue: value);
 
-internal sealed record DomClassMutation(string Name, bool Add);
+    public static DomMutationOperation Attribute(string name, string? value) => new("attribute", name, value);
+
+    public static DomMutationOperation Style(string name, string? value) => new("style", name, value);
+
+    public static DomMutationOperation ClassAdd(string name) => new("class-add", name);
+
+    public static DomMutationOperation ClassRemove(string name) => new("class-remove", name);
+
+    public static DomMutationOperation Property(DomPropertyMutation mutation)
+    {
+        return mutation.Kind switch
+        {
+            "string" => new("property-string", mutation.Name, mutation.StringValue),
+            "bool" => new("property-bool", mutation.Name, BoolValue: mutation.BoolValue),
+            "number" => new("property-number", mutation.Name, NumberValue: mutation.NumberValue),
+            "json" => new("property-json", mutation.Name, mutation.StringValue),
+            "null" => new("property-null", mutation.Name),
+            "remove" => new("property-remove", mutation.Name),
+            "input-value" => new("property-input-value", mutation.Name, mutation.StringValue),
+            "input-checked" => new("property-input-checked", mutation.Name, BoolValue: mutation.BoolValue),
+            _ => new("property-null", mutation.Name)
+        };
+    }
+}
 
 internal sealed record DomPropertyMutation(
     string Name,
