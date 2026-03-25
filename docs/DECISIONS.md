@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-25 (ScrollView orientation gallery unhidden now that Picker is available)
+- Removed the wrapper defer policy that hid `ScrollViewOrientationPage` from `ScrollViewPage` section navigation; the page is now runnable through the existing nested gallery flow.
+- Added deterministic nested-page automation IDs for the orientation picker and target scroll view so orientation switching behavior can be asserted in E2E without vendor-page edits.
+- Added integration and E2E regression coverage that locks this behavior and ensures future changes do not silently re-hide the Orientation scenario.
+
 ## 2026-03-25 (ControlsSample ClipPage runnable on shared clip projection path)
 - Promoted upstream `ClipPage` to runnable in the ControlsSample wrappers and added deterministic automation IDs for its five image scenarios.
 - Kept implementation framework-first: `ClipPage` relies on the existing shared `IView.Clip` projection pipeline (`MirageCommonViewProjection.MapClip`) rather than page-specific rendering logic.
