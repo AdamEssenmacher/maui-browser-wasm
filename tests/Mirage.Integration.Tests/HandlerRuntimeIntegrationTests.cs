@@ -5099,10 +5099,12 @@ public sealed class HandlerRuntimeIntegrationTests
         };
 
         ((IElementHandler)handler).SetVirtualView(path);
-        Assert.Equal("xMinYMin meet", handler.PlatformView.Attributes["preserveAspectRatio"]);
+        Assert.False(handler.PlatformView.Attributes.ContainsKey("viewBox"));
+        Assert.False(handler.PlatformView.Attributes.ContainsKey("preserveAspectRatio"));
 
         path.Aspect = Stretch.Fill;
         MiragePathHandler.Mapper.UpdateProperty(handler, path, nameof(Microsoft.Maui.Controls.Shapes.Path.Aspect));
+        Assert.Equal("0 0 40 20", handler.PlatformView.Attributes["viewBox"]);
         Assert.Equal("none", handler.PlatformView.Attributes["preserveAspectRatio"]);
     }
 
@@ -5120,7 +5122,8 @@ public sealed class HandlerRuntimeIntegrationTests
 
         var path = new Microsoft.Maui.Controls.Shapes.Path
         {
-            Data = geometry
+            Data = geometry,
+            Aspect = Stretch.Fill
         };
 
         ((IElementHandler)handler).SetVirtualView(path);

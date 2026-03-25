@@ -88,6 +88,7 @@ internal sealed class MiragePathHandler : MirageViewHandler<MauiPath>
         }
 
         var geometry = VirtualView.Data;
+        var aspect = VirtualView.Aspect;
         if (geometry is null)
         {
             _pathNode.SetAttribute("d", null);
@@ -97,7 +98,8 @@ internal sealed class MiragePathHandler : MirageViewHandler<MauiPath>
         {
             var data = geometry.ToString();
             _pathNode.SetAttribute("d", string.IsNullOrWhiteSpace(data) ? null : data);
-            platformView.SetAttribute("viewBox", BuildViewBox(VirtualView.GetPath()));
+            // Stretch.None should use natural path coordinates without a viewBox to avoid implicit SVG scaling.
+            platformView.SetAttribute("viewBox", aspect == Stretch.None ? null : BuildViewBox(VirtualView.GetPath()));
         }
 
         if (VirtualView.Fill is SolidColorBrush fillBrush)
@@ -123,16 +125,15 @@ internal sealed class MiragePathHandler : MirageViewHandler<MauiPath>
             _pathNode.SetAttribute("stroke-width", null);
         }
 
-        platformView.SetAttribute("preserveAspectRatio", MapAspectToPreserveAspectRatio(VirtualView.Aspect));
+        platformView.SetAttribute("preserveAspectRatio", MapAspectToPreserveAspectRatio(aspect));
         RequestRender();
     }
 
-    private static string MapAspectToPreserveAspectRatio(Stretch aspect)
+    private static string? MapAspectToPreserveAspectRatio(Stretch aspect)
     {
         return aspect switch
         {
-            // Stretch.None should keep aspect ratio and avoid fill-style distortion.
-            Stretch.None => "xMinYMin meet",
+            Stretch.None => null,
             Stretch.Fill => "none",
             Stretch.UniformToFill => "xMidYMid slice",
             _ => "xMidYMid meet"
