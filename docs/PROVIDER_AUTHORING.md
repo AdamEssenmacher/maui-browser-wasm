@@ -2,7 +2,8 @@
 
 A Mirage provider implements `IMirageComponentProvider` and must realize both built-in `ControlNode` paths and extensible `WebNode` paths.
 
-Mirage providers are adapters from Mirage semantic kinds to complete web component libraries (for example, Fluent UI Web Components), while preserving a raw BYO web-node path for arbitrary custom/vendor elements.
+Mirage providers are adapters from Mirage semantic kinds to DOM realization metadata for built-in controls, while preserving a raw BYO web-node path for custom/vendor elements.
+This is not yet a full arbitrary component-library adapter surface.
 
 ## Required contract
 
@@ -19,7 +20,14 @@ Capability surface is structured through:
 
 - `ProviderCapabilities.SupportsControlNodes`
 - `ProviderCapabilities.SupportsWebNodes`
-- `ProviderCapabilities.Features` (`ProviderFeatureSet`)
+- `ProviderCapabilities.Features` (`ProviderFeatureSet`, currently advisory; only `EventPayloadSupport` participates in active runtime behavior)
+
+## Current scope (important)
+
+- The control-node path is the meaningful provider abstraction today. Providers choose concrete host tags, optional sub-elements, default attributes, and property/event mappings for Mirage-owned controls.
+- The web-node path is intentionally thin. Providers preserve requested element identity, can advertise mutation-channel support, and can optionally add event hints for input-like elements.
+- Generic `WebNode` hosting is a raw custom-element escape hatch, not proof that Mirage can deeply adapt an arbitrary component library.
+- If you need slots/child projection, structured event payloads, overlay/portal hosting, provider-owned lifecycle hooks, or shadow/part-aware targeting, those are future seams rather than current provider responsibilities.
 
 ## Control-node realization
 
@@ -80,12 +88,21 @@ Example:
 `ResolveWebNode(...)` is capability/validation-oriented, not semantic remapping.
 Providers must not reinterpret the requested web-node element into a different identity.
 
+Current abstraction level is intentionally low: generic web-node hosting is a raw custom-element escape hatch, not a provider-owned composition model.
+
 Generic descriptors declare support/capability for:
 - attributes
 - properties (typed `MirageValue`)
 - styles
 - classes
 - events
+
+Modeled-but-deferred surface:
+- `WebNode.Metadata`
+- `WebNode.Slots`
+- `LayoutMetadata`
+
+These fields are reserved until Mirage diff/runtime support them end-to-end.
 
 ### Web-node event payload policy (current)
 
@@ -116,3 +133,4 @@ Attributes/styles remain string-based in this cutover.
 - Do not move provider mapping logic into `Mirage.Core` or `Mirage.Web`.
 - Do not reinterpret web-node element identity into provider-specific control identity.
 - `Mirage.Web` remains provider-neutral runtime infrastructure.
+- Do not describe the current provider model as deep library portability across arbitrary web-component ecosystems.

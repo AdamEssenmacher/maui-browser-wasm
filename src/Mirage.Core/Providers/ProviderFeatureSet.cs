@@ -1,5 +1,7 @@
 namespace Mirage.Core.Providers;
 
+// Most capability flags are currently advisory. Only EventPayloadSupport is
+// consumed by the active runtime/provider flow today.
 public sealed class ProviderFeatureSet
 {
     public ProviderFeatureSet(
@@ -16,6 +18,7 @@ public sealed class ProviderFeatureSet
         EventPayloadSupport = eventPayloadSupport;
     }
 
+    // Reserved until Mirage grows concrete end-to-end provider seams here.
     public bool SupportsAdvancedInputSemantics { get; }
 
     public bool SupportsOverlayHosting { get; }
@@ -24,5 +27,6 @@ public sealed class ProviderFeatureSet
 
     public bool SupportsThemingTokens { get; }
 
+    // Active capability surface used by current event-bridge contracts.
     public ProviderEventPayloadSupport EventPayloadSupport { get; }
 }

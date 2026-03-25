@@ -47,8 +47,10 @@ public sealed class WebNode : VisualNodeBase
 
     public IReadOnlyList<string> Classes { get; }
 
+    // Reserved until Mirage diff/runtime support metadata end-to-end.
     public IReadOnlyDictionary<string, MirageValue> Metadata { get; }
 
+    // Reserved until Mirage diff/runtime support slot projection end-to-end.
     public IReadOnlyDictionary<string, string?> Slots { get; }
 
     public override PlatformNodeType NodeType => PlatformNodeType.Web;
