@@ -45,6 +45,8 @@ public abstract class VisualNodeBase : NodeBase
 
     public IReadOnlyList<string> Events { get; }
 
+    // Modeled for future layout-aware projection; current diff/runtime paths do
+    // not apply this surface end-to-end.
     public IReadOnlyDictionary<string, MirageValue> LayoutMetadata { get; }
 
     private static IReadOnlyDictionary<string, MirageValue> NormalizeProperties(

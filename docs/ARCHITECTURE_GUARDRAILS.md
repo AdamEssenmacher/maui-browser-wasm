@@ -22,19 +22,21 @@ This document locks architectural boundaries before Mirage expands beyond the cu
 - `Visibility`
 - `Opacity`
 - `Margin`
-- common sizing/layout participation metadata (`LayoutMetadata`)
 - common mutation channels (`Properties`, `Styles`, `Events`)
+
+`LayoutMetadata` exists in the model but is reserved until Mirage diff/runtime support it end-to-end.
 
 Classification:
 
 - Shared visual concern:
-  - `AutomationId`, visibility, opacity, margin, layout metadata
+  - `AutomationId`, visibility, opacity, margin
 - Web-node-only concern:
   - arbitrary `Attributes`
   - `Classes`
+- Deferred concern:
+  - `LayoutMetadata`
   - `Slots`
   - web-shaped element metadata
-- Deferred concern:
   - full MAUI style/resource/trigger semantics
   - universal padding semantics across all nodes
   - control-specific semantic behavior in shared base
@@ -46,6 +48,7 @@ Classification:
 - create this actual DOM/custom element by name
 - apply explicit attributes/properties/classes/styles/events
 - preserve element identity through provider/runtime
+- current scope is raw DOM/custom-element hosting, not a full provider-owned composition model
 
 Provider rule:
 
@@ -68,6 +71,11 @@ Future capability dimensions should remain explicit (not ad-hoc string parsing):
 - virtualization
 - theming/token support
 - structured event payload extraction
+
+Current reality:
+
+- `ProviderFeatureSet.EventPayloadSupport` is the only capability family that affects active runtime behavior today.
+- Other capability flags are advisory/reserved until Mirage grows concrete end-to-end seams in those areas.
 
 ## 5. Generic event payload policy (current)
 
@@ -128,3 +136,19 @@ Policy:
 - Route mapping, URL parse/serialize, page activation, guard, history policy, and title policy are extension seams configured through `UseMirageNavigation(...)`.
 - Mirage continues to own stack semantics, history plumbing, and runtime handler coordination.
 - Non-goals in this wave: Shell, tabs/flyout navigation, and router-first replacement of MAUI navigation.
+
+## 11. Provider portability bar
+
+Mirage should not claim broad arbitrary-provider portability until it has first-class seams for:
+
+- slot and child projection
+- structured event payload extraction
+- overlay/dialog/portal hosting
+- provider-owned lifecycle or imperative attach hooks
+- shadow-root or `part`-aware targeting
+
+Until then, the supported story is:
+
+- built-in Mirage controls on the `ControlNode` path
+- raw custom-element hosting on the `WebNode` path
+- explicit special-case subsystems such as the map provider seam

@@ -130,6 +130,46 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void ActiveArchitectureDocs_NarrowProviderBreadthClaims()
+    {
+        var repositoryRoot = GetRepositoryRoot();
+        var readmeText = File.ReadAllText(Path.Combine(repositoryRoot, "README.md"));
+        var providerText = File.ReadAllText(Path.Combine(repositoryRoot, "docs", "PROVIDER_AUTHORING.md"));
+        var guardrailsText = File.ReadAllText(Path.Combine(repositoryRoot, "docs", "ARCHITECTURE_GUARDRAILS.md"));
+
+        Assert.DoesNotContain("adapt complete web component libraries", readmeText, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("adapt complete web component libraries", providerText, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("raw custom-element hosting seam", readmeText, StringComparison.Ordinal);
+        Assert.Contains("not yet a full arbitrary component-library adapter surface", providerText, StringComparison.Ordinal);
+        Assert.Contains("current scope is raw DOM/custom-element hosting", guardrailsText, StringComparison.Ordinal);
+        Assert.Contains("explicit special-case subsystems such as the map provider seam", guardrailsText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DeferredWebNodeSurface_IsDocumentedBeforeRuntimeSupport()
+    {
+        var repositoryRoot = GetRepositoryRoot();
+        var providerText = File.ReadAllText(Path.Combine(repositoryRoot, "docs", "PROVIDER_AUTHORING.md"));
+        var guardrailsText = File.ReadAllText(Path.Combine(repositoryRoot, "docs", "ARCHITECTURE_GUARDRAILS.md"));
+        var diffText = File.ReadAllText(Path.Combine(repositoryRoot, "src", "Mirage.Core", "Diff", "SemanticDiffEngine.cs"));
+        var runtimeText = File.ReadAllText(Path.Combine(repositoryRoot, "src", "Mirage.Web", "Runtime", "MirageRuntime.cs"));
+        var platformViewText = File.ReadAllText(Path.Combine(repositoryRoot, "src", "Mirage.Maui", "Handlers", "MiragePlatformView.cs"));
+
+        Assert.Contains("These fields are reserved until Mirage diff/runtime support them end-to-end.", providerText, StringComparison.Ordinal);
+        Assert.Contains("LayoutMetadata", guardrailsText, StringComparison.Ordinal);
+        Assert.Contains("reserved until Mirage diff/runtime support it end-to-end.", guardrailsText, StringComparison.Ordinal);
+
+        Assert.DoesNotContain("Slots", diffText, StringComparison.Ordinal);
+        Assert.DoesNotContain("LayoutMetadata", diffText, StringComparison.Ordinal);
+        Assert.DoesNotContain("Metadata", diffText, StringComparison.Ordinal);
+        Assert.DoesNotContain("Slots", runtimeText, StringComparison.Ordinal);
+        Assert.DoesNotContain("LayoutMetadata", runtimeText, StringComparison.Ordinal);
+        Assert.DoesNotContain("Slots", platformViewText, StringComparison.Ordinal);
+        Assert.DoesNotContain("LayoutMetadata", platformViewText, StringComparison.Ordinal);
+        Assert.DoesNotContain("Metadata", platformViewText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void PaddingMapping_IncludesLabelParitySurface()
     {
         var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");

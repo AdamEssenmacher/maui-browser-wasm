@@ -7,6 +7,12 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - `MirageRuntime` now emits per-render batching diagnostics (`batchedNodes`, `batchedMutations`, `interopCalls`, `batchFlushes`) so runtime pressure can be measured directly without changing the semantic diff model or MAUI handler architecture.
 - Browser window resize subscriptions now coalesce same-frame `resize` storms through `requestAnimationFrame`, while `MirageBrowserAppHost` still performs its initial arrange/render synchronously before subscribing.
 
+## 2026-03-25 (Mirage runtime reframe: keep the renderer, narrow provider claims)
+- Reframed Mirage publicly and internally as a MAUI handler backend with a semantic render/diff runtime plus a raw custom-element hosting seam, rather than a broadly portable adapter for arbitrary web-component libraries.
+- Kept the runtime/coordinator split unchanged because it is providing concrete value through render coalescing, scoped rematerialization, deterministic diff application, and centralized node-id event routing.
+- Documented `WebNode.Metadata`, `WebNode.Slots`, `LayoutMetadata`, most `ProviderFeatureSet` flags, and `IMirageRuntime.TryGetNodeInputValue` as reserved/deferred surface unless they gain end-to-end consumers.
+- Added architecture and provider-validation guards so active docs no longer overclaim provider breadth and so deferred web-node surfaces stay documented as deferred until implemented.
+
 ## 2026-03-25 (ScrollView orientation gallery unhidden now that Picker is available)
 - Removed the wrapper defer policy that hid `ScrollViewOrientationPage` from `ScrollViewPage` section navigation; the page is now runnable through the existing nested gallery flow.
 - Added deterministic nested-page automation IDs for the orientation picker and target scroll view so orientation switching behavior can be asserted in E2E without vendor-page edits.
