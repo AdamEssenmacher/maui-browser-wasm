@@ -16,13 +16,17 @@
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\FlexLayoutPage.xaml" Link="Vendor\Pages\Layouts\FlexLayoutPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\GridPage.xaml" Link="Vendor\Pages\Layouts\GridPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\HorizontalStackLayoutPage.xaml" Link="Vendor\Pages\Layouts\HorizontalStackLayoutPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\RelativeLayoutPage.xaml" Link="Vendor\Pages\Layouts\RelativeLayoutPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\StackLayoutPage.xaml" Link="Vendor\Pages\Layouts\StackLayoutPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPage.xaml" Link="Vendor\Pages\Layouts\ScrollViewPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollToEndPage.xaml" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollToEndPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollToFromConstructorPage.xaml" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollToFromConstructorPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollViewOrientationPage.xaml" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollViewOrientationPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\TemplatedViewPage.xaml" Link="Vendor\Pages\Layouts\TemplatedViewPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\VerticalStackLayoutPage.xaml" Link="Vendor\Pages\Layouts\VerticalStackLayoutPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\ZIndexPage.xaml" Link="Vendor\Pages\Layouts\ZIndexPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\LayoutsPage.xaml" Link="Vendor\Pages\LayoutsPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BrushesPage.xaml" Link="Vendor\Pages\Core\BrushesPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\TransformationsPage.xaml" Link="Vendor\Pages\Core\TransformationsPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderPlayground.xaml" Link="Vendor\Pages\Core\BorderGalleries\BorderPlayground.xaml" />
@@ -51,6 +55,7 @@
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Layouts\LayoutIsEnabledPage.xaml" Link="Vendor\Pages\Layouts\LayoutIsEnabledPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\InputTransparentPage.xaml" Link="Vendor\Pages\Core\InputTransparentPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Controls\CardView\CardView.xaml" Link="Vendor\Controls\CardView\CardView.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Controls\Rate\Rate.xaml" Link="Vendor\Controls\Rate\Rate.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -61,13 +66,18 @@
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\FlexLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\FlexLayoutPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\GridPage.xaml.cs" Link="Vendor\Pages\Layouts\GridPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\HorizontalStackLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\HorizontalStackLayoutPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\LayoutUpdatesPage.cs" Link="Vendor\Pages\Layouts\LayoutUpdatesPage.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\RelativeLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\RelativeLayoutPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\StackLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\StackLayoutPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPage.xaml.cs" Link="Vendor\Pages\Layouts\ScrollViewPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollToEndPage.xaml.cs" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollToEndPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollToFromConstructorPage.xaml.cs" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollToFromConstructorPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollViewOrientationPage.xaml.cs" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollViewOrientationPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml.cs" Link="Vendor\Pages\Layouts\ScrollViewPages\ScrollViewTemplatePage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\TemplatedViewPage.xaml.cs" Link="Vendor\Pages\Layouts\TemplatedViewPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\VerticalStackLayoutPage.xaml.cs" Link="Vendor\Pages\Layouts\VerticalStackLayoutPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\ZIndexPage.xaml.cs" Link="Vendor\Pages\Layouts\ZIndexPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\LayoutsPage.xaml.cs" Link="Vendor\Pages\LayoutsPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BrushesPage.xaml.cs" Link="Vendor\Pages\Core\BrushesPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\TransformationsPage.xaml.cs" Link="Vendor\Pages\Core\TransformationsPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderPage.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderPage.cs" />
@@ -98,12 +108,17 @@
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Layouts\LayoutIsEnabledPage.xaml.cs" Link="Vendor\Pages\Layouts\LayoutIsEnabledPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\InputTransparentPage.xaml.cs" Link="Vendor\Pages\Core\InputTransparentPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Controls\CardView\CardView.xaml.cs" Link="Vendor\Controls\CardView\CardView.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Controls\Rate\Rate.xaml.cs" Link="Vendor\Controls\Rate\Rate.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Controls\Rate\Rate.cs" Link="Vendor\Controls\Rate\Rate.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Controls\Rate\RateItem.cs" Link="Vendor\Controls\Rate\RateItem.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Controls\Rate\ValueChangedEventArgs.cs" Link="Vendor\Controls\Rate\ValueChangedEventArgs.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Converters\BoolToCustomValueConverter.cs" Link="Vendor\Converters\BoolToCustomValueConverter.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Converters\NegativeConverter.cs" Link="Vendor\Converters\NegativeConverter.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Converters\ThicknessConverter.cs" Link="Vendor\Converters\ThicknessConverter.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Models\SectionModel.cs" Link="Vendor\Models\SectionModel.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)ViewModels\Base\BaseViewModel.cs" Link="Vendor\ViewModels\Base\BaseViewModel.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)ViewModels\Base\BaseGalleryViewModel.cs" Link="Vendor\ViewModels\Base\BaseGalleryViewModel.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)ViewModels\LayoutsViewModel.cs" Link="Vendor\ViewModels\LayoutsViewModel.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)ViewModels\ScrollViewOptionsModel.cs" Link="Vendor\ViewModels\ScrollViewOptionsModel.cs" />
   </ItemGroup>
 

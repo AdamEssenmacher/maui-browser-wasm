@@ -40,6 +40,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Core" Version="$(MauiPackageVersion)" />
     <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiPackageVersion)" />
+    <PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiPackageVersion)" />
     <PackageReference Include="Microsoft.Maui.Controls.Xaml" Version="$(MauiPackageVersion)" />
   </ItemGroup>
 

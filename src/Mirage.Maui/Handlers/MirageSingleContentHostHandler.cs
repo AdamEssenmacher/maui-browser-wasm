@@ -66,7 +66,18 @@ internal abstract class MirageSingleContentHostHandler<TVirtualView> : MirageVie
 
         var diagnosticsEnabled = MirageDiagnostics.IsEnabled;
         var toHandlerStartTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
-        var contentHandler = content.ToHandler(MauiContext);
+        IElementHandler contentHandler;
+        try
+        {
+            contentHandler = content.ToHandler(MauiContext);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                $"Failed to create handler for presented content type '{content.GetType().FullName}' in host handler '{GetType().FullName}'.",
+                ex);
+        }
+
         if (diagnosticsEnabled)
         {
             var elapsedMs = MirageDiagnostics.GetElapsedMilliseconds(toHandlerStartTimestamp, MirageDiagnostics.GetTimestamp());

@@ -4,7 +4,7 @@ using Microsoft.Maui.Controls.Internals;
 namespace Mirage.Maui.Hosting;
 
 #pragma warning disable CS0612 // IFontNamedSizeService/NamedSize are obsolete but required for upstream XAML compatibility.
-internal sealed class MirageFontNamedSizeService : IFontNamedSizeService
+public sealed class MirageFontNamedSizeService : IFontNamedSizeService
 {
     public double GetNamedSize(NamedSize size, Type targetElementType, bool useOldSizes)
     {

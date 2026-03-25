@@ -27,12 +27,35 @@ public static class ControlsSampleCatalog
             pageType: typeof(AbsoluteLayoutParityProbePage),
             description: "Mirage parity probe: mutates AbsoluteLayout bounds, flags, and z-order at runtime to validate dynamic projection behavior."),
         new(
+            id: "layoutspage",
+            title: "LayoutsPage",
+            upstreamPath: "Pages/LayoutsPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(LayoutsPage),
+            description: "Runnable in Mirage today: exercises upstream layout gallery navigation across foundational layout scenarios.",
+            pageFactory: CreateLayoutsPage),
+        new(
             id: "gridpage",
             title: "GridPage",
             upstreamPath: "Pages/Layouts/GridPage.xaml",
             status: ControlsSampleStatus.Runnable,
             pageType: typeof(GridPage),
             description: "Runnable in Mirage today: exercises Grid row/column definitions, spans, and centered label overlays."),
+        new(
+            id: "layoutupdatespage",
+            title: "LayoutUpdatesPage",
+            upstreamPath: "Pages/Layouts/LayoutUpdatesPage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(LayoutUpdatesPage),
+            description: "Runnable in Mirage today: exercises runtime add/remove/insert/replace updates in a layout with overlapping child content.",
+            pageFactory: CreateLayoutUpdatesPage),
+        new(
+            id: "relativelayoutpage",
+            title: "RelativeLayoutPage",
+            upstreamPath: "Pages/Layouts/RelativeLayoutPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(RelativeLayoutPage),
+            description: "Runnable in Mirage today: exercises compatibility RelativeLayout constraints against parent and sibling geometry."),
         new(
             id: "horizontalstacklayoutpage",
             title: "HorizontalStackLayoutPage",
@@ -54,6 +77,21 @@ public static class ControlsSampleCatalog
             status: ControlsSampleStatus.Runnable,
             pageType: typeof(VerticalStackLayoutPage),
             description: "Runnable in Mirage today: exercises VerticalStackLayout column flow with Label and BoxView children."),
+        new(
+            id: "templatedviewpage",
+            title: "TemplatedViewPage",
+            upstreamPath: "Pages/Layouts/TemplatedViewPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(TemplatedViewPage),
+            description: "Runnable in Mirage today: exercises templated content composition with CardView and custom templated controls."),
+        new(
+            id: "zindexpage",
+            title: "ZIndexPage",
+            upstreamPath: "Pages/Layouts/ZIndexPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(ZIndexPage),
+            description: "Runnable in Mirage today: exercises runtime z-index mutations and overlap ordering.",
+            pageFactory: CreateZIndexPage),
         new(
             id: "scrollviewpage",
             title: "ScrollViewPage",
@@ -187,9 +225,10 @@ public static class ControlsSampleCatalog
             id: "layoutisenabledpage",
             title: "LayoutIsEnabledPage",
             upstreamPath: "Pages/Layouts/LayoutIsEnabledPage.xaml",
-            status: ControlsSampleStatus.HiddenUnsupported,
+            status: ControlsSampleStatus.Runnable,
             pageType: typeof(LayoutIsEnabledPage),
-            description: "Imported layout demo page. Uses controls/layout features that are not fully mapped in Mirage yet."),
+            description: "Runnable in Mirage today: exercises layout-level IsEnabled propagation and command enablement behavior.",
+            pageFactory: CreateLayoutIsEnabledPage),
         new(
             id: "inputtransparentpage",
             title: "InputTransparentPage",
@@ -224,6 +263,76 @@ public static class ControlsSampleCatalog
             description: "Runnable in Mirage today: exercises CollectionView gallery navigation across templates, grouping, selection, scrolling, and layout variations (excluding deferred SearchBar/Carousel/Indicator dependencies).",
             pageFactory: CreateCollectionViewGallery)
     ];
+
+    private static Page CreateLayoutsPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new LayoutsPage();
+
+        SetNamedElementAutomationId(page, "LayoutSections", "controls-sample-layoutspage-sections");
+        var sections = FindDescendants<CollectionView>(page).FirstOrDefault();
+        if (sections is not null && string.IsNullOrWhiteSpace(sections.AutomationId))
+        {
+            sections.AutomationId = "controls-sample-layoutspage-sections";
+        }
+
+        return page;
+    }
+
+    private static Page CreateLayoutUpdatesPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new LayoutUpdatesPage();
+
+        SetButtonAutomationIdByText(page, "Add", "controls-sample-layoutupdatespage-add");
+        SetButtonAutomationIdByText(page, "Remove", "controls-sample-layoutupdatespage-remove");
+        SetButtonAutomationIdByText(page, "Insert", "controls-sample-layoutupdatespage-insert");
+        SetButtonAutomationIdByText(page, "Clear", "controls-sample-layoutupdatespage-clear");
+        SetButtonAutomationIdByText(page, "Update", "controls-sample-layoutupdatespage-update");
+
+        return page;
+    }
+
+    private static Page CreateZIndexPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new ZIndexPage();
+
+        SetNamedElementAutomationId(page, "CurrentZIndex", "controls-sample-zindexpage-current-label");
+        SetNamedElementAutomationId(page, "ZIndexStepper", "controls-sample-zindexpage-stepper");
+
+        return page;
+    }
+
+    private static Page CreateLayoutIsEnabledPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new LayoutIsEnabledPage();
+
+        SetNamedElementAutomationId(page, "MainLayout", "controls-sample-layoutisenabledpage-main-layout");
+        SetNamedElementAutomationId(page, "DisabledButton", "controls-sample-layoutisenabledpage-disabled-button");
+        SetNamedElementAutomationId(page, "DisabledCommandButton", "controls-sample-layoutisenabledpage-disabled-command-button");
+        SetButtonAutomationIdByText(page, "Disable Layout", "controls-sample-layoutisenabledpage-toggle-layout");
+        SetButtonAutomationIdByText(page, "Disable Button", "controls-sample-layoutisenabledpage-toggle-button");
+
+        var checkBoxes = FindDescendants<CheckBox>(page).ToArray();
+        if (checkBoxes.Length > 0 && string.IsNullOrWhiteSpace(checkBoxes[0].AutomationId))
+        {
+            checkBoxes[0].AutomationId = "controls-sample-layoutisenabledpage-bind-layout-enabled";
+        }
+
+        if (checkBoxes.Length > 1 && string.IsNullOrWhiteSpace(checkBoxes[1].AutomationId))
+        {
+            checkBoxes[1].AutomationId = "controls-sample-layoutisenabledpage-bind-button-enabled";
+        }
+
+        if (checkBoxes.Length > 2 && string.IsNullOrWhiteSpace(checkBoxes[2].AutomationId))
+        {
+            checkBoxes[2].AutomationId = "controls-sample-layoutisenabledpage-bind-command-enabled";
+        }
+
+        return page;
+    }
 
     private static Page CreateButtonPage(IServiceProvider services)
     {

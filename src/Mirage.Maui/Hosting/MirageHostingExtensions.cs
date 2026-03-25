@@ -11,6 +11,8 @@ using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Hosting;
 using MauiMap = Microsoft.Maui.Controls.Maps.Map;
+using MauiPath = Microsoft.Maui.Controls.Shapes.Path;
+using MauiRectangle = Microsoft.Maui.Controls.Shapes.Rectangle;
 
 namespace Mirage.Maui.Hosting;
 
@@ -20,7 +22,9 @@ public static class MirageHostingExtensions
     {
         var dispatcherProvider = new BrowserDispatcherProvider();
         DispatcherProvider.SetCurrent(dispatcherProvider);
-        DependencyService.Register<MirageFontNamedSizeService>();
+#pragma warning disable CS0612 // IFontNamedSizeService is obsolete but required for legacy upstream XAML controls.
+        DependencyService.Register<IFontNamedSizeService, MirageFontNamedSizeService>();
+#pragma warning restore CS0612
 
         builder.ConfigureMauiHandlers(handlers =>
         {
@@ -29,6 +33,7 @@ public static class MirageHostingExtensions
             handlers.AddHandler(typeof(ContentPage), typeof(MirageContentPageHandler));
             handlers.AddHandler(typeof(TabbedPage), typeof(MirageTabbedPageHandler));
             handlers.AddHandler(typeof(ContentView), typeof(MirageContentViewHandler));
+            handlers.AddHandler(typeof(TemplatedView), typeof(MirageTemplatedViewHandler));
             handlers.AddHandler(typeof(Frame), typeof(MirageFrameHandler));
             handlers.AddHandler(typeof(ScrollView), typeof(MirageScrollViewHandler));
             handlers.AddHandler(typeof(CollectionView), typeof(MirageCollectionViewHandler));
@@ -39,6 +44,7 @@ public static class MirageHostingExtensions
             handlers.AddHandler(typeof(Grid), typeof(MirageLayoutHandler));
             handlers.AddHandler(typeof(AbsoluteLayout), typeof(MirageLayoutHandler));
             handlers.AddHandler(typeof(Layout), typeof(MirageLayoutHandler));
+            TryAddCompatibilityLayoutHandler(handlers);
             handlers.AddHandler(typeof(Label), typeof(MirageLabelHandler));
             handlers.AddHandler(typeof(Entry), typeof(MirageEntryHandler));
             handlers.AddHandler(typeof(SearchBar), typeof(MirageSearchBarHandler));
@@ -53,6 +59,8 @@ public static class MirageHostingExtensions
             handlers.AddHandler(typeof(Image), typeof(MirageImageHandler));
             handlers.AddHandler(typeof(Border), typeof(MirageBorderHandler));
             handlers.AddHandler(typeof(BoxView), typeof(MirageBoxViewHandler));
+            handlers.AddHandler(typeof(MauiRectangle), typeof(MirageRectangleHandler));
+            handlers.AddHandler(typeof(MauiPath), typeof(MiragePathHandler));
             handlers.AddHandler(typeof(MauiMap), typeof(MirageMapHandler));
             handlers.AddHandler(typeof(Pin), typeof(MirageMapPinHandler));
             handlers.AddHandler(typeof(MapElement), typeof(MirageMapElementHandler));
@@ -73,6 +81,18 @@ public static class MirageHostingExtensions
         EnsureNavigationServices(builder.Services);
 
         return builder;
+    }
+
+    private static void TryAddCompatibilityLayoutHandler(IMauiHandlersCollection handlers)
+    {
+        ArgumentNullException.ThrowIfNull(handlers);
+
+        const string relativeLayoutTypeName = "Microsoft.Maui.Controls.Compatibility.RelativeLayout, Microsoft.Maui.Controls";
+        var relativeLayoutType = Type.GetType(relativeLayoutTypeName, throwOnError: false);
+        if (relativeLayoutType is not null)
+        {
+            handlers.AddHandler(relativeLayoutType, typeof(MirageLayoutHandler));
+        }
     }
 
     public static MauiAppBuilder UseMirageNavigation(this MauiAppBuilder builder, Action<MirageNavigationBuilder> configure)
