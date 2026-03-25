@@ -517,6 +517,41 @@ public sealed class MirageShapeViewHandlerTests
     }
 
     [Fact]
+    public async Task ShapeViewHandler_SupersededStreamImageBrushResolution_ReleasesStaleManagedUrl()
+    {
+        var resolver = new StubImageSourceResolver();
+        resolver.SetPendingStreamResolution();
+        var handler = CreateHandler(services => services.AddSingleton<IMirageImageSourceResolver>(resolver));
+
+        var staleBrush = CreateImageBrushFromStream();
+        var rectangle = new Rectangle
+        {
+            Fill = staleBrush
+        };
+
+        ((IElementHandler)handler).SetVirtualView(rectangle);
+        handler.PlatformArrange(new Rect(0, 0, 160, 90));
+        await WaitForAsync(() => resolver.StreamResolveAsyncCallCount >= 1, timeout: TimeSpan.FromSeconds(2));
+
+        rectangle.Fill = Brush.Green;
+        MirageShapeViewHandler.Mapper.UpdateProperty(handler, rectangle, nameof(IShapeView.Fill));
+
+        var staleUrl = "/_mirage/assets/test-shape-stream-stale.png";
+        resolver.CompletePendingStreamResolution(staleUrl);
+
+        await WaitForAsync(() => resolver.WasReleased(staleUrl), timeout: TimeSpan.FromSeconds(2));
+
+        var defsNode = GetDefsNode(GetSvgNode(handler));
+        var pathNode = GetPathNode(GetSvgNode(handler));
+        Assert.DoesNotContain(staleUrl, defsNode.GetPropertyString("innerHTML"), StringComparison.Ordinal);
+        var fillAttribute = pathNode.Attributes.TryGetValue("fill", out var fillValue)
+            ? fillValue ?? string.Empty
+            : string.Empty;
+        Assert.False(
+            fillAttribute.StartsWith("url(#", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task ShapeViewHandler_StreamImageBrushTransientFailure_RetryIsThrottledForRapidUpdates()
     {
         var resolver = new StubImageSourceResolver();
@@ -742,6 +777,7 @@ public sealed class MirageShapeViewHandlerTests
         private readonly Dictionary<string, MirageImageSourceProjectionResult> _uriResults = new(StringComparer.Ordinal);
         private readonly Queue<MirageImageSourceProjectionResult> _queuedStreamResults = new();
         private readonly object _sync = new();
+        private readonly HashSet<string> _releasedUrls = new(StringComparer.Ordinal);
         private MirageImageSourceProjectionResult? _streamResult;
         private MirageImageSourceProjectionResult? _fileResult;
         private TaskCompletionSource<MirageImageSourceProjectionResult>? _pendingStreamResult;
@@ -753,6 +789,14 @@ public sealed class MirageShapeViewHandlerTests
         public int StreamResolveAsyncCallCount => Volatile.Read(ref _streamResolveAsyncCallCount);
         public int FileResolveAsyncCallCount => Volatile.Read(ref _fileResolveAsyncCallCount);
         public int EnsureInitializedAsyncCallCount => Volatile.Read(ref _ensureInitializedAsyncCallCount);
+
+        public bool WasReleased(string browserUrl)
+        {
+            lock (_sync)
+            {
+                return _releasedUrls.Contains(browserUrl);
+            }
+        }
 
         public void SetResolved(string sourceUri, string browserUrl)
         {
@@ -890,6 +934,15 @@ public sealed class MirageShapeViewHandlerTests
 
         public void Release(string? browserUrl)
         {
+            if (string.IsNullOrWhiteSpace(browserUrl))
+            {
+                return;
+            }
+
+            lock (_sync)
+            {
+                _releasedUrls.Add(browserUrl);
+            }
         }
 
         private static async ValueTask<MirageImageSourceProjectionResult> WaitForPendingStreamResolutionAsync(

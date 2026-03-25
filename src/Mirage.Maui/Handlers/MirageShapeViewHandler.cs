@@ -79,6 +79,7 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
     private readonly Dictionary<ImageSource, MirageImageSourceProjectionResult> _asyncImageProjectionCache = new(ReferenceEqualityComparer.Instance);
     private readonly HashSet<ImageSource> _asyncImageProjectionInFlight = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<ImageSource, DateTime> _asyncImageProjectionRetryNotBeforeUtc = new(ReferenceEqualityComparer.Instance);
+    private readonly HashSet<ImageSource> _activeAsyncImageSources = new(ReferenceEqualityComparer.Instance);
     private readonly object _asyncImageProjectionSync = new();
     private CancellationTokenSource? _asyncImageProjectionCancellation;
 
@@ -229,6 +230,8 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
     private bool UpdateShapeProjection(IShapeView shapeView)
     {
         using var _ = BeginRenderBatch();
+
+        UpdateActiveAsyncImageSources(shapeView);
 
         var changed = EnsureShapeStructure();
         changed |= AttachShapeStructure();
@@ -794,6 +797,14 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
             return;
         }
 
+        if (!IsActiveAsyncImageSource(imageSource))
+        {
+            RemoveAsyncImageProjectionInFlight(imageSource);
+            RemoveAsyncImageProjectionFromCache(imageSource);
+            ReleaseIfManagedObjectUrl(resolved);
+            return;
+        }
+
         CacheAsyncImageProjection(imageSource, resolved);
         if (resolved.IsResolved)
         {
@@ -849,6 +860,23 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
         }
     }
 
+    private void RemoveAsyncImageProjectionFromCache(ImageSource imageSource)
+    {
+        lock (_asyncImageProjectionSync)
+        {
+            _asyncImageProjectionCache.Remove(imageSource);
+            _asyncImageProjectionRetryNotBeforeUtc.Remove(imageSource);
+        }
+    }
+
+    private bool IsActiveAsyncImageSource(ImageSource imageSource)
+    {
+        lock (_asyncImageProjectionSync)
+        {
+            return _activeAsyncImageSources.Contains(imageSource);
+        }
+    }
+
     private void RequestAsyncProjectionRefresh()
     {
         var dispatcher = MauiContext?.Services.GetService<IDispatcher>();
@@ -898,6 +926,7 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
             _asyncImageProjectionCache.Clear();
             _asyncImageProjectionInFlight.Clear();
             _asyncImageProjectionRetryNotBeforeUtc.Clear();
+            _activeAsyncImageSources.Clear();
         }
 
         if (urlsToRelease is null || urlsToRelease.Count == 0)
@@ -950,6 +979,41 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
             || trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
             || trimmed.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
             || trimmed.StartsWith("blob:", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void UpdateActiveAsyncImageSources(IShapeView shapeView)
+    {
+        var nextSources = new HashSet<ImageSource>(ReferenceEqualityComparer.Instance);
+        if (shapeView is MauiShape shape)
+        {
+            AddBrushImageSource(nextSources, shape.Fill);
+            AddBrushImageSource(nextSources, shape.Stroke);
+        }
+
+        lock (_asyncImageProjectionSync)
+        {
+            _activeAsyncImageSources.Clear();
+            foreach (var source in nextSources)
+            {
+                _activeAsyncImageSources.Add(source);
+            }
+        }
+    }
+
+    private static void AddBrushImageSource(HashSet<ImageSource> sources, Brush? brush)
+    {
+        if (brush is null || brush.IsEmpty)
+        {
+            return;
+        }
+
+        var imageSourceProperty = brush.GetType().GetProperty("ImageSource", BindingFlags.Public | BindingFlags.Instance);
+        if (imageSourceProperty?.GetValue(brush) is not ImageSource imageSource || imageSource.IsEmpty)
+        {
+            return;
+        }
+
+        sources.Add(imageSource);
     }
 
     private IMirageImageSourceResolver? GetImageSourceResolver()
