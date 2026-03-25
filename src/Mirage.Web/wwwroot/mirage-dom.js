@@ -1066,8 +1066,12 @@ export function getInputChecked(elementHandle) {
 export function getInputSelection(elementHandle) {
   const element = fromHandle(elementHandle);
   try {
-    const start = Number.isInteger(element.selectionStart) ? element.selectionStart : 0;
-    const end = Number.isInteger(element.selectionEnd) ? element.selectionEnd : start;
+    const start = element.selectionStart;
+    const end = element.selectionEnd;
+    if (!Number.isInteger(start) || !Number.isInteger(end)) {
+      return [];
+    }
+
     return [Math.max(0, start), Math.max(0, end)];
   } catch {
     return [];
