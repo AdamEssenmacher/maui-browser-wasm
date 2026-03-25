@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-25 (Render-path DOM mutation batching + frame-coalesced resize callbacks)
+- Added an internal `DomMutationBatch` seam in `Mirage.Web` so one render pass coalesces non-structural DOM mutations per realized node and flushes them through a single `applyMutationBatch` interop call while keeping create/move/remove and event subscription operations on the existing ordered path.
+- `MirageRuntime` now emits per-render batching diagnostics (`batchedNodes`, `batchedMutations`, `interopCalls`, `batchFlushes`) so runtime pressure can be measured directly without changing the semantic diff model or MAUI handler architecture.
+- Browser window resize subscriptions now coalesce same-frame `resize` storms through `requestAnimationFrame`, while `MirageBrowserAppHost` still performs its initial arrange/render synchronously before subscribing.
+
 ## 2026-03-25 (ScrollView orientation gallery unhidden now that Picker is available)
 - Removed the wrapper defer policy that hid `ScrollViewOrientationPage` from `ScrollViewPage` section navigation; the page is now runnable through the existing nested gallery flow.
 - Added deterministic nested-page automation IDs for the orientation picker and target scroll view so orientation switching behavior can be asserted in E2E without vendor-page edits.

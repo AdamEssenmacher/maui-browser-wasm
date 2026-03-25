@@ -868,8 +868,7 @@ export function setPropertyJson(elementHandle, name, json) {
   }
 }
 
-export function removeProperty(elementHandle, name) {
-  const element = fromHandle(elementHandle);
+function removePropertyFromElement(element, name) {
   if (!name) {
     return;
   }
@@ -910,6 +909,144 @@ export function removeProperty(elementHandle, name) {
     element[name] = null;
   } catch {
     delete element[name];
+  }
+}
+
+export function removeProperty(elementHandle, name) {
+  const element = fromHandle(elementHandle);
+  removePropertyFromElement(element, name);
+}
+
+function applyPropertyMutation(element, mutation) {
+  if (!element || !mutation || typeof mutation.name !== "string" || mutation.name.length === 0) {
+    return;
+  }
+
+  switch (mutation.kind) {
+    case "string":
+      element[mutation.name] = mutation.stringValue ?? "";
+      return;
+    case "bool":
+      element[mutation.name] = !!mutation.boolValue;
+      return;
+    case "number":
+      element[mutation.name] = Number.isFinite(mutation.numberValue) ? mutation.numberValue : 0;
+      return;
+    case "json":
+      if (mutation.stringValue == null || mutation.stringValue.length === 0) {
+        element[mutation.name] = null;
+        return;
+      }
+
+      try {
+        element[mutation.name] = JSON.parse(mutation.stringValue);
+      } catch {
+        element[mutation.name] = null;
+      }
+      return;
+    case "null":
+      element[mutation.name] = null;
+      return;
+    case "remove":
+      removePropertyFromElement(element, mutation.name);
+      return;
+    case "input-value":
+      element.value = mutation.stringValue ?? "";
+      return;
+    case "input-checked":
+      element.checked = !!mutation.boolValue;
+      return;
+    default:
+      return;
+  }
+}
+
+export function applyMutationBatch(batchJson) {
+  if (typeof batchJson !== "string" || batchJson.length === 0) {
+    return;
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(batchJson);
+  } catch {
+    return;
+  }
+
+  const elements = Array.isArray(payload?.elements) ? payload.elements : [];
+  for (const mutation of elements) {
+    if (!mutation || !Number.isInteger(mutation.handle)) {
+      continue;
+    }
+
+    const element = elementByHandle.get(mutation.handle);
+    if (!element) {
+      continue;
+    }
+
+    if (mutation.hasText) {
+      element.textContent = mutation.text ?? "";
+    }
+
+    if (Array.isArray(mutation.attributes)) {
+      for (const attribute of mutation.attributes) {
+        if (!attribute || typeof attribute.name !== "string" || attribute.name.length === 0) {
+          continue;
+        }
+
+        if (attribute.value == null) {
+          element.removeAttribute(attribute.name);
+        } else {
+          element.setAttribute(attribute.name, attribute.value);
+        }
+      }
+    }
+
+    if (Array.isArray(mutation.styles)) {
+      for (const style of mutation.styles) {
+        if (!style || typeof style.name !== "string" || style.name.length === 0) {
+          continue;
+        }
+
+        const hasExplicitCssName = style.name.startsWith("--") || style.name.includes("-");
+        if (hasExplicitCssName) {
+          if (style.value == null || style.value === "") {
+            element.style.removeProperty(style.name);
+          } else {
+            element.style.setProperty(style.name, style.value);
+          }
+          continue;
+        }
+
+        element.style[style.name] = style.value ?? "";
+      }
+    }
+
+    if (Array.isArray(mutation.properties)) {
+      for (const property of mutation.properties) {
+        applyPropertyMutation(element, property);
+      }
+    }
+
+    if (Array.isArray(mutation.classesToAdd)) {
+      for (const classMutation of mutation.classesToAdd) {
+        if (!classMutation || !classMutation.name) {
+          continue;
+        }
+
+        element.classList.add(classMutation.name);
+      }
+    }
+
+    if (Array.isArray(mutation.classesToRemove)) {
+      for (const classMutation of mutation.classesToRemove) {
+        if (!classMutation || !classMutation.name) {
+          continue;
+        }
+
+        element.classList.remove(classMutation.name);
+      }
+    }
   }
 }
 
@@ -1243,19 +1380,42 @@ let nextResizeSubscriptionId = 1;
 
 export function subscribeWindowResize(callback) {
   const id = nextResizeSubscriptionId++;
-  const listener = () => callback();
-  resizeSubscriptions.set(id, listener);
+  let frameId = 0;
+  let scheduled = false;
+  const listener = () => {
+    if (scheduled) {
+      return;
+    }
+
+    scheduled = true;
+    frameId = window.requestAnimationFrame(() => {
+      scheduled = false;
+      frameId = 0;
+      callback();
+    });
+  };
+  resizeSubscriptions.set(id, {
+    listener,
+    cancel() {
+      scheduled = false;
+      if (frameId !== 0) {
+        window.cancelAnimationFrame(frameId);
+        frameId = 0;
+      }
+    }
+  });
   window.addEventListener("resize", listener);
   return id;
 }
 
 export function unsubscribeWindowResize(subscriptionId) {
-  const listener = resizeSubscriptions.get(subscriptionId);
-  if (!listener) {
+  const entry = resizeSubscriptions.get(subscriptionId);
+  if (!entry) {
     return;
   }
 
-  window.removeEventListener("resize", listener);
+  entry.cancel();
+  window.removeEventListener("resize", entry.listener);
   resizeSubscriptions.delete(subscriptionId);
 }
 

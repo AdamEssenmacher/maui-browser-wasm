@@ -25,6 +25,7 @@ public sealed class MirageRuntime : IMirageRuntime
 
     private NodeBase? _currentRoot;
     private IMirageEventSink? _eventSink;
+    private RenderApplyStats? _currentRenderStats;
 
     public MirageRuntime(DomElement mountRoot, IMirageComponentProvider provider, IMirageMapProvider? mapProvider = null)
     {
@@ -48,15 +49,35 @@ public sealed class MirageRuntime : IMirageRuntime
         ArgumentNullException.ThrowIfNull(nextRoot);
 
         var diagnosticsEnabled = MirageDiagnostics.IsEnabled;
+        var renderStats = diagnosticsEnabled ? new RenderApplyStats() : null;
         var renderStartTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
         var diffStartTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
         var operations = _diffEngine.Diff(_currentRoot, nextRoot);
         var diffEndTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
         var applyStartTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
-        foreach (var operation in operations)
+        var mutationBatch = new DomMutationBatch();
+
+        _currentRenderStats = renderStats;
+        try
         {
-            Apply(operation);
+            foreach (var operation in operations)
+            {
+                if (TryQueueMutation(operation, mutationBatch))
+                {
+                    continue;
+                }
+
+                FlushMutationBatch(mutationBatch);
+                Apply(operation);
+            }
+
+            FlushMutationBatch(mutationBatch);
         }
+        finally
+        {
+            _currentRenderStats = null;
+        }
+
         var applyEndTimestamp = diagnosticsEnabled ? MirageDiagnostics.GetTimestamp() : 0;
 
         _currentRoot = nextRoot;
@@ -68,7 +89,7 @@ public sealed class MirageRuntime : IMirageRuntime
             var applyMs = MirageDiagnostics.GetElapsedMilliseconds(applyStartTimestamp, applyEndTimestamp);
             MirageDiagnostics.Log(
                 "runtime.render",
-                $"root={nextRoot.NodeId} operations={operations.Count} diffMs={diffMs:0.###} applyMs={applyMs:0.###} totalMs={totalMs:0.###}");
+                $"root={nextRoot.NodeId} operations={operations.Count} batchedNodes={renderStats!.BatchedNodeCount} batchedMutations={renderStats.BatchedMutationCount} interopCalls={renderStats.InteropCallCount} batchFlushes={renderStats.BatchFlushCount} diffMs={diffMs:0.###} applyMs={applyMs:0.###} totalMs={totalMs:0.###}");
         }
     }
 
@@ -239,6 +260,47 @@ public sealed class MirageRuntime : IMirageRuntime
         }
     }
 
+    private bool TryQueueMutation(PatchOperation operation, DomMutationBatch mutationBatch)
+    {
+        return operation switch
+        {
+            SetPropertyOperation setProperty => TryQueueSetProperty(setProperty, mutationBatch),
+            RemovePropertyOperation removeProperty => TryQueueRemoveProperty(removeProperty, mutationBatch),
+            SetAttributeOperation setAttribute => TryQueueSetAttribute(setAttribute, mutationBatch),
+            RemoveAttributeOperation removeAttribute => TryQueueRemoveAttribute(removeAttribute, mutationBatch),
+            AddClassOperation addClass => TryQueueAddClass(addClass, mutationBatch),
+            RemoveClassOperation removeClass => TryQueueRemoveClass(removeClass, mutationBatch),
+            SetStyleOperation setStyle => TryQueueSetStyle(setStyle, mutationBatch),
+            _ => false
+        };
+    }
+
+    private void FlushMutationBatch(DomMutationBatch mutationBatch)
+    {
+        if (!mutationBatch.HasPending)
+        {
+            return;
+        }
+
+        var payload = mutationBatch.Drain();
+        if (payload.Elements.Count == 0)
+        {
+            return;
+        }
+
+        TrackInteropCall();
+        DomElement.ApplyMutationBatch(payload.ToJson());
+
+        if (_currentRenderStats is null)
+        {
+            return;
+        }
+
+        _currentRenderStats.BatchFlushCount++;
+        _currentRenderStats.BatchedNodeCount += payload.Elements.Count;
+        _currentRenderStats.BatchedMutationCount += payload.MutationCount;
+    }
+
     private void ApplyCreate(CreateNodeOperation operation)
     {
         var realized = (operation.CreationKind switch
@@ -252,8 +314,8 @@ public sealed class MirageRuntime : IMirageRuntime
 
         if (operation.ParentId is null)
         {
-            _mountRoot.ClearChildren();
-            _mountRoot.Append(realized.Element);
+            InvokeInterop(() => _mountRoot.ClearChildren());
+            InvokeInterop(() => _mountRoot.Append(realized.Element));
         }
         else
         {
@@ -262,7 +324,7 @@ public sealed class MirageRuntime : IMirageRuntime
                 throw new InvalidOperationException($"Cannot create node '{operation.NodeId}' because parent '{operation.ParentId}' was not found.");
             }
 
-            parent.Element.Insert(operation.Index, realized.Element);
+            InvokeInterop(() => parent.Element.Insert(operation.Index, realized.Element));
         }
 
         if (realized.TryGetControlDescriptor(out var controlDescriptor)
@@ -285,53 +347,53 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         var descriptor = _provider.ResolveControl(kind);
-        var element = DomElement.Create(descriptor.ElementTagName);
-        element.Attr("data-mirage-node-id", operation.NodeId);
-        element.Attr("data-mirage-node-type", "control");
-        element.Attr("data-mirage-kind", kind.ToString());
-        element.Style("boxSizing", "border-box");
+        var element = InvokeInterop(() => DomElement.Create(descriptor.ElementTagName));
+        InvokeInterop(() => element.Attr("data-mirage-node-id", operation.NodeId));
+        InvokeInterop(() => element.Attr("data-mirage-node-type", "control"));
+        InvokeInterop(() => element.Attr("data-mirage-kind", kind.ToString()));
+        InvokeInterop(() => element.Style("boxSizing", "border-box"));
 
         foreach (var (name, value) in descriptor.DefaultAttributes)
         {
-            element.Attr(name, value);
+            InvokeInterop(() => element.Attr(name, value));
         }
 
         DomElement? valueElement = null;
         if (!string.IsNullOrWhiteSpace(descriptor.ValueElementTagName))
         {
-            valueElement = DomElement.Create(descriptor.ValueElementTagName!);
-            valueElement.Attr(ValueElementMarker, "true");
+            valueElement = InvokeInterop(() => DomElement.Create(descriptor.ValueElementTagName!));
+            InvokeInterop(() => valueElement.Attr(ValueElementMarker, "true"));
             if (string.Equals(descriptor.ValueElementTagName, "button", StringComparison.OrdinalIgnoreCase))
             {
-                valueElement.Attr("type", "button");
+                InvokeInterop(() => valueElement.Attr("type", "button"));
             }
-            valueElement.Style("boxSizing", "border-box");
+            InvokeInterop(() => valueElement.Style("boxSizing", "border-box"));
             if (descriptor.StretchValueElementWidth)
             {
-                valueElement.Style("width", "100%");
+                InvokeInterop(() => valueElement.Style("width", "100%"));
             }
         }
 
         DomElement? secondaryElement = null;
         if (!string.IsNullOrWhiteSpace(descriptor.SecondaryElementTagName))
         {
-            secondaryElement = DomElement.Create(descriptor.SecondaryElementTagName!);
-            secondaryElement.Attr("data-mirage-secondary-element", "true");
+            secondaryElement = InvokeInterop(() => DomElement.Create(descriptor.SecondaryElementTagName!));
+            InvokeInterop(() => secondaryElement.Attr("data-mirage-secondary-element", "true"));
             if (string.Equals(descriptor.SecondaryElementTagName, "button", StringComparison.OrdinalIgnoreCase))
             {
-                secondaryElement.Attr("type", "button");
+                InvokeInterop(() => secondaryElement.Attr("type", "button"));
             }
-            secondaryElement.Style("boxSizing", "border-box");
+            InvokeInterop(() => secondaryElement.Style("boxSizing", "border-box"));
         }
 
         if (secondaryElement is not null)
         {
-            element.Append(secondaryElement);
+            InvokeInterop(() => element.Append(secondaryElement));
         }
 
         if (valueElement is not null)
         {
-            element.Append(valueElement);
+            InvokeInterop(() => element.Append(valueElement));
         }
 
         return RealizedNode.ForControl(element, descriptor, valueElement, secondaryElement);
@@ -357,15 +419,15 @@ public sealed class MirageRuntime : IMirageRuntime
                 $"Provider returned element descriptor '{descriptor.ElementName}' for requested '{requestedElementName}'. Providers must preserve web-node element identity.");
         }
 
-        var element = DomElement.Create(descriptor.ElementName);
-        element.Attr("data-mirage-node-id", operation.NodeId);
-        element.Attr("data-mirage-node-type", "web");
-        element.Attr("data-mirage-element-name", descriptor.ElementName);
-        element.Style("boxSizing", "border-box");
+        var element = InvokeInterop(() => DomElement.Create(descriptor.ElementName));
+        InvokeInterop(() => element.Attr("data-mirage-node-id", operation.NodeId));
+        InvokeInterop(() => element.Attr("data-mirage-node-type", "web"));
+        InvokeInterop(() => element.Attr("data-mirage-element-name", descriptor.ElementName));
+        InvokeInterop(() => element.Style("boxSizing", "border-box"));
 
         foreach (var (name, value) in descriptor.DefaultAttributes)
         {
-            element.Attr(name, value);
+            InvokeInterop(() => element.Attr(name, value));
         }
 
         return RealizedNode.ForWeb(element, descriptor);
@@ -379,7 +441,7 @@ public sealed class MirageRuntime : IMirageRuntime
             return;
         }
 
-        parent.Element.Insert(operation.Index, node.Element);
+        InvokeInterop(() => parent.Element.Insert(operation.Index, node.Element));
     }
 
     private void ApplyRemove(RemoveNodeOperation operation)
@@ -391,13 +453,13 @@ public sealed class MirageRuntime : IMirageRuntime
 
         if (operation.ParentId is null)
         {
-            _mountRoot.ClearChildren();
+            InvokeInterop(() => _mountRoot.ClearChildren());
         }
         else if (_nodes.TryGetValue(operation.ParentId, out var parent))
         {
             try
             {
-                parent.Element.Remove(node.Element);
+                InvokeInterop(() => parent.Element.Remove(node.Element));
             }
             catch
             {
@@ -408,7 +470,7 @@ public sealed class MirageRuntime : IMirageRuntime
         RemoveEventSubscriptionsForNode(operation.NodeId);
         _mapProviderInitializationRetries.Remove(operation.NodeId);
         node.DisposeMapAdapter();
-        node.Element.Release();
+        InvokeInterop(() => node.Element.Release());
         _nodes.Remove(operation.NodeId);
     }
 
@@ -436,33 +498,33 @@ public sealed class MirageRuntime : IMirageRuntime
             switch (mapping.Target)
             {
                 case PropertyTarget.TextContent:
-                    propertyTargetElement.Text(operation.Value.GetStringOrNull());
+                    InvokeInterop(() => propertyTargetElement.Text(operation.Value.GetStringOrNull()));
                     break;
                 case PropertyTarget.Attribute:
                 {
                     var attributeName = string.IsNullOrWhiteSpace(mapping.Name) ? operation.PropertyName : mapping.Name;
-                    propertyTargetElement.Attr(attributeName!, operation.Value.GetStringOrNull());
+                    InvokeInterop(() => propertyTargetElement.Attr(attributeName!, operation.Value.GetStringOrNull()));
                     break;
                 }
                 case PropertyTarget.InputValue:
-                    propertyTargetElement.SetInputValue(operation.Value.GetStringOrNull());
+                    InvokeInterop(() => propertyTargetElement.SetInputValue(operation.Value.GetStringOrNull()));
                     break;
                 case PropertyTarget.InputChecked:
                 {
                     var value = operation.Value.GetStringOrNull();
-                    propertyTargetElement.SetInputChecked(string.Equals(value, "true", StringComparison.OrdinalIgnoreCase));
+                    InvokeInterop(() => propertyTargetElement.SetInputChecked(string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)));
                     break;
                 }
                 case PropertyTarget.Style:
                 {
                     var styleName = string.IsNullOrWhiteSpace(mapping.Name) ? operation.PropertyName : mapping.Name;
-                    propertyTargetElement.Style(styleName!, operation.Value.GetStringOrNull());
+                    InvokeInterop(() => propertyTargetElement.Style(styleName!, operation.Value.GetStringOrNull()));
                     break;
                 }
                 case PropertyTarget.Property:
                 {
                     var propertyName = string.IsNullOrWhiteSpace(mapping.Name) ? operation.PropertyName : mapping.Name;
-                    propertyTargetElement.SetProperty(propertyName!, operation.Value);
+                    InvokeInterop(() => propertyTargetElement.SetProperty(propertyName!, operation.Value));
                     break;
                 }
                 default:
@@ -479,7 +541,7 @@ public sealed class MirageRuntime : IMirageRuntime
 
         if (string.Equals(operation.PropertyName, "AutomationId", StringComparison.Ordinal))
         {
-            node.Element.Attr("data-automation-id", operation.Value.GetStringOrNull());
+            InvokeInterop(() => node.Element.Attr("data-automation-id", operation.Value.GetStringOrNull()));
             return;
         }
 
@@ -488,7 +550,7 @@ public sealed class MirageRuntime : IMirageRuntime
             throw new InvalidOperationException($"Provider does not support web-node properties for node '{operation.NodeId}'.");
         }
 
-        node.Element.SetProperty(operation.PropertyName, operation.Value);
+        InvokeInterop(() => node.Element.SetProperty(operation.PropertyName, operation.Value));
     }
 
     private void ApplyRemoveProperty(RemovePropertyOperation operation)
@@ -515,30 +577,30 @@ public sealed class MirageRuntime : IMirageRuntime
             switch (mapping.Target)
             {
                 case PropertyTarget.TextContent:
-                    propertyTargetElement.Text(null);
+                    InvokeInterop(() => propertyTargetElement.Text(null));
                     break;
                 case PropertyTarget.Attribute:
                 {
                     var attributeName = string.IsNullOrWhiteSpace(mapping.Name) ? operation.PropertyName : mapping.Name;
-                    propertyTargetElement.Attr(attributeName!, null);
+                    InvokeInterop(() => propertyTargetElement.Attr(attributeName!, null));
                     break;
                 }
                 case PropertyTarget.InputValue:
-                    propertyTargetElement.SetInputValue(null);
+                    InvokeInterop(() => propertyTargetElement.SetInputValue(null));
                     break;
                 case PropertyTarget.InputChecked:
-                    propertyTargetElement.SetInputChecked(false);
+                    InvokeInterop(() => propertyTargetElement.SetInputChecked(false));
                     break;
                 case PropertyTarget.Style:
                 {
                     var styleName = string.IsNullOrWhiteSpace(mapping.Name) ? operation.PropertyName : mapping.Name;
-                    propertyTargetElement.Style(styleName!, null);
+                    InvokeInterop(() => propertyTargetElement.Style(styleName!, null));
                     break;
                 }
                 case PropertyTarget.Property:
                 {
                     var propertyName = string.IsNullOrWhiteSpace(mapping.Name) ? operation.PropertyName : mapping.Name;
-                    propertyTargetElement.RemoveProperty(propertyName!);
+                    InvokeInterop(() => propertyTargetElement.RemoveProperty(propertyName!));
                     break;
                 }
                 default:
@@ -555,7 +617,7 @@ public sealed class MirageRuntime : IMirageRuntime
 
         if (string.Equals(operation.PropertyName, "AutomationId", StringComparison.Ordinal))
         {
-            node.Element.Attr("data-automation-id", null);
+            InvokeInterop(() => node.Element.Attr("data-automation-id", null));
             return;
         }
 
@@ -564,7 +626,7 @@ public sealed class MirageRuntime : IMirageRuntime
             throw new InvalidOperationException($"Provider does not support web-node properties for node '{operation.NodeId}'.");
         }
 
-        node.Element.RemoveProperty(operation.PropertyName);
+        InvokeInterop(() => node.Element.RemoveProperty(operation.PropertyName));
     }
 
     private void ApplySetAttribute(SetAttributeOperation operation)
@@ -580,7 +642,7 @@ public sealed class MirageRuntime : IMirageRuntime
             throw new InvalidOperationException($"Provider does not support web-node attributes for node '{operation.NodeId}'.");
         }
 
-        node.Element.Attr(operation.AttributeName, operation.Value);
+        InvokeInterop(() => node.Element.Attr(operation.AttributeName, operation.Value));
     }
 
     private void ApplyRemoveAttribute(RemoveAttributeOperation operation)
@@ -596,7 +658,7 @@ public sealed class MirageRuntime : IMirageRuntime
             throw new InvalidOperationException($"Provider does not support web-node attributes for node '{operation.NodeId}'.");
         }
 
-        node.Element.Attr(operation.AttributeName, null);
+        InvokeInterop(() => node.Element.Attr(operation.AttributeName, null));
     }
 
     private void ApplyAddClass(AddClassOperation operation)
@@ -612,7 +674,7 @@ public sealed class MirageRuntime : IMirageRuntime
             throw new InvalidOperationException($"Provider does not support web-node class mutation for node '{operation.NodeId}'.");
         }
 
-        node.Element.AddClass(operation.ClassName);
+        InvokeInterop(() => node.Element.AddClass(operation.ClassName));
     }
 
     private void ApplyRemoveClass(RemoveClassOperation operation)
@@ -628,7 +690,7 @@ public sealed class MirageRuntime : IMirageRuntime
             throw new InvalidOperationException($"Provider does not support web-node class mutation for node '{operation.NodeId}'.");
         }
 
-        node.Element.RemoveClass(operation.ClassName);
+        InvokeInterop(() => node.Element.RemoveClass(operation.ClassName));
     }
 
     private void ApplySetStyle(SetStyleOperation operation)
@@ -643,7 +705,280 @@ public sealed class MirageRuntime : IMirageRuntime
             throw new InvalidOperationException($"Provider does not support web-node styles for node '{operation.NodeId}'.");
         }
 
-        node.Element.Style(operation.StyleName, operation.Value);
+        InvokeInterop(() => node.Element.Style(operation.StyleName, operation.Value));
+    }
+
+    private bool TryQueueSetProperty(SetPropertyOperation operation, DomMutationBatch mutationBatch)
+    {
+        if (!_nodes.TryGetValue(operation.NodeId, out var node))
+        {
+            return true;
+        }
+
+        if (node.ApplyMapProperty(operation.PropertyName, operation.Value))
+        {
+            return false;
+        }
+
+        if (node.TryGetControlDescriptor(out var controlDescriptor))
+        {
+            if (!controlDescriptor.PropertyMappings.TryGetValue(operation.PropertyName, out var mapping))
+            {
+                return true;
+            }
+
+            var propertyTargetElement = node.GetElement(mapping.ElementTarget);
+            QueueMappedProperty(mutationBatch, propertyTargetElement.Handle, operation.PropertyName, operation.Value, mapping);
+            return true;
+        }
+
+        if (!node.TryGetWebDescriptor(out var webDescriptor))
+        {
+            return true;
+        }
+
+        if (string.Equals(operation.PropertyName, "AutomationId", StringComparison.Ordinal))
+        {
+            mutationBatch.QueueAttribute(node.Element.Handle, "data-automation-id", operation.Value.GetStringOrNull());
+            return true;
+        }
+
+        if (!webDescriptor.SupportsProperties)
+        {
+            throw new InvalidOperationException($"Provider does not support web-node properties for node '{operation.NodeId}'.");
+        }
+
+        mutationBatch.QueueProperty(node.Element.Handle, operation.PropertyName, operation.Value);
+        return true;
+    }
+
+    private bool TryQueueRemoveProperty(RemovePropertyOperation operation, DomMutationBatch mutationBatch)
+    {
+        if (!_nodes.TryGetValue(operation.NodeId, out var node))
+        {
+            return true;
+        }
+
+        if (node.RemoveMapProperty(operation.PropertyName))
+        {
+            return false;
+        }
+
+        if (node.TryGetControlDescriptor(out var controlDescriptor))
+        {
+            if (!controlDescriptor.PropertyMappings.TryGetValue(operation.PropertyName, out var mapping))
+            {
+                return true;
+            }
+
+            var propertyTargetElement = node.GetElement(mapping.ElementTarget);
+            QueueRemovedMappedProperty(mutationBatch, propertyTargetElement.Handle, operation.PropertyName, mapping);
+            return true;
+        }
+
+        if (!node.TryGetWebDescriptor(out var webDescriptor))
+        {
+            return true;
+        }
+
+        if (string.Equals(operation.PropertyName, "AutomationId", StringComparison.Ordinal))
+        {
+            mutationBatch.QueueAttribute(node.Element.Handle, "data-automation-id", null);
+            return true;
+        }
+
+        if (!webDescriptor.SupportsProperties)
+        {
+            throw new InvalidOperationException($"Provider does not support web-node properties for node '{operation.NodeId}'.");
+        }
+
+        mutationBatch.QueueRemoveProperty(node.Element.Handle, operation.PropertyName);
+        return true;
+    }
+
+    private bool TryQueueSetAttribute(SetAttributeOperation operation, DomMutationBatch mutationBatch)
+    {
+        if (!_nodes.TryGetValue(operation.NodeId, out var node)
+            || !node.TryGetWebDescriptor(out var descriptor))
+        {
+            return true;
+        }
+
+        if (!descriptor.SupportsAttributes)
+        {
+            throw new InvalidOperationException($"Provider does not support web-node attributes for node '{operation.NodeId}'.");
+        }
+
+        mutationBatch.QueueAttribute(node.Element.Handle, operation.AttributeName, operation.Value);
+        return true;
+    }
+
+    private bool TryQueueRemoveAttribute(RemoveAttributeOperation operation, DomMutationBatch mutationBatch)
+    {
+        if (!_nodes.TryGetValue(operation.NodeId, out var node)
+            || !node.TryGetWebDescriptor(out var descriptor))
+        {
+            return true;
+        }
+
+        if (!descriptor.SupportsAttributes)
+        {
+            throw new InvalidOperationException($"Provider does not support web-node attributes for node '{operation.NodeId}'.");
+        }
+
+        mutationBatch.QueueAttribute(node.Element.Handle, operation.AttributeName, null);
+        return true;
+    }
+
+    private bool TryQueueAddClass(AddClassOperation operation, DomMutationBatch mutationBatch)
+    {
+        if (!_nodes.TryGetValue(operation.NodeId, out var node)
+            || !node.TryGetWebDescriptor(out var descriptor))
+        {
+            return true;
+        }
+
+        if (!descriptor.SupportsClasses)
+        {
+            throw new InvalidOperationException($"Provider does not support web-node class mutation for node '{operation.NodeId}'.");
+        }
+
+        mutationBatch.QueueAddClass(node.Element.Handle, operation.ClassName);
+        return true;
+    }
+
+    private bool TryQueueRemoveClass(RemoveClassOperation operation, DomMutationBatch mutationBatch)
+    {
+        if (!_nodes.TryGetValue(operation.NodeId, out var node)
+            || !node.TryGetWebDescriptor(out var descriptor))
+        {
+            return true;
+        }
+
+        if (!descriptor.SupportsClasses)
+        {
+            throw new InvalidOperationException($"Provider does not support web-node class mutation for node '{operation.NodeId}'.");
+        }
+
+        mutationBatch.QueueRemoveClass(node.Element.Handle, operation.ClassName);
+        return true;
+    }
+
+    private bool TryQueueSetStyle(SetStyleOperation operation, DomMutationBatch mutationBatch)
+    {
+        if (!_nodes.TryGetValue(operation.NodeId, out var node))
+        {
+            return true;
+        }
+
+        if (node.TryGetWebDescriptor(out var descriptor) && !descriptor.SupportsStyles)
+        {
+            throw new InvalidOperationException($"Provider does not support web-node styles for node '{operation.NodeId}'.");
+        }
+
+        mutationBatch.QueueStyle(node.Element.Handle, operation.StyleName, operation.Value);
+        return true;
+    }
+
+    private static void QueueMappedProperty(
+        DomMutationBatch mutationBatch,
+        nint handle,
+        string propertyName,
+        MirageValue value,
+        ProviderPropertyDescriptor mapping)
+    {
+        switch (mapping.Target)
+        {
+            case PropertyTarget.TextContent:
+                mutationBatch.QueueText(handle, value.GetStringOrNull());
+                break;
+            case PropertyTarget.Attribute:
+            {
+                var attributeName = string.IsNullOrWhiteSpace(mapping.Name) ? propertyName : mapping.Name;
+                mutationBatch.QueueAttribute(handle, attributeName!, value.GetStringOrNull());
+                break;
+            }
+            case PropertyTarget.InputValue:
+                mutationBatch.QueueInputValue(handle, value.GetStringOrNull());
+                break;
+            case PropertyTarget.InputChecked:
+                mutationBatch.QueueInputChecked(handle, string.Equals(value.GetStringOrNull(), "true", StringComparison.OrdinalIgnoreCase));
+                break;
+            case PropertyTarget.Style:
+            {
+                var styleName = string.IsNullOrWhiteSpace(mapping.Name) ? propertyName : mapping.Name;
+                mutationBatch.QueueStyle(handle, styleName!, value.GetStringOrNull());
+                break;
+            }
+            case PropertyTarget.Property:
+            {
+                var targetPropertyName = string.IsNullOrWhiteSpace(mapping.Name) ? propertyName : mapping.Name;
+                mutationBatch.QueueProperty(handle, targetPropertyName!, value);
+                break;
+            }
+            default:
+                throw new InvalidOperationException($"Unsupported property target: {mapping.Target}");
+        }
+    }
+
+    private static void QueueRemovedMappedProperty(
+        DomMutationBatch mutationBatch,
+        nint handle,
+        string propertyName,
+        ProviderPropertyDescriptor mapping)
+    {
+        switch (mapping.Target)
+        {
+            case PropertyTarget.TextContent:
+                mutationBatch.QueueText(handle, null);
+                break;
+            case PropertyTarget.Attribute:
+            {
+                var attributeName = string.IsNullOrWhiteSpace(mapping.Name) ? propertyName : mapping.Name;
+                mutationBatch.QueueAttribute(handle, attributeName!, null);
+                break;
+            }
+            case PropertyTarget.InputValue:
+                mutationBatch.QueueInputValue(handle, null);
+                break;
+            case PropertyTarget.InputChecked:
+                mutationBatch.QueueInputChecked(handle, value: false);
+                break;
+            case PropertyTarget.Style:
+            {
+                var styleName = string.IsNullOrWhiteSpace(mapping.Name) ? propertyName : mapping.Name;
+                mutationBatch.QueueStyle(handle, styleName!, null);
+                break;
+            }
+            case PropertyTarget.Property:
+            {
+                var targetPropertyName = string.IsNullOrWhiteSpace(mapping.Name) ? propertyName : mapping.Name;
+                mutationBatch.QueueRemoveProperty(handle, targetPropertyName!);
+                break;
+            }
+            default:
+                throw new InvalidOperationException($"Unsupported property target: {mapping.Target}");
+        }
+    }
+
+    private void TrackInteropCall()
+    {
+        if (_currentRenderStats is not null)
+        {
+            _currentRenderStats.InteropCallCount++;
+        }
+    }
+
+    private void InvokeInterop(Action action)
+    {
+        TrackInteropCall();
+        action();
+    }
+
+    private T InvokeInterop<T>(Func<T> action)
+    {
+        TrackInteropCall();
+        return action();
     }
 
     private void ApplyAttachEvent(AttachEventOperation operation)
@@ -674,35 +1009,35 @@ public sealed class MirageRuntime : IMirageRuntime
         int subscriptionId;
         if (eventDescriptor.PayloadKind == EventPayloadKind.InputValue)
         {
-            subscriptionId = targetElement.On(eventDescriptor.DomEventName, () =>
+            subscriptionId = InvokeInterop(() => targetElement.On(eventDescriptor.DomEventName, () =>
             {
                 var value = targetElement.GetInputValue();
                 _eventSink?.OnEvent(nodeId, eventName, value);
-            });
+            }));
         }
         else if (eventDescriptor.PayloadKind == EventPayloadKind.InputChecked)
         {
-            subscriptionId = targetElement.On(eventDescriptor.DomEventName, () =>
+            subscriptionId = InvokeInterop(() => targetElement.On(eventDescriptor.DomEventName, () =>
             {
                 _eventSink?.OnEvent(
                     nodeId,
                     eventName,
                     targetElement.GetInputChecked() ? "true" : "false");
-            });
+            }));
         }
         else if (eventDescriptor.PayloadKind == EventPayloadKind.SourceAttribute)
         {
-            subscriptionId = targetElement.On(eventDescriptor.DomEventName, "source-attribute", payload =>
+            subscriptionId = InvokeInterop(() => targetElement.On(eventDescriptor.DomEventName, "source-attribute", payload =>
             {
                 _eventSink?.OnEvent(nodeId, eventName, payload);
-            });
+            }));
         }
         else
         {
-            subscriptionId = targetElement.On(eventDescriptor.DomEventName, () =>
+            subscriptionId = InvokeInterop(() => targetElement.On(eventDescriptor.DomEventName, () =>
             {
                 _eventSink?.OnEvent(nodeId, eventName, null);
-            });
+            }));
         }
 
         _eventSubscriptions[(nodeId, eventName)] = subscriptionId;
@@ -723,7 +1058,7 @@ public sealed class MirageRuntime : IMirageRuntime
         {
             // Always re-check provider readiness here so transient startup failures can recover
             // when maps are realized after the first warm-up attempt.
-            node.Element.Attr("data-mirage-map-status", "pending");
+            InvokeInterop(() => node.Element.Attr("data-mirage-map-status", "pending"));
             _ = ConfigureMapNodeWhenProviderReadyAsync(nodeId, node);
             return;
         }
@@ -812,7 +1147,7 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         var delayMs = MapProviderInitializationRetryDelayMilliseconds * retryAttempt;
-        node.Element.Attr("data-mirage-map-status", "pending");
+        InvokeInterop(() => node.Element.Attr("data-mirage-map-status", "pending"));
         MirageDiagnostics.Log(
             "map.provider",
             $"node={nodeId} provider={providerName} code={errorCode} retryAttempt={retryAttempt} retryDelayMs={delayMs} message={message}");
@@ -845,7 +1180,7 @@ public sealed class MirageRuntime : IMirageRuntime
             return;
         }
 
-        currentNode.Element.Attr("data-mirage-map-status", "pending");
+        InvokeInterop(() => currentNode.Element.Attr("data-mirage-map-status", "pending"));
         await ConfigureMapNodeWhenProviderReadyAsync(nodeId, currentNode);
     }
 
@@ -870,7 +1205,7 @@ public sealed class MirageRuntime : IMirageRuntime
 
             var adapter = _mapProvider.CreateAdapter(nodeId, node.Element);
             node.AttachMapAdapter(adapter);
-            node.Element.Attr("data-mirage-map-provider", _mapProvider.ProviderName);
+            InvokeInterop(() => node.Element.Attr("data-mirage-map-provider", _mapProvider.ProviderName));
             // Ensure map adapters initialize even when first projected state is all-default.
             ApplyMapState(node);
         }
@@ -948,7 +1283,7 @@ public sealed class MirageRuntime : IMirageRuntime
     {
         if (_eventSubscriptions.Remove((operation.NodeId, operation.EventName), out var subscriptionId))
         {
-            DomElement.Off(subscriptionId);
+            InvokeInterop(() => DomElement.Off(subscriptionId));
         }
     }
 
@@ -962,9 +1297,20 @@ public sealed class MirageRuntime : IMirageRuntime
         {
             if (_eventSubscriptions.Remove(key, out var subscriptionId))
             {
-                DomElement.Off(subscriptionId);
+                InvokeInterop(() => DomElement.Off(subscriptionId));
             }
         }
+    }
+
+    private sealed class RenderApplyStats
+    {
+        public int BatchFlushCount { get; set; }
+
+        public int BatchedNodeCount { get; set; }
+
+        public int BatchedMutationCount { get; set; }
+
+        public int InteropCallCount { get; set; }
     }
 
     private sealed class RealizedNode
