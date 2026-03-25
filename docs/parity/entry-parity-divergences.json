@@ -1,0 +1,19 @@
+{
+  "entries": [
+    {
+      "id": "entry-extension-isenabled-input-and-clear-gate",
+      "summary": "Mirage maps IsEnabled explicitly so host-owned input and clear-button interactivity remain deterministic across browser runtimes.",
+      "upstreamReference": "src/Core/src/Handlers/Entry/EntryHandler.iOS.cs",
+      "testReference": "EntryHandler_DisabledState_DisablesInputAndClearInteraction",
+      "extensionKeys": [
+        "IsEnabled"
+      ]
+    },
+    {
+      "id": "entry-ime-composition-browser-event-order",
+      "summary": "Mirage now suppresses Enter submit while composition is active and resumes submit after composition ends, but deeper browser IME sequencing/parity remains partial in this wave.",
+      "upstreamReference": "src/Core/src/Handlers/Entry/EntryHandler.Android.cs",
+      "testReference": "EntryHandler_KeyboardSubmit_DoesNotCompleteWhileComposing"
+    }
+  ]
+}

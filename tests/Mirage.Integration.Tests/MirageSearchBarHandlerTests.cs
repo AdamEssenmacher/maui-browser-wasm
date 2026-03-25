@@ -529,6 +529,22 @@ public sealed class MirageSearchBarHandlerTests
             return true;
         }
 
+        public bool TryGetNodeTextSelection(string nodeId, out int selectionStart, out int selectionEnd)
+        {
+            _ = nodeId;
+            selectionStart = 0;
+            selectionEnd = 0;
+            return false;
+        }
+
+        public bool TrySetNodeTextSelection(string nodeId, int selectionStart, int selectionEnd)
+        {
+            _ = nodeId;
+            _ = selectionStart;
+            _ = selectionEnd;
+            return true;
+        }
+
         public void Dispose()
         {
         }

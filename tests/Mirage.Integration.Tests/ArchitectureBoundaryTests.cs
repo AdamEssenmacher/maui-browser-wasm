@@ -46,7 +46,6 @@ public sealed class ArchitectureBoundaryTests
         var builtInHandlerFiles = new[]
         {
             "MirageButtonHandler.cs",
-            "MirageEntryHandler.cs",
             "MirageImageHandler.cs",
             "MirageMapHandler.cs",
             "MirageLabelHandler.cs",
@@ -435,6 +434,38 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("TrySetNodeFocus(", searchBarHandlerText, StringComparison.Ordinal);
         Assert.Contains("TrySetNodeFocus(", coordinatorText, StringComparison.Ordinal);
         Assert.Contains("TrySetNodeFocus(", runtimeText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BrowserPlatform_RegistersEntryHandlerAsBuiltInControlNode()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var entryHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageEntryHandler.cs");
+        Assert.True(File.Exists(entryHandlerPath), $"Expected Entry handler file not found: {entryHandlerPath}");
+
+        var coordinatorPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageRenderCoordinator.cs");
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(coordinatorPath), $"Expected render coordinator file not found: {coordinatorPath}");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var hostingText = File.ReadAllText(hostingPath);
+        var entryHandlerText = File.ReadAllText(entryHandlerPath);
+        var coordinatorText = File.ReadAllText(coordinatorPath);
+        var runtimeText = File.ReadAllText(runtimePath);
+
+        Assert.Contains("typeof(Entry)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageEntryHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.Entry", entryHandlerText, StringComparison.Ordinal);
+        Assert.Contains("CreateWeb(\"input\")", entryHandlerText, StringComparison.Ordinal);
+        Assert.Contains("CreateWeb(\"button\")", entryHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TrySetNodeFocus(", entryHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryGetNodeTextSelection(", entryHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryGetNodeTextSelection(", coordinatorText, StringComparison.Ordinal);
+        Assert.Contains("TrySetNodeTextSelection(", coordinatorText, StringComparison.Ordinal);
+        Assert.Contains("TryGetNodeTextSelection(", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("TrySetNodeTextSelection(", runtimeText, StringComparison.Ordinal);
     }
 
     [Fact]

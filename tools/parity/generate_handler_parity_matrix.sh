@@ -286,11 +286,14 @@ shape_grade_for_type() {
     fi
 
     case "$key" in
-        CollectionView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|IndicatorView)
+        CollectionView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|IndicatorView|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle)
             echo "A"
             ;;
-        ContentView|Button|Entry|Window|NavigationPage|Image|Border|Picker|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame)
+        ContentView|Button|Window|NavigationPage|Image|Border|Picker|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame)
             echo "B"
+            ;;
+        Entry)
+            echo "A"
             ;;
         TabbedPage)
             echo "C"
@@ -312,8 +315,9 @@ implementation_grade_for_type() {
 
     case "$key" in
         CollectionView) echo "C" ;;
-        Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin) echo "B" ;;
-        ContentView|Button|Entry|Window|NavigationPage|Image|Border|Picker|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame|IndicatorView) echo "C" ;;
+        Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle) echo "B" ;;
+        ContentView|Button|Window|NavigationPage|Image|Border|Picker|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame|IndicatorView) echo "C" ;;
+        Entry) echo "B" ;;
         TabbedPage) echo "D" ;;
         *) echo "C" ;;
     esac
@@ -335,8 +339,11 @@ notes_for_type() {
         Label)
             echo "Core mapper + text-source parity implemented; HTML breadth and span hit-region parity remain partial. See \`docs/PARITY_GAPS.md\`."
             ;;
-        SearchBar|Entry)
-            echo "Text-input parity is improved but cursor/selection + IME edge cases remain partial. See \`docs/PARITY_GAPS.md\` (text-input depth)."
+        Entry)
+            echo "Mirage-owned input host now covers cursor/selection synchronization, focus command routing, and clear-button semantics; IME composition edge cases remain partial. See \`docs/PARITY_GAPS.md\` (text-input depth)."
+            ;;
+        SearchBar)
+            echo "SearchBar text-input parity is improved, but icon-channel fidelity and IME edge cases remain partial. See \`docs/PARITY_GAPS.md\` (text-input depth)."
             ;;
         ScrollView)
             echo "Handler shape and request timing are MAUI-aligned; parity contract enforced in integration tests."
@@ -346,6 +353,24 @@ notes_for_type() {
             ;;
         Maps.Map|Maps.MapElement|Maps.Pin)
             echo "Provider-based Leaflet realization; first-wave map parity only. See map parity contract/divergences under \`docs/parity/\`."
+            ;;
+        Shapes.Ellipse)
+            echo "MAUI-shaped mapper/lifecycle is mirrored; graphics \`PatternPaint\`/\`ImagePaint\` remain deterministic divergence paths."
+            ;;
+        Shapes.Line)
+            echo "MAUI handler overlay and line mapper keys are mirrored; browser SVG projection uses flattened path serialization."
+            ;;
+        Shapes.Path)
+            echo "\`Data\` updates and translate \`RenderTransform\` projection are mapped through MAUI-shaped flow; arc fidelity and non-translate transforms remain deterministic divergence paths."
+            ;;
+        Shapes.Polygon|Shapes.Polyline)
+            echo "MAUI-like \`Points.CollectionChanged\` lifecycle parity is implemented; SVG geometry is projected incrementally without handler churn."
+            ;;
+        Shapes.Rectangle)
+            echo "\`RadiusX\`/\`RadiusY\` overlay mapper is mirrored over shared shape handler projection."
+            ;;
+        Shapes.RoundRectangle)
+            echo "\`CornerRadius\` overlay mapper is mirrored over shared shape handler projection."
             ;;
         IndicatorView)
             echo "Core mapper surface implemented with template hosting; paint/interaction depth remains partial."
@@ -578,18 +603,28 @@ awk '
         printf "%s\t%s\n", type, handler
     }
 ' "$mirage_hosting_file" | while IFS=$'\t' read -r raw_type raw_handler; do
-    case "$raw_type" in
+    normalized_type="$raw_type"
+    if [[ "$normalized_type" == "MauiShapes."* ]]; then
+        normalized_type="Shapes.${normalized_type#MauiShapes.}"
+    elif [[ "$normalized_type" == *".Shapes."* ]]; then
+        normalized_type="Shapes.${normalized_type##*.Shapes.}"
+    fi
+
+    case "$normalized_type" in
         MauiMap|Map)
             key="Maps.Map"
             ;;
         Pin)
             key="Maps.Pin"
             ;;
-        MapElement|Circle|Polygon|Polyline)
+        MapElement|Circle|Polygon|Polyline|Maps.MapElement)
             key="Maps.MapElement"
             ;;
+        Shapes.*)
+            key="$normalized_type"
+            ;;
         *)
-            key="$raw_type"
+            key="$normalized_type"
             if [[ "$key" == *.* ]]; then
                 key="${key##*.}"
             fi
