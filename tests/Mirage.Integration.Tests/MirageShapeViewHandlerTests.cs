@@ -521,6 +521,30 @@ public sealed class MirageShapeViewHandlerTests
     }
 
     [Fact]
+    public void ShapeViewHandler_AsyncImageSourceKey_ChangesWhenStreamSourceMutates()
+    {
+        var mutableBrush = CreateImageBrushFromStream();
+        var streamSource = Assert.IsType<StreamImageSource>(GetImageBrushSource(mutableBrush));
+        var key1 = CreateAsyncImageSourceKeyForTest(streamSource);
+        streamSource.Stream = _ => Task.FromResult<Stream>(new MemoryStream([0x2, 0x3, 0x4]));
+        var key2 = CreateAsyncImageSourceKeyForTest(streamSource);
+
+        Assert.NotEqual(key1, key2);
+    }
+
+    [Fact]
+    public void ShapeViewHandler_AsyncImageSourceKey_ChangesWhenFileSourceMutates()
+    {
+        var mutableBrush = CreateImageBrushFromFile("assets/shapes/file-mut-1.png");
+        var fileSource = Assert.IsType<FileImageSource>(GetImageBrushSource(mutableBrush));
+        var key1 = CreateAsyncImageSourceKeyForTest(fileSource);
+        fileSource.File = "assets/shapes/file-mut-2.png";
+        var key2 = CreateAsyncImageSourceKeyForTest(fileSource);
+
+        Assert.NotEqual(key1, key2);
+    }
+
+    [Fact]
     public async Task ShapeViewHandler_SupersededStreamImageBrushResolution_ReleasesStaleManagedUrl()
     {
         var resolver = new StubImageSourceResolver();
@@ -787,9 +811,25 @@ public sealed class MirageShapeViewHandlerTests
             return null;
         }
 
-        var imageSourceProperty = brush.GetType().GetProperty("ImageSource", BindingFlags.Public | BindingFlags.Instance);
-        var source = imageSourceProperty?.GetValue(brush);
+        var source = GetImageBrushSource(brush);
         return source?.GetType().Name;
+    }
+
+    private static string CreateAsyncImageSourceKeyForTest(ImageSource imageSource)
+    {
+        var keyFactory = typeof(MirageShapeViewHandler).GetMethod(
+            "CreateAsyncImageSourceKey",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(keyFactory);
+        var key = keyFactory.Invoke(null, [imageSource]) as string;
+        Assert.False(string.IsNullOrWhiteSpace(key));
+        return key!;
+    }
+
+    private static ImageSource? GetImageBrushSource(Brush brush)
+    {
+        var imageSourceProperty = brush.GetType().GetProperty("ImageSource", BindingFlags.Public | BindingFlags.Instance);
+        return imageSourceProperty?.GetValue(brush) as ImageSource;
     }
 
     private static async Task WaitForAsync(Func<bool> condition, TimeSpan timeout)

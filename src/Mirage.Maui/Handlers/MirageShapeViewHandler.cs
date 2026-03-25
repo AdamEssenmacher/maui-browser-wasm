@@ -76,10 +76,14 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
     private int _paintDefinitionCounter;
     private IMirageImageSourceResolver? _imageSourceResolver;
     private readonly HashSet<string> _ownedObjectUrls = new(StringComparer.Ordinal);
-    private readonly Dictionary<ImageSource, MirageImageSourceProjectionResult> _asyncImageProjectionCache = new(ReferenceEqualityComparer.Instance);
-    private readonly HashSet<ImageSource> _asyncImageProjectionInFlight = new(ReferenceEqualityComparer.Instance);
-    private readonly Dictionary<ImageSource, DateTime> _asyncImageProjectionRetryNotBeforeUtc = new(ReferenceEqualityComparer.Instance);
-    private readonly HashSet<ImageSource> _activeAsyncImageSources = new(ReferenceEqualityComparer.Instance);
+    private readonly Dictionary<string, MirageImageSourceProjectionResult> _asyncImageProjectionCache =
+        new(StringComparer.Ordinal);
+    private readonly HashSet<string> _asyncImageProjectionInFlight =
+        new(StringComparer.Ordinal);
+    private readonly Dictionary<string, DateTime> _asyncImageProjectionRetryNotBeforeUtc =
+        new(StringComparer.Ordinal);
+    private readonly HashSet<string> _activeAsyncImageSources =
+        new(StringComparer.Ordinal);
     private readonly object _asyncImageProjectionSync = new();
     private CancellationTokenSource? _asyncImageProjectionCancellation;
 
@@ -642,11 +646,12 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
         var requiresAsyncResolution = imageSource is StreamImageSource || RequiresManifestInitialization(imageSource);
         if (requiresAsyncResolution)
         {
-            if (TryGetCachedAsyncImageProjection(imageSource, out var cachedProjection))
+            var asyncKey = CreateAsyncImageSourceKey(imageSource);
+            if (TryGetCachedAsyncImageProjection(asyncKey, out var cachedProjection))
             {
                 if (!cachedProjection.IsResolved || string.IsNullOrWhiteSpace(cachedProjection.BrowserUrl))
                 {
-                    QueueAsyncImageProjection(imageSource, allowRetryForCachedUnresolved: true);
+                    QueueAsyncImageProjection(asyncKey, imageSource, allowRetryForCachedUnresolved: true);
                     projection = new PaintProjection(
                         null,
                         null,
@@ -667,7 +672,7 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
                 return true;
             }
 
-            QueueAsyncImageProjection(imageSource);
+            QueueAsyncImageProjection(asyncKey, imageSource);
             projection = PaintProjection.None;
             return true;
         }
@@ -721,42 +726,43 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
     }
 
     private void QueueAsyncImageProjection(
+        string asyncKey,
         ImageSource imageSource,
         bool allowRetryForCachedUnresolved = false)
     {
         CancellationToken cancellationToken;
         lock (_asyncImageProjectionSync)
         {
-            if (_asyncImageProjectionInFlight.Contains(imageSource))
+            if (_asyncImageProjectionInFlight.Contains(asyncKey))
             {
                 return;
             }
 
-            if (_asyncImageProjectionCache.TryGetValue(imageSource, out var cachedProjection))
+            if (_asyncImageProjectionCache.TryGetValue(asyncKey, out var cachedProjection))
             {
                 if (!allowRetryForCachedUnresolved || cachedProjection.IsResolved)
                 {
                     return;
                 }
 
-                if (_asyncImageProjectionRetryNotBeforeUtc.TryGetValue(imageSource, out var retryNotBeforeUtc)
+                if (_asyncImageProjectionRetryNotBeforeUtc.TryGetValue(asyncKey, out var retryNotBeforeUtc)
                     && DateTime.UtcNow < retryNotBeforeUtc)
                 {
                     return;
                 }
 
-                _asyncImageProjectionCache.Remove(imageSource);
+                _asyncImageProjectionCache.Remove(asyncKey);
             }
 
-            _asyncImageProjectionInFlight.Add(imageSource);
+            _asyncImageProjectionInFlight.Add(asyncKey);
             _asyncImageProjectionCancellation ??= new CancellationTokenSource();
             cancellationToken = _asyncImageProjectionCancellation.Token;
         }
 
-        _ = ResolveAsyncImageProjectionCore(imageSource, cancellationToken);
+        _ = ResolveAsyncImageProjectionCore(asyncKey, imageSource, cancellationToken);
     }
 
-    private async Task ResolveAsyncImageProjectionCore(ImageSource imageSource, CancellationToken cancellationToken)
+    private async Task ResolveAsyncImageProjectionCore(string asyncKey, ImageSource imageSource, CancellationToken cancellationToken)
     {
         MirageImageSourceProjectionResult resolved;
         var resolver = GetImageSourceResolver();
@@ -779,7 +785,7 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
             }
             catch (OperationCanceledException)
             {
-                RemoveAsyncImageProjectionInFlight(imageSource);
+                RemoveAsyncImageProjectionInFlight(asyncKey);
                 return;
             }
             catch (Exception ex)
@@ -792,20 +798,20 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
 
         if (cancellationToken.IsCancellationRequested)
         {
-            RemoveAsyncImageProjectionInFlight(imageSource);
+            RemoveAsyncImageProjectionInFlight(asyncKey);
             ReleaseIfManagedObjectUrl(resolved);
             return;
         }
 
-        if (!IsActiveAsyncImageSource(imageSource))
+        if (!IsActiveAsyncImageSource(asyncKey))
         {
-            RemoveAsyncImageProjectionInFlight(imageSource);
-            RemoveAsyncImageProjectionFromCache(imageSource);
+            RemoveAsyncImageProjectionInFlight(asyncKey);
+            RemoveAsyncImageProjectionFromCache(asyncKey);
             ReleaseIfManagedObjectUrl(resolved);
             return;
         }
 
-        CacheAsyncImageProjection(imageSource, resolved);
+        CacheAsyncImageProjection(asyncKey, resolved);
         if (resolved.IsResolved)
         {
             RequestAsyncProjectionRefresh();
@@ -813,34 +819,34 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
     }
 
     private bool TryGetCachedAsyncImageProjection(
-        ImageSource imageSource,
+        string asyncKey,
         out MirageImageSourceProjectionResult projection)
     {
         lock (_asyncImageProjectionSync)
         {
-            return _asyncImageProjectionCache.TryGetValue(imageSource, out projection);
+            return _asyncImageProjectionCache.TryGetValue(asyncKey, out projection);
         }
     }
 
-    private void CacheAsyncImageProjection(ImageSource imageSource, MirageImageSourceProjectionResult projection)
+    private void CacheAsyncImageProjection(string asyncKey, MirageImageSourceProjectionResult projection)
     {
         MirageImageSourceProjectionResult? previousProjection = null;
         lock (_asyncImageProjectionSync)
         {
-            _asyncImageProjectionInFlight.Remove(imageSource);
-            if (_asyncImageProjectionCache.TryGetValue(imageSource, out var previous))
+            _asyncImageProjectionInFlight.Remove(asyncKey);
+            if (_asyncImageProjectionCache.TryGetValue(asyncKey, out var previous))
             {
                 previousProjection = previous;
             }
 
-            _asyncImageProjectionCache[imageSource] = projection;
+            _asyncImageProjectionCache[asyncKey] = projection;
             if (projection.IsResolved)
             {
-                _asyncImageProjectionRetryNotBeforeUtc.Remove(imageSource);
+                _asyncImageProjectionRetryNotBeforeUtc.Remove(asyncKey);
             }
             else
             {
-                _asyncImageProjectionRetryNotBeforeUtc[imageSource] = DateTime.UtcNow.Add(AsyncImageProjectionRetryDelay);
+                _asyncImageProjectionRetryNotBeforeUtc[asyncKey] = DateTime.UtcNow.Add(AsyncImageProjectionRetryDelay);
             }
         }
 
@@ -852,28 +858,28 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
         }
     }
 
-    private void RemoveAsyncImageProjectionInFlight(ImageSource imageSource)
+    private void RemoveAsyncImageProjectionInFlight(string asyncKey)
     {
         lock (_asyncImageProjectionSync)
         {
-            _asyncImageProjectionInFlight.Remove(imageSource);
+            _asyncImageProjectionInFlight.Remove(asyncKey);
         }
     }
 
-    private void RemoveAsyncImageProjectionFromCache(ImageSource imageSource)
+    private void RemoveAsyncImageProjectionFromCache(string asyncKey)
     {
         lock (_asyncImageProjectionSync)
         {
-            _asyncImageProjectionCache.Remove(imageSource);
-            _asyncImageProjectionRetryNotBeforeUtc.Remove(imageSource);
+            _asyncImageProjectionCache.Remove(asyncKey);
+            _asyncImageProjectionRetryNotBeforeUtc.Remove(asyncKey);
         }
     }
 
-    private bool IsActiveAsyncImageSource(ImageSource imageSource)
+    private bool IsActiveAsyncImageSource(string asyncKey)
     {
         lock (_asyncImageProjectionSync)
         {
-            return _activeAsyncImageSources.Contains(imageSource);
+            return _activeAsyncImageSources.Contains(asyncKey);
         }
     }
 
@@ -983,7 +989,7 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
 
     private void UpdateActiveAsyncImageSources(IShapeView shapeView)
     {
-        var nextSources = new HashSet<ImageSource>(ReferenceEqualityComparer.Instance);
+        var nextSources = new HashSet<string>(StringComparer.Ordinal);
         if (shapeView is MauiShape shape)
         {
             AddBrushImageSource(nextSources, shape.Fill);
@@ -1029,6 +1035,7 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
                     }
 
                     _asyncImageProjectionRetryNotBeforeUtc.Remove(previousSource);
+                    _asyncImageProjectionInFlight.Remove(previousSource);
                 }
             }
 
@@ -1056,7 +1063,7 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
         }
     }
 
-    private static void AddBrushImageSource(HashSet<ImageSource> sources, Brush? brush)
+    private static void AddBrushImageSource(HashSet<string> sources, Brush? brush)
     {
         if (brush is null || brush.IsEmpty)
         {
@@ -1069,7 +1076,59 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
             return;
         }
 
-        sources.Add(imageSource);
+        sources.Add(CreateAsyncImageSourceKey(imageSource));
+    }
+
+    private static string CreateAsyncImageSourceKey(ImageSource imageSource)
+    {
+        return GetAsyncImageSourceIdentity(imageSource);
+    }
+
+    private static string GetAsyncImageSourceIdentity(ImageSource imageSource)
+    {
+        return imageSource switch
+        {
+            FileImageSource fileImageSource => $"file:{fileImageSource.File ?? string.Empty}",
+            UriImageSource uriImageSource => $"uri:{uriImageSource.Uri?.ToString() ?? string.Empty}",
+            StreamImageSource streamImageSource => $"stream:{GetStreamDelegateIdentity(streamImageSource)}",
+            _ => $"type:{imageSource.GetType().FullName ?? imageSource.GetType().Name}"
+        };
+    }
+
+    private static string GetStreamDelegateIdentity(StreamImageSource streamImageSource)
+    {
+        var streamDelegate = streamImageSource.Stream;
+        if (streamDelegate is null)
+        {
+            return "null";
+        }
+
+        var methodIdentity = GetDelegateMethodIdentity(streamDelegate);
+        var targetIdentity = streamDelegate.Target is null
+            ? "static"
+            : RuntimeHelpers.GetHashCode(streamDelegate.Target).ToString(CultureInfo.InvariantCulture);
+
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"{methodIdentity}|target:{targetIdentity}");
+    }
+
+    private static string GetDelegateMethodIdentity(Delegate streamDelegate)
+    {
+        var method = streamDelegate.Method;
+        try
+        {
+            return string.Create(
+                CultureInfo.InvariantCulture,
+                $"{method.Module.ModuleVersionId:N}:{method.MetadataToken}");
+        }
+        catch (InvalidOperationException)
+        {
+            // Dynamic methods can throw for metadata token; keep a deterministic fallback.
+            return string.Create(
+                CultureInfo.InvariantCulture,
+                $"dynamic:{method.Name}:{RuntimeHelpers.GetHashCode(method)}");
+        }
     }
 
     private IMirageImageSourceResolver? GetImageSourceResolver()
