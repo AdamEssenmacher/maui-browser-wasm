@@ -729,6 +729,9 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
             return;
         }
 
+        // Clear is an authoritative text mutation; pending runtime input must not replay old values.
+        InvalidateBufferedInputState();
+
         if (_inputNode is not null)
         {
             _ = SetPropertyIfChanged(_inputNode, "value", string.Empty);
@@ -765,6 +768,22 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
         {
             RequestRender();
         }
+    }
+
+    private void InvalidateBufferedInputState()
+    {
+        lock (_inputSync)
+        {
+            _pendingInputValue = null;
+            _pendingInputEventCount = 0;
+            _pendingInputEventId = 0;
+            _pendingInputReceivedTimestamp = 0;
+            _pendingBaselineRenderSequence = 0;
+            _pendingInputTextVersion = 0;
+            _inputFlushScheduled = false;
+        }
+
+        Interlocked.Increment(ref _textVersion);
     }
 
     private void OnCompletedInvoked()
