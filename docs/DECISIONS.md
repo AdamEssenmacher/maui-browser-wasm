@@ -2,6 +2,10 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-25 (Upstream unofficial-target risk tracker)
+- Added `docs/UPSTREAM_TARGET_RISKS.md` to separate upstream MAUI unofficial-target/shared-code hazards from Mirage's intentional parity gaps.
+- The new tracker records each upstream risk with source links, current Mirage status (`Covered`, `Partial workaround`, `Avoided by scope`, `No workaround`), and local evidence/work-around notes grounded only in the active `src/Mirage.*` stack.
+
 ## 2026-03-25 (Mirage runtime reframe: keep the renderer, narrow provider claims)
 - Reframed Mirage publicly and internally as a MAUI handler backend with a semantic render/diff runtime plus a raw custom-element hosting seam, rather than a broadly portable adapter for arbitrary web-component libraries.
 - Kept the runtime/coordinator split unchanged because it is providing concrete value through render coalescing, scoped rematerialization, deterministic diff application, and centralized node-id event routing.
