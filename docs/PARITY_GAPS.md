@@ -89,6 +89,12 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Current behavior: template hosting is supported through `ITemplatedIndicatorView.IndicatorsLayoutOverride` with a stable host pipeline that suppresses default dots while template layout is active.
 - Deferred: non-solid indicator paint parity and deeper templated-indicator interaction parity remain partial; unsupported paints currently fall back deterministically to default solid colors.
 
+21. Shapes handler parity depth (`Shapes.*`)
+- Current behavior: all `Shapes.*` rows (`Ellipse`, `Line`, `Path`, `Polygon`, `Polyline`, `Rectangle`, `RoundRectangle`) are mapped through MAUI-shaped Mirage handlers on the built-in `ControlNode` path with stable SVG-host realization.
+- Current behavior: deterministic geometry projection, aspect updates, stroke option mapping (dash/cap/join/miter), and solid/linear/radial paint projection are implemented; image brush fill/stroke projection resolves through `IMirageImageSourceResolver`.
+- Current behavior: `ControlsSample.Shared/App/ShapesParityProbePage.cs` is the parity probe surface with E2E coverage for runtime shape switching plus points/path-data/path-transform mutation flows.
+- Deferred: graphics-native `PatternPaint`/`ImagePaint`, exact native arc fidelity, and non-translate `Path.RenderTransform` types are still divergence-documented deterministic fallback/flattened paths in this slice.
+
 ## Gap lifecycle policy
 
 1. Any new gap requires:

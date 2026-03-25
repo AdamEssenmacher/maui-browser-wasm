@@ -723,6 +723,15 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - The browser `TabbedPage` baseline now mounts and arranges the current child page using Mirage page handlers, which unblocks importing upstream tab-root pages like `BrushesPage` without sample-specific wrapper transforms.
 - This slice is intentionally minimal: it establishes stable current-page hosting for tabbed roots and defers richer tab-strip interaction/chrome parity to follow-up work.
 
+## 2026-03-24 (Shapes Handler Parity Wave: All `Shapes.*` Rows)
+- Added MAUI-shaped Mirage handlers for all `Shapes.*` control rows (`Ellipse`, `Line`, `Path`, `Polygon`, `Polyline`, `Rectangle`, `RoundRectangle`) on the built-in `ControlNode` path (`ComponentKind.ShapeView`) with per-shape mapper overlays and parity contract governance.
+- Browser realization now uses a stable SVG host structure (`svg` + `defs` + `path`) created once per shape host and updated incrementally for geometry, aspect, and stroke/fill changes without node churn.
+- Paint projection in this wave supports solid/linear/radial plus image-brush fill/stroke through `IMirageImageSourceResolver`; graphics-native `PatternPaint` and `ImagePaint` remain explicit deterministic divergence paths.
+- Shape image-brush projection now avoids sync blocking on resolver initialization (`EnsureInitializedAsync`); stream and manifest-backed image sources resolve asynchronously and trigger a deterministic refresh when projection data becomes available.
+- Managed stream blob URLs are now cache-invalidated on release, and unresolved async image-brush results no longer self-refresh into retry loops; retries occur deterministically on subsequent shape map updates.
+- Unresolved async image-brush retries are throttled per source to avoid resolver thrash on rapid property updates, while preserving deterministic retry on later updates once the retry window elapses.
+- Added `ShapesParityProbePage` as the dedicated ControlsSample proof surface and E2E coverage (`ShapesParityProbe_ProjectsGeometryPaintAndAspectUpdates`) for runtime shape switching, aspect changes, paint/stroke updates, points mutation, and path data/transform mutation.
+
 ## 2026-03-19 (ControlsSample ActivityIndicatorPage Enablement)
 - Promoted upstream `ActivityIndicatorPage` to a runnable ControlsSample entry and linked its XAML/code-behind into `ControlsSample.Shared`.
 - Added first-class Mirage browser support for `ActivityIndicator` (`ComponentKind.ActivityIndicator` + `MirageActivityIndicatorHandler`) with deterministic projection channels for running state, busy state, and spinner color.

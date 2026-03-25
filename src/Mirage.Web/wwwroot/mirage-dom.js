@@ -299,6 +299,26 @@ input[data-mirage-kind="Switch"][type="checkbox"]:disabled {
   opacity: 1;
 }
 
+[data-mirage-kind="ShapeView"] {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+[data-mirage-kind="ShapeView"] .mirage-shape-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+[data-mirage-kind="ShapeView"] .mirage-shape-path {
+  vector-effect: none;
+}
+
 [data-mirage-kind="Map"] {
   position: relative;
   overflow: hidden;

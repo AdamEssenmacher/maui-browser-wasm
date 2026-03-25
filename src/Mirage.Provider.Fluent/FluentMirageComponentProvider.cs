@@ -158,6 +158,10 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 ComponentKind.BoxView,
                 "div",
                 propertyMappings: CommonProperties),
+            [ComponentKind.ShapeView] = new(
+                ComponentKind.ShapeView,
+                "div",
+                propertyMappings: CommonProperties),
             [ComponentKind.CheckBox] = new(
                 ComponentKind.CheckBox,
                 "input",

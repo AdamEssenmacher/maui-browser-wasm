@@ -230,6 +230,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(IndicatorViewParityProbePage),
             description: "Mirage parity probe: exercises IndicatorView count/position/max-visible/hide-single behavior, shape/color updates, and template override hosting."),
         new(
+            id: "shapesparitypage",
+            title: "ShapesParityProbePage",
+            upstreamPath: "App/ShapesParityProbePage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(ShapesParityProbePage),
+            description: "Mirage parity probe: exercises all Shapes rows with runtime shape switching, aspect/paint updates, stroke options, and geometry mutations."),
+        new(
             id: "layoutisenabledpage",
             title: "LayoutIsEnabledPage",
             upstreamPath: "Pages/Layouts/LayoutIsEnabledPage.xaml",

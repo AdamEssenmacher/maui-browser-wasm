@@ -1,0 +1,22 @@
+{
+  "entries": [
+    {
+      "id": "shapes-paint-pattern-imagepaint-diagnostic-fallback",
+      "summary": "Mirage shape projection supports solid/linear/radial paints and image brushes; graphics PatternPaint/ImagePaint remain deterministic unsupported diagnostics in this wave.",
+      "upstreamReference": "src/Core/src/Handlers/ShapeView/ShapeViewHandler.cs",
+      "testReference": "ShapeViewHandler_UnsupportedGraphicsPaints_ProduceDeterministicFallback"
+    },
+    {
+      "id": "shapes-path-arc-flattened-svg-projection",
+      "summary": "Shape path serialization uses flattened PathF projection for deterministic browser SVG output, which may approximate native arc curve fidelity in edge cases.",
+      "upstreamReference": "src/Controls/src/Core/Handlers/Shapes/Path/PathHandler.Android.cs",
+      "testReference": "ShapeViewHandler_PathShape_ProjectsDeterministicSvgPath"
+    },
+    {
+      "id": "shapes-path-rendertransform-translate-only",
+      "summary": "Path render-transform projection currently supports TranslateTransform. Other MAUI transform types are handled as deterministic unsupported fallbacks.",
+      "upstreamReference": "src/Controls/src/Core/Handlers/Shapes/Path/PathHandler.cs",
+      "testReference": "ShapeViewHandler_PathShape_ProjectsDeterministicSvgPath"
+    }
+  ]
+}

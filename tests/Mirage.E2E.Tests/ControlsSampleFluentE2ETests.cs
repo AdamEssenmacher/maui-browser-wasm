@@ -130,6 +130,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-mapsgallery']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-collectionviewgallery']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-indicatorviewparitypage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-shapesparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
 
@@ -413,6 +414,99 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             "[data-automation-id='controls-sample-indicatorview-parity-mode']",
             "template=off");
         await WaitForIndicatorDotCountAsync(page, hostSelector, expectedCount: 1);
+    }
+
+    [Fact]
+    public async Task ShapesParityProbe_ProjectsGeometryPaintAndAspectUpdates()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1260, height: 900);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-shapesparitypage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-shapesparitypage']");
+            });
+
+        var shapeSelector = ShapeSelectorFor("ellipse");
+        await page.WaitForSelectorAsync(shapeSelector);
+        Assert.Equal("ShapeView", await page.GetAttributeAsync(shapeSelector, "data-mirage-kind"));
+
+        var aspectBefore = await ReadShapePathAttributeAsync(page, shapeSelector, "preserveAspectRatio");
+        await page.Locator("[data-automation-id='controls-sample-shapes-parity-toggle-aspect']").ClickAsync();
+        var aspectAfter = await WaitForShapePathAttributeChangeAsync(page, shapeSelector, "preserveAspectRatio", aspectBefore);
+        Assert.NotEqual(aspectBefore, aspectAfter);
+
+        var fillBefore = await ReadShapePathAttributeAsync(page, shapeSelector, "fill");
+        await page.Locator("[data-automation-id='controls-sample-shapes-parity-toggle-fill']").ClickAsync();
+        var fillValue = await WaitForShapePathAttributeChangeAsync(page, shapeSelector, "fill", fillBefore);
+        Assert.StartsWith("url(#", fillValue, StringComparison.Ordinal);
+
+        var strokeBefore = await ReadShapePathAttributeAsync(page, shapeSelector, "stroke");
+        await page.Locator("[data-automation-id='controls-sample-shapes-parity-toggle-stroke']").ClickAsync();
+        var strokeValue = await WaitForShapePathAttributeChangeAsync(page, shapeSelector, "stroke", strokeBefore);
+        Assert.StartsWith("url(#", strokeValue, StringComparison.Ordinal);
+
+        var dashBefore = await ReadShapePathAttributeAsync(page, shapeSelector, "stroke-dasharray");
+        await page.Locator("[data-automation-id='controls-sample-shapes-parity-toggle-dash']").ClickAsync();
+        var dashValue = await WaitForShapePathAttributeChangeAsync(page, shapeSelector, "stroke-dasharray", dashBefore);
+        Assert.False(string.IsNullOrWhiteSpace(dashValue));
+
+        await NavigateToShapeKindAsync(page, "Polygon");
+        shapeSelector = ShapeSelectorFor("polygon");
+        await page.WaitForSelectorAsync(shapeSelector);
+        var polygonPathBefore = await WaitForShapePathAttributeValueAsync(page, shapeSelector, "d", timeoutMs: 10000);
+        await page.Locator("[data-automation-id='controls-sample-shapes-parity-mutate-points']").ClickAsync();
+        var polygonPathAfter = await WaitForShapePathAttributeChangeAsync(
+            page,
+            shapeSelector,
+            "d",
+            polygonPathBefore,
+            timeoutMs: 10000,
+            requireNonEmpty: true);
+        Assert.False(string.IsNullOrWhiteSpace(polygonPathAfter));
+        Assert.NotEqual(polygonPathBefore, polygonPathAfter);
+        await WaitForLabelTextContainsAsync(
+            page,
+            "[data-automation-id='controls-sample-shapes-parity-geometry-state']",
+            "points=alt");
+
+        await NavigateToShapeKindAsync(page, "Path");
+        shapeSelector = ShapeSelectorFor("path");
+        await page.WaitForSelectorAsync(shapeSelector);
+        var pathDataBefore = await WaitForShapePathAttributeValueAsync(page, shapeSelector, "d", timeoutMs: 10000);
+        await page.Locator("[data-automation-id='controls-sample-shapes-parity-mutate-path-data']").ClickAsync();
+        var pathDataAfter = await WaitForShapePathAttributeChangeAsync(
+            page,
+            shapeSelector,
+            "d",
+            pathDataBefore,
+            timeoutMs: 10000,
+            requireNonEmpty: true);
+        Assert.False(string.IsNullOrWhiteSpace(pathDataAfter));
+        Assert.NotEqual(pathDataBefore, pathDataAfter);
+        await WaitForLabelTextContainsAsync(
+            page,
+            "[data-automation-id='controls-sample-shapes-parity-geometry-state']",
+            "pathData=alt");
+
+        var pathTransformBefore = await ReadShapePathAttributeAsync(page, shapeSelector, "transform");
+        await page.Locator("[data-automation-id='controls-sample-shapes-parity-mutate-path-transform']").ClickAsync();
+        var pathTransformAfter = await WaitForShapePathAttributeChangeAsync(
+            page,
+            shapeSelector,
+            "transform",
+            pathTransformBefore,
+            timeoutMs: 10000,
+            requireNonEmpty: true);
+        Assert.Contains("translate(", pathTransformAfter, StringComparison.Ordinal);
+        await WaitForLabelTextContainsAsync(
+            page,
+            "[data-automation-id='controls-sample-shapes-parity-geometry-state']",
+            "pathTransform=on");
     }
 
     [Fact]
@@ -2842,6 +2936,120 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
 
         var finalText = await page.Locator(selector).TextContentAsync() ?? string.Empty;
         Assert.Contains(expectedSubstring, finalText, StringComparison.Ordinal);
+    }
+
+    private static async Task NavigateToShapeKindAsync(IPage page, string expectedShapeKind, int maxToggles = 12)
+    {
+        for (var attempt = 0; attempt < maxToggles; attempt++)
+        {
+            var current = await page.Locator("[data-automation-id='controls-sample-shapes-parity-shape-kind']").TextContentAsync() ?? string.Empty;
+            if (current.Contains($"shape={expectedShapeKind}", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            await page.Locator("[data-automation-id='controls-sample-shapes-parity-next-shape']").ClickAsync();
+            await page.WaitForTimeoutAsync(50);
+        }
+
+        var finalState = await page.Locator("[data-automation-id='controls-sample-shapes-parity-shape-kind']").TextContentAsync() ?? string.Empty;
+        Assert.Contains($"shape={expectedShapeKind}", finalState, StringComparison.Ordinal);
+    }
+
+    private static string ShapeSelectorFor(string shapeKind)
+    {
+        return $"[data-automation-id='controls-sample-shapes-parity-shape-{shapeKind}']";
+    }
+
+    private static async Task<string> WaitForShapePathAttributeChangeAsync(
+        IPage page,
+        string shapeSelector,
+        string attributeName,
+        string baselineValue,
+        int timeoutMs = 3000,
+        int pollMs = 50,
+        bool requireNonEmpty = false)
+    {
+        var elapsedMs = 0;
+        while (elapsedMs < timeoutMs)
+        {
+            var current = await ReadShapePathAttributeAsync(page, shapeSelector, attributeName);
+            if (!string.Equals(current, baselineValue, StringComparison.Ordinal)
+                && (!requireNonEmpty || !string.IsNullOrWhiteSpace(current)))
+            {
+                return current;
+            }
+
+            await page.WaitForTimeoutAsync(pollMs);
+            elapsedMs += pollMs;
+        }
+
+        return await ReadShapePathAttributeAsync(page, shapeSelector, attributeName);
+    }
+
+    private static async Task<string> WaitForShapePathAttributeValueAsync(
+        IPage page,
+        string shapeSelector,
+        string attributeName,
+        int timeoutMs = 10000,
+        int pollMs = 50)
+    {
+        var elapsedMs = 0;
+        while (elapsedMs < timeoutMs)
+        {
+            var current = await ReadShapePathAttributeAsync(page, shapeSelector, attributeName);
+            if (!string.IsNullOrWhiteSpace(current)
+                && !string.Equals(current, "__missing_shape_host__", StringComparison.Ordinal))
+            {
+                return current;
+            }
+
+            await page.WaitForTimeoutAsync(pollMs);
+            elapsedMs += pollMs;
+        }
+
+        return await ReadShapePathAttributeAsync(page, shapeSelector, attributeName);
+    }
+
+    private static async Task<string> ReadShapePathAttributeAsync(IPage page, string shapeSelector, string attributeName)
+    {
+        return await page.EvaluateAsync<string>(
+            """
+            (payload) => {
+                const pageHost = document.querySelector("[data-automation-id='controls-sample-page-shapesparitypage']");
+                const queryRoot = pageHost ?? document;
+                const hosts = Array.from(queryRoot.querySelectorAll(payload.shapeSelector));
+                const shapeHost =
+                    hosts.slice().reverse().find(host => {
+                        if (!(host instanceof HTMLElement) || !host.isConnected) {
+                            return false;
+                        }
+
+                        const rect = host.getBoundingClientRect();
+                        return rect.width > 0 && rect.height > 0;
+                    })
+                    ?? hosts.at(-1)
+                    ?? null;
+
+                if (!shapeHost) {
+                    return "__missing_shape_host__";
+                }
+
+                const svgHost = shapeHost.querySelector(".mirage-shape-svg");
+                const pathNode = shapeHost.querySelector(".mirage-shape-path");
+
+                if (payload.attributeName === "preserveAspectRatio") {
+                    return svgHost?.getAttribute("preserveAspectRatio") ?? "";
+                }
+
+                return pathNode?.getAttribute(payload.attributeName) ?? "";
+            }
+            """,
+            new
+            {
+                shapeSelector,
+                attributeName
+            });
     }
 
     private static async Task SetSelectIndexAsync(IPage page, string selector, int selectedIndex)
