@@ -106,6 +106,32 @@ public sealed class MirageEntryHandlerTests
     }
 
     [Fact]
+    public void EntryHandler_ClearButtonClick_RestoresInputFocus()
+    {
+        var entry = new Entry
+        {
+            Text = "hello",
+            ClearButtonVisibility = ClearButtonVisibility.WhileEditing,
+            IsReadOnly = false,
+            IsEnabled = true
+        };
+        var (handler, _, coordinator, runtime) = CreateAttachedHandler(entry);
+        var inputNode = GetInputNode(handler);
+        var clearNode = GetClearButtonNode(handler);
+
+        coordinator.OnEvent(inputNode.NodeId, "focus", null);
+        coordinator.OnEvent(inputNode.NodeId, "blur", null);
+        Assert.False(entry.IsFocused);
+
+        coordinator.OnEvent(clearNode.NodeId, "click", null);
+
+        Assert.Equal(string.Empty, entry.Text);
+        Assert.True(entry.IsFocused);
+        Assert.Equal(inputNode.NodeId, runtime.LastFocusedNodeId);
+        Assert.True(runtime.LastFocusState);
+    }
+
+    [Fact]
     public void EntryHandler_KeyboardSubmit_UsesDeterministicEnterKeyPath()
     {
         var completedCount = 0;

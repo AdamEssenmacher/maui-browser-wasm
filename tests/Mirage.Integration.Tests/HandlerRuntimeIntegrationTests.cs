@@ -4684,6 +4684,52 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public async Task EntryHandler_Completed_UsesLatestBufferedRuntimeInput()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var inputDispatcher = new QueuedDispatcher();
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .AddSingleton<IDispatcher>(inputDispatcher)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageEntryHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        string? completedText = null;
+        var entry = new Entry { Text = string.Empty };
+        entry.Completed += (_, _) => completedText = entry.Text;
+        ((IElementHandler)handler).SetVirtualView(entry);
+        var inputNode = handler.PlatformView.Children
+            .Single(static child =>
+                child.NodeType == PlatformNodeType.Web
+                && string.Equals(child.ElementName, "input", StringComparison.Ordinal)
+                && child.Classes.Contains("mirage-entry-input", StringComparer.Ordinal));
+
+        coordinator.Register(handler.PlatformView, handler);
+        coordinator.SetRoot(handler.PlatformView);
+        await WaitUntilAsync(() => runtime.RenderCount >= 1);
+
+        coordinator.OnEvent(inputNode.NodeId, "input", "runtime-value");
+        Assert.Equal(string.Empty, entry.Text);
+        Assert.Equal(1, inputDispatcher.PendingCount);
+
+        coordinator.OnEvent(inputNode.NodeId, "keydown", "Enter");
+        Assert.Equal("runtime-value", completedText);
+        Assert.Equal("runtime-value", entry.Text);
+        Assert.Equal("runtime-value", inputNode.GetPropertyString("value"));
+
+        // The queued delayed callback remains scheduled but should no-op after explicit submit flush.
+        inputDispatcher.FlushAll();
+        await Task.Delay(30);
+        Assert.Equal("runtime-value", entry.Text);
+    }
+
+    [Fact]
     public void ContentPage_PlatformArrange_ForwardsArrangeToDirectContent()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());

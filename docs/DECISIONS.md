@@ -751,5 +751,7 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added provider-neutral runtime seams for key payloads and text-selection operations by node id (`TryGetNodeTextSelection`, `TrySetNodeTextSelection`) and wired Entry runtime events so cursor/selection now round-trip DOM <-> MAUI without feedback loops.
 - Preserved MAUI-style text semantics for keyboard hints by keeping `Entry` as text input for `Keyboard.Date`/`Keyboard.Time` and projecting those cases via `inputmode` hints instead of changing control type to browser-native date/time editors.
 - Added deterministic IME composition gating for submit behavior: Enter no longer triggers `Completed` while composition is active, and submit resumes after composition ends.
+- Submit behavior now flushes buffered runtime input before invoking `Completed`, so Enter-submit observes the latest text even when input coalescing is active.
+- Clear-button interaction now restores focus to the inner input node after clearing text, preserving editing continuity through the host-owned button implementation.
 - Preserved and revalidated the coalesced input fast path, including stale-buffer protection under rapid runtime input followed by programmatic updates.
 - Locked Entry height behavior to the existing `--base-height-multiplier` contract (`44px` default) so Entry host/input min-height alignment remains stable in Showcase E2E coverage.

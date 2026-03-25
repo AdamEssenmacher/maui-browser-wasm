@@ -620,6 +620,8 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
             case "keydown":
                 if (!_isComposingText && string.Equals(payload, "Enter", StringComparison.Ordinal))
                 {
+                    // Ensure submit observes the latest text even when input updates are buffered.
+                    FlushPendingInput();
                     OnCompletedInvoked();
                 }
 
@@ -749,6 +751,14 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
             && !string.IsNullOrWhiteSpace(_inputNode.NodeId))
         {
             _ = coordinator.TrySetNodeTextSelection(_inputNode.NodeId, 0, 0);
+            if (coordinator.TrySetNodeFocus(_inputNode.NodeId, isFocused: true))
+            {
+                _isFocused = true;
+                if (!VirtualView.IsFocused)
+                {
+                    VirtualView.IsFocused = true;
+                }
+            }
         }
 
         if (UpdateClearButtonProjection(VirtualView))
