@@ -715,7 +715,7 @@ public sealed class MirageRuntime : IMirageRuntime
             return true;
         }
 
-        if (node.ApplyMapProperty(operation.PropertyName, operation.Value))
+        if (node.IsMapProperty(operation.PropertyName))
         {
             return false;
         }
@@ -759,7 +759,7 @@ public sealed class MirageRuntime : IMirageRuntime
             return true;
         }
 
-        if (node.RemoveMapProperty(operation.PropertyName))
+        if (node.IsMapProperty(operation.PropertyName))
         {
             return false;
         }
@@ -1429,6 +1429,13 @@ public sealed class MirageRuntime : IMirageRuntime
                 && _mapProjection.ApplyRemove(propertyName);
         }
 
+        public bool IsMapProperty(string propertyName)
+        {
+            return TryGetControlDescriptor(out var descriptor)
+                && descriptor.Kind == ComponentKind.Map
+                && _mapProjection.IsSupportedProperty(propertyName);
+        }
+
         public DomElement GetValueElement()
         {
             return ValueElement ?? Element;
@@ -1496,6 +1503,25 @@ public sealed class MirageRuntime : IMirageRuntime
                 MirageMapPropertyNames.Elements => ReplaceState(_state with { Elements = Array.Empty<MirageMapElement>() }),
                 MirageMapPropertyNames.DismissPopupKey => ReplaceState(_state with { DismissPopupKey = null }),
                 MirageMapPropertyNames.DismissPopupRequestToken => ReplaceState(_state with { DismissPopupRequestToken = 0 }),
+                _ => false
+            };
+        }
+
+        public bool IsSupportedProperty(string propertyName)
+        {
+            return propertyName switch
+            {
+                MirageMapPropertyNames.MapType => true,
+                MirageMapPropertyNames.IsShowingUser => true,
+                MirageMapPropertyNames.IsScrollEnabled => true,
+                MirageMapPropertyNames.IsZoomEnabled => true,
+                MirageMapPropertyNames.IsTrafficEnabled => true,
+                MirageMapPropertyNames.RegionRequestToken => true,
+                MirageMapPropertyNames.Region => true,
+                MirageMapPropertyNames.Pins => true,
+                MirageMapPropertyNames.Elements => true,
+                MirageMapPropertyNames.DismissPopupKey => true,
+                MirageMapPropertyNames.DismissPopupRequestToken => true,
                 _ => false
             };
         }

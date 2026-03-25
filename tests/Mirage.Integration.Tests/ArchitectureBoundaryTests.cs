@@ -662,6 +662,26 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void MapRuntime_BatchingKeepsMapStateMutationOnImmediateApplyPath()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var text = File.ReadAllText(runtimePath);
+        Assert.Contains("if (node.IsMapProperty(operation.PropertyName))", text, StringComparison.Ordinal);
+        Assert.Contains("public bool IsMapProperty(string propertyName)", text, StringComparison.Ordinal);
+        Assert.Contains("&& _mapProjection.IsSupportedProperty(propertyName);", text, StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "if (node.ApplyMapProperty(operation.PropertyName, operation.Value))\n        {\n            return false;\n        }",
+            text,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "if (node.RemoveMapProperty(operation.PropertyName))\n        {\n            return false;\n        }",
+            text,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MapRuntime_RetriesRealizedMapNodeAfterNonReadyProviderResults()
     {
         var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
