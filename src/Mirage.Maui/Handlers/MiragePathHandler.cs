@@ -131,7 +131,8 @@ internal sealed class MiragePathHandler : MirageViewHandler<MauiPath>
     {
         return aspect switch
         {
-            Stretch.None => "none",
+            // Stretch.None should keep aspect ratio and avoid fill-style distortion.
+            Stretch.None => "xMinYMin meet",
             Stretch.Fill => "none",
             Stretch.UniformToFill => "xMidYMid slice",
             _ => "xMidYMid meet"

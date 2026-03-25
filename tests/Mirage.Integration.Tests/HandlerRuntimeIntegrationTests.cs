@@ -5081,6 +5081,32 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void PathHandler_MapsStretchNoneDifferentlyFromFill()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MiragePathHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var converter = new PathGeometryConverter();
+        var geometry = converter.ConvertFromInvariantString("M0,0 L40,0 L40,20 L0,20 Z") as Geometry;
+        Assert.NotNull(geometry);
+
+        var path = new Microsoft.Maui.Controls.Shapes.Path
+        {
+            Data = geometry,
+            Aspect = Stretch.None
+        };
+
+        ((IElementHandler)handler).SetVirtualView(path);
+        Assert.Equal("xMinYMin meet", handler.PlatformView.Attributes["preserveAspectRatio"]);
+
+        path.Aspect = Stretch.Fill;
+        MiragePathHandler.Mapper.UpdateProperty(handler, path, nameof(Microsoft.Maui.Controls.Shapes.Path.Aspect));
+        Assert.Equal("none", handler.PlatformView.Attributes["preserveAspectRatio"]);
+    }
+
+    [Fact]
     public void PathHandler_ClearsViewBox_WhenDataBecomesNull()
     {
         var services = new ServiceCollection().BuildServiceProvider();
@@ -5104,6 +5130,34 @@ public sealed class HandlerRuntimeIntegrationTests
         MiragePathHandler.Mapper.UpdateProperty(handler, path, nameof(Microsoft.Maui.Controls.Shapes.Path.Data));
 
         Assert.False(handler.PlatformView.Attributes.ContainsKey("viewBox"));
+    }
+
+    [Fact]
+    public void RectangleHandler_MapsCornerRadiusFromRadiusXAndRadiusY()
+    {
+        var services = new ServiceCollection().BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageRectangleHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var rectangle = new Rectangle
+        {
+            RadiusX = 14,
+            RadiusY = 8
+        };
+
+        ((IElementHandler)handler).SetVirtualView(rectangle);
+        Assert.Equal("14px / 8px", handler.PlatformView.GetStyleValue("borderRadius"));
+
+        rectangle.RadiusX = 0;
+        MirageRectangleHandler.Mapper.UpdateProperty(handler, rectangle, nameof(Rectangle.RadiusX));
+        Assert.Null(handler.PlatformView.GetStyleValue("borderRadius"));
+
+        rectangle.RadiusX = 6;
+        rectangle.RadiusY = 0;
+        MirageRectangleHandler.Mapper.UpdateProperty(handler, rectangle, nameof(Rectangle.RadiusX));
+        MirageRectangleHandler.Mapper.UpdateProperty(handler, rectangle, nameof(Rectangle.RadiusY));
+        Assert.Null(handler.PlatformView.GetStyleValue("borderRadius"));
     }
 
     private static IReadOnlyList<MiragePlatformView> GetCollectionItemNodes(MirageCollectionViewHandler handler)

@@ -12,7 +12,9 @@ internal sealed class MirageRectangleHandler : MirageViewHandler<Rectangle>
         {
             [nameof(Shape.Fill)] = MapFill,
             [nameof(Shape.Stroke)] = MapStroke,
-            [nameof(Shape.StrokeThickness)] = MapStroke
+            [nameof(Shape.StrokeThickness)] = MapStroke,
+            [nameof(Rectangle.RadiusX)] = MapCornerRadius,
+            [nameof(Rectangle.RadiusY)] = MapCornerRadius
         };
 
     public MirageRectangleHandler()
@@ -27,6 +29,7 @@ internal sealed class MirageRectangleHandler : MirageViewHandler<Rectangle>
         base.ConnectHandler(platformView);
         changed |= UpdateFillStyles(VirtualView);
         changed |= UpdateStrokeStyles(VirtualView);
+        changed |= UpdateCornerRadiusStyles(VirtualView);
         if (changed)
         {
             RequestRender();
@@ -46,6 +49,16 @@ internal sealed class MirageRectangleHandler : MirageViewHandler<Rectangle>
     public static void MapStroke(MirageRectangleHandler handler, Rectangle rectangle)
     {
         if (!handler.UpdateStrokeStyles(rectangle))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapCornerRadius(MirageRectangleHandler handler, Rectangle rectangle)
+    {
+        if (!handler.UpdateCornerRadiusStyles(rectangle))
         {
             return;
         }
@@ -96,6 +109,23 @@ internal sealed class MirageRectangleHandler : MirageViewHandler<Rectangle>
         changed |= SetStyleIfChanged("borderColor", strokeCssColor);
         changed |= SetStyleIfChanged("borderWidth", MirageViewMapper.ToPx(strokeThickness));
         return changed;
+    }
+
+    private bool UpdateCornerRadiusStyles(Rectangle rectangle)
+    {
+        var radiusX = rectangle.RadiusX;
+        var radiusY = rectangle.RadiusY;
+        if (!double.IsFinite(radiusX)
+            || !double.IsFinite(radiusY)
+            || radiusX <= 0d
+            || radiusY <= 0d)
+        {
+            return SetStyleIfChanged("borderRadius", null);
+        }
+
+        var x = MirageViewMapper.ToPx(radiusX);
+        var y = MirageViewMapper.ToPx(radiusY);
+        return SetStyleIfChanged("borderRadius", $"{x} / {y}");
     }
 
     private bool SetStyleIfChanged(string name, string? value)
