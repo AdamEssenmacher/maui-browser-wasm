@@ -2,12 +2,12 @@
 
 Mirage is an experimental **MAUI handler-backed browser platform** for `net10.0-browser`.
 
-It renders MAUI UI through a provider-based pipeline:
+It renders MAUI UI through a provider-backed DOM realization pipeline:
 
-`MAUI virtual view -> Mirage MAUI handlers -> Mirage platform tree (control + web) -> Mirage diff -> Provider -> DOM/Web Components`
+`MAUI virtual view -> Mirage MAUI handlers -> Mirage platform tree (control + web) -> Mirage diff -> Mirage runtime + provider descriptors -> DOM/custom elements`
 
-Mirage is provider-based and designed to adapt complete web component libraries.
-`Mirage.Provider.Fluent` is the first polished reference provider.
+Mirage currently uses providers for built-in control realization metadata plus a raw custom-element hosting seam for `WebNode`.
+`Mirage.Provider.Fluent` is the first polished reference provider for the built-in control-node path.
 
 ## Phase 1 scope (locked)
 
@@ -40,7 +40,7 @@ Built-in handlers stay inside this control set. Third-party/custom handlers can 
   - `UseMirageBrowserPlatform()` / `UseMirageComponentProvider<T>()`
   - `MirageBrowserAppHost.RunAsync(...)`
 - `src/Mirage.Provider.Fluent`
-  - Fluent UI Web Components provider implementation for phase 1
+  - Fluent UI Web Components descriptor provider for phase 1 built-in control-node realization
 - `src/Mirage.Provider.LeafletMaps`
   - Browser map provider implementation (Leaflet) for built-in `Map` control semantics
 - `samples/Counter.Shared`
@@ -154,6 +154,7 @@ If missing, startup fails with:
 - MAUI framework/logical semantics remain MAUI-side; Mirage models platform realization only.
 - `VisualNodeBase` is a shared platform-side visual/layout projection layer, not a duplicate MAUI framework model.
 - Provider-specific mappings (Fluent, UI5, custom) live only in provider projects.
+- Current provider abstraction is intentionally narrow: deep portability across arbitrary web-component libraries is deferred until Mirage grows slots/child projection, structured payloads, overlay hosting, provider-owned lifecycle hooks, and shadow/part-aware targeting.
 - Navigation is `NavigationPage`-first: MAUI stack changes are the source of truth and Mirage projects them into browser URL/history through `UseMirageNavigation(...)`.
 - `NavigationPage` is realized as a built-in navigation shell (nav bar, back button, title slot, toolbar slot, bounded content host) on the control-node path.
 - Dependency direction for samples is locked: `*.Fluent -> *.Shared` and `*.Maui -> *.Shared`.

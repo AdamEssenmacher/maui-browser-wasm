@@ -1,5 +1,7 @@
 namespace Mirage.Core.Providers;
 
+// Thin DOM realization hints for the generic WebNode path. This is
+// intentionally smaller than a full arbitrary component-library adapter model.
 public sealed class WebComponentDescriptor
 {
     public WebComponentDescriptor(

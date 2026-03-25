@@ -10,6 +10,8 @@ public interface IMirageRuntime : IDisposable
 
     void SetViewport(double width, double height);
 
+    // Reserved seam from early runtime experiments. Active features should
+    // prefer explicit event payload mappings or dedicated runtime queries.
     string? TryGetNodeInputValue(string nodeId);
 
     bool TryGetNodeScrollPosition(string nodeId, out double left, out double top);

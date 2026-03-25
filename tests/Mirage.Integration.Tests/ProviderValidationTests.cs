@@ -269,6 +269,34 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentProvider_GenericWebNodeDescriptor_RemainsThinEscapeHatch()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveWebNode("vendor-widget");
+
+        Assert.Equal("vendor-widget", descriptor.ElementName);
+        Assert.Empty(descriptor.DefaultAttributes);
+        Assert.Empty(descriptor.EventMappings);
+        Assert.True(descriptor.SupportsAttributes);
+        Assert.True(descriptor.SupportsProperties);
+        Assert.True(descriptor.SupportsStyles);
+        Assert.True(descriptor.SupportsClasses);
+        Assert.True(descriptor.SupportsEvents);
+    }
+
+    [Fact]
+    public void FluentProvider_MonacoWebNodeDescriptor_OnlyAddsInputBridge()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveWebNode("mirage-monaco-editor");
+
+        var mapping = Assert.Single(descriptor.EventMappings);
+        Assert.Equal("input", mapping.Key);
+        Assert.Equal("input", mapping.Value.DomEventName);
+        Assert.Equal(EventPayloadKind.InputValue, mapping.Value.PayloadKind);
+    }
+
+    [Fact]
     public void ProviderWithoutWebNodeCapability_FailsDeterministically()
     {
         IMirageComponentProvider provider = new ControlOnlyProvider();
