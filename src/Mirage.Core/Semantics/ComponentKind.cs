@@ -17,6 +17,7 @@ public enum ComponentKind
     Image,
     Border,
     BoxView,
+    ShapeView,
     CheckBox,
     Switch,
     Slider,

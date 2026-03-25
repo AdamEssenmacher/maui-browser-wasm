@@ -316,6 +316,35 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void BrowserPlatform_RegistersShapeHandlersAsBuiltInControlNode()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var shapeHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageShapeViewHandler.cs");
+        Assert.True(File.Exists(shapeHandlerPath), $"Expected shape handler file not found: {shapeHandlerPath}");
+
+        var hostingText = File.ReadAllText(hostingPath);
+        var shapeHandlerText = File.ReadAllText(shapeHandlerPath);
+
+        Assert.Contains("typeof(MauiShapes.Ellipse)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageShapeViewHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MauiShapes.Line)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageLineHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MauiShapes.Path)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MiragePathHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MauiShapes.Polygon)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MiragePolygonHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MauiShapes.Polyline)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MiragePolylineHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MauiShapes.Rectangle)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageRectangleHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MauiShapes.RoundRectangle)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageRoundRectangleHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.ShapeView", shapeHandlerText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BrowserPlatform_RegistersStackLayoutImageAndBorderHandlers()
     {
         var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");

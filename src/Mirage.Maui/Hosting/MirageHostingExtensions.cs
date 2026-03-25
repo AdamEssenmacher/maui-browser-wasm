@@ -11,8 +11,7 @@ using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Hosting;
 using MauiMap = Microsoft.Maui.Controls.Maps.Map;
-using MauiPath = Microsoft.Maui.Controls.Shapes.Path;
-using MauiRectangle = Microsoft.Maui.Controls.Shapes.Rectangle;
+using MauiShapes = Microsoft.Maui.Controls.Shapes;
 
 namespace Mirage.Maui.Hosting;
 
@@ -59,8 +58,13 @@ public static class MirageHostingExtensions
             handlers.AddHandler(typeof(Image), typeof(MirageImageHandler));
             handlers.AddHandler(typeof(Border), typeof(MirageBorderHandler));
             handlers.AddHandler(typeof(BoxView), typeof(MirageBoxViewHandler));
-            handlers.AddHandler(typeof(MauiRectangle), typeof(MirageRectangleHandler));
-            handlers.AddHandler(typeof(MauiPath), typeof(MiragePathHandler));
+            handlers.AddHandler(typeof(MauiShapes.Ellipse), typeof(MirageShapeViewHandler));
+            handlers.AddHandler(typeof(MauiShapes.Line), typeof(MirageLineHandler));
+            handlers.AddHandler(typeof(MauiShapes.Path), typeof(MiragePathHandler));
+            handlers.AddHandler(typeof(MauiShapes.Polygon), typeof(MiragePolygonHandler));
+            handlers.AddHandler(typeof(MauiShapes.Polyline), typeof(MiragePolylineHandler));
+            handlers.AddHandler(typeof(MauiShapes.Rectangle), typeof(MirageRectangleHandler));
+            handlers.AddHandler(typeof(MauiShapes.RoundRectangle), typeof(MirageRoundRectangleHandler));
             handlers.AddHandler(typeof(MauiMap), typeof(MirageMapHandler));
             handlers.AddHandler(typeof(Pin), typeof(MirageMapPinHandler));
             handlers.AddHandler(typeof(MapElement), typeof(MirageMapElementHandler));

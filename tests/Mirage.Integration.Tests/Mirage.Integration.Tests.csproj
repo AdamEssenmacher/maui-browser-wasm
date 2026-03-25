@@ -37,8 +37,13 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageReorderableItemsViewHandler.cs" Link="Handlers\MirageReorderableItemsViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageCollectionViewHandler.cs" Link="Handlers\MirageCollectionViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageBoxViewHandler.cs" Link="Handlers\MirageBoxViewHandler.cs" />
-    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageRectangleHandler.cs" Link="Handlers\MirageRectangleHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageShapeViewHandler.cs" Link="Handlers\MirageShapeViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageLineHandler.cs" Link="Handlers\MirageLineHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MiragePathHandler.cs" Link="Handlers\MiragePathHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MiragePolygonHandler.cs" Link="Handlers\MiragePolygonHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MiragePolylineHandler.cs" Link="Handlers\MiragePolylineHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageRectangleHandler.cs" Link="Handlers\MirageRectangleHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageRoundRectangleHandler.cs" Link="Handlers\MirageRoundRectangleHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageLabelHandler.cs" Link="Handlers\MirageLabelHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageEntryHandler.cs" Link="Handlers\MirageEntryHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageSearchBarHandler.cs" Link="Handlers\MirageSearchBarHandler.cs" />
