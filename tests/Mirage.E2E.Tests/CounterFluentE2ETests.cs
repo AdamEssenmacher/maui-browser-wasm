@@ -22,7 +22,7 @@ public sealed class CounterFluentE2ETests : IClassFixture<BrowserHostFixture>
         await using var context = await _fixture.NewContextAsync();
         var page = await OpenAsync(context);
 
-        await SetFluentTextFieldValueAsync(page, "[data-automation-id='counter-entry']", "Mirage input");
+        await SetEntryInputValueAsync(page, "[data-automation-id='counter-entry']", "Mirage input");
         await page.WaitForTimeoutAsync(120);
 
         var labelText = await page.Locator("[data-automation-id='counter-live-label']").InnerTextAsync();
@@ -63,10 +63,12 @@ public sealed class CounterFluentE2ETests : IClassFixture<BrowserHostFixture>
         var page = await OpenAsync(context);
 
         var buttonCount = await page.Locator("button[data-mirage-kind='Button']").CountAsync();
+        var entryHostCount = await page.Locator("div[data-mirage-kind='Entry']").CountAsync();
         var fluentTextFieldCount = await page.Locator("fluent-text-field").CountAsync();
 
         Assert.True(buttonCount > 0, "Expected at least one Mirage Button host element.");
-        Assert.True(fluentTextFieldCount > 0, "Expected at least one <fluent-text-field> element.");
+        Assert.True(entryHostCount > 0, "Expected at least one Mirage Entry host element.");
+        Assert.Equal(0, fluentTextFieldCount);
     }
 
     private async Task<IPage> OpenAsync(IBrowserContext context)
@@ -167,16 +169,21 @@ public sealed class CounterFluentE2ETests : IClassFixture<BrowserHostFixture>
             selector);
     }
 
-    private static async Task SetFluentTextFieldValueAsync(IPage page, string selector, string value)
+    private static async Task SetEntryInputValueAsync(IPage page, string selector, string value)
     {
         var applied = await page.EvaluateAsync<bool>(
             @"({ selector, value }) => {
-                const element = document.querySelector(selector);
-                if (!element) {
+                const host = document.querySelector(selector);
+                if (!host) {
                     return false;
                 }
 
-                element.value = value ?? '';
+                const input = host.matches('input') ? host : host.querySelector('input');
+                if (!input) {
+                    return false;
+                }
+
+                input.value = value ?? '';
                 let inputEvent;
                 try {
                     inputEvent = new InputEvent('input', { bubbles: true, composed: true });
@@ -184,11 +191,11 @@ public sealed class CounterFluentE2ETests : IClassFixture<BrowserHostFixture>
                     inputEvent = new Event('input', { bubbles: true, composed: true });
                 }
 
-                element.dispatchEvent(inputEvent);
+                input.dispatchEvent(inputEvent);
                 return true;
             }",
             new { selector, value });
 
-        Assert.True(applied, $"Failed to set Fluent text field value for selector '{selector}'.");
+        Assert.True(applied, $"Failed to set Entry value for selector '{selector}'.");
     }
 }

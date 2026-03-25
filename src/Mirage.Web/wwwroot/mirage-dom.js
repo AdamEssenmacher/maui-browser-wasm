@@ -65,6 +65,38 @@ input.mirage-searchbar-input::-webkit-input-placeholder {
   color: var(--mirage-searchbar-placeholder-color);
 }
 
+[data-mirage-kind="Entry"] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+input.mirage-entry-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+input.mirage-entry-input::placeholder {
+  color: var(--mirage-entry-placeholder-color);
+}
+
+input.mirage-entry-input::-webkit-input-placeholder {
+  color: var(--mirage-entry-placeholder-color);
+}
+
+button.mirage-entry-clear {
+  white-space: nowrap;
+  border: 0;
+  background: transparent;
+}
+
+button.mirage-entry-clear:focus-visible {
+  outline: 2px solid rgba(59,130,246,0.9);
+  outline-offset: 2px;
+}
+
 input[data-mirage-kind="Slider"][type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -923,6 +955,16 @@ export function subscribeEvent(elementHandle, eventName, callback) {
 }
 
 function getEventPayload(event, payloadKind, fallbackElement) {
+  if (payloadKind === "key") {
+    if (!event || typeof event !== "object") {
+      return null;
+    }
+
+    return typeof event.key === "string" && event.key.length > 0
+      ? event.key
+      : null;
+  }
+
   if (payloadKind !== "source-attribute") {
     return null;
   }
@@ -1019,6 +1061,33 @@ export function setInputChecked(elementHandle, value) {
 export function getInputChecked(elementHandle) {
   const element = fromHandle(elementHandle);
   return Boolean(element.checked);
+}
+
+export function getInputSelection(elementHandle) {
+  const element = fromHandle(elementHandle);
+  try {
+    const start = Number.isInteger(element.selectionStart) ? element.selectionStart : 0;
+    const end = Number.isInteger(element.selectionEnd) ? element.selectionEnd : start;
+    return [Math.max(0, start), Math.max(0, end)];
+  } catch {
+    return [];
+  }
+}
+
+export function setInputSelection(elementHandle, selectionStart, selectionEnd) {
+  const element = fromHandle(elementHandle);
+  if (!element || typeof element.setSelectionRange !== "function") {
+    return false;
+  }
+
+  const normalizedStart = Number.isFinite(selectionStart) ? Math.max(0, Math.trunc(selectionStart)) : 0;
+  const normalizedEnd = Number.isFinite(selectionEnd) ? Math.max(normalizedStart, Math.trunc(selectionEnd)) : normalizedStart;
+  try {
+    element.setSelectionRange(normalizedStart, normalizedEnd);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function focusElement(elementHandle) {

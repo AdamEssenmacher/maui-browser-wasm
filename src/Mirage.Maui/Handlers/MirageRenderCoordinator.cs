@@ -221,6 +221,28 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         return _runtime.TrySetNodeFocus(nodeId, isFocused);
     }
 
+    public bool TryGetNodeTextSelection(string nodeId, out int selectionStart, out int selectionEnd)
+    {
+        if (_runtime is null)
+        {
+            selectionStart = 0;
+            selectionEnd = 0;
+            return false;
+        }
+
+        return _runtime.TryGetNodeTextSelection(nodeId, out selectionStart, out selectionEnd);
+    }
+
+    public bool TrySetNodeTextSelection(string nodeId, int selectionStart, int selectionEnd)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TrySetNodeTextSelection(nodeId, selectionStart, selectionEnd);
+    }
+
     public void OnEvent(string nodeId, string eventName, string? payload)
     {
         if (!_eventTargetsByNodeId.TryGetValue(nodeId, out var target))

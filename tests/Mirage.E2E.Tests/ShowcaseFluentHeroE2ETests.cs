@@ -634,7 +634,7 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
     }
 
     [Fact]
-    public async Task XamlLab_EntryMinHeight_KeepsFluentChromeAligned()
+    public async Task XamlLab_EntryMinHeight_KeepsHostAndInputAligned()
     {
         await using var context = await _fixture.NewContextAsync(width: 1360, height: 900);
         var page = await OpenAsync(
@@ -667,7 +667,8 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
             () => {
                 const entry = document.querySelectorAll('[data-mirage-kind="Entry"]')[0];
                 if (entry) {
-                    entry.focus();
+                    const input = entry.querySelector('input');
+                    input?.focus();
                 }
             }
             """);
@@ -680,21 +681,18 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
                     return JSON.stringify({ hasEntry: false });
                 }
 
+                const input = entry.querySelector('input');
                 const hostRect = entry.getBoundingClientRect();
                 const hostStyle = getComputedStyle(entry);
-                const shadow = entry.shadowRoot;
-                const root = shadow?.querySelector('.root, [part="root"]');
-                const control = shadow?.querySelector('[part="control"]');
-                const rootRect = root?.getBoundingClientRect() ?? null;
-                const controlRect = control?.getBoundingClientRect() ?? null;
+                const inputRect = input?.getBoundingClientRect() ?? null;
 
                 return JSON.stringify({
                     hasEntry: true,
+                    hasInput: !!input,
                     hostHeight: hostRect.height,
-                    rootHeight: rootRect?.height ?? null,
-                    controlHeight: controlRect?.height ?? null,
+                    inputHeight: inputRect?.height ?? null,
                     hostBottom: hostRect.bottom,
-                    rootBottom: rootRect?.bottom ?? null,
+                    inputBottom: inputRect?.bottom ?? null,
                     baseHeightMultiplier: hostStyle.getPropertyValue('--base-height-multiplier').trim(),
                     minHeight: hostStyle.minHeight
                 });
@@ -704,18 +702,19 @@ public sealed class ShowcaseFluentHeroE2ETests : IClassFixture<ShowcaseHostFixtu
         using var metricsDocument = System.Text.Json.JsonDocument.Parse(metricsJson);
         var root = metricsDocument.RootElement;
         Assert.True(root.GetProperty("hasEntry").GetBoolean(), $"Expected entry metrics payload. Details={metricsJson}");
+        Assert.True(root.GetProperty("hasInput").GetBoolean(), $"Expected inner input for entry host. Details={metricsJson}");
 
         var hostHeight = root.GetProperty("hostHeight").GetDouble();
-        var rootHeight = root.GetProperty("rootHeight").GetDouble();
+        var inputHeight = root.GetProperty("inputHeight").GetDouble();
         var hostBottom = root.GetProperty("hostBottom").GetDouble();
-        var rootBottom = root.GetProperty("rootBottom").GetDouble();
+        var inputBottom = root.GetProperty("inputBottom").GetDouble();
         var baseHeightMultiplier = root.GetProperty("baseHeightMultiplier").GetString();
         var minHeight = root.GetProperty("minHeight").GetString();
 
         Assert.Equal("44px", minHeight);
         Assert.Equal("11", baseHeightMultiplier);
-        Assert.True(Math.Abs(hostHeight - rootHeight) <= 2, $"Expected host/root heights to align. Metrics={metricsJson}");
-        Assert.True(Math.Abs(hostBottom - rootBottom) <= 2, $"Expected host/root bottoms to align. Metrics={metricsJson}");
+        Assert.True(Math.Abs(hostHeight - inputHeight) <= 2, $"Expected host/input heights to align. Metrics={metricsJson}");
+        Assert.True(Math.Abs(hostBottom - inputBottom) <= 2, $"Expected host/input bottoms to align. Metrics={metricsJson}");
     }
 
     [Fact]

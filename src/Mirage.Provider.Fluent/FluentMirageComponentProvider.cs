@@ -62,17 +62,8 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 }),
             [ComponentKind.Entry] = new(
                 ComponentKind.Entry,
-                "fluent-text-field",
-                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
-                {
-                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
-                    ["Text"] = new(PropertyTarget.InputValue),
-                    ["Placeholder"] = new(PropertyTarget.Attribute, "placeholder")
-                },
-                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
-                {
-                    ["input"] = new("input", EventTarget.Self, EventPayloadKind.InputValue)
-                }),
+                "div",
+                propertyMappings: CommonProperties),
             [ComponentKind.SearchBar] = new(
                 ComponentKind.SearchBar,
                 "div",
@@ -317,7 +308,8 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 {
                     ["input"] = new("input", EventTarget.Self, EventPayloadKind.InputValue),
                     ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue),
-                    ["search"] = new("search", EventTarget.Self, EventPayloadKind.InputValue)
+                    ["search"] = new("search", EventTarget.Self, EventPayloadKind.InputValue),
+                    ["keydown"] = new("keydown", EventTarget.Self, EventPayloadKind.Key)
                 },
                 supportsAttributes: true,
                 supportsProperties: true,

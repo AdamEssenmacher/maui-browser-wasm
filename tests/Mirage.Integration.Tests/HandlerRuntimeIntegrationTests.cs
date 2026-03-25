@@ -4614,15 +4614,20 @@ public sealed class HandlerRuntimeIntegrationTests
 
         var entry = new Entry { Text = string.Empty };
         ((IElementHandler)handler).SetVirtualView(entry);
+        var inputNode = handler.PlatformView.Children
+            .Single(static child =>
+                child.NodeType == PlatformNodeType.Web
+                && string.Equals(child.ElementName, "input", StringComparison.Ordinal)
+                && child.Classes.Contains("mirage-entry-input", StringComparer.Ordinal));
 
         coordinator.Register(handler.PlatformView, handler);
         coordinator.SetRoot(handler.PlatformView);
         await WaitUntilAsync(() => runtime.RenderCount >= 1);
         var baselineRenderCount = runtime.RenderCount;
 
-        handler.OnRuntimeEvent("input", "A");
-        handler.OnRuntimeEvent("input", "AB");
-        handler.OnRuntimeEvent("input", "ABC");
+        coordinator.OnEvent(inputNode.NodeId, "input", "A");
+        coordinator.OnEvent(inputNode.NodeId, "input", "AB");
+        coordinator.OnEvent(inputNode.NodeId, "input", "ABC");
 
         Assert.Equal(string.Empty, entry.Text);
         Assert.Equal(1, inputDispatcher.PendingCount);
@@ -4632,7 +4637,7 @@ public sealed class HandlerRuntimeIntegrationTests
         await Task.Delay(30);
 
         Assert.Equal("ABC", entry.Text);
-        Assert.Equal("ABC", handler.PlatformView.GetPropertyString("Text"));
+        Assert.Equal("ABC", inputNode.GetPropertyString("value"));
         Assert.Equal(baselineRenderCount, runtime.RenderCount);
     }
 
@@ -4655,12 +4660,17 @@ public sealed class HandlerRuntimeIntegrationTests
 
         var entry = new Entry { Text = string.Empty };
         ((IElementHandler)handler).SetVirtualView(entry);
+        var inputNode = handler.PlatformView.Children
+            .Single(static child =>
+                child.NodeType == PlatformNodeType.Web
+                && string.Equals(child.ElementName, "input", StringComparison.Ordinal)
+                && child.Classes.Contains("mirage-entry-input", StringComparer.Ordinal));
 
         coordinator.Register(handler.PlatformView, handler);
         coordinator.SetRoot(handler.PlatformView);
         await WaitUntilAsync(() => runtime.RenderCount >= 1);
 
-        handler.OnRuntimeEvent("input", "runtime-value");
+        coordinator.OnEvent(inputNode.NodeId, "input", "runtime-value");
         Assert.Equal(1, inputDispatcher.PendingCount);
 
         entry.Text = "programmatic-value";
@@ -4670,7 +4680,7 @@ public sealed class HandlerRuntimeIntegrationTests
         await Task.Delay(30);
 
         Assert.Equal("programmatic-value", entry.Text);
-        Assert.Equal("programmatic-value", handler.PlatformView.GetPropertyString("Text"));
+        Assert.Equal("programmatic-value", inputNode.GetPropertyString("value"));
     }
 
     [Fact]
@@ -5380,6 +5390,22 @@ public sealed class HandlerRuntimeIntegrationTests
         {
             _ = nodeId;
             _ = isFocused;
+            return true;
+        }
+
+        public bool TryGetNodeTextSelection(string nodeId, out int selectionStart, out int selectionEnd)
+        {
+            _ = nodeId;
+            selectionStart = 0;
+            selectionEnd = 0;
+            return false;
+        }
+
+        public bool TrySetNodeTextSelection(string nodeId, int selectionStart, int selectionEnd)
+        {
+            _ = nodeId;
+            _ = selectionStart;
+            _ = selectionEnd;
             return true;
         }
 

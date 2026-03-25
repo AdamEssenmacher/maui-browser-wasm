@@ -62,14 +62,16 @@ public abstract class ProviderConformanceTestsBase
     }
 
     [Fact]
-    public void Conformance_EntryInputEventHasInputPayloadMapping()
+    public void Conformance_EntryDescriptorUsesHostOnlyInputSemantics()
     {
         var provider = CreateProvider();
         var entry = provider.ResolveControl(ComponentKind.Entry);
 
-        Assert.True(entry.EventMappings.TryGetValue("input", out var mapping));
-        Assert.Equal(EventPayloadKind.InputValue, mapping.PayloadKind);
-        Assert.Equal(ProviderEventPayloadSupport.InputValueString, provider.Capabilities.Features.EventPayloadSupport);
+        Assert.Equal("div", entry.ElementTagName);
+        Assert.True(entry.PropertyMappings.ContainsKey("AutomationId"));
+        Assert.False(entry.PropertyMappings.ContainsKey("Text"));
+        Assert.False(entry.PropertyMappings.ContainsKey("Placeholder"));
+        Assert.Empty(entry.EventMappings);
     }
 
     [Fact]
@@ -80,5 +82,15 @@ public abstract class ProviderConformanceTestsBase
 
         Assert.True(input.EventMappings.TryGetValue("input", out var mapping));
         Assert.Equal(EventPayloadKind.InputValue, mapping.PayloadKind);
+    }
+
+    [Fact]
+    public void Conformance_WebInputNodeKeydownEventHasKeyPayloadMapping()
+    {
+        var provider = CreateProvider();
+        var input = provider.ResolveWebNode("input");
+
+        Assert.True(input.EventMappings.TryGetValue("keydown", out var mapping));
+        Assert.Equal(EventPayloadKind.Key, mapping.PayloadKind);
     }
 }
