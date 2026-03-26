@@ -444,11 +444,16 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
             return false;
         }
 
+        var sourceValue = editor.Text ?? string.Empty;
+        var normalizedStart = Math.Clamp(editor.CursorPosition, 0, sourceValue.Length);
+        var normalizedLength = Math.Max(0, editor.SelectionLength);
+        var normalizedEnd = Math.Clamp(normalizedStart + normalizedLength, normalizedStart, sourceValue.Length);
+        var mappedStart = MapTransformedSelectionIndex(editor, sourceValue, normalizedStart);
+        var mappedEnd = MapTransformedSelectionIndex(editor, sourceValue, normalizedEnd);
         var renderedTextLength = (_inputNode.GetPropertyString("value") ?? string.Empty).Length;
-        var cursorPosition = Math.Clamp(editor.CursorPosition, 0, renderedTextLength);
-        var selectionLength = Math.Max(0, editor.SelectionLength);
-        var selectionEnd = Math.Clamp(cursorPosition + selectionLength, 0, renderedTextLength);
-        return coordinator.TrySetNodeTextSelection(_inputNode.NodeId, cursorPosition, selectionEnd);
+        mappedStart = Math.Clamp(mappedStart, 0, renderedTextLength);
+        mappedEnd = Math.Clamp(mappedEnd, mappedStart, renderedTextLength);
+        return coordinator.TrySetNodeTextSelection(_inputNode.NodeId, mappedStart, mappedEnd);
     }
 
     private void EnsureInitialSelectionProjectionAfterConnect()
@@ -636,15 +641,15 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
             return;
         }
 
-        var mappedStart = MapTransformedSelectionIndex(sourceValue, selectionStart);
-        var mappedEnd = MapTransformedSelectionIndex(sourceValue, selectionEnd);
+        var mappedStart = MapTransformedSelectionIndex(VirtualView, sourceValue, selectionStart);
+        var mappedEnd = MapTransformedSelectionIndex(VirtualView, sourceValue, selectionEnd);
         _ = coordinator.TrySetNodeTextSelection(_inputNode.NodeId, mappedStart, mappedEnd);
     }
 
-    private int MapTransformedSelectionIndex(string sourceValue, int sourceIndex)
+    private static int MapTransformedSelectionIndex(IEditor editor, string sourceValue, int sourceIndex)
     {
         var normalizedIndex = Math.Clamp(sourceIndex, 0, sourceValue.Length);
-        var transformedPrefix = GetTransformedText(VirtualView, sourceValue[..normalizedIndex]);
+        var transformedPrefix = GetTransformedText(editor, sourceValue[..normalizedIndex]);
         return transformedPrefix.Length;
     }
 

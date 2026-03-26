@@ -273,6 +273,46 @@ public sealed class MirageEditorHandlerTests
     }
 
     [Fact]
+    public void EditorHandler_ProgrammaticSelection_WithTextTransform_UsesTransformedPrefixOffsets()
+    {
+        var editor = new Editor
+        {
+            Text = "A\u0130B",
+            TextTransform = TextTransform.Lowercase,
+            CursorPosition = 1,
+            SelectionLength = 1
+        };
+
+        var (handler, _, _, runtime) = CreateAttachedHandler(editor);
+        var inputNode = GetInputNode(handler);
+        var expectedStart = TextTransformUtilities.GetTransformedText(
+            editor.Text![..editor.CursorPosition],
+            editor.TextTransform).Length;
+        var expectedEnd = TextTransformUtilities.GetTransformedText(
+            editor.Text![..(editor.CursorPosition + editor.SelectionLength)],
+            editor.TextTransform).Length;
+
+        Assert.True(runtime.TryGetSelection(inputNode.NodeId, out var start, out var end));
+        Assert.Equal(expectedStart, start);
+        Assert.Equal(expectedEnd, end);
+
+        editor.CursorPosition = 0;
+        editor.SelectionLength = 2;
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(IEditor.CursorPosition));
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(IEditor.SelectionLength));
+
+        expectedStart = TextTransformUtilities.GetTransformedText(
+            editor.Text![..editor.CursorPosition],
+            editor.TextTransform).Length;
+        expectedEnd = TextTransformUtilities.GetTransformedText(
+            editor.Text![..(editor.CursorPosition + editor.SelectionLength)],
+            editor.TextTransform).Length;
+        Assert.True(runtime.TryGetSelection(inputNode.NodeId, out start, out end));
+        Assert.Equal(expectedStart, start);
+        Assert.Equal(expectedEnd, end);
+    }
+
+    [Fact]
     public void EditorHandler_FocusCommand_TargetsTextAreaNode()
     {
         var editor = new Editor
