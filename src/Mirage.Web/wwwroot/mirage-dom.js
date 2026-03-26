@@ -1335,12 +1335,14 @@ export function openPicker(elementHandle) {
     return false;
   }
 
+  let showPickerFailed = false;
   try {
     if (typeof element.showPicker === "function") {
       element.showPicker();
       return true;
     }
   } catch {
+    showPickerFailed = true;
     // Continue to deterministic fallback path.
   }
 
@@ -1362,7 +1364,18 @@ export function openPicker(elementHandle) {
     // no-op: deterministic return value below
   }
 
-  return clicked;
+  if (!clicked || document.activeElement !== element) {
+    return false;
+  }
+
+  // If showPicker explicitly failed without transient user activation, fallback click
+  // should not claim success because activation-gated browsers won't actually open.
+  const userActivation = typeof navigator !== "undefined" ? navigator.userActivation : undefined;
+  if (showPickerFailed && userActivation && userActivation.isActive === false) {
+    return false;
+  }
+
+  return true;
 }
 
 export function setScrollPosition(elementHandle, left, top) {
