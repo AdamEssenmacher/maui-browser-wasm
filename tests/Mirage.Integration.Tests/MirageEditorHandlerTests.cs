@@ -306,6 +306,31 @@ public sealed class MirageEditorHandlerTests
         Assert.False(runtime.LastFocusState);
     }
 
+    [Fact]
+    public void EditorHandler_Connect_RetriesInitialSelectionWhenRuntimeNodeIsNotYetRealized()
+    {
+        var editor = new Editor
+        {
+            Text = "abcdef",
+            CursorPosition = 2,
+            SelectionLength = 3
+        };
+
+        var coordinator = new DeferredSelectionCoordinator(failSetSelectionCallCount: 4);
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+        var handler = new MirageEditorHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        ((IElementHandler)handler).SetVirtualView(editor);
+
+        Assert.True(coordinator.SetSelectionCallCount >= 2);
+        Assert.True(coordinator.DispatchDelayedCallCount >= 1);
+        Assert.True(coordinator.LastSetSelectionResult);
+    }
+
     private static (MirageEditorHandler Handler, Editor Editor, MirageRenderCoordinator Coordinator, EditorRuntimeProbe Runtime) CreateAttachedHandler(Editor editor)
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
@@ -449,6 +474,153 @@ public sealed class MirageEditorHandlerTests
         public void SetSelection(string nodeId, int start, int end)
         {
             _selectionByNodeId[nodeId] = (start, end);
+        }
+    }
+
+    private sealed class DeferredSelectionCoordinator : IMirageRenderCoordinator
+    {
+        private readonly int _failSetSelectionCallCount;
+        private int _setSelectionCallCount;
+        private int _nodeIdCounter;
+
+        public DeferredSelectionCoordinator(int failSetSelectionCallCount)
+        {
+            _failSetSelectionCallCount = failSetSelectionCallCount;
+        }
+
+        public int DispatchDelayedCallCount { get; private set; }
+
+        public int LastSelectionStart { get; private set; }
+
+        public int LastSelectionEnd { get; private set; }
+
+        public bool LastSetSelectionResult { get; private set; }
+
+        public int SetSelectionCallCount => _setSelectionCallCount;
+
+        public void AttachRuntime(IMirageRuntime runtime)
+        {
+            _ = runtime;
+        }
+
+        public void DetachRuntime()
+        {
+        }
+
+        public void Register(MiragePlatformView platformView, IMirageRuntimeEventTarget? eventTarget)
+        {
+            if (string.IsNullOrWhiteSpace(platformView.NodeId))
+            {
+                var localId = Interlocked.Increment(ref _nodeIdCounter);
+                platformView.AssignNodeId($"deferred-node-{localId:D4}");
+            }
+
+            _ = eventTarget;
+        }
+
+        public void Unregister(MiragePlatformView platformView)
+        {
+            _ = platformView;
+        }
+
+        public void SetRoot(MiragePlatformView? root)
+        {
+            _ = root;
+        }
+
+        public void RequestRender()
+        {
+        }
+
+        public bool DispatchDelayed(TimeSpan delay, Action action)
+        {
+            _ = delay;
+            DispatchDelayedCallCount++;
+            action();
+            return true;
+        }
+
+        public IDisposable BeginRenderBatch()
+        {
+            return NullDisposable.Instance;
+        }
+
+        public bool TryGetNodeScrollPosition(string nodeId, out double left, out double top)
+        {
+            _ = nodeId;
+            left = 0;
+            top = 0;
+            return false;
+        }
+
+        public bool TrySetNodeScrollPosition(string nodeId, double left, double top, out double actualLeft, out double actualTop)
+        {
+            _ = nodeId;
+            _ = left;
+            _ = top;
+            actualLeft = 0;
+            actualTop = 0;
+            return false;
+        }
+
+        public bool TryScrollNodeChildIntoView(
+            string containerNodeId,
+            string childNodeId,
+            int scrollToPosition,
+            bool isHorizontalOrientation,
+            bool isAnimated,
+            out double actualLeft,
+            out double actualTop)
+        {
+            _ = containerNodeId;
+            _ = childNodeId;
+            _ = scrollToPosition;
+            _ = isHorizontalOrientation;
+            _ = isAnimated;
+            actualLeft = 0;
+            actualTop = 0;
+            return false;
+        }
+
+        public bool TrySetNodeFocus(string nodeId, bool isFocused)
+        {
+            _ = nodeId;
+            _ = isFocused;
+            return true;
+        }
+
+        public bool TryGetNodeTextSelection(string nodeId, out int selectionStart, out int selectionEnd)
+        {
+            _ = nodeId;
+            selectionStart = 0;
+            selectionEnd = 0;
+            return false;
+        }
+
+        public bool TrySetNodeTextSelection(string nodeId, int selectionStart, int selectionEnd)
+        {
+            _ = nodeId;
+            LastSelectionStart = selectionStart;
+            LastSelectionEnd = selectionEnd;
+            _setSelectionCallCount++;
+            LastSetSelectionResult = _setSelectionCallCount > _failSetSelectionCallCount;
+            return LastSetSelectionResult;
+        }
+
+        public void OnEvent(string nodeId, string eventName, string? payload)
+        {
+            _ = nodeId;
+            _ = eventName;
+            _ = payload;
+        }
+
+        private sealed class NullDisposable : IDisposable
+        {
+            public static readonly NullDisposable Instance = new();
+
+            public void Dispose()
+            {
+            }
         }
     }
 }

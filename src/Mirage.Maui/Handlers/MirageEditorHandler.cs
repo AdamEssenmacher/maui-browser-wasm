@@ -11,6 +11,8 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
 {
     private const string InputNodeClass = "mirage-editor-input";
     private const string ControlMinHeightExpression = "calc(var(--base-height-multiplier, 11) * 8px)";
+    private static readonly TimeSpan InitialSelectionRetryDelay = TimeSpan.FromMilliseconds(2);
+    private const int MaxInitialSelectionRetryCount = 6;
     private static int s_childNodeIdCounter;
 
     internal static readonly string[] ParityPropertyKeys =
@@ -93,6 +95,9 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
     private MiragePlatformView? _inputNode;
     private bool _isApplyingRuntimeInput;
     private bool _isApplyingRuntimeSelection;
+    private bool _isConnected;
+    private bool _initialSelectionRetryScheduled;
+    private int _initialSelectionRetryCount;
 
     public MirageEditorHandler()
         : base(ComponentKind.Editor, Mapper, CommandMapper)
@@ -102,6 +107,9 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
 
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
+        _isConnected = true;
+        _initialSelectionRetryCount = 0;
+        _initialSelectionRetryScheduled = false;
         platformView.SetStyle("display", DefaultDisplayStyle);
         var changed = EnsureStructure();
         changed |= ApplyEditorProjectionCore(VirtualView);
@@ -110,10 +118,15 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         {
             RequestRender();
         }
+
+        EnsureInitialSelectionProjectionAfterConnect();
     }
 
     protected override void DisconnectHandler(MiragePlatformView platformView)
     {
+        _isConnected = false;
+        _initialSelectionRetryScheduled = false;
+        _initialSelectionRetryCount = 0;
         DisconnectStructure();
         base.DisconnectHandler(platformView);
     }
@@ -418,19 +431,72 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
 
     private void ApplySelectionFromVirtualView(IEditor editor)
     {
+        _ = TryApplySelectionFromVirtualView(editor);
+    }
+
+    private bool TryApplySelectionFromVirtualView(IEditor editor)
+    {
         if (_isApplyingRuntimeSelection
             || Coordinator is not { } coordinator
             || _inputNode is null
             || string.IsNullOrWhiteSpace(_inputNode.NodeId))
         {
-            return;
+            return false;
         }
 
         var renderedTextLength = (_inputNode.GetPropertyString("value") ?? string.Empty).Length;
         var cursorPosition = Math.Clamp(editor.CursorPosition, 0, renderedTextLength);
         var selectionLength = Math.Max(0, editor.SelectionLength);
         var selectionEnd = Math.Clamp(cursorPosition + selectionLength, 0, renderedTextLength);
-        _ = coordinator.TrySetNodeTextSelection(_inputNode.NodeId, cursorPosition, selectionEnd);
+        return coordinator.TrySetNodeTextSelection(_inputNode.NodeId, cursorPosition, selectionEnd);
+    }
+
+    private void EnsureInitialSelectionProjectionAfterConnect()
+    {
+        if (TryApplySelectionFromVirtualView(VirtualView))
+        {
+            _initialSelectionRetryCount = 0;
+            _initialSelectionRetryScheduled = false;
+            return;
+        }
+
+        ScheduleInitialSelectionRetry();
+    }
+
+    private void ScheduleInitialSelectionRetry()
+    {
+        if (!_isConnected
+            || _initialSelectionRetryScheduled
+            || _initialSelectionRetryCount >= MaxInitialSelectionRetryCount
+            || Coordinator is not { } coordinator)
+        {
+            return;
+        }
+
+        _initialSelectionRetryScheduled = true;
+        _initialSelectionRetryCount++;
+        if (!coordinator.DispatchDelayed(InitialSelectionRetryDelay, RetryInitialSelectionProjection))
+        {
+            _initialSelectionRetryScheduled = false;
+            RetryInitialSelectionProjection();
+        }
+    }
+
+    private void RetryInitialSelectionProjection()
+    {
+        _initialSelectionRetryScheduled = false;
+        if (!_isConnected)
+        {
+            return;
+        }
+
+        if (TryApplySelectionFromVirtualView(VirtualView))
+        {
+            _initialSelectionRetryCount = 0;
+            return;
+        }
+
+        ScheduleInitialSelectionRetry();
     }
 
     private void SyncSelectionFromRuntime()
