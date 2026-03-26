@@ -3406,23 +3406,29 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             openedPageHosts.Add(currentHostAutomationId);
         }
 
-        var navButtonIds = await ReadVisibleCollectionViewNavButtonIdsAsync(page);
-        foreach (var navButtonId in navButtonIds)
+        var navButtons = await ReadClickableCollectionViewNavButtonsAsync(page);
+        foreach (var navEntry in navButtons)
         {
             var parentHostAutomationId = await ReadCurrentControlsSamplePageHostAutomationIdAsync(page);
             Assert.False(string.IsNullOrWhiteSpace(parentHostAutomationId));
+            var parentHostNodeId = await ReadCurrentControlsSamplePageHostNodeIdAsync(page);
 
             await NavigateWithDiagnosticsAsync(
                 page,
                 diagnostics,
                 async () =>
                 {
-                    var clicked = await ClickCollectionNavButtonOnActiveHostAsync(page, navButtonId);
-                    Assert.True(clicked, $"Expected to click visible collection nav button '{navButtonId}' on active host.");
+                    var navButtonSelector = string.IsNullOrWhiteSpace(navEntry.NodeId)
+                        ? $"[data-automation-id='{navEntry.AutomationId}']:visible"
+                        : $"[data-mirage-node-id='{navEntry.NodeId}']";
+                    var navButtonLocator = page.Locator(navButtonSelector).Last;
+                    await navButtonLocator.ScrollIntoViewIfNeededAsync();
+                    await navButtonLocator.FocusAsync();
+                    await navButtonLocator.PressAsync("Enter");
 
                     await page.WaitForFunctionAsync(
                         """
-                        (previousHostId) => {
+                        (previousHostNodeId) => {
                             const isVisible = (element) => {
                                 if (!(element instanceof HTMLElement) || !element.isConnected) {
                                     return false;
@@ -3479,11 +3485,11 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                                 return false;
                             }
 
-                            const currentId = activeHost.getAttribute("data-automation-id") ?? "";
-                            return currentId.length > 0 && currentId !== previousHostId;
+                            const currentNodeId = activeHost.getAttribute("data-mirage-node-id") ?? "";
+                            return currentNodeId.length > 0 && currentNodeId !== previousHostNodeId;
                         }
                         """,
-                        parentHostAutomationId,
+                        parentHostNodeId ?? string.Empty,
                         new()
                         {
                             Timeout = 15000
@@ -3500,7 +3506,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                     await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
                     await page.WaitForFunctionAsync(
                         """
-                        (expectedHostId) => {
+                        (expectedHostNodeId) => {
                             const isVisible = (element) => {
                                 if (!(element instanceof HTMLElement) || !element.isConnected) {
                                     return false;
@@ -3557,10 +3563,10 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                                 return false;
                             }
 
-                            return (activeHost.getAttribute("data-automation-id") ?? "") === expectedHostId;
+                            return (activeHost.getAttribute("data-mirage-node-id") ?? "") === expectedHostNodeId;
                         }
                         """,
-                        parentHostAutomationId,
+                        parentHostNodeId ?? string.Empty,
                         new()
                         {
                             Timeout = 15000
@@ -3640,9 +3646,9 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Empty(visibleDeferredButtons);
     }
 
-    private static async Task<string[]> ReadVisibleCollectionViewNavButtonIdsAsync(IPage page)
+    private static async Task<(string AutomationId, string NodeId)[]> ReadClickableCollectionViewNavButtonsAsync(IPage page)
     {
-        return await page.EvaluateAsync<string[]>(
+        var entries = await page.EvaluateAsync<string[]>(
             """
             () => {
                 const isVisible = (element) => {
@@ -3699,21 +3705,40 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                     return [];
                 }
 
-                const ids = Array.from(activeHost.querySelectorAll("[data-automation-id^='controls-sample-collectionviewgallery-open-']"))
-                    .filter(element => {
-                        if (!(element instanceof HTMLElement)) {
-                            return false;
-                        }
+                const isTopmostHitTarget = (element) => {
+                    if (!(element instanceof HTMLElement)) {
+                        return false;
+                    }
 
-                        return isVisible(element);
+                    const rect = element.getBoundingClientRect();
+                    const probeX = Math.max(1, Math.min(window.innerWidth - 2, rect.left + Math.max(1, Math.min(rect.width - 1, rect.width / 2))));
+                    const probeY = Math.max(1, Math.min(window.innerHeight - 2, rect.top + Math.max(1, Math.min(rect.height - 1, rect.height / 2))));
+                    const topNode = document.elementFromPoint(probeX, probeY);
+                    return topNode instanceof Element && (topNode === element || element.contains(topNode));
+                };
+
+                const ids = Array.from(activeHost.querySelectorAll("[data-automation-id^='controls-sample-collectionviewgallery-open-']"))
+                    .filter(element => element instanceof HTMLButtonElement)
+                    .filter(element => isVisible(element))
+                    .filter(element => !element.disabled)
+                    .filter(element => isTopmostHitTarget(element))
+                    .map(element => {
+                        const id = element.getAttribute("data-automation-id") ?? "";
+                        const nodeId = element.getAttribute("data-mirage-node-id") ?? "";
+                        return `${id}|${nodeId}`;
                     })
-                    .map(element => element.getAttribute("data-automation-id") ?? "")
-                    .filter(id => id.length > 0)
+                    .filter(entry => entry.length > 1)
                     .sort();
 
                 return [...new Set(ids)];
             }
             """);
+
+        return entries
+            .Select(static entry => entry.Split('|', 2, StringSplitOptions.None))
+            .Where(static parts => parts.Length == 2 && !string.IsNullOrWhiteSpace(parts[0]))
+            .Select(static parts => (AutomationId: parts[0], NodeId: parts[1]))
+            .ToArray();
     }
 
     private static async Task<string> ReadCurrentControlsSamplePageHostAutomationIdAsync(IPage page)
@@ -3780,11 +3805,11 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             """);
     }
 
-    private static async Task<bool> ClickCollectionNavButtonOnActiveHostAsync(IPage page, string navButtonId)
+    private static async Task<string> ReadCurrentControlsSamplePageHostNodeIdAsync(IPage page)
     {
-        return await page.EvaluateAsync<bool>(
+        return await page.EvaluateAsync<string>(
             """
-            (targetId) => {
+            () => {
                 const isVisible = (element) => {
                     if (!(element instanceof HTMLElement) || !element.isConnected) {
                         return false;
@@ -3836,22 +3861,11 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 }
 
                 if (!(activeHost instanceof HTMLElement)) {
-                    return false;
+                    return "";
                 }
 
-                const button = activeHost.querySelector(`[data-automation-id='${targetId}']`);
-                if (!(button instanceof HTMLButtonElement)) {
-                    return false;
-                }
-
-                if (button.disabled || !isVisible(button)) {
-                    return false;
-                }
-
-                button.click();
-                return true;
+                return activeHost.getAttribute("data-mirage-node-id") ?? "";
             }
-            """,
-            navButtonId);
+            """);
     }
 }
