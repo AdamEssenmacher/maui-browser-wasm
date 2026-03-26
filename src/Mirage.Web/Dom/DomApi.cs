@@ -79,6 +79,9 @@ internal static partial class DomApi
     [JSImport("removeProperty", Module)]
     internal static partial void RemoveProperty(nint element, string name);
 
+    [JSImport("applyMutationBatch", Module)]
+    internal static partial void ApplyMutationBatch(string json);
+
     [JSImport("subscribeEvent", Module)]
     internal static partial int SubscribeEvent(nint element, string eventName, [JSMarshalAs<JSType.Function>] Action callback);
 

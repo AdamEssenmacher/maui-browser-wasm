@@ -24,36 +24,47 @@ internal static class MirageEssentialsStaticPatcher
         lock (Sync)
         {
             var snapshots = new MirageEssentialsFieldSnapshot[descriptors.Length];
-            for (var index = 0; index < descriptors.Length; index++)
+            var appliedCount = 0;
+
+            try
             {
-                var descriptor = descriptors[index];
-                var field = descriptor.WrapperType.GetField(descriptor.FieldName, BindingFlags.Static | BindingFlags.NonPublic);
-                if (field is null)
+                for (var index = 0; index < descriptors.Length; index++)
                 {
-                    throw new InvalidOperationException(
-                        $"Mirage Essentials patcher could not find private field '{descriptor.WrapperType.FullName}.{descriptor.FieldName}'. " +
-                        "Upstream MAUI likely changed and the static patch descriptor must be updated.");
-                }
+                    var descriptor = descriptors[index];
+                    var field = descriptor.WrapperType.GetField(descriptor.FieldName, BindingFlags.Static | BindingFlags.NonPublic);
+                    if (field is null)
+                    {
+                        throw new InvalidOperationException(
+                            $"Mirage Essentials patcher could not find private field '{descriptor.WrapperType.FullName}.{descriptor.FieldName}'. " +
+                            "Upstream MAUI likely changed and the static patch descriptor must be updated.");
+                    }
 
-                var implementation = services.GetService(descriptor.ServiceType);
-                if (implementation is null)
-                {
-                    throw new InvalidOperationException(
-                        $"Mirage Essentials patcher could not resolve service '{descriptor.ServiceType.FullName}' for '{descriptor.WrapperType.FullName}'.");
-                }
+                    var implementation = services.GetService(descriptor.ServiceType);
+                    if (implementation is null)
+                    {
+                        throw new InvalidOperationException(
+                            $"Mirage Essentials patcher could not resolve service '{descriptor.ServiceType.FullName}' for '{descriptor.WrapperType.FullName}'.");
+                    }
 
-                if (!field.FieldType.IsInstanceOfType(implementation))
-                {
-                    throw new InvalidOperationException(
-                        $"Mirage Essentials patcher resolved service '{descriptor.ServiceType.FullName}', " +
-                        $"but '{descriptor.WrapperType.FullName}.{descriptor.FieldName}' expects '{field.FieldType.FullName}'.");
-                }
+                    if (!field.FieldType.IsInstanceOfType(implementation))
+                    {
+                        throw new InvalidOperationException(
+                            $"Mirage Essentials patcher resolved service '{descriptor.ServiceType.FullName}', " +
+                            $"but '{descriptor.WrapperType.FullName}.{descriptor.FieldName}' expects '{field.FieldType.FullName}'.");
+                    }
 
-                snapshots[index] = new MirageEssentialsFieldSnapshot(field, field.GetValue(null));
-                field.SetValue(null, implementation);
+                    snapshots[appliedCount] = new MirageEssentialsFieldSnapshot(field, field.GetValue(null));
+                    appliedCount++;
+                    field.SetValue(null, implementation);
+                }
+            }
+            catch
+            {
+                RestoreSnapshots(snapshots, appliedCount);
+                throw;
             }
 
-            return new RestoreScope(snapshots);
+            return new RestoreScope(snapshots, appliedCount);
         }
     }
 
@@ -64,11 +75,13 @@ internal static class MirageEssentialsStaticPatcher
     private sealed class RestoreScope : IDisposable
     {
         private readonly MirageEssentialsFieldSnapshot[] _snapshots;
+        private readonly int _count;
         private bool _disposed;
 
-        public RestoreScope(MirageEssentialsFieldSnapshot[] snapshots)
+        public RestoreScope(MirageEssentialsFieldSnapshot[] snapshots, int count)
         {
             _snapshots = snapshots;
+            _count = count;
         }
 
         public void Dispose()
@@ -80,14 +93,18 @@ internal static class MirageEssentialsStaticPatcher
 
             lock (Sync)
             {
-                for (var index = _snapshots.Length - 1; index >= 0; index--)
-                {
-                    var snapshot = _snapshots[index];
-                    snapshot.Field.SetValue(null, snapshot.PreviousValue);
-                }
-
+                RestoreSnapshots(_snapshots, _count);
                 _disposed = true;
             }
+        }
+    }
+
+    private static void RestoreSnapshots(MirageEssentialsFieldSnapshot[] snapshots, int count)
+    {
+        for (var index = count - 1; index >= 0; index--)
+        {
+            var snapshot = snapshots[index];
+            snapshot.Field.SetValue(null, snapshot.PreviousValue);
         }
     }
 }

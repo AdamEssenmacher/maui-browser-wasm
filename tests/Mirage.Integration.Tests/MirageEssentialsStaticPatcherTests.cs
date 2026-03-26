@@ -60,6 +60,21 @@ public sealed class MirageEssentialsStaticPatcherTests
     }
 
     [Fact]
+    public void Apply_RollsBackEarlierPatchesWhenALaterDescriptorFails()
+    {
+        var preferences = new TestPreferences();
+        var services = CreateServices(preferences, new TestAppInfo());
+
+        Assert.Throws<InvalidOperationException>(() =>
+            MirageEssentialsStaticPatcher.Apply(
+                services,
+                new MirageEssentialsStaticPatcher.MirageEssentialsPatchDescriptor(typeof(Preferences), typeof(IPreferences), "defaultImplementation"),
+                new MirageEssentialsStaticPatcher.MirageEssentialsPatchDescriptor(typeof(AppInfo), typeof(IAppInfo), "missingField")));
+
+        Assert.NotSame(preferences, Preferences.Default);
+    }
+
+    [Fact]
     public void RestoreScope_RevertsStaticFieldsAfterDispose()
     {
         var preferences = new TestPreferences();

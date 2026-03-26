@@ -82,6 +82,7 @@
     <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageEventSink.cs" Link="Runtime\IMirageEventSink.cs" />
     <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageBrowserHistory.cs" Link="Runtime\IMirageBrowserHistory.cs" />
     <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageRuntime.cs" Link="Runtime\IMirageRuntime.cs" />
+    <Compile Include="..\..\src\Mirage.Web\Runtime\DomMutationBatch.cs" Link="Runtime\DomMutationBatch.cs" />
   </ItemGroup>
 
   <ItemGroup>

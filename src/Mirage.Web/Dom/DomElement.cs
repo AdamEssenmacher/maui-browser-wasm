@@ -81,6 +81,16 @@ public sealed class DomElement
 
     public void RemoveProperty(string name) => DomApi.RemoveProperty(Handle, name);
 
+    internal static void ApplyMutationBatch(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return;
+        }
+
+        DomApi.ApplyMutationBatch(json);
+    }
+
     public int On(string eventName, Action callback) => DomApi.SubscribeEvent(Handle, eventName, callback);
 
     public int On(string eventName, string payloadKind, Action<string?> callback)
