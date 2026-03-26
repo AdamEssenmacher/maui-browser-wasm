@@ -132,6 +132,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-collectionviewgallery']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-indicatorviewparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-shapesparitypage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-editorparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
 
@@ -508,6 +509,70 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             page,
             "[data-automation-id='controls-sample-shapes-parity-geometry-state']",
             "pathTransform=on");
+    }
+
+    [Fact]
+    public async Task EditorParityProbe_ProjectsTextSelectionAndCompletionBehavior()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1160, height: 860);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-editorparitypage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-editorparitypage']");
+            });
+
+        const string hostSelector = "[data-automation-id='controls-sample-editor-parity-host']";
+        const string inputSelector = "[data-automation-id='controls-sample-editor-parity-host'] textarea.mirage-editor-input";
+
+        await page.WaitForSelectorAsync(hostSelector);
+        await page.WaitForSelectorAsync(inputSelector);
+        Assert.Equal("Editor", await page.GetAttributeAsync(hostSelector, "data-mirage-kind"));
+
+        await page.Locator("[data-automation-id='controls-sample-editor-parity-set-text-b']").ClickAsync();
+        await WaitForEditorValueContainsAsync(page, inputSelector, "second sample text");
+
+        await page.Locator("[data-automation-id='controls-sample-editor-parity-toggle-transform']").ClickAsync();
+        await WaitForEditorValueContainsAsync(page, inputSelector, "SECOND SAMPLE TEXT");
+        await WaitForLabelTextContainsAsync(
+            page,
+            "[data-automation-id='controls-sample-editor-parity-state']",
+            "transform=Uppercase");
+
+        await page.Locator("[data-automation-id='controls-sample-editor-parity-set-selection']").ClickAsync();
+        var selection = await ReadSelectionRangeAsync(page, inputSelector);
+        Assert.Equal(1, selection.start);
+        Assert.Equal(5, selection.end);
+
+        await page.Locator("[data-automation-id='controls-sample-editor-parity-toggle-maxlength']").ClickAsync();
+        await WaitForLabelTextContainsAsync(
+            page,
+            "[data-automation-id='controls-sample-editor-parity-state']",
+            "max=8");
+
+        await page.Locator("[data-automation-id='controls-sample-editor-parity-toggle-enabled']").ClickAsync();
+        await WaitForLabelTextContainsAsync(
+            page,
+            "[data-automation-id='controls-sample-editor-parity-state']",
+            "enabled=False");
+        Assert.Equal("disabled", await page.GetAttributeAsync(inputSelector, "disabled"));
+
+        await page.Locator("[data-automation-id='controls-sample-editor-parity-toggle-enabled']").ClickAsync();
+        await WaitForLabelTextContainsAsync(
+            page,
+            "[data-automation-id='controls-sample-editor-parity-state']",
+            "enabled=True");
+
+        await page.Locator("[data-automation-id='controls-sample-editor-parity-focus-editor']").ClickAsync();
+        await page.Locator("[data-automation-id='controls-sample-editor-parity-blur-target']").ClickAsync();
+        await WaitForLabelTextContainsAsync(
+            page,
+            "[data-automation-id='controls-sample-editor-parity-completed']",
+            "completed=1");
     }
 
     [Fact]
@@ -3110,6 +3175,52 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
 
         var finalText = await page.Locator(selector).TextContentAsync() ?? string.Empty;
         Assert.Contains(expectedSubstring, finalText, StringComparison.Ordinal);
+    }
+
+    private static async Task WaitForEditorValueContainsAsync(
+        IPage page,
+        string selector,
+        string expectedSubstring,
+        int timeoutMs = 3000,
+        int pollMs = 50)
+    {
+        var elapsedMs = 0;
+        while (elapsedMs < timeoutMs)
+        {
+            var value = await page.Locator(selector).InputValueAsync();
+            if (value.Contains(expectedSubstring, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            await page.WaitForTimeoutAsync(pollMs);
+            elapsedMs += pollMs;
+        }
+
+        var finalValue = await page.Locator(selector).InputValueAsync();
+        Assert.Contains(expectedSubstring, finalValue, StringComparison.Ordinal);
+    }
+
+    private static async Task<(int start, int end)> ReadSelectionRangeAsync(IPage page, string selector)
+    {
+        var values = await page.EvaluateAsync<int[]>(
+            """
+            (targetSelector) => {
+                const element = document.querySelector(targetSelector);
+                if (!(element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement)) {
+                    return [-1, -1];
+                }
+
+                return [
+                    Number.isInteger(element.selectionStart) ? element.selectionStart : -1,
+                    Number.isInteger(element.selectionEnd) ? element.selectionEnd : -1
+                ];
+            }
+            """,
+            selector);
+
+        Assert.Equal(2, values.Length);
+        return (values[0], values[1]);
     }
 
     private static async Task NavigateToShapeKindAsync(IPage page, string expectedShapeKind, int maxToggles = 12)

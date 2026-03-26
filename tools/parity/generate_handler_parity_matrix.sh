@@ -292,7 +292,7 @@ shape_grade_for_type() {
         ContentView|Button|Window|NavigationPage|Image|Border|Picker|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame)
             echo "B"
             ;;
-        Entry)
+        Entry|Editor)
             echo "A"
             ;;
         TabbedPage)
@@ -317,7 +317,7 @@ implementation_grade_for_type() {
         CollectionView) echo "C" ;;
         Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle) echo "B" ;;
         ContentView|Button|Window|NavigationPage|Image|Border|Picker|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame|IndicatorView) echo "C" ;;
-        Entry) echo "B" ;;
+        Entry|Editor) echo "B" ;;
         TabbedPage) echo "D" ;;
         *) echo "C" ;;
     esac
@@ -341,6 +341,9 @@ notes_for_type() {
             ;;
         Entry)
             echo "Mirage-owned input host now covers cursor/selection synchronization, focus command routing, and clear-button semantics; IME composition edge cases remain partial. See \`docs/PARITY_GAPS.md\` (text-input depth)."
+            ;;
+        Editor)
+            echo "Mirage-owned textarea host now covers controls-remap text semantics, cursor/selection synchronization, and completed-on-blur behavior; browser IME edge cases remain partial. See \`docs/PARITY_GAPS.md\` (text-input depth)."
             ;;
         SearchBar)
             echo "SearchBar text-input parity is improved, but icon-channel fidelity and IME edge cases remain partial. See \`docs/PARITY_GAPS.md\` (text-input depth)."

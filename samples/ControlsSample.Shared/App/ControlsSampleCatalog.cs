@@ -244,6 +244,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(ShapesParityProbePage),
             description: "Mirage parity probe: exercises all Shapes rows with runtime shape switching, aspect/paint updates, stroke options, and geometry mutations."),
         new(
+            id: "editorparitypage",
+            title: "EditorParityProbePage",
+            upstreamPath: "App/EditorParityProbePage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(EditorParityProbePage),
+            description: "Mirage parity probe: exercises Editor text/transform, selection, max-length, read-only/enabled gating, and completed-on-blur behavior."),
+        new(
             id: "layoutisenabledpage",
             title: "LayoutIsEnabledPage",
             upstreamPath: "Pages/Layouts/LayoutIsEnabledPage.xaml",

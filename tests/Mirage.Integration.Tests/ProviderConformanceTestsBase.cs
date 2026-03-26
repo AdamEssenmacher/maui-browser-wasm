@@ -75,6 +75,19 @@ public abstract class ProviderConformanceTestsBase
     }
 
     [Fact]
+    public void Conformance_EditorDescriptorUsesHostOnlyInputSemantics()
+    {
+        var provider = CreateProvider();
+        var editor = provider.ResolveControl(ComponentKind.Editor);
+
+        Assert.Equal("div", editor.ElementTagName);
+        Assert.True(editor.PropertyMappings.ContainsKey("AutomationId"));
+        Assert.False(editor.PropertyMappings.ContainsKey("Text"));
+        Assert.False(editor.PropertyMappings.ContainsKey("Placeholder"));
+        Assert.Empty(editor.EventMappings);
+    }
+
+    [Fact]
     public void Conformance_WebInputNodeInputEventHasInputPayloadMapping()
     {
         var provider = CreateProvider();
@@ -92,5 +105,21 @@ public abstract class ProviderConformanceTestsBase
 
         Assert.True(input.EventMappings.TryGetValue("keydown", out var mapping));
         Assert.Equal(EventPayloadKind.Key, mapping.PayloadKind);
+    }
+
+    [Fact]
+    public void Conformance_WebTextAreaNodeSupportsInputValueAndKeyPayloadMappings()
+    {
+        var provider = CreateProvider();
+        var textarea = provider.ResolveWebNode("textarea");
+
+        Assert.True(textarea.EventMappings.TryGetValue("input", out var inputMapping));
+        Assert.Equal(EventPayloadKind.InputValue, inputMapping.PayloadKind);
+
+        Assert.True(textarea.EventMappings.TryGetValue("change", out var changeMapping));
+        Assert.Equal(EventPayloadKind.InputValue, changeMapping.PayloadKind);
+
+        Assert.True(textarea.EventMappings.TryGetValue("keydown", out var keyMapping));
+        Assert.Equal(EventPayloadKind.Key, keyMapping.PayloadKind);
     }
 }

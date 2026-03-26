@@ -46,6 +46,7 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageRoundRectangleHandler.cs" Link="Handlers\MirageRoundRectangleHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageLabelHandler.cs" Link="Handlers\MirageLabelHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageEntryHandler.cs" Link="Handlers\MirageEntryHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageEditorHandler.cs" Link="Handlers\MirageEditorHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageSearchBarHandler.cs" Link="Handlers\MirageSearchBarHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageSliderHandler.cs" Link="Handlers\MirageSliderHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MiragePickerHandler.cs" Link="Handlers\MiragePickerHandler.cs" />

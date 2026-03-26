@@ -46,6 +46,19 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentEditorDescriptor_MapsToMirageOwnedEditorHost()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.Editor);
+
+        Assert.Equal("div", descriptor.ElementTagName);
+        Assert.True(descriptor.PropertyMappings.ContainsKey("AutomationId"));
+        Assert.False(descriptor.PropertyMappings.ContainsKey("Text"));
+        Assert.False(descriptor.PropertyMappings.ContainsKey("Placeholder"));
+        Assert.Empty(descriptor.EventMappings);
+    }
+
+    [Fact]
     public void FluentSearchBarDescriptor_MapsToMirageOwnedSearchBarHost()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();
@@ -295,6 +308,25 @@ public sealed class ProviderValidationTests
         Assert.Equal("input", mapping.Key);
         Assert.Equal("input", mapping.Value.DomEventName);
         Assert.Equal(EventPayloadKind.InputValue, mapping.Value.PayloadKind);
+    }
+
+    [Fact]
+    public void FluentProvider_TextareaWebNodeDescriptor_MapsInputChangeAndKeyPayloads()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveWebNode("textarea");
+
+        Assert.True(descriptor.EventMappings.TryGetValue("input", out var inputMapping));
+        Assert.Equal("input", inputMapping.DomEventName);
+        Assert.Equal(EventPayloadKind.InputValue, inputMapping.PayloadKind);
+
+        Assert.True(descriptor.EventMappings.TryGetValue("change", out var changeMapping));
+        Assert.Equal("change", changeMapping.DomEventName);
+        Assert.Equal(EventPayloadKind.InputValue, changeMapping.PayloadKind);
+
+        Assert.True(descriptor.EventMappings.TryGetValue("keydown", out var keydownMapping));
+        Assert.Equal("keydown", keydownMapping.DomEventName);
+        Assert.Equal(EventPayloadKind.Key, keydownMapping.PayloadKind);
     }
 
     [Fact]

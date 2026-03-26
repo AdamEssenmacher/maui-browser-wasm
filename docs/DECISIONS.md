@@ -7,6 +7,12 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Kept the implementation wrapper-first and framework-driven: no vendor source edits and no page-specific rendering hacks were added.
 - Added E2E coverage that opens the page and asserts linear-gradient background projection on the realized page host.
 
+## 2026-03-26 (Editor parity wave: MAUI-shaped handler + Mirage-owned textarea host)
+- Added `MirageEditorHandler` as a built-in ControlNode path (`ComponentKind.Editor`) with MAUI-aligned mapper surface for core editor properties plus focus command handling.
+- Editor realization now uses a Mirage-owned host with a stable inner `<textarea>`, deterministic two-way cursor/selection synchronization, and completion semantics gated to focused->blur transitions to match MAUI intent.
+- Added controls-remap parity for `Text` + `TextTransform` using MAUI-style transformed text-channel projection (rather than CSS-only visual transform), parity governance artifacts (`editor-parity-contract.json`, `editor-parity-divergences.json`), and integration/E2E probe coverage via a dedicated `EditorParityProbePage`.
+- Kept runtime/provider boundaries stable: no new runtime interfaces were added, and textarea payload support was wired through existing generic event payload channels.
+
 ## 2026-03-26 (Essentials static patcher proof slice)
 - Added a Mirage browser-host Essentials patcher that reflects into MAUI static wrappers and swaps `Preferences` / `AppInfo` backing fields to the registered browser DI singletons before `IApplication` is resolved.
 - The first proof stays intentionally narrow: `Preferences` now uses browser `localStorage`, `AppInfo` now reports browser-aware app/theme metadata, and the browser host fails fast if upstream MAUI private field names drift.
