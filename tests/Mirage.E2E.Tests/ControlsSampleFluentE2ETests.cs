@@ -3406,8 +3406,8 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             openedPageHosts.Add(currentHostAutomationId);
         }
 
-        var navButtons = await ReadClickableCollectionViewNavButtonsAsync(page);
-        foreach (var navEntry in navButtons)
+        var navButtonIds = await ReadClickableCollectionViewNavButtonIdsAsync(page);
+        foreach (var navButtonId in navButtonIds)
         {
             var parentHostAutomationId = await ReadCurrentControlsSamplePageHostAutomationIdAsync(page);
             Assert.False(string.IsNullOrWhiteSpace(parentHostAutomationId));
@@ -3418,13 +3418,11 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 diagnostics,
                 async () =>
                 {
-                    var navButtonSelector = string.IsNullOrWhiteSpace(navEntry.NodeId)
-                        ? $"[data-automation-id='{navEntry.AutomationId}']:visible"
-                        : $"[data-mirage-node-id='{navEntry.NodeId}']";
+                    var navButtonSelector = string.IsNullOrWhiteSpace(parentHostNodeId)
+                        ? $"[data-automation-id='{navButtonId}']:visible"
+                        : $"[data-mirage-node-id='{parentHostNodeId}'] [data-automation-id='{navButtonId}']";
                     var navButtonLocator = page.Locator(navButtonSelector).Last;
-                    await navButtonLocator.ScrollIntoViewIfNeededAsync();
-                    await navButtonLocator.FocusAsync();
-                    await navButtonLocator.PressAsync("Enter");
+                    await ClickCollectionNavButtonAsync(navButtonLocator);
 
                     await page.WaitForFunctionAsync(
                         """
@@ -3646,9 +3644,9 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Empty(visibleDeferredButtons);
     }
 
-    private static async Task<(string AutomationId, string NodeId)[]> ReadClickableCollectionViewNavButtonsAsync(IPage page)
+    private static async Task<string[]> ReadClickableCollectionViewNavButtonIdsAsync(IPage page)
     {
-        var entries = await page.EvaluateAsync<string[]>(
+        return await page.EvaluateAsync<string[]>(
             """
             () => {
                 const isVisible = (element) => {
@@ -3722,23 +3720,13 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                     .filter(element => isVisible(element))
                     .filter(element => !element.disabled)
                     .filter(element => isTopmostHitTarget(element))
-                    .map(element => {
-                        const id = element.getAttribute("data-automation-id") ?? "";
-                        const nodeId = element.getAttribute("data-mirage-node-id") ?? "";
-                        return `${id}|${nodeId}`;
-                    })
-                    .filter(entry => entry.length > 1)
+                    .map(element => element.getAttribute("data-automation-id") ?? "")
+                    .filter(id => id.length > 0)
                     .sort();
 
                 return [...new Set(ids)];
             }
             """);
-
-        return entries
-            .Select(static entry => entry.Split('|', 2, StringSplitOptions.None))
-            .Where(static parts => parts.Length == 2 && !string.IsNullOrWhiteSpace(parts[0]))
-            .Select(static parts => (AutomationId: parts[0], NodeId: parts[1]))
-            .ToArray();
     }
 
     private static async Task<string> ReadCurrentControlsSamplePageHostAutomationIdAsync(IPage page)
@@ -3827,7 +3815,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 const hosts = Array.from(document.querySelectorAll("[data-automation-id^='controls-sample-page-']"))
                     .filter(isVisible);
                 if (hosts.length === 0) {
-                    return false;
+                    return "";
                 }
 
                 const points = [
@@ -3867,5 +3855,32 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 return activeHost.getAttribute("data-mirage-node-id") ?? "";
             }
             """);
+    }
+
+    private static async Task ClickCollectionNavButtonAsync(ILocator navButtonLocator)
+    {
+        try
+        {
+            await navButtonLocator.ClickAsync(new()
+            {
+#pragma warning disable CS0612 // NoWaitAfter is obsolete in Playwright API but still required here to avoid false navigation waits for in-app MAUI routing.
+                NoWaitAfter = true
+#pragma warning restore CS0612
+            });
+        }
+        catch (TimeoutException)
+        {
+            await navButtonLocator.ClickAsync(new()
+            {
+                Position = new Position
+                {
+                    X = 6,
+                    Y = 6
+                },
+#pragma warning disable CS0612 // NoWaitAfter is obsolete in Playwright API but still required here to avoid false navigation waits for in-app MAUI routing.
+                NoWaitAfter = true
+#pragma warning restore CS0612
+            });
+        }
     }
 }
