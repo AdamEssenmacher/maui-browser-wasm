@@ -20,6 +20,12 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Disabled controls reject `IsOpen=true` requests up front, and the DOM fallback open path also reports failure for disabled inputs to avoid false-positive open state.
 - Added parity governance artifacts (`timepicker-parity-contract.json`, `timepicker-parity-divergences.json`) plus integration/E2E probe coverage (`TimePickerParityProbePage`) and updated parity ledgers.
 
+## 2026-03-26 (Local-first GitHub Pages publishing lane for public MirageUI demos)
+- Added a private-repo demo publishing lane centered on `tools/publish/demos.manifest.json` and `tools/publish/publish-gh-pages-demo.sh`, so browser demo artifacts can be built locally and pushed into the public `MirageUI` repo branch `demo-pages`.
+- The publish model is multi-demo by default: each demo is published under `/demos/<id>/`, with a generated root `index.html` demo landing page and root `404.html` fallback for nested-route reload safety on GitHub Pages.
+- Subpath hosting is explicit (`/MirageUI/...` project-site mode): published demo `index.html` files are normalized to include a deterministic `<base href="/MirageUI/demos/<id>/">` and local absolute references are rewritten to subpath-safe relative URLs.
+- Public output now includes `THIRD_PARTY_NOTICES.md` alongside per-demo metadata (`demos/<id>/demo.json`) to keep hosted demos traceable and license-compliant.
+
 ## 2026-03-26 (ContentPageBackgroundGallery promoted to runnable)
 - Linked upstream `ContentPageBackgroundGallery.xaml` into `ControlsSample.Shared` and promoted it to a top-level runnable catalog entry so the ContentPage background-brush scenario can be exercised directly in Mirage.
 - Kept the implementation wrapper-first and framework-driven: no vendor source edits and no page-specific rendering hacks were added.

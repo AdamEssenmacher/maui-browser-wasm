@@ -1,0 +1,16 @@
+{
+  "pages": {
+    "publicRepoUrl": "https://github.com/AdamEssenmacher/MirageUI.git",
+    "publicBranch": "demo-pages",
+    "siteBasePath": "/MirageUI"
+  },
+  "demos": [
+    {
+      "id": "controls-sample",
+      "title": "Controls.Sample (Fluent)",
+      "description": "Mirage wrapper around upstream dotnet/maui Controls.Sample pages.",
+      "projectPath": "samples/ControlsSample.Fluent/ControlsSample.Fluent.csproj",
+      "publicPath": "controls-sample"
+    }
+  ]
+}
