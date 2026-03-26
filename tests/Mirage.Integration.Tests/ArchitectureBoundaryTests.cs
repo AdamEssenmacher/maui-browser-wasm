@@ -602,6 +602,19 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void MirageRuntime_TracksKeyboardEventSubscriptionInteropInRenderDiagnostics()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var text = File.ReadAllText(runtimePath);
+        Assert.Contains(
+            "subscriptionId = InvokeInterop(() => targetElement.On(eventDescriptor.DomEventName, \"key\", payload =>",
+            text,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MirageRuntimeModule_CoalescesWindowResizeCallbacksToAnimationFrame()
     {
         var runtimeModulePath = Path.Combine(

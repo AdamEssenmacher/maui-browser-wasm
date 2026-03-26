@@ -1057,10 +1057,10 @@ public sealed class MirageRuntime : IMirageRuntime
         }
         else if (eventDescriptor.PayloadKind == EventPayloadKind.Key)
         {
-            subscriptionId = targetElement.On(eventDescriptor.DomEventName, "key", payload =>
+            subscriptionId = InvokeInterop(() => targetElement.On(eventDescriptor.DomEventName, "key", payload =>
             {
                 _eventSink?.OnEvent(nodeId, eventName, payload);
-            });
+            }));
         }
         else
         {
