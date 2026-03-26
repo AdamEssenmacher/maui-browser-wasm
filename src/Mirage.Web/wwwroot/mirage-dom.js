@@ -92,6 +92,31 @@ input.mirage-entry-input::-webkit-input-placeholder {
   box-sizing: border-box;
 }
 
+ [data-mirage-kind="RadioButton"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+input.mirage-radiobutton-input {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.mirage-radiobutton-content {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.mirage-radiobutton-text {
+  line-height: 1.3;
+  white-space: normal;
+}
+
 textarea.mirage-editor-input {
   flex: 1 1 auto;
   width: 100%;

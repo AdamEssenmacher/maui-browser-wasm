@@ -100,6 +100,11 @@ Upstream MAUI shared-code risks for unofficial/browser targets are tracked separ
 - Current behavior: `ControlsSample.Shared/App/ShapesParityProbePage.cs` is the parity probe surface with E2E coverage for runtime shape switching plus points/path-data/path-transform mutation flows.
 - Deferred: graphics-native `PatternPaint`/`ImagePaint`, exact native arc fidelity, and non-translate `Path.RenderTransform` types are still divergence-documented deterministic fallback/flattened paths in this slice.
 
+22. RadioButton parity depth
+- Current behavior: `RadioButton` is mapped through `MirageRadioButtonHandler` on the built-in `ControlNode` path with a Mirage-owned host (`input[type=radio]` + content slot), two-way checked synchronization, and deterministic content projection (text + hosted view content).
+- Current behavior: group-authoritative MAUI selection flow is preserved by routing runtime selection through `VirtualView.IsChecked`, with named-group projection to DOM `name` when available and deterministic `RadioButtonGroup.SelectedValue` roundtrip behavior.
+- Deferred: native radio chrome fidelity (`StrokeColor`/`StrokeThickness`/`CornerRadius` semantics) remains browser-approximated via deterministic CSS host projection.
+
 ## Gap lifecycle policy
 
 1. Any new gap requires:

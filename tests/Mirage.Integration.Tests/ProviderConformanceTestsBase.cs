@@ -108,6 +108,17 @@ public abstract class ProviderConformanceTestsBase
     }
 
     [Fact]
+    public void Conformance_WebInputNodeCheckedChangeAliasHasCheckedPayloadMapping()
+    {
+        var provider = CreateProvider();
+        var input = provider.ResolveWebNode("input");
+
+        Assert.True(input.EventMappings.TryGetValue("checkedchange", out var mapping));
+        Assert.Equal(EventPayloadKind.InputChecked, mapping.PayloadKind);
+        Assert.Equal("change", mapping.DomEventName);
+    }
+
+    [Fact]
     public void Conformance_WebTextAreaNodeSupportsInputValueAndKeyPayloadMappings()
     {
         var provider = CreateProvider();

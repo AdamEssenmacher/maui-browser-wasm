@@ -20,6 +20,7 @@ public enum ComponentKind
     BoxView,
     ShapeView,
     CheckBox,
+    RadioButton,
     Switch,
     Slider,
     Picker,

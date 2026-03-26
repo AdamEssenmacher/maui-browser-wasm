@@ -251,6 +251,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(EditorParityProbePage),
             description: "Mirage parity probe: exercises Editor text/transform, selection, max-length, read-only/enabled gating, and completed-on-blur behavior."),
         new(
+            id: "radiobuttonparitypage",
+            title: "RadioButtonParityProbePage",
+            upstreamPath: "App/RadioButtonParityProbePage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(RadioButtonParityProbePage),
+            description: "Mirage parity probe: exercises RadioButton named/parent-scope group selection, SelectedValue roundtrip, content/style updates, and enabled-state interaction gating."),
+        new(
             id: "layoutisenabledpage",
             title: "LayoutIsEnabledPage",
             upstreamPath: "Pages/Layouts/LayoutIsEnabledPage.xaml",

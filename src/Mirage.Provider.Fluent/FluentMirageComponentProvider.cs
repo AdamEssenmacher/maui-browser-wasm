@@ -174,6 +174,14 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 {
                     ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputChecked)
                 }),
+            [ComponentKind.RadioButton] = new(
+                ComponentKind.RadioButton,
+                "div",
+                propertyMappings: CommonProperties,
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["click"] = new("click")
+                }),
             [ComponentKind.Switch] = new(
                 ComponentKind.Switch,
                 "input",
@@ -312,6 +320,7 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 {
                     ["input"] = new("input", EventTarget.Self, EventPayloadKind.InputValue),
                     ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue),
+                    ["checkedchange"] = new("change", EventTarget.Self, EventPayloadKind.InputChecked),
                     ["search"] = new("search", EventTarget.Self, EventPayloadKind.InputValue),
                     ["keydown"] = new("keydown", EventTarget.Self, EventPayloadKind.Key)
                 },
