@@ -8,6 +8,9 @@ namespace Mirage.Maui.Handlers;
 
 internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, IMirageRuntimeEventTarget
 {
+    private static readonly TimeSpan OpenRetryDelay = TimeSpan.FromMilliseconds(16);
+    private const int MaxOpenRetryAttempts = 2;
+
     internal static readonly string[] ParityPropertyKeys =
     [
         nameof(ITimePicker.Background),
@@ -53,6 +56,8 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
 
     private bool _isApplyingRuntimeIsOpen;
     private bool _isMappingIsOpen;
+    private bool _isOpenRetryScheduled;
+    private int _remainingOpenRetryAttempts;
 
     public MirageTimePickerHandler()
         : base(ComponentKind.TimePicker, Mapper, CommandMapper)
@@ -122,16 +127,25 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
         {
             if (timePicker.IsOpen)
             {
-                if (!coordinator.TryOpenNodePicker(handler.PlatformView.NodeId))
+                if (!timePicker.IsEnabled)
                 {
-                    // Keep IsOpen authoritative to actual runtime state: failed open requests roll back.
                     handler.OnRuntimeIsOpenChanged(isOpen: false);
+                    return;
                 }
 
+                if (coordinator.TryOpenNodePicker(handler.PlatformView.NodeId))
+                {
+                    handler.ResetOpenRetryState();
+                    return;
+                }
+
+                handler._remainingOpenRetryAttempts = MaxOpenRetryAttempts;
+                handler.ScheduleOpenRetryOrRollback();
                 return;
             }
 
             _ = coordinator.TrySetNodeFocus(handler.PlatformView.NodeId, isFocused: false);
+            handler.ResetOpenRetryState();
         }
         finally
         {
@@ -260,6 +274,71 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
         {
             _isApplyingRuntimeIsOpen = false;
         }
+    }
+
+    private void ScheduleOpenRetryOrRollback()
+    {
+        if (_isOpenRetryScheduled || Coordinator is not { } coordinator)
+        {
+            return;
+        }
+
+        _isOpenRetryScheduled = true;
+        if (coordinator.DispatchDelayed(OpenRetryDelay, RetryOpenAfterDelay))
+        {
+            return;
+        }
+
+        _isOpenRetryScheduled = false;
+        _remainingOpenRetryAttempts = 0;
+        OnRuntimeIsOpenChanged(isOpen: false);
+    }
+
+    private void RetryOpenAfterDelay()
+    {
+        _isOpenRetryScheduled = false;
+
+        if (!VirtualView.IsOpen)
+        {
+            ResetOpenRetryState();
+            return;
+        }
+
+        if (!VirtualView.IsEnabled)
+        {
+            ResetOpenRetryState();
+            OnRuntimeIsOpenChanged(isOpen: false);
+            return;
+        }
+
+        if (Coordinator is not { } coordinator || string.IsNullOrWhiteSpace(PlatformView.NodeId))
+        {
+            ResetOpenRetryState();
+            OnRuntimeIsOpenChanged(isOpen: false);
+            return;
+        }
+
+        if (coordinator.TryOpenNodePicker(PlatformView.NodeId))
+        {
+            ResetOpenRetryState();
+            return;
+        }
+
+        if (_remainingOpenRetryAttempts > 1)
+        {
+            _remainingOpenRetryAttempts--;
+            ScheduleOpenRetryOrRollback();
+            return;
+        }
+
+        ResetOpenRetryState();
+        OnRuntimeIsOpenChanged(isOpen: false);
+    }
+
+    private void ResetOpenRetryState()
+    {
+        _isOpenRetryScheduled = false;
+        _remainingOpenRetryAttempts = 0;
     }
 
     private bool SetPropertyIfChanged(string propertyName, string? value)

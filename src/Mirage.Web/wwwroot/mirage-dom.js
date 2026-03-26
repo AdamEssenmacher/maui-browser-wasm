@@ -1331,6 +1331,10 @@ export function openPicker(elementHandle) {
     return false;
   }
 
+  if ("disabled" in element && element.disabled === true) {
+    return false;
+  }
+
   try {
     if (typeof element.showPicker === "function") {
       element.showPicker();

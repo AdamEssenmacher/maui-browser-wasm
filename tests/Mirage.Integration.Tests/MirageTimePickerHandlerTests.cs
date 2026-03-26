@@ -207,7 +207,28 @@ public sealed class MirageTimePickerHandlerTests
 
         Assert.True(runtime.OpenPickerCallCount >= baselineOpenPickerCalls + 1);
         Assert.Equal(handler.PlatformView.NodeId, runtime.LastOpenPickerNodeId);
-        Assert.False(timePicker.IsOpen);
+        AssertEventually(() => !timePicker.IsOpen);
+    }
+
+    [Fact]
+    public void TimePickerHandler_IsOpen_DoesNotRollbackBeforeDeferredRetry()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new TimePickerRuntimeProbe();
+        runtime.EnqueueOpenPickerResult(false);
+        runtime.EnqueueOpenPickerResult(true);
+        coordinator.AttachRuntime(runtime);
+
+        var (handler, timePicker, _, _) = CreateAttachedHandler(new TimePicker
+        {
+            IsOpen = false
+        }, coordinator, runtime);
+
+        timePicker.IsOpen = true;
+        Assert.True(timePicker.IsOpen);
+        AssertEventually(() => runtime.OpenPickerCallCount >= 2);
+        Assert.Equal(handler.PlatformView.NodeId, runtime.LastOpenPickerNodeId);
+        Assert.True(timePicker.IsOpen);
     }
 
     [Fact]
@@ -226,7 +247,7 @@ public sealed class MirageTimePickerHandlerTests
         }, coordinator, runtime);
 
         timePicker.IsOpen = true;
-        Assert.False(timePicker.IsOpen);
+        AssertEventually(() => !timePicker.IsOpen);
         var failedAttemptCalls = runtime.OpenPickerCallCount;
         Assert.True(failedAttemptCalls > 0);
 
@@ -235,6 +256,26 @@ public sealed class MirageTimePickerHandlerTests
 
         Assert.True(runtime.OpenPickerCallCount > failedAttemptCalls);
         Assert.Equal(handler.PlatformView.NodeId, runtime.LastOpenPickerNodeId);
+    }
+
+    [Fact]
+    public void TimePickerHandler_IsOpen_DisabledControlRejectsOpenRequest()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new TimePickerRuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var (_, timePicker, _, _) = CreateAttachedHandler(new TimePicker
+        {
+            IsEnabled = false,
+            IsOpen = false
+        }, coordinator, runtime);
+        var baselineOpenPickerCalls = runtime.OpenPickerCallCount;
+
+        timePicker.IsOpen = true;
+
+        Assert.False(timePicker.IsOpen);
+        Assert.Equal(baselineOpenPickerCalls, runtime.OpenPickerCallCount);
     }
 
     [Fact]
@@ -273,8 +314,15 @@ public sealed class MirageTimePickerHandlerTests
         return (handler, timePicker, coordinator, runtime);
     }
 
+    private static void AssertEventually(Func<bool> predicate, int timeoutMs = 1_000)
+    {
+        Assert.True(SpinWait.SpinUntil(predicate, timeoutMs), $"Condition did not become true within {timeoutMs}ms.");
+    }
+
     private sealed class TimePickerRuntimeProbe : IMirageRuntime
     {
+        private readonly Queue<bool> _openPickerResultQueue = [];
+
         public int OpenPickerCallCount { get; private set; }
 
         public string? LastOpenPickerNodeId { get; private set; }
@@ -286,6 +334,11 @@ public sealed class MirageTimePickerHandlerTests
         public bool LastFocusState { get; private set; }
 
         public bool OpenPickerResult { get; set; } = true;
+
+        public void EnqueueOpenPickerResult(bool result)
+        {
+            _openPickerResultQueue.Enqueue(result);
+        }
 
         public void SetEventSink(IMirageEventSink? eventSink)
         {
@@ -350,6 +403,11 @@ public sealed class MirageTimePickerHandlerTests
         {
             OpenPickerCallCount++;
             LastOpenPickerNodeId = nodeId;
+            if (_openPickerResultQueue.Count > 0)
+            {
+                return _openPickerResultQueue.Dequeue();
+            }
+
             return OpenPickerResult;
         }
 
