@@ -290,30 +290,15 @@ echo "Project: $DEMO_PROJECT_PATH"
 echo "Public target: ${PAGES_PUBLIC_REPO_URL} [branch: ${PAGES_PUBLIC_BRANCH}] -> /${DEMO_DEST_REL}/"
 [[ "$DRY_RUN" -eq 1 ]] && echo "Mode: DRY RUN"
 
-dotnet clean "$PROJECT_ABS_PATH" -c Release -r browser-wasm
-dotnet publish "$PROJECT_ABS_PATH" -c Release -r browser-wasm
-
-PROJECT_DIR="$(cd "$(dirname "$PROJECT_ABS_PATH")" && pwd)"
-declare -a publish_candidates=(
-  "$PROJECT_DIR/bin/Release/net10.0-browser/browser-wasm/publish/wwwroot"
-  "$PROJECT_DIR/bin/Release/net10.0-browser/publish/wwwroot"
-)
-PUBLISH_WWWROOT=""
-for candidate in "${publish_candidates[@]}"; do
-  if [[ -d "$candidate" ]]; then
-    PUBLISH_WWWROOT="$candidate"
-    break
-  fi
-done
-
-if [[ -z "$PUBLISH_WWWROOT" ]]; then
-  PUBLISH_WWWROOT="$(find "$PROJECT_DIR/bin/Release" -type d -path "*/publish/wwwroot" | head -n 1)"
-fi
-[[ -n "$PUBLISH_WWWROOT" ]] || fail "Unable to locate publish wwwroot under $PROJECT_DIR/bin/Release"
-[[ -f "$PUBLISH_WWWROOT/index.html" ]] || fail "Publish output missing index.html: $PUBLISH_WWWROOT"
-
 WORK_DIR="$(mktemp -d "/tmp/mirage-gh-pages-${DEMO_ID}.XXXXXX")"
 trap 'rm -rf "$WORK_DIR"' EXIT
+PUBLISH_OUTPUT_DIR="$WORK_DIR/publish-output"
+
+dotnet clean "$PROJECT_ABS_PATH" -c Release -r browser-wasm
+dotnet publish "$PROJECT_ABS_PATH" -c Release -r browser-wasm -o "$PUBLISH_OUTPUT_DIR"
+
+PUBLISH_WWWROOT="$PUBLISH_OUTPUT_DIR/wwwroot"
+[[ -f "$PUBLISH_WWWROOT/index.html" ]] || fail "Publish output missing index.html: $PUBLISH_WWWROOT"
 
 STAGED_SITE_ROOT="$WORK_DIR/site-root"
 STAGED_DEMO_DIR="$STAGED_SITE_ROOT/$DEMO_DEST_REL"
