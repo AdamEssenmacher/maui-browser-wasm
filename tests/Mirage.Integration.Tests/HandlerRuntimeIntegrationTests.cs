@@ -5254,7 +5254,7 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
-    public void PathHandler_ProjectsViewBoxFromGeometryBounds_AndAspect()
+    public void PathHandler_ProjectsViewBoxFromArrangedBounds_AndAspect()
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var mauiContext = new MauiContext(services);
@@ -5272,9 +5272,14 @@ public sealed class HandlerRuntimeIntegrationTests
         };
 
         ((IElementHandler)handler).SetVirtualView(path);
+        var svgNode = GetShapeSvgNode(handler.PlatformView);
+        Assert.Equal("none", svgNode.GetStyleValue("display"));
+        Assert.False(svgNode.Attributes.ContainsKey("viewBox"));
 
-        Assert.Equal("10 20 100 50", handler.PlatformView.Attributes["viewBox"]);
-        Assert.Equal("xMidYMid slice", handler.PlatformView.Attributes["preserveAspectRatio"]);
+        handler.PlatformArrange(new Rect(0, 0, 160, 90));
+
+        Assert.Equal("0 0 160 90", svgNode.Attributes["viewBox"]);
+        Assert.Equal("xMidYMid slice", svgNode.Attributes["preserveAspectRatio"]);
     }
 
     [Fact]
@@ -5296,13 +5301,15 @@ public sealed class HandlerRuntimeIntegrationTests
         };
 
         ((IElementHandler)handler).SetVirtualView(path);
-        Assert.False(handler.PlatformView.Attributes.ContainsKey("viewBox"));
-        Assert.False(handler.PlatformView.Attributes.ContainsKey("preserveAspectRatio"));
+        var svgNode = GetShapeSvgNode(handler.PlatformView);
+        handler.PlatformArrange(new Rect(0, 0, 140, 70));
+        Assert.Equal("0 0 140 70", svgNode.Attributes["viewBox"]);
+        Assert.Equal("xMinYMin meet", svgNode.Attributes["preserveAspectRatio"]);
 
         path.Aspect = Stretch.Fill;
         MiragePathHandler.Mapper.UpdateProperty(handler, path, nameof(Microsoft.Maui.Controls.Shapes.Path.Aspect));
-        Assert.Equal("0 0 40 20", handler.PlatformView.Attributes["viewBox"]);
-        Assert.Equal("none", handler.PlatformView.Attributes["preserveAspectRatio"]);
+        Assert.Equal("0 0 140 70", svgNode.Attributes["viewBox"]);
+        Assert.Equal("none", svgNode.Attributes["preserveAspectRatio"]);
     }
 
     [Fact]
@@ -5324,40 +5331,82 @@ public sealed class HandlerRuntimeIntegrationTests
         };
 
         ((IElementHandler)handler).SetVirtualView(path);
-        Assert.Equal("0 0 8 4", handler.PlatformView.Attributes["viewBox"]);
+        var svgNode = GetShapeSvgNode(handler.PlatformView);
+        var pathNode = GetShapePathNode(svgNode);
+
+        handler.PlatformArrange(new Rect(0, 0, 80, 40));
+        Assert.Equal("0 0 80 40", svgNode.Attributes["viewBox"]);
+        Assert.False(string.IsNullOrWhiteSpace(pathNode.Attributes["d"]));
 
         path.Data = null;
         MiragePathHandler.Mapper.UpdateProperty(handler, path, nameof(Microsoft.Maui.Controls.Shapes.Path.Data));
 
-        Assert.False(handler.PlatformView.Attributes.ContainsKey("viewBox"));
+        Assert.False(svgNode.Attributes.ContainsKey("viewBox"));
+        Assert.False(pathNode.Attributes.ContainsKey("d"));
     }
 
     [Fact]
-    public void RectangleHandler_MapsCornerRadiusFromRadiusXAndRadiusY()
+    public void RectangleHandler_ProjectsRoundedGeometryFromRadiusXAndRadiusY()
     {
         var services = new ServiceCollection().BuildServiceProvider();
         var mauiContext = new MauiContext(services);
-        var handler = new MirageRectangleHandler();
-        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        var radiusXHandler = new MirageRectangleHandler();
+        ((IElementHandler)radiusXHandler).SetMauiContext(mauiContext);
 
-        var rectangle = new Rectangle
+        var radiusXRectangle = new Rectangle
         {
             RadiusX = 14,
             RadiusY = 8
         };
 
-        ((IElementHandler)handler).SetVirtualView(rectangle);
-        Assert.Equal("14px / 8px", handler.PlatformView.GetStyleValue("borderRadius"));
+        ((IElementHandler)radiusXHandler).SetVirtualView(radiusXRectangle);
+        var radiusXSvgNode = GetShapeSvgNode(radiusXHandler.PlatformView);
+        var radiusXPathNode = GetShapePathNode(radiusXSvgNode);
 
-        rectangle.RadiusX = 0;
-        MirageRectangleHandler.Mapper.UpdateProperty(handler, rectangle, nameof(Rectangle.RadiusX));
-        Assert.Null(handler.PlatformView.GetStyleValue("borderRadius"));
+        radiusXHandler.PlatformArrange(new Rect(0, 0, 120, 80));
+        var roundedPath = radiusXPathNode.Attributes["d"];
+        Assert.False(string.IsNullOrWhiteSpace(roundedPath));
 
-        rectangle.RadiusX = 6;
-        rectangle.RadiusY = 0;
-        MirageRectangleHandler.Mapper.UpdateProperty(handler, rectangle, nameof(Rectangle.RadiusX));
-        MirageRectangleHandler.Mapper.UpdateProperty(handler, rectangle, nameof(Rectangle.RadiusY));
-        Assert.Null(handler.PlatformView.GetStyleValue("borderRadius"));
+        radiusXRectangle.RadiusX = 0;
+        MirageRectangleHandler.Mapper.UpdateProperty(radiusXHandler, radiusXRectangle, nameof(Rectangle.RadiusX));
+        var radiusXZeroPath = radiusXPathNode.Attributes["d"];
+        Assert.False(string.IsNullOrWhiteSpace(radiusXZeroPath));
+        Assert.NotEqual(roundedPath, radiusXZeroPath);
+
+        var radiusYHandler = new MirageRectangleHandler();
+        ((IElementHandler)radiusYHandler).SetMauiContext(mauiContext);
+
+        var radiusYRectangle = new Rectangle
+        {
+            RadiusX = 14,
+            RadiusY = 8
+        };
+
+        ((IElementHandler)radiusYHandler).SetVirtualView(radiusYRectangle);
+        var radiusYSvgNode = GetShapeSvgNode(radiusYHandler.PlatformView);
+        var radiusYPathNode = GetShapePathNode(radiusYSvgNode);
+        radiusYHandler.PlatformArrange(new Rect(0, 0, 120, 80));
+        var roundedPathForRadiusY = radiusYPathNode.Attributes["d"];
+        Assert.False(string.IsNullOrWhiteSpace(roundedPathForRadiusY));
+
+        radiusYRectangle.RadiusY = 0;
+        MirageRectangleHandler.Mapper.UpdateProperty(radiusYHandler, radiusYRectangle, nameof(Rectangle.RadiusY));
+        var radiusYZeroPath = radiusYPathNode.Attributes["d"];
+        Assert.False(string.IsNullOrWhiteSpace(radiusYZeroPath));
+    }
+
+    private static MiragePlatformView GetShapeSvgNode(MiragePlatformView platformView)
+    {
+        var svgNode = platformView.Children.FirstOrDefault(child => string.Equals(child.ElementName, "svg", StringComparison.Ordinal));
+        Assert.NotNull(svgNode);
+        return svgNode!;
+    }
+
+    private static MiragePlatformView GetShapePathNode(MiragePlatformView svgNode)
+    {
+        var pathNode = svgNode.Children.FirstOrDefault(child => string.Equals(child.ElementName, "path", StringComparison.Ordinal));
+        Assert.NotNull(pathNode);
+        return pathNode!;
     }
 
     private static IReadOnlyList<MiragePlatformView> GetCollectionItemNodes(MirageCollectionViewHandler handler)
