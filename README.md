@@ -185,7 +185,35 @@ internal sealed class MainPage : ContentPage
 }
 ```
 
-### 3. Add an HTML shell
+### 3. Create `wwwroot/main.mjs`
+
+This is the small JavaScript bootstrap module that starts the browser-side .NET runtime. The SDK generates `./_framework/dotnet.js`; your host provides `main.mjs` and calls `runMain()`.
+
+```js
+import { dotnet } from "./_framework/dotnet.js";
+
+async function start() {
+  const appRoot = document.getElementById("app");
+
+  try {
+    const runtime = await dotnet
+      .withDiagnosticTracing(false)
+      .create();
+
+    await runtime.runMain();
+  } catch (error) {
+    console.error("Failed to start .NET runtime:", error);
+
+    if (appRoot) {
+      appRoot.textContent = "Startup failed. Check browser console for details.";
+    }
+  }
+}
+
+await start();
+```
+
+### 4. Add an HTML shell
 
 ```html
 <!doctype html>
@@ -210,7 +238,7 @@ internal sealed class MainPage : ContentPage
 </html>
 ```
 
-### 4. Run the host
+### 5. Run the host
 
 ```bash
 dotnet run --project path/to/YourApp.csproj

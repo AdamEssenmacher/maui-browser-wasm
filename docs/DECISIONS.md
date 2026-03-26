@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-25 (Top-level README reframed for evaluators)
+- Rewrote the root README as an evaluator-first landing page so it explains Mirage in plain language, keeps the experimental and source-first status explicit, and links deeper architecture and parity detail out to the existing docs.
+- Added a full inline source-based tutorial centered on `UseMirageBrowserPlatform()`, `UseMirageComponentProvider<TProvider>()`, and `MirageBrowserAppHost.RunAsync(...)` so newcomers can understand the minimum host shape without reading the samples end-to-end.
+- Kept test, E2E, and performance instructions available but collapsed so the README answers "what is it, how do I try it, and what is incomplete" before it turns into contributor reference material.
+
 ## 2026-03-25 (Render-path DOM mutation batching + frame-coalesced resize callbacks)
 - Added an internal `DomMutationBatch` seam in `Mirage.Web` so one render pass coalesces non-structural DOM mutations per realized node and flushes them through a single `applyMutationBatch` interop call while keeping create/move/remove and event subscription operations on the existing ordered path.
 - `MirageRuntime` now emits per-render batching diagnostics (`batchedNodes`, `batchedMutations`, `interopCalls`, `batchFlushes`) so runtime pressure can be measured directly without changing the semantic diff model or MAUI handler architecture.
