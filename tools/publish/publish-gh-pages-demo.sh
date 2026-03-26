@@ -172,14 +172,14 @@ normalize_demo_index_html() {
   local index_path="$1"
   local base_href="$2"
 
+  perl -0777 -i -pe 's{\b(src|href)=(")/(?!/)}{$1=$2./}g' "$index_path"
+
   BASE_HREF="$base_href" perl -0777 -i -pe '
 my $base = $ENV{"BASE_HREF"};
 if (!s{<base\s+href="[^"]*"\s*/?>}{<base href="$base">}i) {
   s{<head>}{<head>\n  <base href="$base">}i;
 }
 ' "$index_path"
-
-  perl -0777 -i -pe 's{\b(src|href)=(")/(?!/)}{$1=$2./}g' "$index_path"
 }
 
 DEMO_ID=""
