@@ -20,6 +20,8 @@ internal sealed class MirageContentPageHandler : MirageContentViewHandlerBase<Co
         {
             [nameof(ContentPage.Content)] = MapContent,
             [nameof(ContentPage.Padding)] = MapPadding,
+            [nameof(IView.Background)] = MapBackground,
+            ["BackgroundColor"] = MapBackground,
             [nameof(Page.BackgroundImageSource)] = MapBackgroundImageSource,
             ["Style"] = MapStyle
         };
@@ -54,6 +56,12 @@ internal sealed class MirageContentPageHandler : MirageContentViewHandlerBase<Co
     public static void MapPadding(MirageContentPageHandler handler, ContentPage page)
     {
         MirageViewMapper.MapPadding(handler, page);
+    }
+
+    public static void MapBackground(MirageContentPageHandler handler, ContentPage page)
+    {
+        MirageViewMapper.MapBackground(handler, page);
+        _ = handler.ResolveBackgroundImageSourceAsync(page);
     }
 
     public static void MapBackgroundImageSource(MirageContentPageHandler handler, ContentPage page)

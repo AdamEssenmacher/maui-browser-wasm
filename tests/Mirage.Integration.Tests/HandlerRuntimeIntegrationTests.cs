@@ -4931,6 +4931,59 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public async Task ContentPage_BackgroundAndBackgroundColor_UpdatesPreserveBackgroundImageSourceProjection()
+    {
+        var resolver = new StubImageSourceResolver();
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(resolver)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var page = new ContentPage
+        {
+            BackgroundImageSource = "coffee.png"
+        };
+
+        var handler = new MirageContentPageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        ((IElementHandler)handler).SetVirtualView(page);
+
+        await WaitUntilAsync(() =>
+        {
+            var backgroundImage = handler.PlatformView.GetStyleValue("backgroundImage");
+            return !string.IsNullOrWhiteSpace(backgroundImage)
+                   && backgroundImage.Contains("/_mirage/assets/test/coffee.png", StringComparison.Ordinal);
+        });
+
+        page.BackgroundColor = Colors.Red;
+        MirageContentPageHandler.Mapper.UpdateProperty(handler, page, "BackgroundColor");
+
+        await WaitUntilAsync(() =>
+        {
+            var backgroundImage = handler.PlatformView.GetStyleValue("backgroundImage");
+            return !string.IsNullOrWhiteSpace(backgroundImage)
+                   && backgroundImage.Contains("/_mirage/assets/test/coffee.png", StringComparison.Ordinal);
+        });
+
+        page.Background = new LinearGradientBrush(
+            new GradientStopCollection
+            {
+                new(Colors.Yellow, 0f),
+                new(Colors.Green, 1f)
+            },
+            new Point(0f, 0f),
+            new Point(1f, 0f));
+        MirageContentPageHandler.Mapper.UpdateProperty(handler, page, nameof(IView.Background));
+
+        await WaitUntilAsync(() =>
+        {
+            var backgroundImage = handler.PlatformView.GetStyleValue("backgroundImage");
+            return !string.IsNullOrWhiteSpace(backgroundImage)
+                   && backgroundImage.Contains("/_mirage/assets/test/coffee.png", StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
     public void ContentPage_PlatformArrange_ForwardsArrangeToDirectContent()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
