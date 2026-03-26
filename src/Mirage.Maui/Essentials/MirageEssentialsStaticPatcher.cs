@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Storage;
@@ -14,6 +15,8 @@ internal static class MirageEssentialsStaticPatcher
         new(typeof(AppInfo), typeof(IAppInfo), "currentImplementation")
     ];
 
+    [DynamicDependency("defaultImplementation", typeof(Preferences))]
+    [DynamicDependency("currentImplementation", typeof(AppInfo))]
     public static IDisposable Apply(IServiceProvider services) => Apply(services, DefaultDescriptors);
 
     internal static IDisposable Apply(IServiceProvider services, params MirageEssentialsPatchDescriptor[] descriptors)
@@ -36,7 +39,8 @@ internal static class MirageEssentialsStaticPatcher
                     {
                         throw new InvalidOperationException(
                             $"Mirage Essentials patcher could not find private field '{descriptor.WrapperType.FullName}.{descriptor.FieldName}'. " +
-                            "Upstream MAUI likely changed and the static patch descriptor must be updated.");
+                            "Upstream MAUI likely changed or publish trimming removed required reflection metadata. " +
+                            "Update the patch descriptor or preserve the field for trimming.");
                     }
 
                     var implementation = services.GetService(descriptor.ServiceType);
