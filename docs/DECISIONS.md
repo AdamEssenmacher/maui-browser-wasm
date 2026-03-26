@@ -7,6 +7,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added a full inline source-based tutorial centered on `UseMirageBrowserPlatform()`, `UseMirageComponentProvider<TProvider>()`, and `MirageBrowserAppHost.RunAsync(...)` so newcomers can understand the minimum host shape without reading the samples end-to-end.
 - Kept test, E2E, and performance instructions available but collapsed so the README answers "what is it, how do I try it, and what is incomplete" before it turns into contributor reference material.
 
+## 2026-03-25 (Render-path DOM mutation batching + frame-coalesced resize callbacks)
+- Added an internal `DomMutationBatch` seam in `Mirage.Web` so one render pass coalesces non-structural DOM mutations per realized node and flushes them through a single `applyMutationBatch` interop call while keeping create/move/remove and event subscription operations on the existing ordered path.
+- `MirageRuntime` now emits per-render batching diagnostics (`batchedNodes`, `batchedMutations`, `interopCalls`, `batchFlushes`) so runtime pressure can be measured directly without changing the semantic diff model or MAUI handler architecture.
+- Browser window resize subscriptions now coalesce same-frame `resize` storms through `requestAnimationFrame`, while `MirageBrowserAppHost` still performs its initial arrange/render synchronously before subscribing.
+
 ## 2026-03-25 (Upstream unofficial-target risk tracker)
 - Added `docs/UPSTREAM_TARGET_RISKS.md` to separate upstream MAUI unofficial-target/shared-code hazards from Mirage's intentional parity gaps.
 - The new tracker records each upstream risk with source links, current Mirage status (`Covered`, `Partial workaround`, `Avoided by scope`, `No workaround`), and local evidence/work-around notes grounded only in the active `src/Mirage.*` stack.

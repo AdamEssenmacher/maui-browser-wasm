@@ -578,6 +578,81 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void MirageRuntime_BatchesNonStructuralDomMutations_AndLogsBatchDiagnostics()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        var batchPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "DomMutationBatch.cs");
+        var domApiPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Dom", "DomApi.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+        Assert.True(File.Exists(batchPath), $"Expected batch file not found: {batchPath}");
+        Assert.True(File.Exists(domApiPath), $"Expected DomApi file not found: {domApiPath}");
+
+        var runtimeText = File.ReadAllText(runtimePath);
+        var batchText = File.ReadAllText(batchPath);
+        var domApiText = File.ReadAllText(domApiPath);
+
+        Assert.Contains("var mutationBatch = new DomMutationBatch();", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("FlushMutationBatch(mutationBatch);", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("DomElement.ApplyMutationBatch(payload.ToJson());", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("batchedNodes=", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("batchedMutations=", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("interopCalls=", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("internal sealed class DomMutationBatch", batchText, StringComparison.Ordinal);
+        Assert.Contains("[JSImport(\"applyMutationBatch\", Module)]", domApiText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MirageRuntime_TracksKeyboardEventSubscriptionInteropInRenderDiagnostics()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var text = File.ReadAllText(runtimePath);
+        Assert.Contains(
+            "subscriptionId = InvokeInterop(() => targetElement.On(eventDescriptor.DomEventName, \"key\", payload =>",
+            text,
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MirageRuntimeModule_CoalescesWindowResizeCallbacksToAnimationFrame()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Web",
+            "wwwroot",
+            "mirage-dom.js");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+
+        var text = File.ReadAllText(runtimeModulePath);
+        Assert.Contains("export function subscribeWindowResize(callback)", text, StringComparison.Ordinal);
+        Assert.Contains("window.requestAnimationFrame(() =>", text, StringComparison.Ordinal);
+        Assert.Contains("window.cancelAnimationFrame(frameId);", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MirageRuntimeModule_ReplaysBatchedNodeMutationsInRecordedOrder()
+    {
+        var runtimeModulePath = Path.Combine(
+            GetRepositoryRoot(),
+            "src",
+            "Mirage.Web",
+            "wwwroot",
+            "mirage-dom.js");
+        var batchPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "DomMutationBatch.cs");
+        Assert.True(File.Exists(runtimeModulePath), $"Expected runtime module file not found: {runtimeModulePath}");
+        Assert.True(File.Exists(batchPath), $"Expected batch file not found: {batchPath}");
+
+        var runtimeText = File.ReadAllText(runtimeModulePath);
+        var batchText = File.ReadAllText(batchPath);
+        Assert.Contains("function applyMutationOperation(element, operation)", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("if (Array.isArray(mutation.operations))", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("applyMutationOperation(element, operation);", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("IReadOnlyList<DomMutationOperation> Operations", batchText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BrowserRuntimeModuleSync_UsesProviderDeclaredModuleItems()
     {
         var targetsPath = Path.Combine(GetRepositoryRoot(), "Directory.Build.targets");
@@ -646,9 +721,29 @@ public sealed class ArchitectureBoundaryTests
 
         var text = File.ReadAllText(runtimePath);
         Assert.Contains("if (!initialization.IsReady)", text, StringComparison.Ordinal);
-        Assert.Contains("node.Element.Attr(\"data-mirage-map-status\", \"pending\");", text, StringComparison.Ordinal);
+        Assert.Contains("InvokeInterop(() => node.Element.Attr(\"data-mirage-map-status\", \"pending\"));", text, StringComparison.Ordinal);
         Assert.Contains("_ = ConfigureMapNodeWhenProviderReadyAsync(nodeId, node);", text, StringComparison.Ordinal);
         Assert.DoesNotContain("string.Equals(initialization.ErrorCode, \"not-initialized\"", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MapRuntime_BatchingKeepsMapStateMutationOnImmediateApplyPath()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var text = File.ReadAllText(runtimePath);
+        Assert.Contains("if (node.IsMapProperty(operation.PropertyName))", text, StringComparison.Ordinal);
+        Assert.Contains("public bool IsMapProperty(string propertyName)", text, StringComparison.Ordinal);
+        Assert.Contains("&& _mapProjection.IsSupportedProperty(propertyName);", text, StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "if (node.ApplyMapProperty(operation.PropertyName, operation.Value))\n        {\n            return false;\n        }",
+            text,
+            StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            "if (node.RemoveMapProperty(operation.PropertyName))\n        {\n            return false;\n        }",
+            text,
+            StringComparison.Ordinal);
     }
 
     [Fact]
