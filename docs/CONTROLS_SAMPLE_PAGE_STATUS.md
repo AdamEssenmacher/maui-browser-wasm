@@ -53,7 +53,7 @@ Visual legend:
 | `Borderless.xaml` | `Pages/Core/BorderGalleries/Borderless.xaml` | `[x]` | `[x]` | `[ ]` |
 | `BrushesPage.xaml` | `Pages/Core/BrushesPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ClipPage.xaml` | `Pages/Core/ClipPage.xaml` | `[x]` | `[x]` | `[ ]` |
-| `ContentPageBackgroundGallery.xaml` | `Pages/Core/ContentPageGalleries/ContentPageBackgroundGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `ContentPageBackgroundGallery.xaml` | `Pages/Core/ContentPageGalleries/ContentPageBackgroundGallery.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ContentPageBackgroundImageGallery.xaml` | `Pages/Core/ContentPageGalleries/ContentPageBackgroundImageGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ContentPageGallery.cs` | `Pages/Core/ContentPageGalleries/ContentPageGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
 | `ContextFlyoutPage.xaml` | `Pages/Core/ContextFlyoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |

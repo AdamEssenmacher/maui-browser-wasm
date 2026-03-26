@@ -116,6 +116,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(BrushesPage),
             description: "Runnable in Mirage today: exercises solid/gradient brush scenarios and live brush updates across content surfaces."),
         new(
+            id: "contentpagebackgroundgallery",
+            title: "ContentPageBackgroundGallery",
+            upstreamPath: "Pages/Core/ContentPageGalleries/ContentPageBackgroundGallery.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(ContentPageBackgroundGallery),
+            description: "Runnable in Mirage today: exercises ContentPage linear gradient Background brush projection."),
+        new(
             id: "transformationspage",
             title: "TransformationsPage",
             upstreamPath: "Pages/Core/TransformationsPage.xaml",
