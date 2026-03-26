@@ -49,6 +49,7 @@ Upstream MAUI shared-code risks for unofficial/browser targets are tracked separ
 10. Date/time format parity depth
 - Current behavior: `DatePicker` remains on the existing browser-native date-input projection path using deterministic ISO wire formats.
 - Current behavior: `TimePicker` now maps through `MirageTimePickerHandler` to a built-in browser-native time input path with deterministic `hh:mm`/`hh:mm:ss` wire projection and `IsOpen` roundtrip support.
+- Current behavior: `TimePicker` does not infer `IsOpen=true` from raw focus events because browser focus does not reliably imply picker-popup visibility.
 - Deferred: full custom MAUI format token breadth across browser locales remains incomplete for date/time controls in this slice.
 
 11. Numeric/status control parity depth

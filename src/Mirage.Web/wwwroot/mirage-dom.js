@@ -1341,20 +1341,18 @@ export function openPicker(elementHandle) {
   }
 
   try {
-    let focused = false;
     if (typeof element.focus === "function") {
       element.focus();
-      focused = document.activeElement === element;
     }
 
     if (typeof element.click === "function") {
       element.click();
     }
-
-    return focused || document.activeElement === element;
   } catch {
-    return false;
+    // no-op: deterministic return value remains false when picker-open cannot be confirmed
   }
+
+  return false;
 }
 
 export function setScrollPosition(elementHandle, left, top) {

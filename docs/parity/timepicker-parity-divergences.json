@@ -14,6 +14,12 @@
       "summary": "Mirage currently supports browser-native hh:mm and hh:mm:ss projection depth; full MAUI custom format breadth remains deterministic subset behavior in this wave.",
       "upstreamReference": "src/Core/src/Handlers/TimePicker/TimePickerHandler.cs",
       "testReference": "TimePickerHandler_FormatProjection_UsesDeterministicSecondsSubset"
+    },
+    {
+      "id": "timepicker-open-state-no-focus-inference",
+      "summary": "Mirage does not infer IsOpen=true from raw focus events because browser focus does not reliably indicate native picker UI visibility; IsOpen=true is treated as confirmed only through successful programmatic open requests.",
+      "upstreamReference": "src/Core/src/Handlers/TimePicker/TimePickerHandler.iOS.cs",
+      "testReference": "TimePickerHandler_IsOpen_UsesProgrammaticOpenAndIgnoresFocusAsOpenSignal"
     }
   ]
 }

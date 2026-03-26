@@ -85,12 +85,6 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
             return;
         }
 
-        if (string.Equals(eventName, "focus", StringComparison.Ordinal))
-        {
-            OnRuntimeIsOpenChanged(isOpen: true);
-            return;
-        }
-
         if (string.Equals(eventName, "blur", StringComparison.Ordinal))
         {
             OnRuntimeIsOpenChanged(isOpen: false);

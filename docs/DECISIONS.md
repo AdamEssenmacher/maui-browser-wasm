@@ -7,6 +7,7 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - TimePicker realization now uses browser-native `<input type="time">` projection with deterministic `Time`/`Format` mapping (`hh:mm` + `hh:mm:ss` subset via `step=60|1`), two-way runtime `change` parsing, and disabled-state mutation gating.
 - Added a provider-neutral runtime picker-open seam (`TryOpenNodePicker`) implemented via `showPicker()` with deterministic fallback (`focus` + `click`) so `IsOpen` can roundtrip without TimePicker-specific runtime APIs.
 - Open-state handling follows MAUI intent by reconciling `IsOpen` to runtime truth: if picker-open fails, Mirage immediately rolls `IsOpen` back to `false` instead of leaving stale requested state.
+- Browser focus events are no longer treated as picker-open signals; `IsOpen=true` is only kept when programmatic open succeeds, while `blur` continues to close state deterministically.
 - Added parity governance artifacts (`timepicker-parity-contract.json`, `timepicker-parity-divergences.json`) plus integration/E2E probe coverage (`TimePickerParityProbePage`) and updated parity ledgers.
 
 ## 2026-03-26 (ContentPageBackgroundGallery promoted to runnable)

@@ -126,7 +126,7 @@ public sealed class MirageTimePickerHandlerTests
     }
 
     [Fact]
-    public void TimePickerHandler_IsOpen_UsesRuntimePickerOpenAndFocusRoundTrip()
+    public void TimePickerHandler_IsOpen_UsesProgrammaticOpenAndIgnoresFocusAsOpenSignal()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
         var runtime = new TimePickerRuntimeProbe();
@@ -153,7 +153,7 @@ public sealed class MirageTimePickerHandlerTests
 
         var openPickerCallsBeforeRuntimeFocus = runtime.OpenPickerCallCount;
         coordinator.OnEvent(handler.PlatformView.NodeId, "focus", null);
-        Assert.True(timePicker.IsOpen);
+        Assert.False(timePicker.IsOpen);
         Assert.Equal(openPickerCallsBeforeRuntimeFocus, runtime.OpenPickerCallCount);
 
         coordinator.OnEvent(handler.PlatformView.NodeId, "blur", null);
