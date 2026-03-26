@@ -510,6 +510,12 @@ public sealed class MirageEditorHandlerTests
             return false;
         }
 
+        public bool TryOpenNodePicker(string nodeId)
+        {
+            _ = nodeId;
+            return false;
+        }
+
         public bool TrySetNodeFocus(string nodeId, bool isFocused)
         {
             LastFocusedNodeId = nodeId;
@@ -664,6 +670,12 @@ public sealed class MirageEditorHandlerTests
             _ = isAnimated;
             actualLeft = 0;
             actualTop = 0;
+            return false;
+        }
+
+        public bool TryOpenNodePicker(string nodeId)
+        {
+            _ = nodeId;
             return false;
         }
 

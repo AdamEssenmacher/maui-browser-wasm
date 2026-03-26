@@ -27,6 +27,8 @@ public interface IMirageRuntime : IDisposable
         out double actualLeft,
         out double actualTop);
 
+    bool TryOpenNodePicker(string nodeId);
+
     bool TrySetNodeFocus(string nodeId, bool isFocused);
 
     bool TryGetNodeTextSelection(string nodeId, out int selectionStart, out int selectionEnd);

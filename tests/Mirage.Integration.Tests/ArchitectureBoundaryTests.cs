@@ -519,6 +519,33 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void BrowserPlatform_RegistersTimePickerHandlerAsBuiltInControlNode()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var timePickerHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageTimePickerHandler.cs");
+        Assert.True(File.Exists(timePickerHandlerPath), $"Expected TimePicker handler file not found: {timePickerHandlerPath}");
+
+        var coordinatorPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageRenderCoordinator.cs");
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(coordinatorPath), $"Expected render coordinator file not found: {coordinatorPath}");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var hostingText = File.ReadAllText(hostingPath);
+        var timePickerHandlerText = File.ReadAllText(timePickerHandlerPath);
+        var coordinatorText = File.ReadAllText(coordinatorPath);
+        var runtimeText = File.ReadAllText(runtimePath);
+
+        Assert.Contains("typeof(TimePicker)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageTimePickerHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.TimePicker", timePickerHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryOpenNodePicker(", timePickerHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryOpenNodePicker(", coordinatorText, StringComparison.Ordinal);
+        Assert.Contains("TryOpenNodePicker(", runtimeText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CollectionViewHandler_UsesMauiShapedHierarchy_AndGenericScrollSeam()
     {
         var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");

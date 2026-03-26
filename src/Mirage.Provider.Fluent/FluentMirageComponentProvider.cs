@@ -239,6 +239,28 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 {
                     ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue)
                 }),
+            [ComponentKind.TimePicker] = new(
+                ComponentKind.TimePicker,
+                "input",
+                defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["type"] = "time",
+                    ["step"] = "60"
+                },
+                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
+                    ["Value"] = new(PropertyTarget.InputValue),
+                    ["Step"] = new(PropertyTarget.Attribute, "step"),
+                    ["Format"] = new(PropertyTarget.Attribute, "data-maui-time-format"),
+                    ["Disabled"] = new(PropertyTarget.Attribute, "disabled")
+                },
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue),
+                    ["focus"] = new("focus"),
+                    ["blur"] = new("blur")
+                }),
             [ComponentKind.Stepper] = new(
                 ComponentKind.Stepper,
                 "div",

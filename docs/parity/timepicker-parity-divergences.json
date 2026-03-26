@@ -1,0 +1,19 @@
+{
+  "entries": [
+    {
+      "id": "timepicker-extension-isenabled-input-gate",
+      "summary": "Mirage maps IsEnabled explicitly so browser-native time-input interaction remains deterministic across runtime hosts.",
+      "upstreamReference": "src/Core/src/Handlers/TimePicker/TimePickerHandler.cs",
+      "testReference": "TimePickerHandler_DisabledState_BlocksRuntimeChanges",
+      "extensionKeys": [
+        "IsEnabled"
+      ]
+    },
+    {
+      "id": "timepicker-format-subset-browser-native",
+      "summary": "Mirage currently supports browser-native hh:mm and hh:mm:ss projection depth; full MAUI custom format breadth remains deterministic subset behavior in this wave.",
+      "upstreamReference": "src/Core/src/Handlers/TimePicker/TimePickerHandler.cs",
+      "testReference": "TimePickerHandler_FormatProjection_UsesDeterministicSecondsSubset"
+    }
+  ]
+}

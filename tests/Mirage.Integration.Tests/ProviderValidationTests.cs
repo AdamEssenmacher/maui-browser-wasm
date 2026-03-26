@@ -201,6 +201,27 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentTimePickerDescriptor_MapsInputProjectionChannels()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.TimePicker);
+
+        Assert.Equal("input", descriptor.ElementTagName);
+        Assert.Equal("time", descriptor.DefaultAttributes["type"]);
+        Assert.Equal("60", descriptor.DefaultAttributes["step"]);
+        Assert.Equal(PropertyTarget.InputValue, descriptor.PropertyMappings["Value"].Target);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Step"].Target);
+        Assert.Equal("step", descriptor.PropertyMappings["Step"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Format"].Target);
+        Assert.Equal("data-maui-time-format", descriptor.PropertyMappings["Format"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Disabled"].Target);
+        Assert.True(descriptor.EventMappings.ContainsKey("change"));
+        Assert.Equal(EventPayloadKind.InputValue, descriptor.EventMappings["change"].PayloadKind);
+        Assert.True(descriptor.EventMappings.ContainsKey("focus"));
+        Assert.True(descriptor.EventMappings.ContainsKey("blur"));
+    }
+
+    [Fact]
     public void FluentStepperDescriptor_MapsSplitButtonProjectionChannels()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();

@@ -134,6 +134,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-shapesparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-editorparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-radiobuttonparitypage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-timepickerparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
 
@@ -631,6 +632,81 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await WaitForLabelTextContainsAsync(page, styleLabel, "enabled=True");
         await page.Locator($"{namedVenusHost} input.mirage-radiobutton-input").ClickAsync();
         await WaitForLabelTextContainsAsync(page, selectedValueLabel, "namedSelected=venus");
+    }
+
+    [Fact]
+    public async Task TimePickerParityProbe_ProjectsTimeFormatOpenAndEnabledState()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1160, height: 860);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-timepickerparitypage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-timepickerparitypage']");
+            });
+
+        const string hostSelector = "[data-automation-id='controls-sample-timepicker-parity-host']";
+        const string timeStateSelector = "[data-automation-id='controls-sample-timepicker-parity-time-state']";
+        const string formatStateSelector = "[data-automation-id='controls-sample-timepicker-parity-format-state']";
+        const string openStateSelector = "[data-automation-id='controls-sample-timepicker-parity-open-state']";
+
+        await page.WaitForSelectorAsync(hostSelector);
+        Assert.Equal("TimePicker", await page.GetAttributeAsync(hostSelector, "data-mirage-kind"));
+
+        await WaitForLabelTextContainsAsync(page, formatStateSelector, "step=60");
+        await page.Locator("[data-automation-id='controls-sample-timepicker-parity-toggle-seconds']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, formatStateSelector, "step=1");
+        await WaitForInputValueContainsAsync(page, hostSelector, "09:30:00");
+
+        await page.Locator("[data-automation-id='controls-sample-timepicker-parity-set-144520']").ClickAsync();
+        await WaitForInputValueContainsAsync(page, hostSelector, "14:45:20");
+        await WaitForLabelTextContainsAsync(page, timeStateSelector, "time=14:45:20");
+
+        await page.Locator("[data-automation-id='controls-sample-timepicker-parity-open']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "isOpen=True");
+
+        await page.Locator("[data-automation-id='controls-sample-timepicker-parity-close']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "isOpen=False");
+
+        await page.Locator("[data-automation-id='controls-sample-timepicker-parity-toggle-enabled']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "enabled=False");
+        Assert.Equal("disabled", await page.GetAttributeAsync(hostSelector, "disabled"));
+
+        await page.EvaluateAsync(
+            """
+            (selector) => {
+                const input = document.querySelector(selector);
+                if (!(input instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                input.value = "07:11:12";
+                input.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            """,
+            hostSelector);
+        await WaitForLabelTextContainsAsync(page, timeStateSelector, "time=14:45:20");
+
+        await page.Locator("[data-automation-id='controls-sample-timepicker-parity-toggle-enabled']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "enabled=True");
+        await page.EvaluateAsync(
+            """
+            (selector) => {
+                const input = document.querySelector(selector);
+                if (!(input instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                input.value = "07:11:12";
+                input.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            """,
+            hostSelector);
+        await WaitForLabelTextContainsAsync(page, timeStateSelector, "time=07:11:12");
     }
 
     [Fact]
@@ -3236,6 +3312,30 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     private static async Task WaitForEditorValueContainsAsync(
+        IPage page,
+        string selector,
+        string expectedSubstring,
+        int timeoutMs = 3000,
+        int pollMs = 50)
+    {
+        var elapsedMs = 0;
+        while (elapsedMs < timeoutMs)
+        {
+            var value = await page.Locator(selector).InputValueAsync();
+            if (value.Contains(expectedSubstring, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            await page.WaitForTimeoutAsync(pollMs);
+            elapsedMs += pollMs;
+        }
+
+        var finalValue = await page.Locator(selector).InputValueAsync();
+        Assert.Contains(expectedSubstring, finalValue, StringComparison.Ordinal);
+    }
+
+    private static async Task WaitForInputValueContainsAsync(
         IPage page,
         string selector,
         string expectedSubstring,
