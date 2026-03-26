@@ -36,6 +36,7 @@ public static class Program
         builder.UseMirageNavigation(routes =>
         {
             routes.Map<ShowcaseHeroPage>("/");
+            routes.Map<ShowcaseEssentialsLabPage>("/essentials-lab");
             routes.Map<ShowcaseLayoutLabPage>("/layout-lab");
             routes.Map<ShowcaseXamlLabPage>("/xaml-lab");
             routes.Map<ShowcaseNavigationLabPage>("/navigation-lab");

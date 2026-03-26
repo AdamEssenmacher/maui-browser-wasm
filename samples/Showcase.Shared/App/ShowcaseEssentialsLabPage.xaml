@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Showcase.Shared.App.ShowcaseEssentialsLabPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    AutomationId="showcase-page-essentials-lab">
+
+    <Grid
+        AutomationId="showcase-page-essentials-lab-grid"
+        ColumnDefinitions="*"
+        RowDefinitions="*">
+        <ScrollView
+            AutomationId="showcase-essentials-lab-scroll-root"
+            Orientation="Vertical">
+            <VerticalStackLayout
+                AutomationId="showcase-essentials-lab-stack"
+                HorizontalOptions="Center"
+                MaximumWidthRequest="1040"
+                Style="{StaticResource ShowcasePageStack}">
+
+                <ContentView Style="{StaticResource ShowcaseSectionCardFrame}">
+                    <VerticalStackLayout
+                        AutomationId="showcase-essentials-lab-hero"
+                        Style="{StaticResource ShowcaseSectionCardBody}">
+                        <Label
+                            AutomationId="showcase-essentials-lab-kicker"
+                            Text="Essentials" />
+                        <Label
+                            AutomationId="showcase-essentials-lab-title"
+                            Style="{StaticResource Headline}"
+                            Text="Static patch proof for MAUI Essentials" />
+                        <Label
+                            AutomationId="showcase-essentials-lab-body"
+                            Text="This page compares Mirage-injected Essentials services with the canonical MAUI static wrappers after the browser host patches the upstream private backing fields." />
+                    </VerticalStackLayout>
+                </ContentView>
+
+                <ContentView Style="{StaticResource ShowcaseSectionCardFrame}">
+                    <VerticalStackLayout
+                        AutomationId="showcase-essentials-lab-patch-card"
+                        Style="{StaticResource ShowcaseSectionCardBody}">
+                        <Label
+                            AutomationId="showcase-essentials-lab-patch-title"
+                            Style="{StaticResource SubHeadline}"
+                            HorizontalOptions="Start"
+                            HorizontalTextAlignment="Start"
+                            Text="Patch status" />
+                        <Label
+                            x:Name="PreferencesPatchStatusLabel"
+                            AutomationId="showcase-essentials-lab-preferences-patched"
+                            Text="Preferences patched: pending" />
+                        <Label
+                            x:Name="AppInfoPatchStatusLabel"
+                            AutomationId="showcase-essentials-lab-appinfo-patched"
+                            Text="AppInfo patched: pending" />
+                    </VerticalStackLayout>
+                </ContentView>
+
+                <ContentView Style="{StaticResource ShowcaseSectionCardFrame}">
+                    <VerticalStackLayout
+                        AutomationId="showcase-essentials-lab-counter-card"
+                        Style="{StaticResource ShowcaseSectionCardBody}">
+                        <Label
+                            AutomationId="showcase-essentials-lab-counter-title"
+                            Style="{StaticResource SubHeadline}"
+                            HorizontalOptions="Start"
+                            HorizontalTextAlignment="Start"
+                            Text="Preferences counter" />
+                        <Label
+                            AutomationId="showcase-essentials-lab-counter-description"
+                            Text="Increment writes through the MAUI static Preferences API. Both summaries below should stay in lockstep because the static backing field points at the DI singleton." />
+                        <HorizontalStackLayout
+                            AutomationId="showcase-essentials-lab-counter-buttons"
+                            Spacing="10">
+                            <Button
+                                AutomationId="showcase-essentials-lab-reset"
+                                Clicked="OnResetClicked"
+                                Text="Reset" />
+                            <Button
+                                AutomationId="showcase-essentials-lab-increment"
+                                Clicked="OnIncrementClicked"
+                                Text="Increment" />
+                        </HorizontalStackLayout>
+                        <Grid
+                            AutomationId="showcase-essentials-lab-counter-grid"
+                            ColumnDefinitions="*,*"
+                            ColumnSpacing="16"
+                            RowDefinitions="Auto,Auto">
+                            <Label
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                AutomationId="showcase-essentials-lab-counter-static-title"
+                                Style="{StaticResource SubHeadline}"
+                                Text="Static" />
+                            <Label
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                AutomationId="showcase-essentials-lab-counter-di-title"
+                                Style="{StaticResource SubHeadline}"
+                                Text="Injected" />
+                            <Label
+                                x:Name="StaticCounterLabel"
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                AutomationId="showcase-essentials-lab-counter-static"
+                                Text="0" />
+                            <Label
+                                x:Name="InjectedCounterLabel"
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                AutomationId="showcase-essentials-lab-counter-di"
+                                Text="0" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </ContentView>
+
+                <ContentView Style="{StaticResource ShowcaseSectionCardFrame}">
+                    <VerticalStackLayout
+                        AutomationId="showcase-essentials-lab-appinfo-card"
+                        Style="{StaticResource ShowcaseSectionCardBody}">
+                        <Label
+                            AutomationId="showcase-essentials-lab-appinfo-title"
+                            Style="{StaticResource SubHeadline}"
+                            HorizontalOptions="Start"
+                            HorizontalTextAlignment="Start"
+                            Text="App info snapshot" />
+                        <Label
+                            AutomationId="showcase-essentials-lab-appinfo-description"
+                            Text="The browser host applies the static patch before the application resolves, so AppInfo.Current and injected IAppInfo should report the same values here." />
+                        <Grid
+                            AutomationId="showcase-essentials-lab-appinfo-grid"
+                            ColumnDefinitions="*,*"
+                            ColumnSpacing="16"
+                            RowDefinitions="Auto,Auto">
+                            <Label
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                AutomationId="showcase-essentials-lab-appinfo-static-title"
+                                Style="{StaticResource SubHeadline}"
+                                Text="Static" />
+                            <Label
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                AutomationId="showcase-essentials-lab-appinfo-di-title"
+                                Style="{StaticResource SubHeadline}"
+                                Text="Injected" />
+                            <Label
+                                x:Name="StaticAppInfoLabel"
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                AutomationId="showcase-essentials-lab-appinfo-static"
+                                LineBreakMode="WordWrap"
+                                Text="Loading..." />
+                            <Label
+                                x:Name="InjectedAppInfoLabel"
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                AutomationId="showcase-essentials-lab-appinfo-di"
+                                LineBreakMode="WordWrap"
+                                Text="Loading..." />
+                        </Grid>
+                    </VerticalStackLayout>
+                </ContentView>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
+</ContentPage>

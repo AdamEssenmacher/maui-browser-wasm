@@ -578,6 +578,21 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void BrowserAppHost_AppliesEssentialsStaticPatchBeforeResolvingApplication()
+    {
+        var appHostPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageBrowserAppHost.cs");
+        Assert.True(File.Exists(appHostPath), $"Expected browser app host file not found: {appHostPath}");
+
+        var text = File.ReadAllText(appHostPath);
+        var patchIndex = text.IndexOf("MirageEssentialsStaticPatcher.Apply(mauiApp.Services)", StringComparison.Ordinal);
+        var applicationIndex = text.IndexOf("GetRequiredService<IApplication>()", StringComparison.Ordinal);
+
+        Assert.True(patchIndex >= 0, "Expected MirageBrowserAppHost to apply the Essentials static patch.");
+        Assert.True(applicationIndex >= 0, "Expected MirageBrowserAppHost to resolve IApplication.");
+        Assert.True(patchIndex < applicationIndex, "Expected Essentials static patching to happen before IApplication is resolved.");
+    }
+
+    [Fact]
     public void BrowserRuntimeModuleSync_UsesProviderDeclaredModuleItems()
     {
         var targetsPath = Path.Combine(GetRepositoryRoot(), "Directory.Build.targets");

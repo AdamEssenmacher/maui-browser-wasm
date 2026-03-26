@@ -2,6 +2,15 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-26 (Essentials static patcher proof slice)
+- Added a Mirage browser-host Essentials patcher that reflects into MAUI static wrappers and swaps `Preferences` / `AppInfo` backing fields to the registered browser DI singletons before `IApplication` is resolved.
+- The first proof stays intentionally narrow: `Preferences` now uses browser `localStorage`, `AppInfo` now reports browser-aware app/theme metadata, and the browser host fails fast if upstream MAUI private field names drift.
+- Added a small Showcase `Essentials Lab` so the injected and static paths can be compared visibly in the active Mirage sample, alongside integration and E2E coverage for the patch behavior.
+
+## 2026-03-25 (Essentials parity tracker)
+- Added `docs/ESSENTIALS_PARITY_MATRIX.md` as a separate ledger for `Microsoft.Maui.Essentials` browser parity.
+- This stays separate from handler parity because the core questions differ: many Essentials APIs expose public interfaces but still hard-wire their canonical static entry points to upstream implementations, while a smaller set (`MainThread`, `Permissions`, `Platform`) is blocked by static or partial-platform design instead of DI seams.
+
 ## 2026-03-25 (Upstream unofficial-target risk tracker)
 - Added `docs/UPSTREAM_TARGET_RISKS.md` to separate upstream MAUI unofficial-target/shared-code hazards from Mirage's intentional parity gaps.
 - The new tracker records each upstream risk with source links, current Mirage status (`Covered`, `Partial workaround`, `Avoided by scope`, `No workaround`), and local evidence/work-around notes grounded only in the active `src/Mirage.*` stack.

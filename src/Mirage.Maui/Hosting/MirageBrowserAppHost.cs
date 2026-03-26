@@ -1,5 +1,6 @@
 using Mirage.Core.Providers;
 using Mirage.Core.Diagnostics;
+using Mirage.Maui.Essentials;
 using Mirage.Maui.HotReload;
 using Mirage.Maui.Handlers;
 using Mirage.Maui.Images;
@@ -28,6 +29,7 @@ public static class MirageBrowserAppHost
     private static BrowserPageNavigator? s_pageNavigator;
     private static Application? s_controlsApplication;
     private static Window? s_primaryWindow;
+    private static IDisposable? s_essentialsPatchScope;
 
     public static async Task RunAsync(MauiApp mauiApp, string rootElementId = "app")
     {
@@ -36,6 +38,8 @@ public static class MirageBrowserAppHost
 
         await DomElement.EnsureInteropReadyAsync();
         MirageDiagnostics.EnableIf(DomElement.IsDiagnosticsEnabled());
+        s_essentialsPatchScope?.Dispose();
+        s_essentialsPatchScope = MirageEssentialsStaticPatcher.Apply(mauiApp.Services);
 
         if (mauiApp.Services.GetService<IMirageImageSourceResolver>() is { } imageSourceResolver)
         {

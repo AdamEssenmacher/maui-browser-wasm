@@ -10,6 +10,13 @@ public partial class ShowcaseHeroPage : ContentPage
         InitializeComponent();
     }
 
+    private async void OnOpenEssentialsLabClicked(object? sender, EventArgs e)
+    {
+        _ = sender;
+        _ = e;
+        await Navigation.PushAsync(new ShowcaseEssentialsLabPage(), animated: false);
+    }
+
     private async void OnCommandScrollToLayoutLabClicked(object? sender, EventArgs e)
     {
         _ = sender;

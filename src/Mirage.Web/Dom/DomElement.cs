@@ -193,6 +193,37 @@ public sealed class DomElement
 
     public static void SetDocumentTitle(string? title) => DomApi.SetDocumentTitle(title);
 
+    public static string? GetLocalStorageItem(string key)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        return DomApi.GetLocalStorageItem(key);
+    }
+
+    public static void SetLocalStorageItem(string key, string value)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        ArgumentNullException.ThrowIfNull(value);
+        DomApi.SetLocalStorageItem(key, value);
+    }
+
+    public static void RemoveLocalStorageItem(string key)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        DomApi.RemoveLocalStorageItem(key);
+    }
+
+    public static bool ContainsLocalStorageKey(string key)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key);
+        return DomApi.ContainsLocalStorageKey(key);
+    }
+
+    public static void ClearLocalStorageByPrefix(string prefix)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(prefix);
+        DomApi.ClearLocalStorageByPrefix(prefix);
+    }
+
     public static int SubscribePopState(Action callback)
     {
         ArgumentNullException.ThrowIfNull(callback);

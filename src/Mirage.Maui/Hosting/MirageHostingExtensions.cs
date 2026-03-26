@@ -1,15 +1,18 @@
 using Mirage.Core.Providers;
+using Mirage.Maui.Essentials;
 using Mirage.Maui.Handlers;
 using Mirage.Maui.Images;
 using Mirage.Maui.Navigation;
 using Mirage.Web.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Maps;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Hosting;
+using Microsoft.Maui.Storage;
 using MauiMap = Microsoft.Maui.Controls.Maps.Map;
 using MauiShapes = Microsoft.Maui.Controls.Shapes;
 
@@ -75,6 +78,8 @@ public static class MirageHostingExtensions
 
         builder.Services.TryAddSingleton<IDispatcherProvider>(dispatcherProvider);
         builder.Services.TryAddSingleton(sp => sp.GetRequiredService<IDispatcherProvider>().GetForCurrentThread() ?? new BrowserDispatcher());
+        builder.Services.TryAddSingleton<IAppInfo, MirageBrowserAppInfo>();
+        builder.Services.TryAddSingleton<IPreferences, MirageBrowserPreferences>();
         builder.Services.TryAddSingleton<IMirageRenderCoordinator, MirageRenderCoordinator>();
         builder.Services.TryAddSingleton<BrowserPageNavigator>();
         builder.Services.TryAddSingleton<IMiragePageNavigator>(sp => sp.GetRequiredService<BrowserPageNavigator>());

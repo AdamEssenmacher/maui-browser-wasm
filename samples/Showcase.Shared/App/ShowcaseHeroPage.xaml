@@ -52,6 +52,10 @@
                             AutomationId="hero-cta-row"
                             Spacing="10">
                             <Button
+                                AutomationId="hero-cta-command-essentials-lab"
+                                Clicked="OnOpenEssentialsLabClicked"
+                                Text="Open Essentials Lab" />
+                            <Button
                                 AutomationId="hero-cta-command-layout-lab"
                                 Clicked="OnCommandScrollToLayoutLabClicked"
                                 Text="Open Layout Lab" />
