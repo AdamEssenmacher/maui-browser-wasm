@@ -182,6 +182,29 @@ if (!s{<base\s+href="[^"]*"\s*/?>}{<base href="$base">}i) {
 ' "$index_path"
 }
 
+stamp_demo_entrypoints() {
+  local demo_dir="$1"
+  local cache_stamp="$2"
+  local index_path="$demo_dir/index.html"
+  local main_path="$demo_dir/main.mjs"
+
+  [[ -f "$index_path" ]] || return
+  [[ -f "$main_path" ]] || return
+
+  CACHE_STAMP="$cache_stamp" perl -0777 -i -pe '
+my $stamp = $ENV{"CACHE_STAMP"};
+s{src="main\.mjs(?:\?v=[^"]*)?"}{src="main.mjs?v=$stamp"}gi;
+' "$index_path"
+
+  CACHE_STAMP="$cache_stamp" perl -0777 -i -pe '
+my $stamp = $ENV{"CACHE_STAMP"};
+s{"\./_framework/dotnet\.js(?:\?v=[^"]*)?"}{"./_framework/dotnet.js?v=$stamp"}g;
+s{'"'"'\./_framework/dotnet\.js(?:\?v=[^'"'"']*)?'"'"'}{'"'"'./_framework/dotnet.js?v=$stamp'"'"'}g;
+s{"\./_framework/mirage-dom\.js(?:\?v=[^"]*)?"}{"./_framework/mirage-dom.js?v=$stamp"}g;
+s{'"'"'\./_framework/mirage-dom\.js(?:\?v=[^'"'"']*)?'"'"'}{'"'"'./_framework/mirage-dom.js?v=$stamp'"'"'}g;
+' "$main_path"
+}
+
 DEMO_ID=""
 DRY_RUN=0
 
@@ -267,6 +290,7 @@ echo "Project: $DEMO_PROJECT_PATH"
 echo "Public target: ${PAGES_PUBLIC_REPO_URL} [branch: ${PAGES_PUBLIC_BRANCH}] -> /${DEMO_DEST_REL}/"
 [[ "$DRY_RUN" -eq 1 ]] && echo "Mode: DRY RUN"
 
+dotnet clean "$PROJECT_ABS_PATH" -c Release -r browser-wasm
 dotnet publish "$PROJECT_ABS_PATH" -c Release -r browser-wasm
 
 PROJECT_DIR="$(cd "$(dirname "$PROJECT_ABS_PATH")" && pwd)"
@@ -301,6 +325,9 @@ normalize_demo_index_html "$STAGED_DEMO_DIR/index.html" "$DEMO_BASE_HREF"
 SOURCE_REPO_URL="$(git -C "$REPO_ROOT" remote get-url origin)"
 SOURCE_COMMIT="$(git -C "$REPO_ROOT" rev-parse HEAD)"
 GENERATED_AT_UTC="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+PUBLISH_CACHE_STAMP="$(git -C "$REPO_ROOT" rev-parse --short=12 HEAD)"
+
+stamp_demo_entrypoints "$STAGED_DEMO_DIR" "$PUBLISH_CACHE_STAMP"
 
 jq -n \
   --arg id "$DEMO_ID" \
