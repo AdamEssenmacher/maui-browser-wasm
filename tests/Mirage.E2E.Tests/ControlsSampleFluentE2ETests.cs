@@ -3374,9 +3374,17 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         var result = await page.EvaluateAsync<string>(
             """
             (payload) => {
-                const control = document.querySelector(payload.selector);
-                if (!(control instanceof Element)) {
+                const root = document.querySelector(payload.selector);
+                if (!(root instanceof Element)) {
                     return "__missing__";
+                }
+
+                let control = root;
+                if (!(control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement)) {
+                    const descendantInput = control.querySelector("input, textarea");
+                    if (descendantInput instanceof HTMLInputElement || descendantInput instanceof HTMLTextAreaElement) {
+                        control = descendantInput;
+                    }
                 }
 
                 if (control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement) {
@@ -3564,31 +3572,88 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             openedPageHosts.Add(currentHostAutomationId);
         }
 
-        var navButtonIds = await ReadVisibleCollectionViewNavButtonIdsAsync(page);
+        var navButtonIds = await ReadClickableCollectionViewNavButtonIdsAsync(page);
         foreach (var navButtonId in navButtonIds)
         {
             var parentHostAutomationId = await ReadCurrentControlsSamplePageHostAutomationIdAsync(page);
             Assert.False(string.IsNullOrWhiteSpace(parentHostAutomationId));
+            var parentHostNodeId = await ReadCurrentControlsSamplePageHostNodeIdAsync(page);
 
             await NavigateWithDiagnosticsAsync(
                 page,
                 diagnostics,
                 async () =>
                 {
-                    await page.Locator($"[data-automation-id='{navButtonId}']").ClickAsync();
+                    var navButtonSelector = string.IsNullOrWhiteSpace(parentHostNodeId)
+                        ? $"[data-automation-id='{navButtonId}']:visible"
+                        : $"[data-mirage-node-id='{parentHostNodeId}'] [data-automation-id='{navButtonId}']";
+                    var navButtonLocator = page.Locator(navButtonSelector).Last;
+                    await ClickCollectionNavButtonAsync(navButtonLocator);
+
                     await page.WaitForFunctionAsync(
                         """
-                        (previousHostId) => {
-                            const activeHost = document.querySelector("[data-automation-id^='controls-sample-page-']");
+                        (previousHostNodeId) => {
+                            const isVisible = (element) => {
+                                if (!(element instanceof HTMLElement) || !element.isConnected) {
+                                    return false;
+                                }
+
+                                const style = window.getComputedStyle(element);
+                                if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+                                    return false;
+                                }
+
+                                const rect = element.getBoundingClientRect();
+                                return rect.width > 0 && rect.height > 0;
+                            };
+
+                            const hosts = Array
+                                .from(document.querySelectorAll("[data-automation-id^='controls-sample-page-']"))
+                                .filter(isVisible);
+
+                            if (hosts.length === 0) {
+                                return false;
+                            }
+
+                            const points = [
+                                [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.floor(window.innerHeight / 2))],
+                                [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.min(window.innerHeight - 2, 140))],
+                                [Math.max(1, Math.min(window.innerWidth - 2, 24)), Math.max(1, Math.min(window.innerHeight - 2, 140))]
+                            ];
+
+                            let activeHost = null;
+                            for (const [x, y] of points) {
+                                const stacked = document.elementsFromPoint(x, y);
+                                for (const node of stacked) {
+                                    if (!(node instanceof Element)) {
+                                        continue;
+                                    }
+
+                                    const host = node.closest("[data-automation-id^='controls-sample-page-']");
+                                    if (host instanceof HTMLElement && hosts.includes(host)) {
+                                        activeHost = host;
+                                        break;
+                                    }
+                                }
+
+                                if (activeHost) {
+                                    break;
+                                }
+                            }
+
+                            if (!(activeHost instanceof HTMLElement)) {
+                                activeHost = hosts.at(-1) ?? null;
+                            }
+
                             if (!(activeHost instanceof HTMLElement)) {
                                 return false;
                             }
 
-                            const currentId = activeHost.getAttribute("data-automation-id") ?? "";
-                            return currentId.length > 0 && currentId !== previousHostId;
+                            const currentNodeId = activeHost.getAttribute("data-mirage-node-id") ?? "";
+                            return currentNodeId.length > 0 && currentNodeId !== previousHostNodeId;
                         }
                         """,
-                        parentHostAutomationId,
+                        parentHostNodeId ?? string.Empty,
                         new()
                         {
                             Timeout = 15000
@@ -3603,37 +3668,224 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 async () =>
                 {
                     await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
-                    await page.WaitForSelectorAsync($"[data-automation-id='{parentHostAutomationId}']");
+                    await page.WaitForFunctionAsync(
+                        """
+                        (expectedHostNodeId) => {
+                            const isVisible = (element) => {
+                                if (!(element instanceof HTMLElement) || !element.isConnected) {
+                                    return false;
+                                }
+
+                                const style = window.getComputedStyle(element);
+                                if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+                                    return false;
+                                }
+
+                                const rect = element.getBoundingClientRect();
+                                return rect.width > 0 && rect.height > 0;
+                            };
+
+                            const hosts = Array
+                                .from(document.querySelectorAll("[data-automation-id^='controls-sample-page-']"))
+                                .filter(isVisible);
+
+                            if (hosts.length === 0) {
+                                return false;
+                            }
+
+                            const points = [
+                                [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.floor(window.innerHeight / 2))],
+                                [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.min(window.innerHeight - 2, 140))],
+                                [Math.max(1, Math.min(window.innerWidth - 2, 24)), Math.max(1, Math.min(window.innerHeight - 2, 140))]
+                            ];
+
+                            let activeHost = null;
+                            for (const [x, y] of points) {
+                                const stacked = document.elementsFromPoint(x, y);
+                                for (const node of stacked) {
+                                    if (!(node instanceof Element)) {
+                                        continue;
+                                    }
+
+                                    const host = node.closest("[data-automation-id^='controls-sample-page-']");
+                                    if (host instanceof HTMLElement && hosts.includes(host)) {
+                                        activeHost = host;
+                                        break;
+                                    }
+                                }
+
+                                if (activeHost) {
+                                    break;
+                                }
+                            }
+
+                            if (!(activeHost instanceof HTMLElement)) {
+                                activeHost = hosts.at(-1) ?? null;
+                            }
+
+                            if (!(activeHost instanceof HTMLElement)) {
+                                return false;
+                            }
+
+                            return (activeHost.getAttribute("data-mirage-node-id") ?? "") === expectedHostNodeId;
+                        }
+                        """,
+                        parentHostNodeId ?? string.Empty,
+                        new()
+                        {
+                            Timeout = 15000
+                        });
                 });
         }
     }
 
     private async Task AssertDeferredCollectionButtonsHiddenAsync(IPage page)
     {
-        foreach (var deferredButtonAutomationId in DeferredCollectionViewButtonAutomationIds)
-        {
-            var selector = $"[data-automation-id='{deferredButtonAutomationId}']";
-            Assert.Equal(
-                0,
-                await page.Locator($"{selector}:visible").CountAsync());
-        }
+        var visibleDeferredButtons = await page.EvaluateAsync<string[]>(
+            """
+            (deferredIds) => {
+                const isVisible = (element) => {
+                    if (!(element instanceof HTMLElement) || !element.isConnected) {
+                        return false;
+                    }
+
+                    const style = window.getComputedStyle(element);
+                    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+                        return false;
+                    }
+
+                    const rect = element.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0;
+                };
+
+                const hosts = Array.from(document.querySelectorAll("[data-automation-id^='controls-sample-page-']"))
+                    .filter(isVisible);
+                if (hosts.length === 0) {
+                    return ["__missing_host__"];
+                }
+
+                const points = [
+                    [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.floor(window.innerHeight / 2))],
+                    [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.min(window.innerHeight - 2, 140))],
+                    [Math.max(1, Math.min(window.innerWidth - 2, 24)), Math.max(1, Math.min(window.innerHeight - 2, 140))]
+                ];
+
+                let activeHost = null;
+                for (const [x, y] of points) {
+                    const stacked = document.elementsFromPoint(x, y);
+                    for (const node of stacked) {
+                        if (!(node instanceof Element)) {
+                            continue;
+                        }
+
+                        const host = node.closest("[data-automation-id^='controls-sample-page-']");
+                        if (host instanceof HTMLElement && hosts.includes(host)) {
+                            activeHost = host;
+                            break;
+                        }
+                    }
+
+                    if (activeHost) {
+                        break;
+                    }
+                }
+
+                if (!(activeHost instanceof HTMLElement)) {
+                    activeHost = hosts.at(-1) ?? null;
+                }
+
+                if (!(activeHost instanceof HTMLElement)) {
+                    return ["__missing_host__"];
+                }
+
+                return deferredIds.filter(id => {
+                    const element = activeHost.querySelector(`[data-automation-id='${id}']`);
+                    return element instanceof HTMLElement && isVisible(element);
+                });
+            }
+            """,
+            DeferredCollectionViewButtonAutomationIds);
+
+        Assert.DoesNotContain("__missing_host__", visibleDeferredButtons);
+        Assert.Empty(visibleDeferredButtons);
     }
 
-    private static async Task<string[]> ReadVisibleCollectionViewNavButtonIdsAsync(IPage page)
+    private static async Task<string[]> ReadClickableCollectionViewNavButtonIdsAsync(IPage page)
     {
         return await page.EvaluateAsync<string[]>(
             """
             () => {
-                const ids = Array.from(document.querySelectorAll("[data-automation-id^='controls-sample-collectionviewgallery-open-']"))
-                    .filter(element => {
-                        if (!(element instanceof HTMLElement)) {
-                            return false;
+                const isVisible = (element) => {
+                    if (!(element instanceof HTMLElement) || !element.isConnected) {
+                        return false;
+                    }
+
+                    const style = window.getComputedStyle(element);
+                    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+                        return false;
+                    }
+
+                    const rect = element.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0;
+                };
+
+                const hosts = Array.from(document.querySelectorAll("[data-automation-id^='controls-sample-page-']"))
+                    .filter(isVisible);
+                if (hosts.length === 0) {
+                    return [];
+                }
+
+                const points = [
+                    [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.floor(window.innerHeight / 2))],
+                    [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.min(window.innerHeight - 2, 140))],
+                    [Math.max(1, Math.min(window.innerWidth - 2, 24)), Math.max(1, Math.min(window.innerHeight - 2, 140))]
+                ];
+
+                let activeHost = null;
+                for (const [x, y] of points) {
+                    const stacked = document.elementsFromPoint(x, y);
+                    for (const node of stacked) {
+                        if (!(node instanceof Element)) {
+                            continue;
                         }
 
-                        const style = window.getComputedStyle(element);
-                        const hiddenByStyle = style.display === "none" || style.visibility === "hidden";
-                        return !hiddenByStyle && element.offsetParent !== null;
-                    })
+                        const host = node.closest("[data-automation-id^='controls-sample-page-']");
+                        if (host instanceof HTMLElement && hosts.includes(host)) {
+                            activeHost = host;
+                            break;
+                        }
+                    }
+
+                    if (activeHost) {
+                        break;
+                    }
+                }
+
+                if (!(activeHost instanceof HTMLElement)) {
+                    activeHost = hosts.at(-1) ?? null;
+                }
+
+                if (!(activeHost instanceof HTMLElement)) {
+                    return [];
+                }
+
+                const isTopmostHitTarget = (element) => {
+                    if (!(element instanceof HTMLElement)) {
+                        return false;
+                    }
+
+                    const rect = element.getBoundingClientRect();
+                    const probeX = Math.max(1, Math.min(window.innerWidth - 2, rect.left + Math.max(1, Math.min(rect.width - 1, rect.width / 2))));
+                    const probeY = Math.max(1, Math.min(window.innerHeight - 2, rect.top + Math.max(1, Math.min(rect.height - 1, rect.height / 2))));
+                    const topNode = document.elementFromPoint(probeX, probeY);
+                    return topNode instanceof Element && (topNode === element || element.contains(topNode));
+                };
+
+                const ids = Array.from(activeHost.querySelectorAll("[data-automation-id^='controls-sample-collectionviewgallery-open-']"))
+                    .filter(element => element instanceof HTMLButtonElement)
+                    .filter(element => isVisible(element))
+                    .filter(element => !element.disabled)
+                    .filter(element => isTopmostHitTarget(element))
                     .map(element => element.getAttribute("data-automation-id") ?? "")
                     .filter(id => id.length > 0)
                     .sort();
@@ -3648,7 +3900,56 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         return await page.EvaluateAsync<string>(
             """
             () => {
-                const host = document.querySelector("[data-automation-id^='controls-sample-page-']");
+                const isVisible = (element) => {
+                    if (!(element instanceof HTMLElement) || !element.isConnected) {
+                        return false;
+                    }
+
+                    const style = window.getComputedStyle(element);
+                    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+                        return false;
+                    }
+
+                    const rect = element.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0;
+                };
+
+                const hosts = Array.from(document.querySelectorAll("[data-automation-id^='controls-sample-page-']"))
+                    .filter(isVisible);
+                if (hosts.length === 0) {
+                    return "";
+                }
+
+                const points = [
+                    [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.floor(window.innerHeight / 2))],
+                    [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.min(window.innerHeight - 2, 140))],
+                    [Math.max(1, Math.min(window.innerWidth - 2, 24)), Math.max(1, Math.min(window.innerHeight - 2, 140))]
+                ];
+
+                let host = null;
+                for (const [x, y] of points) {
+                    const stacked = document.elementsFromPoint(x, y);
+                    for (const node of stacked) {
+                        if (!(node instanceof Element)) {
+                            continue;
+                        }
+
+                        const candidate = node.closest("[data-automation-id^='controls-sample-page-']");
+                        if (candidate instanceof HTMLElement && hosts.includes(candidate)) {
+                            host = candidate;
+                            break;
+                        }
+                    }
+
+                    if (host) {
+                        break;
+                    }
+                }
+
+                if (!(host instanceof HTMLElement)) {
+                    host = hosts.at(-1) ?? null;
+                }
+
                 if (!(host instanceof HTMLElement)) {
                     return "";
                 }
@@ -3656,5 +3957,96 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 return host.getAttribute("data-automation-id") ?? "";
             }
             """);
+    }
+
+    private static async Task<string> ReadCurrentControlsSamplePageHostNodeIdAsync(IPage page)
+    {
+        return await page.EvaluateAsync<string>(
+            """
+            () => {
+                const isVisible = (element) => {
+                    if (!(element instanceof HTMLElement) || !element.isConnected) {
+                        return false;
+                    }
+
+                    const style = window.getComputedStyle(element);
+                    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+                        return false;
+                    }
+
+                    const rect = element.getBoundingClientRect();
+                    return rect.width > 0 && rect.height > 0;
+                };
+
+                const hosts = Array.from(document.querySelectorAll("[data-automation-id^='controls-sample-page-']"))
+                    .filter(isVisible);
+                if (hosts.length === 0) {
+                    return "";
+                }
+
+                const points = [
+                    [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.floor(window.innerHeight / 2))],
+                    [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.min(window.innerHeight - 2, 140))],
+                    [Math.max(1, Math.min(window.innerWidth - 2, 24)), Math.max(1, Math.min(window.innerHeight - 2, 140))]
+                ];
+
+                let activeHost = null;
+                for (const [x, y] of points) {
+                    const stacked = document.elementsFromPoint(x, y);
+                    for (const node of stacked) {
+                        if (!(node instanceof Element)) {
+                            continue;
+                        }
+
+                        const host = node.closest("[data-automation-id^='controls-sample-page-']");
+                        if (host instanceof HTMLElement && hosts.includes(host)) {
+                            activeHost = host;
+                            break;
+                        }
+                    }
+
+                    if (activeHost) {
+                        break;
+                    }
+                }
+
+                if (!(activeHost instanceof HTMLElement)) {
+                    activeHost = hosts.at(-1) ?? null;
+                }
+
+                if (!(activeHost instanceof HTMLElement)) {
+                    return "";
+                }
+
+                return activeHost.getAttribute("data-mirage-node-id") ?? "";
+            }
+            """);
+    }
+
+    private static async Task ClickCollectionNavButtonAsync(ILocator navButtonLocator)
+    {
+        try
+        {
+            await navButtonLocator.ClickAsync(new()
+            {
+#pragma warning disable CS0612 // NoWaitAfter is obsolete in Playwright API but still required here to avoid false navigation waits for in-app MAUI routing.
+                NoWaitAfter = true
+#pragma warning restore CS0612
+            });
+        }
+        catch (TimeoutException)
+        {
+            await navButtonLocator.ClickAsync(new()
+            {
+                Position = new Position
+                {
+                    X = 6,
+                    Y = 6
+                },
+#pragma warning disable CS0612 // NoWaitAfter is obsolete in Playwright API but still required here to avoid false navigation waits for in-app MAUI routing.
+                NoWaitAfter = true
+#pragma warning restore CS0612
+            });
+        }
     }
 }
