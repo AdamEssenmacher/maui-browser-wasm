@@ -1235,6 +1235,17 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
         useEvenOddFillRule = false;
         error = null;
 
+        if (shapeView is Rectangle rectangle)
+        {
+            if (TryBuildRectanglePathProjection(rectangle, width, height, out pathData, out error))
+            {
+                useEvenOddFillRule = false;
+                return true;
+            }
+
+            return false;
+        }
+
         if (shapeView.Shape is not MauiGraphicsShape shapeGeometry)
         {
             error = "IShapeView.Shape is null or unsupported.";
@@ -1273,6 +1284,68 @@ internal class MirageShapeViewHandler : MirageViewHandler<IShapeView>
 
         useEvenOddFillRule = ResolveUseEvenOddFillRule(shapeView);
         return true;
+    }
+
+    private static bool TryBuildRectanglePathProjection(
+        Rectangle rectangle,
+        double width,
+        double height,
+        out string pathData,
+        out string? error)
+    {
+        pathData = string.Empty;
+        error = null;
+
+        if (!double.IsFinite(width) || !double.IsFinite(height) || width <= 0 || height <= 0)
+        {
+            error = "Rectangle projection bounds are invalid.";
+            return false;
+        }
+
+        var radiusX = NormalizeCornerRadiusComponent(rectangle.RadiusX, width / 2d);
+        var radiusY = NormalizeCornerRadiusComponent(rectangle.RadiusY, height / 2d);
+
+        if (radiusX <= 0 || radiusY <= 0)
+        {
+            pathData = BuildRectanglePathProjection(width, height);
+            return true;
+        }
+
+        pathData = BuildRoundedRectanglePathProjection(width, height, radiusX, radiusY);
+        return true;
+    }
+
+    private static string BuildRectanglePathProjection(double width, double height)
+    {
+        return $"M 0 0 L {CssNumber(width)} 0 L {CssNumber(width)} {CssNumber(height)} L 0 {CssNumber(height)} Z";
+    }
+
+    private static string BuildRoundedRectanglePathProjection(double width, double height, double radiusX, double radiusY)
+    {
+        var right = width;
+        var bottom = height;
+        var rightMinusRadiusX = right - radiusX;
+        var bottomMinusRadiusY = bottom - radiusY;
+
+        return $"M {CssNumber(radiusX)} 0 "
+            + $"L {CssNumber(rightMinusRadiusX)} 0 "
+            + $"A {CssNumber(radiusX)} {CssNumber(radiusY)} 0 0 1 {CssNumber(right)} {CssNumber(radiusY)} "
+            + $"L {CssNumber(right)} {CssNumber(bottomMinusRadiusY)} "
+            + $"A {CssNumber(radiusX)} {CssNumber(radiusY)} 0 0 1 {CssNumber(rightMinusRadiusX)} {CssNumber(bottom)} "
+            + $"L {CssNumber(radiusX)} {CssNumber(bottom)} "
+            + $"A {CssNumber(radiusX)} {CssNumber(radiusY)} 0 0 1 0 {CssNumber(bottomMinusRadiusY)} "
+            + $"L 0 {CssNumber(radiusY)} "
+            + $"A {CssNumber(radiusX)} {CssNumber(radiusY)} 0 0 1 {CssNumber(radiusX)} 0 Z";
+    }
+
+    private static double NormalizeCornerRadiusComponent(double value, double max)
+    {
+        if (!double.IsFinite(value) || value <= 0 || max <= 0)
+        {
+            return 0;
+        }
+
+        return Math.Clamp(value, 0, max);
     }
 
     private static string BuildSvgPathData(PathF path)

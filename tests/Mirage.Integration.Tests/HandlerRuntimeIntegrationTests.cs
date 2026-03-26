@@ -5393,6 +5393,7 @@ public sealed class HandlerRuntimeIntegrationTests
         MirageRectangleHandler.Mapper.UpdateProperty(radiusYHandler, radiusYRectangle, nameof(Rectangle.RadiusY));
         var radiusYZeroPath = radiusYPathNode.Attributes["d"];
         Assert.False(string.IsNullOrWhiteSpace(radiusYZeroPath));
+        Assert.NotEqual(roundedPathForRadiusY, radiusYZeroPath);
     }
 
     private static MiragePlatformView GetShapeSvgNode(MiragePlatformView platformView)
