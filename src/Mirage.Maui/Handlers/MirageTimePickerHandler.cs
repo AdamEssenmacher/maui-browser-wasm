@@ -58,6 +58,7 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
     private bool _isMappingIsOpen;
     private bool _isOpenRetryScheduled;
     private int _remainingOpenRetryAttempts;
+    private long _openAttemptVersion;
 
     public MirageTimePickerHandler()
         : base(ComponentKind.TimePicker, Mapper, CommandMapper)
@@ -127,6 +128,9 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
         {
             if (timePicker.IsOpen)
             {
+                handler.ResetOpenRetryState();
+                var attemptVersion = handler.BeginOpenAttemptVersion();
+
                 if (!timePicker.IsEnabled)
                 {
                     handler.OnRuntimeIsOpenChanged(isOpen: false);
@@ -140,10 +144,11 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
                 }
 
                 handler._remainingOpenRetryAttempts = MaxOpenRetryAttempts;
-                handler.ScheduleOpenRetryOrRollback();
+                handler.ScheduleOpenRetryOrRollback(attemptVersion);
                 return;
             }
 
+            handler.InvalidateOpenAttemptVersion();
             _ = coordinator.TrySetNodeFocus(handler.PlatformView.NodeId, isFocused: false);
             handler.ResetOpenRetryState();
         }
@@ -265,6 +270,12 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
             return;
         }
 
+        if (!isOpen)
+        {
+            InvalidateOpenAttemptVersion();
+            ResetOpenRetryState();
+        }
+
         _isApplyingRuntimeIsOpen = true;
         try
         {
@@ -276,7 +287,7 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
         }
     }
 
-    private void ScheduleOpenRetryOrRollback()
+    private void ScheduleOpenRetryOrRollback(long attemptVersion)
     {
         if (_isOpenRetryScheduled || Coordinator is not { } coordinator)
         {
@@ -284,18 +295,26 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
         }
 
         _isOpenRetryScheduled = true;
-        if (coordinator.DispatchDelayed(OpenRetryDelay, RetryOpenAfterDelay))
+        if (coordinator.DispatchDelayed(OpenRetryDelay, () => RetryOpenAfterDelay(attemptVersion)))
         {
             return;
         }
 
         _isOpenRetryScheduled = false;
         _remainingOpenRetryAttempts = 0;
-        OnRuntimeIsOpenChanged(isOpen: false);
+        if (IsCurrentAttemptVersion(attemptVersion))
+        {
+            OnRuntimeIsOpenChanged(isOpen: false);
+        }
     }
 
-    private void RetryOpenAfterDelay()
+    private void RetryOpenAfterDelay(long attemptVersion)
     {
+        if (!IsCurrentAttemptVersion(attemptVersion))
+        {
+            return;
+        }
+
         _isOpenRetryScheduled = false;
 
         if (!VirtualView.IsOpen)
@@ -327,7 +346,7 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
         if (_remainingOpenRetryAttempts > 1)
         {
             _remainingOpenRetryAttempts--;
-            ScheduleOpenRetryOrRollback();
+            ScheduleOpenRetryOrRollback(attemptVersion);
             return;
         }
 
@@ -339,6 +358,21 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
     {
         _isOpenRetryScheduled = false;
         _remainingOpenRetryAttempts = 0;
+    }
+
+    private long BeginOpenAttemptVersion()
+    {
+        return Interlocked.Increment(ref _openAttemptVersion);
+    }
+
+    private void InvalidateOpenAttemptVersion()
+    {
+        _ = Interlocked.Increment(ref _openAttemptVersion);
+    }
+
+    private bool IsCurrentAttemptVersion(long attemptVersion)
+    {
+        return Interlocked.Read(ref _openAttemptVersion) == attemptVersion;
     }
 
     private bool SetPropertyIfChanged(string propertyName, string? value)

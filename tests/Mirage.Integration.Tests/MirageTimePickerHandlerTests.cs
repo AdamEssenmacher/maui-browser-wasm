@@ -232,6 +232,37 @@ public sealed class MirageTimePickerHandlerTests
     }
 
     [Fact]
+    public void TimePickerHandler_IsOpen_IgnoresStaleRetryAfterCloseAndReopen()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new TimePickerRuntimeProbe();
+        runtime.EnqueueOpenPickerResult(false);
+        runtime.EnqueueOpenPickerResult(true);
+        coordinator.AttachRuntime(runtime);
+
+        var (_, timePicker, _, _) = CreateAttachedHandler(new TimePicker
+        {
+            IsOpen = false
+        }, coordinator, runtime);
+
+        timePicker.IsOpen = true;
+        Assert.True(timePicker.IsOpen);
+        Assert.Equal(1, runtime.OpenPickerCallCount);
+
+        timePicker.IsOpen = false;
+        Assert.False(timePicker.IsOpen);
+
+        timePicker.IsOpen = true;
+        Assert.True(timePicker.IsOpen);
+        Assert.Equal(2, runtime.OpenPickerCallCount);
+
+        // Wait past retry delay; stale callback from the first attempt must not mutate current state.
+        Thread.Sleep(75);
+        Assert.True(timePicker.IsOpen);
+        Assert.Equal(2, runtime.OpenPickerCallCount);
+    }
+
+    [Fact]
     public void TimePickerHandler_IsOpen_RetriesAfterPriorOpenFailure()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
