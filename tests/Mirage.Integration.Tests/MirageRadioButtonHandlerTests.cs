@@ -208,7 +208,6 @@ public sealed class MirageRadioButtonHandlerTests
         var mauiContext = new MauiContext(services);
 
         var groupAHost = new VerticalStackLayout();
-        RadioButtonGroup.SetGroupName(groupAHost, "group-a");
         var groupBHost = new VerticalStackLayout();
         RadioButtonGroup.SetGroupName(groupBHost, "group-b");
         var radio = new RadioButton
@@ -221,12 +220,68 @@ public sealed class MirageRadioButtonHandlerTests
 
         var handler = AttachHandler(radio, mauiContext);
         var inputNode = GetInputNode(handler);
-        Assert.Equal("group-a", inputNode.Attributes["name"]);
+        Assert.False(inputNode.Attributes.ContainsKey("name"));
 
         groupAHost.Children.Remove(radio);
         groupBHost.Children.Add(radio);
 
         Assert.Equal("group-b", inputNode.Attributes["name"]);
+    }
+
+    [Fact]
+    public void RadioButtonHandler_GroupNameProjection_PrefersExplicitGroupNameOverAncestor()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var host = new VerticalStackLayout();
+        RadioButtonGroup.SetGroupName(host, "ancestor-group");
+        var radio = new RadioButton
+        {
+            Content = "Explicit group",
+            Value = "explicit",
+            GroupName = "explicit-group"
+        };
+        host.Children.Add(radio);
+
+        var handler = AttachHandler(radio, mauiContext);
+        var inputNode = GetInputNode(handler);
+        Assert.Equal("explicit-group", inputNode.Attributes["name"]);
+
+        RadioButtonGroup.SetGroupName(host, "ancestor-group-updated");
+        Assert.Equal("explicit-group", inputNode.Attributes["name"]);
+    }
+
+    [Fact]
+    public void RadioButtonHandler_GroupNameProjection_UsesNearestAncestorAttachedGroup()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var outerHost = new VerticalStackLayout();
+        RadioButtonGroup.SetGroupName(outerHost, "outer-group");
+        var innerHost = new VerticalStackLayout();
+        RadioButtonGroup.SetGroupName(innerHost, "inner-group");
+        var radio = new RadioButton
+        {
+            Content = "Nested group",
+            Value = "nested"
+        };
+        innerHost.Children.Add(radio);
+        outerHost.Children.Add(innerHost);
+
+        var handler = AttachHandler(radio, mauiContext);
+        var inputNode = GetInputNode(handler);
+        Assert.Equal("inner-group", inputNode.Attributes["name"]);
+
+        RadioButtonGroup.SetGroupName(innerHost, null);
+        Assert.Equal("outer-group", inputNode.Attributes["name"]);
     }
 
     [Fact]

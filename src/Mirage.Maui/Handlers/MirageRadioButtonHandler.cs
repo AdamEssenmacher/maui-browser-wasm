@@ -529,8 +529,11 @@ internal sealed class MirageRadioButtonHandler : MirageViewHandler<IRadioButton>
         var explicitGroupName = radioButton is RadioButton controlsRadio && !string.IsNullOrWhiteSpace(controlsRadio.GroupName)
             ? controlsRadio.GroupName
             : null;
+        if (!string.IsNullOrWhiteSpace(explicitGroupName))
+        {
+            return explicitGroupName;
+        }
 
-        string? ancestorGroupName = null;
         for (Element? current = element.Parent; current is not null; current = current.Parent)
         {
             if (current is not BindableObject bindable)
@@ -541,11 +544,11 @@ internal sealed class MirageRadioButtonHandler : MirageViewHandler<IRadioButton>
             var groupName = RadioButtonGroup.GetGroupName(bindable);
             if (!string.IsNullOrWhiteSpace(groupName))
             {
-                ancestorGroupName = groupName;
+                return groupName;
             }
         }
 
-        return ancestorGroupName ?? explicitGroupName;
+        return null;
     }
 
     private static string? ResolveAriaLabel(IView contentView)
