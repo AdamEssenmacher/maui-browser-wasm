@@ -10,6 +10,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <WasmEnableJSImport>true</WasmEnableJSImport>
     <WasmBuildAppBundle>true</WasmBuildAppBundle>
+    <PublishTrimmed>false</PublishTrimmed>
     <MauiXamlInflator>SourceGen</MauiXamlInflator>
     <ControlsSampleVendorRoot>..\..\vendor\upstream\controls-sample\</ControlsSampleVendorRoot>
   </PropertyGroup>
