@@ -116,12 +116,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(BrushesPage),
             description: "Runnable in Mirage today: exercises solid/gradient brush scenarios and live brush updates across content surfaces."),
         new(
-            id: "contentpagebackgroundgallery",
-            title: "ContentPageBackgroundGallery",
-            upstreamPath: "Pages/Core/ContentPageGalleries/ContentPageBackgroundGallery.xaml",
+            id: "contentpagegallery",
+            title: "ContentPageGallery",
+            upstreamPath: "Pages/Core/ContentPageGalleries/ContentPageGallery.cs",
             status: ControlsSampleStatus.Runnable,
-            pageType: typeof(ContentPageBackgroundGallery),
-            description: "Runnable in Mirage today: exercises ContentPage linear gradient Background brush projection."),
+            pageType: typeof(ContentPageGallery),
+            description: "Runnable in Mirage today: exercises ContentPage gallery navigation across Background and BackgroundImageSource scenarios.",
+            pageFactory: CreateContentPageGallery),
         new(
             id: "transformationspage",
             title: "TransformationsPage",
@@ -679,6 +680,23 @@ public static class ControlsSampleCatalog
         return page;
     }
 
+    private static Page CreateContentPageGallery(IServiceProvider services)
+    {
+        _ = services;
+        var page = new ContentPageGallery();
+
+        SetButtonAutomationIdByText(
+            page,
+            "ContentPage BackgroundImage",
+            "controls-sample-gallery-open-contentpage-backgroundimage");
+        SetButtonAutomationIdByText(
+            page,
+            "ContentPage Background",
+            "controls-sample-gallery-open-contentpage-background");
+
+        return page;
+    }
+
     private static Page CreateTransformationsPage(IServiceProvider services)
     {
         _ = services;
@@ -761,15 +779,12 @@ public static class ControlsSampleCatalog
     {
         var button = FindDescendants<Button>(page)
             .FirstOrDefault(candidate => string.Equals(candidate.Text, buttonText, StringComparison.Ordinal));
-        if (button is null)
+        if (button is null || !string.IsNullOrWhiteSpace(button.AutomationId))
         {
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(button.AutomationId))
-        {
-            button.AutomationId = automationId;
-        }
+        button.AutomationId = automationId;
     }
 
     private static IEnumerable<TView> FindDescendants<TView>(Element root)

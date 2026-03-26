@@ -4852,6 +4852,85 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public async Task ContentPage_BackgroundImageSource_ResolvesAndProjectsBackgroundStyles()
+    {
+        var resolver = new StubImageSourceResolver();
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(resolver)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var page = new ContentPage
+        {
+            BackgroundImageSource = "coffee.png"
+        };
+
+        var handler = new MirageContentPageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        ((IElementHandler)handler).SetVirtualView(page);
+
+        await WaitUntilAsync(() =>
+        {
+            var backgroundImage = handler.PlatformView.GetStyleValue("backgroundImage");
+            return !string.IsNullOrWhiteSpace(backgroundImage)
+                   && backgroundImage.Contains("/_mirage/assets/test/coffee.png", StringComparison.Ordinal);
+        });
+
+        Assert.Equal("no-repeat", handler.PlatformView.GetStyleValue("backgroundRepeat"));
+        Assert.Equal("100% 100%", handler.PlatformView.GetStyleValue("backgroundSize"));
+        Assert.Equal("0 0", handler.PlatformView.GetStyleValue("backgroundPosition"));
+
+        page.BackgroundImageSource = null;
+        MirageContentPageHandler.Mapper.UpdateProperty(handler, page, nameof(Page.BackgroundImageSource));
+
+        await WaitUntilAsync(() => handler.PlatformView.GetStyleValue("backgroundImage") is null);
+        Assert.Null(handler.PlatformView.GetStyleValue("backgroundRepeat"));
+        Assert.Null(handler.PlatformView.GetStyleValue("backgroundSize"));
+        Assert.Null(handler.PlatformView.GetStyleValue("backgroundPosition"));
+    }
+
+    [Fact]
+    public async Task ContentPage_BackgroundImageSource_ReleasesOwnedBlobUrl_WhenSourceChanges()
+    {
+        var resolver = new StubImageSourceResolver();
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageImageSourceResolver>(resolver)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var page = new ContentPage
+        {
+            BackgroundImageSource = new StreamImageSource
+            {
+                Stream = _ => Task.FromResult<Stream>(new MemoryStream(new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 }))
+            }
+        };
+
+        var handler = new MirageContentPageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        ((IElementHandler)handler).SetVirtualView(page);
+
+        await WaitUntilAsync(() =>
+        {
+            var backgroundImage = handler.PlatformView.GetStyleValue("backgroundImage");
+            return !string.IsNullOrWhiteSpace(backgroundImage)
+                   && backgroundImage.Contains("blob:test-image", StringComparison.Ordinal);
+        });
+
+        page.BackgroundImageSource = "coffee.png";
+        MirageContentPageHandler.Mapper.UpdateProperty(handler, page, nameof(Page.BackgroundImageSource));
+
+        await WaitUntilAsync(() =>
+        {
+            var backgroundImage = handler.PlatformView.GetStyleValue("backgroundImage");
+            return !string.IsNullOrWhiteSpace(backgroundImage)
+                   && backgroundImage.Contains("/_mirage/assets/test/coffee.png", StringComparison.Ordinal);
+        });
+
+        Assert.Contains("blob:test-image", resolver.ReleasedUrls);
+    }
+
+    [Fact]
     public void ContentPage_PlatformArrange_ForwardsArrangeToDirectContent()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
