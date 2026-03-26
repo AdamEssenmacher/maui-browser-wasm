@@ -368,7 +368,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
 
     private bool UpdateMaxLengthProjection(IEditor editor)
     {
-        var maxLength = editor.MaxLength > 0
+        var maxLength = editor.MaxLength >= 0
             ? editor.MaxLength.ToString(System.Globalization.CultureInfo.InvariantCulture)
             : null;
         return SetAttributeIfChanged(_inputNode, "maxlength", maxLength);

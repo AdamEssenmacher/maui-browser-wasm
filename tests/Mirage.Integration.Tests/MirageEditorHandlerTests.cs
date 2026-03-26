@@ -70,6 +70,21 @@ public sealed class MirageEditorHandlerTests
     }
 
     [Fact]
+    public void EditorHandler_MaxLength_Zero_ProjectsNoInputAllowed()
+    {
+        var editor = new Editor
+        {
+            Text = "seed",
+            MaxLength = 0
+        };
+
+        var (handler, _, _, _) = CreateAttachedHandler(editor);
+        var inputNode = GetInputNode(handler);
+
+        Assert.Equal("0", inputNode.Attributes["maxlength"]);
+    }
+
+    [Fact]
     public void EditorHandler_TextTransform_ProjectsControlsRemapTextSemantics()
     {
         var editor = new Editor
