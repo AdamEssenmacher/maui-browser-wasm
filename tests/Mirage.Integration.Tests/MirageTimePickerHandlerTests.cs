@@ -105,6 +105,33 @@ public sealed class MirageTimePickerHandlerTests
     }
 
     [Fact]
+    public void TimePickerHandler_RuntimeChange_ClosesIsOpenWithoutRequiringBlur()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var (handler, timePicker, _, _) = CreateAttachedHandler(new TimePicker
+        {
+            Time = new TimeSpan(8, 0, 0),
+            IsEnabled = true,
+            IsOpen = false
+        }, coordinator);
+
+        timePicker.IsOpen = true;
+        Assert.True(timePicker.IsOpen);
+
+        coordinator.OnEvent(handler.PlatformView.NodeId, "change", "08:15");
+        Assert.Equal(new TimeSpan(8, 15, 0), timePicker.Time);
+        Assert.False(timePicker.IsOpen);
+
+        timePicker.IsOpen = true;
+        Assert.True(timePicker.IsOpen);
+
+        // Same-value commits should also close open state even when time doesn't change.
+        coordinator.OnEvent(handler.PlatformView.NodeId, "change", "08:15");
+        Assert.Equal(new TimeSpan(8, 15, 0), timePicker.Time);
+        Assert.False(timePicker.IsOpen);
+    }
+
+    [Fact]
     public void TimePickerHandler_DisabledState_BlocksRuntimeChanges()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());

@@ -1340,19 +1340,25 @@ export function openPicker(elementHandle) {
     // Continue to deterministic fallback path.
   }
 
+  let clicked = false;
   try {
     if (typeof element.focus === "function") {
       element.focus();
     }
-
-    if (typeof element.click === "function") {
-      element.click();
-    }
   } catch {
-    // no-op: deterministic return value remains false when picker-open cannot be confirmed
+    // no-op: best effort pre-click focus
   }
 
-  return false;
+  try {
+    if (typeof element.click === "function") {
+      element.click();
+      clicked = true;
+    }
+  } catch {
+    // no-op: deterministic return value below
+  }
+
+  return clicked;
 }
 
 export function setScrollPosition(elementHandle, left, top) {

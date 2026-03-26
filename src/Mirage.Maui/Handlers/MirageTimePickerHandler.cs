@@ -235,12 +235,13 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
             return;
         }
 
-        if (Nullable.Equals(VirtualView.Time, parsedTime))
+        if (!Nullable.Equals(VirtualView.Time, parsedTime))
         {
-            return;
+            VirtualView.Time = parsedTime;
         }
 
-        VirtualView.Time = parsedTime;
+        // Browser time pickers may close without blurring the input; treat committed change as closed.
+        OnRuntimeIsOpenChanged(isOpen: false);
     }
 
     private void OnRuntimeIsOpenChanged(bool isOpen)
