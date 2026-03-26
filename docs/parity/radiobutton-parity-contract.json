@@ -1,0 +1,24 @@
+{
+  "mauiBaselineCommit": "fc1dadc4d68a809a9c14a7d33ff1289037040471",
+  "handlers": [
+    {
+      "name": "RadioButtonHandler",
+      "mirageType": "MirageRadioButtonHandler",
+      "propertyMapperKeys": [
+        "Background",
+        "IsChecked",
+        "CharacterSpacing",
+        "Font",
+        "TextColor",
+        "Content",
+        "StrokeColor",
+        "StrokeThickness",
+        "CornerRadius"
+      ],
+      "commandMapperKeys": [],
+      "mirageExtensionPropertyMapperKeys": [
+        "IsEnabled"
+      ]
+    }
+  ]
+}

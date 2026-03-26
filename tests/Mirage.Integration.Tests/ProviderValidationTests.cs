@@ -142,6 +142,19 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentRadioButtonDescriptor_MapsToMirageOwnedRadioHost()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.RadioButton);
+
+        Assert.Equal("div", descriptor.ElementTagName);
+        Assert.True(descriptor.PropertyMappings.ContainsKey("AutomationId"));
+        Assert.True(descriptor.EventMappings.ContainsKey("click"));
+        Assert.Equal("click", descriptor.EventMappings["click"].DomEventName);
+        Assert.Equal(EventPayloadKind.None, descriptor.EventMappings["click"].PayloadKind);
+    }
+
+    [Fact]
     public void FluentSwitchDescriptor_MapsToggleAndDisabledState()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();
@@ -327,6 +340,17 @@ public sealed class ProviderValidationTests
         Assert.True(descriptor.EventMappings.TryGetValue("keydown", out var keydownMapping));
         Assert.Equal("keydown", keydownMapping.DomEventName);
         Assert.Equal(EventPayloadKind.Key, keydownMapping.PayloadKind);
+    }
+
+    [Fact]
+    public void FluentProvider_InputWebNodeDescriptor_MapsCheckedChangeAliasToCheckedPayload()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveWebNode("input");
+
+        Assert.True(descriptor.EventMappings.TryGetValue("checkedchange", out var checkedChangeMapping));
+        Assert.Equal("change", checkedChangeMapping.DomEventName);
+        Assert.Equal(EventPayloadKind.InputChecked, checkedChangeMapping.PayloadKind);
     }
 
     [Fact]

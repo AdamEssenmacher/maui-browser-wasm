@@ -29,6 +29,7 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageButtonHandler.cs" Link="Handlers\MirageButtonHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageActivityIndicatorHandler.cs" Link="Handlers\MirageActivityIndicatorHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageCheckBoxHandler.cs" Link="Handlers\MirageCheckBoxHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageRadioButtonHandler.cs" Link="Handlers\MirageRadioButtonHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageSwitchHandler.cs" Link="Handlers\MirageSwitchHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageItemsViewHandler.cs" Link="Handlers\MirageItemsViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageStructuredItemsViewHandler.cs" Link="Handlers\MirageStructuredItemsViewHandler.cs" />

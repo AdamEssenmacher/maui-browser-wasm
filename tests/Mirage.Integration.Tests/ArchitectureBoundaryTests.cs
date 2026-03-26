@@ -500,6 +500,25 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void BrowserPlatform_RegistersRadioButtonHandlerAsBuiltInControlNode()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var radioButtonHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageRadioButtonHandler.cs");
+        Assert.True(File.Exists(radioButtonHandlerPath), $"Expected RadioButton handler file not found: {radioButtonHandlerPath}");
+
+        var hostingText = File.ReadAllText(hostingPath);
+        var radioButtonHandlerText = File.ReadAllText(radioButtonHandlerPath);
+
+        Assert.Contains("typeof(RadioButton)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageRadioButtonHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.RadioButton", radioButtonHandlerText, StringComparison.Ordinal);
+        Assert.Contains("CreateWeb(\"input\")", radioButtonHandlerText, StringComparison.Ordinal);
+        Assert.Contains("CreateWeb(\"div\")", radioButtonHandlerText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CollectionViewHandler_UsesMauiShapedHierarchy_AndGenericScrollSeam()
     {
         var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");

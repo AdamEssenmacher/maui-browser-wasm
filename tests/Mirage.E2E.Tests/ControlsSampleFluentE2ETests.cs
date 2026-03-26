@@ -133,6 +133,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-indicatorviewparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-shapesparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-editorparitypage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-radiobuttonparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
 
@@ -573,6 +574,63 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             page,
             "[data-automation-id='controls-sample-editor-parity-completed']",
             "completed=1");
+    }
+
+    [Fact]
+    public async Task RadioButtonParityProbe_ProjectsGroupSelectionContentStyleAndEnabledGating()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1160, height: 860);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-radiobuttonparitypage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-radiobuttonparitypage']");
+            });
+
+        const string namedMercuryHost = "[data-automation-id='controls-sample-radiobutton-parity-named-mercury']";
+        const string namedVenusHost = "[data-automation-id='controls-sample-radiobutton-parity-named-venus']";
+        const string namedEarthHost = "[data-automation-id='controls-sample-radiobutton-parity-named-earth']";
+        const string parentBetaHost = "[data-automation-id='controls-sample-radiobutton-parity-parent-beta']";
+        const string selectedValueLabel = "[data-automation-id='controls-sample-radiobutton-parity-selected-value']";
+        const string parentSelectedLabel = "[data-automation-id='controls-sample-radiobutton-parity-parent-selected']";
+        const string styleLabel = "[data-automation-id='controls-sample-radiobutton-parity-style-state']";
+
+        await page.WaitForSelectorAsync(namedMercuryHost);
+        Assert.Equal("RadioButton", await page.GetAttributeAsync(namedMercuryHost, "data-mirage-kind"));
+
+        await WaitForLabelTextContainsAsync(page, selectedValueLabel, "namedSelected=venus");
+
+        await page.Locator($"{namedMercuryHost} input.mirage-radiobutton-input").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, selectedValueLabel, "namedSelected=mercury");
+
+        await page.Locator($"{namedEarthHost} input.mirage-radiobutton-input").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, selectedValueLabel, "namedSelected=earth");
+
+        await page.Locator($"{parentBetaHost} input.mirage-radiobutton-input").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, parentSelectedLabel, "parentSelected=beta");
+
+        await page.Locator("[data-automation-id='controls-sample-radiobutton-parity-toggle-content']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, styleLabel, "contentMode=view");
+
+        await page.Locator("[data-automation-id='controls-sample-radiobutton-parity-toggle-style']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, styleLabel, "style=alt");
+
+        await page.Locator("[data-automation-id='controls-sample-radiobutton-parity-toggle-enabled']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, styleLabel, "enabled=False");
+
+        await page.EvaluateAsync(
+            "selector => { document.querySelector(selector)?.click(); }",
+            $"{namedVenusHost} input.mirage-radiobutton-input");
+        await WaitForLabelTextContainsAsync(page, selectedValueLabel, "namedSelected=earth");
+
+        await page.Locator("[data-automation-id='controls-sample-radiobutton-parity-toggle-enabled']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, styleLabel, "enabled=True");
+        await page.Locator($"{namedVenusHost} input.mirage-radiobutton-input").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, selectedValueLabel, "namedSelected=venus");
     }
 
     [Fact]

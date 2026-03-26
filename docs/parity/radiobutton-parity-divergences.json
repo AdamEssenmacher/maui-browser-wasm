@@ -1,0 +1,19 @@
+{
+  "entries": [
+    {
+      "id": "radiobutton-extension-isenabled-interaction-gate",
+      "summary": "Mirage maps IsEnabled explicitly so host-owned radio input interactions remain deterministic across browser runtimes.",
+      "upstreamReference": "src/Core/src/Handlers/RadioButton/RadioButtonHandler.Android.cs",
+      "testReference": "RadioButtonHandler_DisabledState_BlocksRuntimeCheckedMutation",
+      "extensionKeys": [
+        "IsEnabled"
+      ]
+    },
+    {
+      "id": "radiobutton-browser-chrome-approximation",
+      "summary": "Stroke/background/corner visual channels are projected as deterministic browser CSS approximations on the host container instead of native platform radio chrome.",
+      "upstreamReference": "src/Core/src/Platform/Android/RadioButtonExtensions.cs",
+      "testReference": "RadioButtonHandler_StrokeAndCornerProjection_AreDeterministicBrowserApproximation"
+    }
+  ]
+}

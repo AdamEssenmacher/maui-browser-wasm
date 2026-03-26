@@ -7,6 +7,12 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Kept the implementation wrapper-first and framework-driven: no vendor source edits and no page-specific rendering hacks were added.
 - Added E2E coverage that opens the page and asserts linear-gradient background projection on the realized page host.
 
+## 2026-03-26 (RadioButton parity wave: MAUI-shaped handler + Mirage-owned host)
+- Added `MirageRadioButtonHandler` as a built-in ControlNode path (`ComponentKind.RadioButton`) with MAUI-aligned core mapper keys and an explicit Mirage extension key for `IsEnabled`.
+- RadioButton realization now uses a stable Mirage-owned host (`input[type=radio]` + content slot) with deterministic create-once/update-many/dispose behavior, two-way checked synchronization, and view/text content projection.
+- Group behavior remains MAUI-authoritative by routing runtime selection through `VirtualView.IsChecked`; named groups project to DOM `name` when available so browser grouping semantics align with MAUI group intent.
+- Added a generic Fluent web-input event alias (`checkedchange` -> DOM `change` + `InputChecked`) so host-owned radio input checked-state events flow through existing runtime payload seams without expanding runtime interfaces.
+
 ## 2026-03-26 (Editor parity wave: MAUI-shaped handler + Mirage-owned textarea host)
 - Added `MirageEditorHandler` as a built-in ControlNode path (`ComponentKind.Editor`) with MAUI-aligned mapper surface for core editor properties plus focus command handling.
 - Editor realization now uses a Mirage-owned host with a stable inner `<textarea>`, deterministic two-way cursor/selection synchronization, and completion semantics gated to focused->blur transitions to match MAUI intent.
