@@ -900,8 +900,7 @@ export function setPropertyJson(elementHandle, name, json) {
   }
 }
 
-export function removeProperty(elementHandle, name) {
-  const element = fromHandle(elementHandle);
+function removePropertyFromElement(element, name) {
   if (!name) {
     return;
   }
@@ -942,6 +941,164 @@ export function removeProperty(elementHandle, name) {
     element[name] = null;
   } catch {
     delete element[name];
+  }
+}
+
+export function removeProperty(elementHandle, name) {
+  const element = fromHandle(elementHandle);
+  removePropertyFromElement(element, name);
+}
+
+function applyPropertyMutation(element, mutation) {
+  if (!element || !mutation || typeof mutation.name !== "string" || mutation.name.length === 0) {
+    return;
+  }
+
+  switch (mutation.kind) {
+    case "string":
+      element[mutation.name] = mutation.stringValue ?? "";
+      return;
+    case "bool":
+      element[mutation.name] = !!mutation.boolValue;
+      return;
+    case "number":
+      element[mutation.name] = Number.isFinite(mutation.numberValue) ? mutation.numberValue : 0;
+      return;
+    case "json":
+      if (mutation.stringValue == null || mutation.stringValue.length === 0) {
+        element[mutation.name] = null;
+        return;
+      }
+
+      try {
+        element[mutation.name] = JSON.parse(mutation.stringValue);
+      } catch {
+        element[mutation.name] = null;
+      }
+      return;
+    case "null":
+      element[mutation.name] = null;
+      return;
+    case "remove":
+      removePropertyFromElement(element, mutation.name);
+      return;
+    case "input-value":
+      element.value = mutation.stringValue ?? "";
+      return;
+    case "input-checked":
+      element.checked = !!mutation.boolValue;
+      return;
+    default:
+      return;
+  }
+}
+
+function applyMutationOperation(element, operation) {
+  if (!element || !operation || typeof operation.kind !== "string" || operation.kind.length === 0) {
+    return;
+  }
+
+  switch (operation.kind) {
+    case "text":
+      element.textContent = operation.stringValue ?? "";
+      return;
+    case "attribute":
+      if (typeof operation.name !== "string" || operation.name.length === 0) {
+        return;
+      }
+
+      if (operation.stringValue == null) {
+        element.removeAttribute(operation.name);
+      } else {
+        element.setAttribute(operation.name, operation.stringValue);
+      }
+      return;
+    case "style":
+      if (typeof operation.name !== "string" || operation.name.length === 0) {
+        return;
+      }
+
+      {
+        const hasExplicitCssName = operation.name.startsWith("--") || operation.name.includes("-");
+        if (hasExplicitCssName) {
+          if (operation.stringValue == null || operation.stringValue === "") {
+            element.style.removeProperty(operation.name);
+          } else {
+            element.style.setProperty(operation.name, operation.stringValue);
+          }
+          return;
+        }
+
+        element.style[operation.name] = operation.stringValue ?? "";
+        return;
+      }
+    case "class-add":
+      if (operation.name) {
+        element.classList.add(operation.name);
+      }
+      return;
+    case "class-remove":
+      if (operation.name) {
+        element.classList.remove(operation.name);
+      }
+      return;
+    case "property-string":
+      applyPropertyMutation(element, { name: operation.name, kind: "string", stringValue: operation.stringValue });
+      return;
+    case "property-bool":
+      applyPropertyMutation(element, { name: operation.name, kind: "bool", boolValue: operation.boolValue });
+      return;
+    case "property-number":
+      applyPropertyMutation(element, { name: operation.name, kind: "number", numberValue: operation.numberValue });
+      return;
+    case "property-json":
+      applyPropertyMutation(element, { name: operation.name, kind: "json", stringValue: operation.stringValue });
+      return;
+    case "property-null":
+      applyPropertyMutation(element, { name: operation.name, kind: "null" });
+      return;
+    case "property-remove":
+      applyPropertyMutation(element, { name: operation.name, kind: "remove" });
+      return;
+    case "property-input-value":
+      applyPropertyMutation(element, { name: operation.name, kind: "input-value", stringValue: operation.stringValue });
+      return;
+    case "property-input-checked":
+      applyPropertyMutation(element, { name: operation.name, kind: "input-checked", boolValue: operation.boolValue });
+      return;
+    default:
+      return;
+  }
+}
+
+export function applyMutationBatch(batchJson) {
+  if (typeof batchJson !== "string" || batchJson.length === 0) {
+    return;
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(batchJson);
+  } catch {
+    return;
+  }
+
+  const elements = Array.isArray(payload?.elements) ? payload.elements : [];
+  for (const mutation of elements) {
+    if (!mutation || !Number.isInteger(mutation.handle)) {
+      continue;
+    }
+
+    const element = elementByHandle.get(mutation.handle);
+    if (!element) {
+      continue;
+    }
+
+    if (Array.isArray(mutation.operations)) {
+      for (const operation of mutation.operations) {
+        applyMutationOperation(element, operation);
+      }
+    }
   }
 }
 
@@ -1316,19 +1473,42 @@ let nextResizeSubscriptionId = 1;
 
 export function subscribeWindowResize(callback) {
   const id = nextResizeSubscriptionId++;
-  const listener = () => callback();
-  resizeSubscriptions.set(id, listener);
+  let frameId = 0;
+  let scheduled = false;
+  const listener = () => {
+    if (scheduled) {
+      return;
+    }
+
+    scheduled = true;
+    frameId = window.requestAnimationFrame(() => {
+      scheduled = false;
+      frameId = 0;
+      callback();
+    });
+  };
+  resizeSubscriptions.set(id, {
+    listener,
+    cancel() {
+      scheduled = false;
+      if (frameId !== 0) {
+        window.cancelAnimationFrame(frameId);
+        frameId = 0;
+      }
+    }
+  });
   window.addEventListener("resize", listener);
   return id;
 }
 
 export function unsubscribeWindowResize(subscriptionId) {
-  const listener = resizeSubscriptions.get(subscriptionId);
-  if (!listener) {
+  const entry = resizeSubscriptions.get(subscriptionId);
+  if (!entry) {
     return;
   }
 
-  window.removeEventListener("resize", listener);
+  entry.cancel();
+  window.removeEventListener("resize", entry.listener);
   resizeSubscriptions.delete(subscriptionId);
 }
 
