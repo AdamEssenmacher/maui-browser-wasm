@@ -126,6 +126,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stepperpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-transformationspage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-contentpagebackgroundgallery']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-borderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-mapsgallery']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-collectionviewgallery']").CountAsync());
@@ -1912,6 +1913,60 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal("ok", brushesSnapshot[0]);
         Assert.Equal("1", brushesSnapshot[1]);
         Assert.True(int.Parse(brushesSnapshot[2], CultureInfo.InvariantCulture) >= 1);
+    }
+
+    [Fact]
+    public async Task ContentPageBackgroundGallery_IsRunnable_AndProjectsGradientBackground()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1100, height: 900);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-contentpagebackgroundgallery']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-contentpagebackgroundgallery']");
+            });
+
+        const string hostSelector = "[data-automation-id='controls-sample-page-contentpagebackgroundgallery']";
+        Assert.Equal(1, await page.Locator(hostSelector).CountAsync());
+
+        var labelCount = await page.Locator($"{hostSelector} [data-mirage-kind='Label']").Filter(new() { HasTextString = "ContentPage" }).CountAsync();
+        Assert.True(labelCount > 0);
+
+        var backgroundSnapshot = await page.EvaluateAsync<string[]>(
+            """
+            (selector) => {
+                const host = document.querySelector(selector);
+                if (!(host instanceof HTMLElement)) {
+                    return ["__missing__", "", ""];
+                }
+
+                const style = getComputedStyle(host);
+                const backgroundImage = style.backgroundImage ?? "";
+                let decodedGradientSvg = "";
+                const prefix = 'url("data:image/svg+xml;base64,';
+                if (backgroundImage.startsWith(prefix) && backgroundImage.endsWith('")')) {
+                    const base64 = backgroundImage.slice(prefix.length, -2);
+                    try {
+                        decodedGradientSvg = atob(base64);
+                    } catch {
+                        decodedGradientSvg = "";
+                    }
+                }
+
+                return [backgroundImage, decodedGradientSvg, style.backgroundColor ?? ""];
+            }
+            """,
+            hostSelector);
+
+        Assert.NotEqual("__missing__", backgroundSnapshot[0]);
+        Assert.StartsWith("url(\"data:image/svg+xml;base64,", backgroundSnapshot[0], StringComparison.Ordinal);
+        Assert.Contains("linearGradient", backgroundSnapshot[1], StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("rgba(255,255,0,1)", backgroundSnapshot[1], StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("rgba(0,128,0,1)", backgroundSnapshot[1], StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

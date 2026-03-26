@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-26 (ContentPageBackgroundGallery promoted to runnable)
+- Linked upstream `ContentPageBackgroundGallery.xaml` into `ControlsSample.Shared` and promoted it to a top-level runnable catalog entry so the ContentPage background-brush scenario can be exercised directly in Mirage.
+- Kept the implementation wrapper-first and framework-driven: no vendor source edits and no page-specific rendering hacks were added.
+- Added E2E coverage that opens the page and asserts linear-gradient background projection on the realized page host.
+
 ## 2026-03-26 (Essentials static patcher proof slice)
 - Added a Mirage browser-host Essentials patcher that reflects into MAUI static wrappers and swaps `Preferences` / `AppInfo` backing fields to the registered browser DI singletons before `IApplication` is resolved.
 - The first proof stays intentionally narrow: `Preferences` now uses browser `localStorage`, `AppInfo` now reports browser-aware app/theme metadata, and the browser host fails fast if upstream MAUI private field names drift.
