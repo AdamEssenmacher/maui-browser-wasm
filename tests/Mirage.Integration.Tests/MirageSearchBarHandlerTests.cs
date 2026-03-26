@@ -521,6 +521,12 @@ public sealed class MirageSearchBarHandlerTests
             return false;
         }
 
+        public bool TryOpenNodePicker(string nodeId)
+        {
+            _ = nodeId;
+            return false;
+        }
+
         public bool TrySetNodeFocus(string nodeId, bool isFocused)
         {
             FocusCallCount++;

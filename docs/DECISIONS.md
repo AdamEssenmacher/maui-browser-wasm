@@ -2,6 +2,15 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-26 (TimePicker parity wave: MAUI-shaped handler + built-in time input host)
+- Added `MirageTimePickerHandler` on the built-in ControlNode path (`ComponentKind.TimePicker`) with MAUI-aligned mapper shape for `TimePicker` core properties and explicit Mirage extension mapping for `IsEnabled`.
+- TimePicker realization now uses browser-native `<input type="time">` projection with deterministic `Time`/`Format` mapping (`hh:mm` + `hh:mm:ss` subset via `step=60|1`), two-way runtime `change` parsing, and disabled-state mutation gating.
+- Added a provider-neutral runtime picker-open seam (`TryOpenNodePicker`) implemented via `showPicker()` with deterministic fallback (`focus` + `click`) so `IsOpen` can roundtrip without TimePicker-specific runtime APIs.
+- Open-state handling follows MAUI intent by reconciling `IsOpen` to runtime truth: failed picker-open requests take a short deferred retry window (to survive pre-materialization misses) and then roll back to `false` if open cannot be confirmed.
+- Browser focus events are no longer treated as picker-open signals; `IsOpen=true` is only kept when programmatic open succeeds, while `blur` continues to close state deterministically.
+- Disabled controls reject `IsOpen=true` requests up front, and the DOM fallback open path also reports failure for disabled inputs to avoid false-positive open state.
+- Added parity governance artifacts (`timepicker-parity-contract.json`, `timepicker-parity-divergences.json`) plus integration/E2E probe coverage (`TimePickerParityProbePage`) and updated parity ledgers.
+
 ## 2026-03-26 (ContentPageBackgroundGallery promoted to runnable)
 - Linked upstream `ContentPageBackgroundGallery.xaml` into `ControlsSample.Shared` and promoted it to a top-level runnable catalog entry so the ContentPage background-brush scenario can be exercised directly in Mirage.
 - Kept the implementation wrapper-first and framework-driven: no vendor source edits and no page-specific rendering hacks were added.

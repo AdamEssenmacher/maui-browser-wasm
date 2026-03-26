@@ -259,6 +259,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(RadioButtonParityProbePage),
             description: "Mirage parity probe: exercises RadioButton named/parent-scope group selection, SelectedValue roundtrip, content/style updates, and enabled-state interaction gating."),
         new(
+            id: "timepickerparitypage",
+            title: "TimePickerParityProbePage",
+            upstreamPath: "App/TimePickerParityProbePage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(TimePickerParityProbePage),
+            description: "Mirage parity probe: exercises TimePicker time/format-step projection, open-state roundtrip, and enabled-state interaction gating."),
+        new(
             id: "layoutisenabledpage",
             title: "LayoutIsEnabledPage",
             upstreamPath: "Pages/Layouts/LayoutIsEnabledPage.xaml",

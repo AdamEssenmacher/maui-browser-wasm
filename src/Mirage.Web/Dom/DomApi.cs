@@ -122,6 +122,9 @@ internal static partial class DomApi
     [JSImport("blurElement", Module)]
     internal static partial void BlurElement(nint element);
 
+    [JSImport("openPicker", Module)]
+    internal static partial bool OpenPicker(nint element);
+
     [JSImport("setScrollPosition", Module)]
     internal static partial void SetScrollPosition(nint element, double left, double top);
 

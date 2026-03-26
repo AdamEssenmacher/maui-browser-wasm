@@ -138,6 +138,8 @@ public sealed class DomElement
 
     public void Blur() => DomApi.BlurElement(Handle);
 
+    public bool OpenPicker() => DomApi.OpenPicker(Handle);
+
     public void SetScrollPosition(double left, double top) => DomApi.SetScrollPosition(Handle, left, top);
 
     public (double Left, double Top) GetScrollPosition()

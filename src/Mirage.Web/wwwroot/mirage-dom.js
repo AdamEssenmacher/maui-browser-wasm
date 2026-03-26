@@ -1325,6 +1325,56 @@ export function blurElement(elementHandle) {
   }
 }
 
+export function openPicker(elementHandle) {
+  const element = fromHandle(elementHandle);
+  if (!element) {
+    return false;
+  }
+
+  if ("disabled" in element && element.disabled === true) {
+    return false;
+  }
+
+  try {
+    if (typeof element.showPicker === "function") {
+      element.showPicker();
+      return true;
+    }
+  } catch {
+    // Continue to deterministic fallback path.
+  }
+
+  let clicked = false;
+  try {
+    if (typeof element.focus === "function") {
+      element.focus();
+    }
+  } catch {
+    // no-op: best effort pre-click focus
+  }
+
+  try {
+    if (typeof element.click === "function") {
+      element.click();
+      clicked = true;
+    }
+  } catch {
+    // no-op: deterministic return value below
+  }
+
+  if (!clicked || document.activeElement !== element) {
+    return false;
+  }
+
+  // Never treat fallback focus+click as a confirmed open unless we have transient user activation.
+  const userActivation = typeof navigator !== "undefined" ? navigator.userActivation : undefined;
+  if (!userActivation || userActivation.isActive !== true) {
+    return false;
+  }
+
+  return true;
+}
+
 export function setScrollPosition(elementHandle, left, top) {
   const element = fromHandle(elementHandle);
   const viewportWidth = Number.isFinite(element.clientWidth) ? element.clientWidth : 0;

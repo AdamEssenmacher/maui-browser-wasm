@@ -5736,6 +5736,12 @@ public sealed class HandlerRuntimeIntegrationTests
             return true;
         }
 
+        public bool TryOpenNodePicker(string nodeId)
+        {
+            _ = nodeId;
+            return false;
+        }
+
         public bool TrySetNodeFocus(string nodeId, bool isFocused)
         {
             _ = nodeId;

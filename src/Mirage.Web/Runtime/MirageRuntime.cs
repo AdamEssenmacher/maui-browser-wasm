@@ -176,6 +176,16 @@ public sealed class MirageRuntime : IMirageRuntime
         return true;
     }
 
+    public bool TryOpenNodePicker(string nodeId)
+    {
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        return node.GetValueElement().OpenPicker();
+    }
+
     public bool TrySetNodeFocus(string nodeId, bool isFocused)
     {
         if (!_nodes.TryGetValue(nodeId, out var node))

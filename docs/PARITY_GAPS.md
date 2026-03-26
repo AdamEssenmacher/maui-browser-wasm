@@ -47,8 +47,10 @@ Upstream MAUI shared-code risks for unofficial/browser targets are tracked separ
 - Deferred: IME composition edge-case parity for text inputs and native icon-channel fidelity for `SearchBar` (`CancelButtonColor`/`SearchIconColor` projected to button text-color channels) remain partial.
 
 10. Date/time format parity depth
-- Current behavior: `DatePicker` and `TimePicker` map to browser-native date/time inputs using deterministic ISO wire formats.
-- Deferred: full custom MAUI format token parity across all browser locales is not complete in this slice.
+- Current behavior: `DatePicker` remains on the existing browser-native date-input projection path using deterministic ISO wire formats.
+- Current behavior: `TimePicker` now maps through `MirageTimePickerHandler` to a built-in browser-native time input path with deterministic `hh:mm`/`hh:mm:ss` wire projection and `IsOpen` roundtrip support.
+- Current behavior: `TimePicker` does not infer `IsOpen=true` from raw focus events because browser focus does not reliably imply picker-popup visibility.
+- Deferred: full custom MAUI format token breadth across browser locales remains incomplete for date/time controls in this slice.
 
 11. Numeric/status control parity depth
 - Current behavior: `Stepper`, `ProgressBar`, and `ActivityIndicator` handlers are implemented with deterministic browser projections and two-way state updates.
