@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-25 (Top-level README reframed for evaluators)
+- Rewrote the root README as an evaluator-first landing page so it explains Mirage in plain language, keeps the experimental and source-first status explicit, and links deeper architecture and parity detail out to the existing docs.
+- Added a full inline source-based tutorial centered on `UseMirageBrowserPlatform()`, `UseMirageComponentProvider<TProvider>()`, and `MirageBrowserAppHost.RunAsync(...)` so newcomers can understand the minimum host shape without reading the samples end-to-end.
+- Kept test, E2E, and performance instructions available but collapsed so the README answers "what is it, how do I try it, and what is incomplete" before it turns into contributor reference material.
+
 ## 2026-03-25 (Upstream unofficial-target risk tracker)
 - Added `docs/UPSTREAM_TARGET_RISKS.md` to separate upstream MAUI unofficial-target/shared-code hazards from Mirage's intentional parity gaps.
 - The new tracker records each upstream risk with source links, current Mirage status (`Covered`, `Partial workaround`, `Avoided by scope`, `No workaround`), and local evidence/work-around notes grounded only in the active `src/Mirage.*` stack.
