@@ -54,8 +54,8 @@ Visual legend:
 | `BrushesPage.xaml` | `Pages/Core/BrushesPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ClipPage.xaml` | `Pages/Core/ClipPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ContentPageBackgroundGallery.xaml` | `Pages/Core/ContentPageGalleries/ContentPageBackgroundGallery.xaml` | `[x]` | `[x]` | `[ ]` |
-| `ContentPageBackgroundImageGallery.xaml` | `Pages/Core/ContentPageGalleries/ContentPageBackgroundImageGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `ContentPageGallery.cs` | `Pages/Core/ContentPageGalleries/ContentPageGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `ContentPageBackgroundImageGallery.xaml` | `Pages/Core/ContentPageGalleries/ContentPageBackgroundImageGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `ContentPageGallery.cs` | `Pages/Core/ContentPageGalleries/ContentPageGallery.cs` | `[x]` | `[x]` | `[ ]` |
 | `ContextFlyoutPage.xaml` | `Pages/Core/ContextFlyoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `DevicePage.xaml` | `Pages/Core/DevicePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `DispatcherPage.xaml` | `Pages/Core/DispatcherPage.xaml` | `[ ]` | `[ ]` | `[ ]` |

@@ -30,6 +30,7 @@
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\ClipPage.xaml" Link="Vendor\Pages\Core\ClipPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BrushesPage.xaml" Link="Vendor\Pages\Core\BrushesPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\ContentPageGalleries\ContentPageBackgroundGallery.xaml" Link="Vendor\Pages\Core\ContentPageGalleries\ContentPageBackgroundGallery.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\ContentPageGalleries\ContentPageBackgroundImageGallery.xaml" Link="Vendor\Pages\Core\ContentPageGalleries\ContentPageBackgroundImageGallery.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\TransformationsPage.xaml" Link="Vendor\Pages\Core\TransformationsPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderPlayground.xaml" Link="Vendor\Pages\Core\BorderGalleries\BorderPlayground.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderClipPlayground.xaml" Link="Vendor\Pages\Core\BorderGalleries\BorderClipPlayground.xaml" />
@@ -82,7 +83,9 @@
     <Compile Include="$(ControlsSampleVendorRoot)Pages\LayoutsPage.xaml.cs" Link="Vendor\Pages\LayoutsPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\ClipPage.xaml.cs" Link="Vendor\Pages\Core\ClipPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BrushesPage.xaml.cs" Link="Vendor\Pages\Core\BrushesPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\ContentPageGalleries\ContentPageGallery.cs" Link="Vendor\Pages\Core\ContentPageGalleries\ContentPageGallery.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\ContentPageGalleries\ContentPageBackgroundGallery.xaml.cs" Link="Vendor\Pages\Core\ContentPageGalleries\ContentPageBackgroundGallery.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\ContentPageGalleries\ContentPageBackgroundImageGallery.xaml.cs" Link="Vendor\Pages\Core\ContentPageGalleries\ContentPageBackgroundImageGallery.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\TransformationsPage.xaml.cs" Link="Vendor\Pages\Core\TransformationsPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderPage.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderPage.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Core\BorderGalleries\BorderPlayground.xaml.cs" Link="Vendor\Pages\Core\BorderGalleries\BorderPlayground.xaml.cs" />

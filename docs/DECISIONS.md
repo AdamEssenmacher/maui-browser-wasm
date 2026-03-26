@@ -806,3 +806,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Clear-button interaction now restores focus to the inner input node after clearing text, preserving editing continuity through the host-owned button implementation.
 - Preserved and revalidated the coalesced input fast path, including stale-buffer protection under rapid runtime input followed by programmatic updates.
 - Locked Entry height behavior to the existing `--base-height-multiplier` contract (`44px` default) so Entry host/input min-height alignment remains stable in Showcase E2E coverage.
+
+## 2026-03-26 (ControlsSample ContentPageGallery Enablement + ContentPage BackgroundImageSource Projection)
+- Promoted upstream `ContentPageGallery` to the single top-level runnable catalog entry for ContentPage scenarios, replacing the previous direct `ContentPageBackgroundGallery` card to keep root navigation aligned with upstream gallery structure.
+- Imported and enabled `ContentPageBackgroundImageGallery` in the wrapper so both ContentPage gallery leaf pages (`Background` and `BackgroundImageSource`) run through the same upstream navigation surface.
+- Extended `MirageContentPageHandler` with resolver-first `BackgroundImageSource` mapping that projects page background images through `IMirageImageSourceResolver`, applies deterministic `backgroundImage/backgroundSize/backgroundRepeat/backgroundPosition` styles, and releases managed blob URLs on replacement/disconnect.
+- Added integration/E2E coverage for ContentPage gallery navigation, gradient-background rendering, and background-image projection from Mirage asset URLs.
