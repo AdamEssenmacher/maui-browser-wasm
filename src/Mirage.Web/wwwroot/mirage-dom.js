@@ -1335,14 +1335,12 @@ export function openPicker(elementHandle) {
     return false;
   }
 
-  let showPickerFailed = false;
   try {
     if (typeof element.showPicker === "function") {
       element.showPicker();
       return true;
     }
   } catch {
-    showPickerFailed = true;
     // Continue to deterministic fallback path.
   }
 
@@ -1368,10 +1366,9 @@ export function openPicker(elementHandle) {
     return false;
   }
 
-  // If showPicker explicitly failed without transient user activation, fallback click
-  // should not claim success because activation-gated browsers won't actually open.
+  // Never treat fallback focus+click as a confirmed open unless we have transient user activation.
   const userActivation = typeof navigator !== "undefined" ? navigator.userActivation : undefined;
-  if (showPickerFailed && userActivation && userActivation.isActive === false) {
+  if (!userActivation || userActivation.isActive !== true) {
     return false;
   }
 
