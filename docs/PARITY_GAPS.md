@@ -2,6 +2,7 @@
 
 This document tracks explicit, intentional parity gaps for the browser backend.
 Every gap listed here must have deterministic behavior and regression tests.
+Upstream MAUI shared-code risks for unofficial/browser targets are tracked separately in [UPSTREAM_TARGET_RISKS.md](UPSTREAM_TARGET_RISKS.md).
 
 ## Current gaps
 

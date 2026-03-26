@@ -147,6 +147,7 @@ If missing, startup fails with:
 - Leaflet default tile source is OpenStreetMap with attribution as a provider default policy; tile URL/attribution are configurable and not Mirage core semantics.
 - Runtime parity contract and CI guard live at `docs/parity/map-parity-contract.json` and `tests/Mirage.Integration.Tests/MapParityContractTests.cs`.
 - Explicit non-parity/constraint entries are tracked in `docs/parity/map-parity-divergences.json` with test references.
+- Upstream MAUI shared-code risks for unofficial/browser targets are tracked separately in `docs/UPSTREAM_TARGET_RISKS.md`.
 
 ## Notes
 
