@@ -41,6 +41,8 @@ Upstream MAUI shared-code risks for unofficial/browser targets are tracked separ
 9. Text-input parity depth (`Entry` / `Editor` / `SearchBar`)
 - Current behavior: `Entry` maps text/placeholder/placeholder-color, read-only, keyboard hinting, max-length, spell-check, prediction, clear-button semantics, return/complete events, and cursor-position/selection-length synchronization in both directions on the ControlNode path.
 - Current behavior: `Entry` suppresses Enter-submit while browser composition is active (`compositionstart`/`compositionend`) to preserve text-input semantics during IME entry.
+- Current behavior: `Editor` maps text/placeholder/placeholder-color, read-only, keyboard hinting, max-length, spell-check, prediction, and controls-remap text-transform semantics through the text channel (MAUI-aligned, non-CSS placeholder transform), with cursor-position/selection-length synchronization in both directions on the ControlNode path.
+- Current behavior: `Editor` completion semantics are mapped to focus-loss (`blur`) behavior, matching MAUI handler intent over keyboard-submit semantics.
 - Current behavior: `SearchBar` maps text/placeholder/placeholder-color, read-only, keyboard hinting, max-length, spell-check, prediction, return/search events, and deterministic browser clear/search button interactions on the ControlNode path.
 - Deferred: IME composition edge-case parity for text inputs and native icon-channel fidelity for `SearchBar` (`CancelButtonColor`/`SearchIconColor` projected to button text-color channels) remain partial.
 

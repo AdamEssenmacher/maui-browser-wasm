@@ -64,6 +64,10 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 ComponentKind.Entry,
                 "div",
                 propertyMappings: CommonProperties),
+            [ComponentKind.Editor] = new(
+                ComponentKind.Editor,
+                "div",
+                propertyMappings: CommonProperties),
             [ComponentKind.SearchBar] = new(
                 ComponentKind.SearchBar,
                 "div",
@@ -309,6 +313,23 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                     ["input"] = new("input", EventTarget.Self, EventPayloadKind.InputValue),
                     ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue),
                     ["search"] = new("search", EventTarget.Self, EventPayloadKind.InputValue),
+                    ["keydown"] = new("keydown", EventTarget.Self, EventPayloadKind.Key)
+                },
+                supportsAttributes: true,
+                supportsProperties: true,
+                supportsStyles: true,
+                supportsClasses: true,
+                supportsEvents: true);
+        }
+
+        if (string.Equals(elementName, "textarea", StringComparison.OrdinalIgnoreCase))
+        {
+            return new WebComponentDescriptor(
+                elementName,
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["input"] = new("input", EventTarget.Self, EventPayloadKind.InputValue),
+                    ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue),
                     ["keydown"] = new("keydown", EventTarget.Self, EventPayloadKind.Key)
                 },
                 supportsAttributes: true,

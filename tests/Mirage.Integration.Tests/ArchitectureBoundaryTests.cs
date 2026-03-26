@@ -469,6 +469,37 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void BrowserPlatform_RegistersEditorHandlerAsBuiltInControlNode()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var editorHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageEditorHandler.cs");
+        Assert.True(File.Exists(editorHandlerPath), $"Expected Editor handler file not found: {editorHandlerPath}");
+
+        var coordinatorPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageRenderCoordinator.cs");
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(coordinatorPath), $"Expected render coordinator file not found: {coordinatorPath}");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var hostingText = File.ReadAllText(hostingPath);
+        var editorHandlerText = File.ReadAllText(editorHandlerPath);
+        var coordinatorText = File.ReadAllText(coordinatorPath);
+        var runtimeText = File.ReadAllText(runtimePath);
+
+        Assert.Contains("typeof(Editor)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageEditorHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.Editor", editorHandlerText, StringComparison.Ordinal);
+        Assert.Contains("CreateWeb(\"textarea\")", editorHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TrySetNodeFocus(", editorHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryGetNodeTextSelection(", editorHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryGetNodeTextSelection(", coordinatorText, StringComparison.Ordinal);
+        Assert.Contains("TrySetNodeTextSelection(", coordinatorText, StringComparison.Ordinal);
+        Assert.Contains("TryGetNodeTextSelection(", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("TrySetNodeTextSelection(", runtimeText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CollectionViewHandler_UsesMauiShapedHierarchy_AndGenericScrollSeam()
     {
         var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");

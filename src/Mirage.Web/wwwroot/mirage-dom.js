@@ -86,6 +86,28 @@ input.mirage-entry-input::-webkit-input-placeholder {
   color: var(--mirage-entry-placeholder-color);
 }
 
+[data-mirage-kind="Editor"] {
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+}
+
+textarea.mirage-editor-input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  resize: none;
+}
+
+textarea.mirage-editor-input::placeholder {
+  color: var(--mirage-editor-placeholder-color);
+}
+
+textarea.mirage-editor-input::-webkit-input-placeholder {
+  color: var(--mirage-editor-placeholder-color);
+}
+
 button.mirage-entry-clear {
   white-space: nowrap;
   border: 0;

@@ -1,0 +1,22 @@
+{
+  "entries": [
+    {
+      "id": "editor-extension-isenabled-input-gate",
+      "summary": "Mirage maps IsEnabled explicitly so host-owned textarea interactivity remains deterministic across browser runtimes.",
+      "upstreamReference": "src/Core/src/Handlers/Editor/EditorHandler.cs",
+      "testReference": "EditorHandler_DisabledState_DisablesInputInteraction",
+      "extensionPropertyKeys": [
+        "IsEnabled"
+      ]
+    },
+    {
+      "id": "editor-extension-unfocus-command",
+      "summary": "Mirage exposes Unfocus as an explicit extension command to provide deterministic blur routing on the browser host.",
+      "upstreamReference": "src/Core/src/Handlers/Editor/EditorHandler.iOS.cs",
+      "testReference": "EditorHandler_UnfocusCommand_BlursInputNode",
+      "extensionCommandKeys": [
+        "Unfocus"
+      ]
+    }
+  ]
+}
