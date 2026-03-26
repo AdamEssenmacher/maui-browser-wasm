@@ -25,6 +25,7 @@ internal sealed class MirageRadioButtonHandler : MirageViewHandler<IRadioButton>
     private IElementHandler? _presentedContentHandler;
     private Element? _observedElement;
     private readonly List<BindableObject> _observedAncestors = [];
+    private readonly List<Element> _observedAncestorElements = [];
     private IView? _observedContentRoot;
     private readonly List<BindableObject> _observedContentBindables = [];
     private readonly List<Element> _observedContentElements = [];
@@ -525,11 +526,11 @@ internal sealed class MirageRadioButtonHandler : MirageViewHandler<IRadioButton>
             return null;
         }
 
-        if (radioButton is RadioButton controlsRadio && !string.IsNullOrWhiteSpace(controlsRadio.GroupName))
-        {
-            return controlsRadio.GroupName;
-        }
+        var explicitGroupName = radioButton is RadioButton controlsRadio && !string.IsNullOrWhiteSpace(controlsRadio.GroupName)
+            ? controlsRadio.GroupName
+            : null;
 
+        string? ancestorGroupName = null;
         for (Element? current = element.Parent; current is not null; current = current.Parent)
         {
             if (current is not BindableObject bindable)
@@ -540,11 +541,11 @@ internal sealed class MirageRadioButtonHandler : MirageViewHandler<IRadioButton>
             var groupName = RadioButtonGroup.GetGroupName(bindable);
             if (!string.IsNullOrWhiteSpace(groupName))
             {
-                return groupName;
+                ancestorGroupName = groupName;
             }
         }
 
-        return null;
+        return ancestorGroupName ?? explicitGroupName;
     }
 
     private static string? ResolveAriaLabel(IView contentView)
@@ -592,7 +593,15 @@ internal sealed class MirageRadioButtonHandler : MirageViewHandler<IRadioButton>
             ancestor.PropertyChanged -= OnObservedAncestorPropertyChanged;
         }
 
+        foreach (var ancestorElement in _observedAncestorElements)
+        {
+            ancestorElement.ParentChanged -= OnObservedAncestorParentChanged;
+            ancestorElement.ChildAdded -= OnObservedAncestorChildChanged;
+            ancestorElement.ChildRemoved -= OnObservedAncestorChildChanged;
+        }
+
         _observedAncestors.Clear();
+        _observedAncestorElements.Clear();
     }
 
     private void OnObservedElementParentChanged(object? sender, EventArgs e)
@@ -730,11 +739,35 @@ internal sealed class MirageRadioButtonHandler : MirageViewHandler<IRadioButton>
     private void OnObservedAncestorPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         _ = sender;
+        if (IsAncestorParentPropertyChange(e.PropertyName))
+        {
+            RebuildAncestorObservation();
+            RequestGroupNameProjectionRefresh();
+            return;
+        }
+
         if (!IsGroupNamePropertyChange(e.PropertyName))
         {
             return;
         }
 
+        RebuildAncestorObservation();
+        RequestGroupNameProjectionRefresh();
+    }
+
+    private void OnObservedAncestorParentChanged(object? sender, EventArgs e)
+    {
+        _ = sender;
+        _ = e;
+        RebuildAncestorObservation();
+        RequestGroupNameProjectionRefresh();
+    }
+
+    private void OnObservedAncestorChildChanged(object? sender, ElementEventArgs e)
+    {
+        _ = sender;
+        _ = e;
+        RebuildAncestorObservation();
         RequestGroupNameProjectionRefresh();
     }
 
@@ -756,8 +789,10 @@ internal sealed class MirageRadioButtonHandler : MirageViewHandler<IRadioButton>
         }
 
         var nextAncestors = new List<BindableObject>();
+        var nextAncestorElements = new List<Element>();
         for (Element? current = _observedElement.Parent; current is not null; current = current.Parent)
         {
+            nextAncestorElements.Add(current);
             if (current is BindableObject bindable)
             {
                 nextAncestors.Add(bindable);
@@ -784,8 +819,34 @@ internal sealed class MirageRadioButtonHandler : MirageViewHandler<IRadioButton>
             ancestor.PropertyChanged += OnObservedAncestorPropertyChanged;
         }
 
+        foreach (var ancestorElement in _observedAncestorElements)
+        {
+            if (ContainsReference(nextAncestorElements, ancestorElement))
+            {
+                continue;
+            }
+
+            ancestorElement.ParentChanged -= OnObservedAncestorParentChanged;
+            ancestorElement.ChildAdded -= OnObservedAncestorChildChanged;
+            ancestorElement.ChildRemoved -= OnObservedAncestorChildChanged;
+        }
+
+        foreach (var ancestorElement in nextAncestorElements)
+        {
+            if (ContainsReference(_observedAncestorElements, ancestorElement))
+            {
+                continue;
+            }
+
+            ancestorElement.ParentChanged += OnObservedAncestorParentChanged;
+            ancestorElement.ChildAdded += OnObservedAncestorChildChanged;
+            ancestorElement.ChildRemoved += OnObservedAncestorChildChanged;
+        }
+
         _observedAncestors.Clear();
         _observedAncestors.AddRange(nextAncestors);
+        _observedAncestorElements.Clear();
+        _observedAncestorElements.AddRange(nextAncestorElements);
     }
 
     private static bool IsGroupNamePropertyChange(string? propertyName)
@@ -797,6 +858,16 @@ internal sealed class MirageRadioButtonHandler : MirageViewHandler<IRadioButton>
 
         return string.Equals(propertyName, RadioButtonGroup.GroupNameProperty.PropertyName, StringComparison.Ordinal)
                || string.Equals(propertyName, nameof(RadioButton.GroupName), StringComparison.Ordinal);
+    }
+
+    private static bool IsAncestorParentPropertyChange(string? propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(propertyName))
+        {
+            return true;
+        }
+
+        return string.Equals(propertyName, nameof(Element.Parent), StringComparison.Ordinal);
     }
 
     private static bool IsContentLabelRelevantProperty(string? propertyName)

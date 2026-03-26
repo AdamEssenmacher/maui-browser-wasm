@@ -199,6 +199,37 @@ public sealed class MirageRadioButtonHandlerTests
     }
 
     [Fact]
+    public void RadioButtonHandler_GroupNameProjection_UpdatesWhenAncestorIsReparented()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var groupAHost = new VerticalStackLayout();
+        RadioButtonGroup.SetGroupName(groupAHost, "group-a");
+        var groupBHost = new VerticalStackLayout();
+        RadioButtonGroup.SetGroupName(groupBHost, "group-b");
+        var radio = new RadioButton
+        {
+            Content = "Movable radio",
+            Value = "movable"
+        };
+
+        groupAHost.Children.Add(radio);
+
+        var handler = AttachHandler(radio, mauiContext);
+        var inputNode = GetInputNode(handler);
+        Assert.Equal("group-a", inputNode.Attributes["name"]);
+
+        groupAHost.Children.Remove(radio);
+        groupBHost.Children.Add(radio);
+
+        Assert.Equal("group-b", inputNode.Attributes["name"]);
+    }
+
+    [Fact]
     public void RadioButtonHandler_GroupSelection_RoundTripsSelectedValue()
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
