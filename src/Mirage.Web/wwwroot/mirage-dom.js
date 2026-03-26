@@ -1640,6 +1640,93 @@ export function setDocumentTitle(title) {
   document.title = title ?? "";
 }
 
+function tryGetLocalStorage() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    return window.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function getLocalStorageItem(key) {
+  const storage = tryGetLocalStorage();
+  if (!storage || typeof key !== "string" || key.length === 0) {
+    return null;
+  }
+
+  try {
+    return storage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function setLocalStorageItem(key, value) {
+  const storage = tryGetLocalStorage();
+  if (!storage || typeof key !== "string" || key.length === 0) {
+    return;
+  }
+
+  try {
+    storage.setItem(key, value ?? "");
+  } catch {
+    // Ignore storage write failures so callers can fall back deterministically.
+  }
+}
+
+export function removeLocalStorageItem(key) {
+  const storage = tryGetLocalStorage();
+  if (!storage || typeof key !== "string" || key.length === 0) {
+    return;
+  }
+
+  try {
+    storage.removeItem(key);
+  } catch {
+    // Ignore storage removal failures.
+  }
+}
+
+export function containsLocalStorageKey(key) {
+  const storage = tryGetLocalStorage();
+  if (!storage || typeof key !== "string" || key.length === 0) {
+    return false;
+  }
+
+  try {
+    return storage.getItem(key) !== null;
+  } catch {
+    return false;
+  }
+}
+
+export function clearLocalStorageByPrefix(prefix) {
+  const storage = tryGetLocalStorage();
+  if (!storage || typeof prefix !== "string" || prefix.length === 0) {
+    return;
+  }
+
+  try {
+    const keys = [];
+    for (let index = 0; index < storage.length; index++) {
+      const key = storage.key(index);
+      if (typeof key === "string" && key.startsWith(prefix)) {
+        keys.push(key);
+      }
+    }
+
+    for (const key of keys) {
+      storage.removeItem(key);
+    }
+  } catch {
+    // Ignore scoped clear failures.
+  }
+}
+
 const popStateSubscriptions = new Map();
 let nextPopStateSubscriptionId = 1;
 

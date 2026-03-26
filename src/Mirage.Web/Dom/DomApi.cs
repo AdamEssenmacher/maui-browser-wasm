@@ -166,6 +166,21 @@ internal static partial class DomApi
     [JSImport("setDocumentTitle", Module)]
     internal static partial void SetDocumentTitle(string? title);
 
+    [JSImport("getLocalStorageItem", Module)]
+    internal static partial string? GetLocalStorageItem(string key);
+
+    [JSImport("setLocalStorageItem", Module)]
+    internal static partial void SetLocalStorageItem(string key, string value);
+
+    [JSImport("removeLocalStorageItem", Module)]
+    internal static partial void RemoveLocalStorageItem(string key);
+
+    [JSImport("containsLocalStorageKey", Module)]
+    internal static partial bool ContainsLocalStorageKey(string key);
+
+    [JSImport("clearLocalStorageByPrefix", Module)]
+    internal static partial void ClearLocalStorageByPrefix(string prefix);
+
     [JSImport("subscribePopState", Module)]
     internal static partial int SubscribePopState([JSMarshalAs<JSType.Function>] Action callback);
 

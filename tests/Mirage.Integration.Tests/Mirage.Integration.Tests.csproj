@@ -66,6 +66,7 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageNavigationPageHandler.cs" Link="Handlers\MirageNavigationPageHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageScrollViewHandler.cs" Link="Handlers\MirageScrollViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageViewMapper.cs" Link="Handlers\MirageViewMapper.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Essentials\MirageEssentialsStaticPatcher.cs" Link="Essentials\MirageEssentialsStaticPatcher.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Hosting\BrowserDispatcher.cs" Link="Hosting\BrowserDispatcher.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Navigation\MirageNavigationContracts.cs" Link="Navigation\MirageNavigationContracts.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Navigation\MirageNavigationBuilder.cs" Link="Navigation\MirageNavigationBuilder.cs" />
