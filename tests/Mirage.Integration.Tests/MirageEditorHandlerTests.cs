@@ -328,6 +328,36 @@ public sealed class MirageEditorHandlerTests
     }
 
     [Fact]
+    public void EditorHandler_RuntimeSelection_WithTextTransform_MapsBackToSourceOffsets()
+    {
+        const string sourceText = "A\u0130B";
+        const TextTransform transform = TextTransform.Lowercase;
+        const int expectedSourceCursor = 2;
+        var editor = new Editor
+        {
+            Text = sourceText,
+            TextTransform = transform
+        };
+
+        var (handler, _, coordinator, runtime) = CreateAttachedHandler(editor);
+        var inputNode = GetInputNode(handler);
+        var mappedRuntimeCursor = TextTransformUtilities.GetTransformedText(
+            sourceText[..expectedSourceCursor],
+            transform).Length;
+        runtime.SetSelection(inputNode.NodeId, mappedRuntimeCursor, mappedRuntimeCursor);
+
+        coordinator.OnEvent(inputNode.NodeId, "select", null);
+
+        Assert.Equal(expectedSourceCursor, editor.CursorPosition);
+        Assert.Equal(0, editor.SelectionLength);
+
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(IEditor.CursorPosition));
+        Assert.True(runtime.TryGetSelection(inputNode.NodeId, out var projectedStart, out var projectedEnd));
+        Assert.Equal(mappedRuntimeCursor, projectedStart);
+        Assert.Equal(mappedRuntimeCursor, projectedEnd);
+    }
+
+    [Fact]
     public void EditorHandler_FocusCommand_TargetsTextAreaNode()
     {
         var editor = new Editor

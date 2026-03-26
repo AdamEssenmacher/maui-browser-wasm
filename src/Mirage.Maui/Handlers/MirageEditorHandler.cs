@@ -520,10 +520,16 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         }
 
         var renderedTextLength = (_inputNode.GetPropertyString("value") ?? string.Empty).Length;
-        var normalizedStart = Math.Clamp(Math.Min(selectionStart, selectionEnd), 0, renderedTextLength);
-        var normalizedEnd = Math.Clamp(Math.Max(selectionStart, selectionEnd), normalizedStart, renderedTextLength);
+        var runtimeStart = Math.Clamp(Math.Min(selectionStart, selectionEnd), 0, renderedTextLength);
+        var runtimeEnd = Math.Clamp(Math.Max(selectionStart, selectionEnd), runtimeStart, renderedTextLength);
+        var sourceValue = VirtualView.Text ?? string.Empty;
+        var normalizedStart = MapSourceSelectionIndex(VirtualView, sourceValue, runtimeStart);
+        var normalizedEnd = MapSourceSelectionIndex(VirtualView, sourceValue, runtimeEnd);
+        normalizedStart = Math.Clamp(normalizedStart, 0, sourceValue.Length);
+        normalizedEnd = Math.Clamp(normalizedEnd, normalizedStart, sourceValue.Length);
         var normalizedLength = normalizedEnd - normalizedStart;
-        if (VirtualView.CursorPosition == normalizedStart && VirtualView.SelectionLength == normalizedLength)
+        if (VirtualView.CursorPosition == normalizedStart
+            && VirtualView.SelectionLength == normalizedLength)
         {
             return;
         }
@@ -651,6 +657,42 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         var normalizedIndex = Math.Clamp(sourceIndex, 0, sourceValue.Length);
         var transformedPrefix = GetTransformedText(editor, sourceValue[..normalizedIndex]);
         return transformedPrefix.Length;
+    }
+
+    private static int MapSourceSelectionIndex(IEditor editor, string sourceValue, int transformedIndex)
+    {
+        if (sourceValue.Length == 0)
+        {
+            return 0;
+        }
+
+        var transformedLength = GetTransformedText(editor, sourceValue).Length;
+        var normalizedIndex = Math.Clamp(transformedIndex, 0, transformedLength);
+        if (normalizedIndex == 0)
+        {
+            return 0;
+        }
+
+        var previousMappedLength = 0;
+        for (var sourceIndex = 1; sourceIndex <= sourceValue.Length; sourceIndex++)
+        {
+            var mappedLength = MapTransformedSelectionIndex(editor, sourceValue, sourceIndex);
+            if (normalizedIndex == mappedLength)
+            {
+                return sourceIndex;
+            }
+
+            if (normalizedIndex < mappedLength)
+            {
+                var distanceToPrevious = normalizedIndex - previousMappedLength;
+                var distanceToCurrent = mappedLength - normalizedIndex;
+                return distanceToCurrent < distanceToPrevious ? sourceIndex : sourceIndex - 1;
+            }
+
+            previousMappedLength = mappedLength;
+        }
+
+        return sourceValue.Length;
     }
 
     private static string ResolveInputMode(Keyboard keyboard)
