@@ -2,6 +2,7 @@
 
 This document tracks explicit, intentional parity gaps for the browser backend.
 Every gap listed here must have deterministic behavior and regression tests.
+Upstream MAUI shared-code risks for unofficial/browser targets are tracked separately in [UPSTREAM_TARGET_RISKS.md](UPSTREAM_TARGET_RISKS.md).
 
 ## Current gaps
 
@@ -38,8 +39,10 @@ Every gap listed here must have deterministic behavior and regression tests.
 - Deferred: head/middle truncation visual parity and platform-specific truncation glyph placement remain best-effort.
 
 9. Text-input parity depth (`Entry` / `Editor` / `SearchBar`)
-- Current behavior: `Entry` and `SearchBar` map text/placeholder/placeholder-color, read-only, keyboard hinting, max-length, spell-check, prediction, return/search events, and deterministic browser clear/search button interactions on the ControlNode path.
-- Deferred: cursor-position/selection-length mapping, IME composition edge cases, and native icon-channel fidelity for `SearchBar` (`CancelButtonColor`/`SearchIconColor` projected to button text-color channels) remain partial.
+- Current behavior: `Entry` maps text/placeholder/placeholder-color, read-only, keyboard hinting, max-length, spell-check, prediction, clear-button semantics, return/complete events, and cursor-position/selection-length synchronization in both directions on the ControlNode path.
+- Current behavior: `Entry` suppresses Enter-submit while browser composition is active (`compositionstart`/`compositionend`) to preserve text-input semantics during IME entry.
+- Current behavior: `SearchBar` maps text/placeholder/placeholder-color, read-only, keyboard hinting, max-length, spell-check, prediction, return/search events, and deterministic browser clear/search button interactions on the ControlNode path.
+- Deferred: IME composition edge-case parity for text inputs and native icon-channel fidelity for `SearchBar` (`CancelButtonColor`/`SearchIconColor` projected to button text-color channels) remain partial.
 
 10. Date/time format parity depth
 - Current behavior: `DatePicker` and `TimePicker` map to browser-native date/time inputs using deterministic ISO wire formats.

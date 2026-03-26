@@ -1,0 +1,37 @@
+{
+  "mauiBaselineCommit": "fc1dadc4d68a809a9c14a7d33ff1289037040471",
+  "handlers": [
+    {
+      "name": "EntryHandler",
+      "mirageType": "MirageEntryHandler",
+      "propertyMapperKeys": [
+        "Background",
+        "CharacterSpacing",
+        "ClearButtonVisibility",
+        "Font",
+        "IsPassword",
+        "HorizontalTextAlignment",
+        "VerticalTextAlignment",
+        "IsReadOnly",
+        "IsTextPredictionEnabled",
+        "IsSpellCheckEnabled",
+        "Keyboard",
+        "MaxLength",
+        "Placeholder",
+        "PlaceholderColor",
+        "ReturnType",
+        "Text",
+        "TextColor",
+        "CursorPosition",
+        "SelectionLength"
+      ],
+      "commandMapperKeys": [
+        "Focus",
+        "Unfocus"
+      ],
+      "mirageExtensionPropertyMapperKeys": [
+        "IsEnabled"
+      ]
+    }
+  ]
+}

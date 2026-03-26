@@ -114,6 +114,26 @@ public sealed class DomElement
 
     public bool GetInputChecked() => DomApi.GetInputChecked(Handle);
 
+    public bool TryGetInputSelection(out int selectionStart, out int selectionEnd)
+    {
+        var values = DomApi.GetInputSelection(Handle);
+        if (values.Length < 2)
+        {
+            selectionStart = 0;
+            selectionEnd = 0;
+            return false;
+        }
+
+        selectionStart = values[0];
+        selectionEnd = values[1];
+        return true;
+    }
+
+    public bool TrySetInputSelection(int selectionStart, int selectionEnd)
+    {
+        return DomApi.SetInputSelection(Handle, selectionStart, selectionEnd);
+    }
+
     public bool Focus() => DomApi.FocusElement(Handle);
 
     public void Blur() => DomApi.BlurElement(Handle);

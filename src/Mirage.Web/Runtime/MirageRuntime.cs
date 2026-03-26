@@ -192,6 +192,29 @@ public sealed class MirageRuntime : IMirageRuntime
         return true;
     }
 
+    public bool TryGetNodeTextSelection(string nodeId, out int selectionStart, out int selectionEnd)
+    {
+        selectionStart = 0;
+        selectionEnd = 0;
+
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        return node.GetValueElement().TryGetInputSelection(out selectionStart, out selectionEnd);
+    }
+
+    public bool TrySetNodeTextSelection(string nodeId, int selectionStart, int selectionEnd)
+    {
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        return node.GetValueElement().TrySetInputSelection(selectionStart, selectionEnd);
+    }
+
     public void Dispose()
     {
         foreach (var subscriptionId in _eventSubscriptions.Values.ToArray())
@@ -1031,6 +1054,13 @@ public sealed class MirageRuntime : IMirageRuntime
             {
                 _eventSink?.OnEvent(nodeId, eventName, payload);
             }));
+        }
+        else if (eventDescriptor.PayloadKind == EventPayloadKind.Key)
+        {
+            subscriptionId = targetElement.On(eventDescriptor.DomEventName, "key", payload =>
+            {
+                _eventSink?.OnEvent(nodeId, eventName, payload);
+            });
         }
         else
         {

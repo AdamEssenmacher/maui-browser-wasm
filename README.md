@@ -283,3 +283,56 @@ tools/diagnostics/run-slowness-matrix.sh
 ```
 
 </details>
+
+The matrix writes machine-readable summaries under a timestamped output directory and exits non-zero when the configured hot-reload-off budget profile fails.
+
+## Runtime invariant
+
+Mirage startup requires `IMirageComponentProvider` registration.
+
+If missing, startup fails with:
+
+`MirageRuntime requires IMirageComponentProvider. Register one with UseMirageComponentProvider<TProvider>().`
+
+## Map Support (Provider Model)
+
+- `Map` is a built-in Mirage control-node path (`ComponentKind.Map`), not a generic `WebNode`.
+- Mirage core semantics are region-first (`center + span`) with MAUI-shaped map options (`MapType`, `IsShowingUser`, `IsScrollEnabled`, `IsZoomEnabled`, `IsTrafficEnabled`), identity-based pins, and identity-based map elements (`Circle`/`Polyline`/`Polygon`).
+- Browser map realization is provider-owned through `IMirageMapProvider`/`IMirageMapAdapter`; Mirage core/runtime stays provider-neutral.
+- First browser map provider is Leaflet (`UseMirageLeafletMaps(...)`) in `src/Mirage.Provider.LeafletMaps`.
+- Leaflet asset policy defaults to CDN JS/CSS URLs (configurable), with explicit initialization diagnostics and visible error state on provider/asset failures.
+- `LeafletAssetMode.Local` requires explicit local JS/CSS URLs; Mirage fails fast with diagnostics when local mode is enabled without local URLs.
+- Leaflet default tile source is OpenStreetMap with attribution as a provider default policy; tile URL/attribution are configurable and not Mirage core semantics.
+- Runtime parity contract and CI guard live at `docs/parity/map-parity-contract.json` and `tests/Mirage.Integration.Tests/MapParityContractTests.cs`.
+- Explicit non-parity/constraint entries are tracked in `docs/parity/map-parity-divergences.json` with test references.
+- Upstream MAUI shared-code risks for unofficial/browser targets are tracked separately in `docs/UPSTREAM_TARGET_RISKS.md`.
+
+## Notes
+
+- `Mirage.Web` is provider-neutral browser infrastructure.
+- MAUI framework/logical semantics remain MAUI-side; Mirage models platform realization only.
+- `VisualNodeBase` is a shared platform-side visual/layout projection layer, not a duplicate MAUI framework model.
+- Provider-specific mappings (Fluent, UI5, custom) live only in provider projects.
+- Current provider abstraction is intentionally narrow: deep portability across arbitrary web-component libraries is deferred until Mirage grows slots/child projection, structured payloads, overlay hosting, provider-owned lifecycle hooks, and shadow/part-aware targeting.
+- Navigation is `NavigationPage`-first: MAUI stack changes are the source of truth and Mirage projects them into browser URL/history through `UseMirageNavigation(...)`.
+- `NavigationPage` is realized as a built-in navigation shell (nav bar, back button, title slot, toolbar slot, bounded content host) on the control-node path.
+- Dependency direction for samples is locked: `*.Fluent -> *.Shared` and `*.Maui -> *.Shared`.
+- Fluent UI Web Components are built on FAST foundations, but Mirage’s public reference-provider story is Fluent-first.
+- Providers must support control-node and web-node realization for full Mirage behavior.
+- Mirage preserves MAUI’s explicit scrolling model: `ContentPage` is non-scrollable by default and scrolling is introduced explicitly with `ScrollView`.
+- Shared sample projects (`Counter.Shared`, `Showcase.Shared`) are included in `Mirage.sln`; native MAUI host projects are not.
+- `ControlsSample` wrappers (`ControlsSample.Shared`, `ControlsSample.Fluent`, `ControlsSample.Maui`) provide a subtree-synced integration lane for upstream `dotnet/maui` Controls.Sample.
+- Mirage browser hosts automatically collect bundled `MauiImage` assets (including transitive `ProjectReference` projects), publish them to `/_mirage/assets/...`, and resolve MAUI image source strings through a shared runtime resolver + manifest (`/_mirage/assets/images.manifest.v1.json`).
+- Bundled-image wave scope is file-based images only (`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`); stream/font/full MAUI image pipeline parity is explicitly deferred.
+- Upstream license compliance for the vendored Controls.Sample lane is tracked in `docs/THIRD_PARTY_NOTICES.md`.
+- The old `Maui.Browser*` showcase/parity stack is not part of the active solution wiring.
+- Architecture benchmark harness: `tools/benchmarks/Mirage.ArchitectureBenchmarks`.
+- Current rendering wave focus is correctness-first (shared visual projection, stack/grid determinism, and DOM-backed surface rendering) before richer control breadth.
+
+## Early-lock architecture guardrails
+
+- Built-in Mirage handlers must continue to emit control nodes.
+- `WebNode` is for extensibility (third-party/custom/BYO components), not built-in fallback.
+- `Mirage.Web` stays provider-neutral and must not contain provider mappings.
+- Web-node realization must preserve requested element identity end-to-end.
+- See [Architecture Guardrails](docs/ARCHITECTURE_GUARDRAILS.md) and [Provider Authoring](docs/PROVIDER_AUTHORING.md).

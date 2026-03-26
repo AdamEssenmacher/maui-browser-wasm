@@ -7,6 +7,10 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - `MirageRuntime` now emits per-render batching diagnostics (`batchedNodes`, `batchedMutations`, `interopCalls`, `batchFlushes`) so runtime pressure can be measured directly without changing the semantic diff model or MAUI handler architecture.
 - Browser window resize subscriptions now coalesce same-frame `resize` storms through `requestAnimationFrame`, while `MirageBrowserAppHost` still performs its initial arrange/render synchronously before subscribing.
 
+## 2026-03-25 (Upstream unofficial-target risk tracker)
+- Added `docs/UPSTREAM_TARGET_RISKS.md` to separate upstream MAUI unofficial-target/shared-code hazards from Mirage's intentional parity gaps.
+- The new tracker records each upstream risk with source links, current Mirage status (`Covered`, `Partial workaround`, `Avoided by scope`, `No workaround`), and local evidence/work-around notes grounded only in the active `src/Mirage.*` stack.
+
 ## 2026-03-25 (Mirage runtime reframe: keep the renderer, narrow provider claims)
 - Reframed Mirage publicly and internally as a MAUI handler backend with a semantic render/diff runtime plus a raw custom-element hosting seam, rather than a broadly portable adapter for arbitrary web-component libraries.
 - Kept the runtime/coordinator split unchanged because it is providing concrete value through render coalescing, scoped rematerialization, deterministic diff application, and centralized node-id event routing.
@@ -760,3 +764,14 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Stream image support now uses managed blob URLs with explicit ownership and cleanup (`createObjectURL` on resolve, revoke on source replacement/disconnect) through `IMirageObjectUrlFactory`.
 - GIF `IsAnimationPlaying` behavior is best-effort restart-on-resume: toggling off clears active GIF `src`, toggling on reapplies the resolved URL.
 - Browser loading remains native by design: Mirage projects real `<img>` nodes with `alt=""`, `decoding="async"`, and `loading="eager"` defaults while the browser owns network/decode/cache/render behavior.
+
+## 2026-03-25 (Entry Handler Parity Wave: MAUI-Shaped Host-Owned Input)
+- Refactored `MirageEntryHandler` to a MAUI-shaped parity surface with full Entry mapper coverage (`Background`, text/prediction/spell-check/keyboard/placeholder/max-length/return type, `CursorPosition`, `SelectionLength`) plus command mapping for `Focus` and `Unfocus`.
+- Entry realization now uses a Mirage-owned host (`ComponentKind.Entry`) with a stable child `<input>` and clear-button node, created once and updated incrementally; the Fluent provider no longer treats Entry as a direct `fluent-text-field` value owner.
+- Added provider-neutral runtime seams for key payloads and text-selection operations by node id (`TryGetNodeTextSelection`, `TrySetNodeTextSelection`) and wired Entry runtime events so cursor/selection now round-trip DOM <-> MAUI without feedback loops.
+- Preserved MAUI-style text semantics for keyboard hints by keeping `Entry` as text input for `Keyboard.Date`/`Keyboard.Time` and projecting those cases via `inputmode` hints instead of changing control type to browser-native date/time editors.
+- Added deterministic IME composition gating for submit behavior: Enter no longer triggers `Completed` while composition is active, and submit resumes after composition ends.
+- Submit behavior now flushes buffered runtime input before invoking `Completed`, so Enter-submit observes the latest text even when input coalescing is active.
+- Clear-button interaction now restores focus to the inner input node after clearing text, preserving editing continuity through the host-owned button implementation.
+- Preserved and revalidated the coalesced input fast path, including stale-buffer protection under rapid runtime input followed by programmatic updates.
+- Locked Entry height behavior to the existing `--base-height-multiplier` contract (`44px` default) so Entry host/input min-height alignment remains stable in Showcase E2E coverage.

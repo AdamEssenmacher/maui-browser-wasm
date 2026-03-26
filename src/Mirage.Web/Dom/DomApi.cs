@@ -110,6 +110,12 @@ internal static partial class DomApi
     [JSImport("getInputChecked", Module)]
     internal static partial bool GetInputChecked(nint element);
 
+    [JSImport("getInputSelection", Module)]
+    internal static partial int[] GetInputSelection(nint element);
+
+    [JSImport("setInputSelection", Module)]
+    internal static partial bool SetInputSelection(nint element, int selectionStart, int selectionEnd);
+
     [JSImport("focusElement", Module)]
     internal static partial bool FocusElement(nint element);
 

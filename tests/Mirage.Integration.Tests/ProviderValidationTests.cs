@@ -33,15 +33,16 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
-    public void FluentEntryDescriptor_ExposesInputMappingMetadata()
+    public void FluentEntryDescriptor_MapsToMirageOwnedEntryHost()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();
         var descriptor = provider.ResolveControl(ComponentKind.Entry);
 
-        Assert.Equal("fluent-text-field", descriptor.ElementTagName);
-        Assert.True(descriptor.PropertyMappings.ContainsKey("Text"));
-        Assert.True(descriptor.PropertyMappings.ContainsKey("Placeholder"));
-        Assert.True(descriptor.EventMappings.ContainsKey("input"));
+        Assert.Equal("div", descriptor.ElementTagName);
+        Assert.True(descriptor.PropertyMappings.ContainsKey("AutomationId"));
+        Assert.False(descriptor.PropertyMappings.ContainsKey("Text"));
+        Assert.False(descriptor.PropertyMappings.ContainsKey("Placeholder"));
+        Assert.Empty(descriptor.EventMappings);
     }
 
     [Fact]

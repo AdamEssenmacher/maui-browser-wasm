@@ -4680,15 +4680,20 @@ public sealed class HandlerRuntimeIntegrationTests
 
         var entry = new Entry { Text = string.Empty };
         ((IElementHandler)handler).SetVirtualView(entry);
+        var inputNode = handler.PlatformView.Children
+            .Single(static child =>
+                child.NodeType == PlatformNodeType.Web
+                && string.Equals(child.ElementName, "input", StringComparison.Ordinal)
+                && child.Classes.Contains("mirage-entry-input", StringComparer.Ordinal));
 
         coordinator.Register(handler.PlatformView, handler);
         coordinator.SetRoot(handler.PlatformView);
         await WaitUntilAsync(() => runtime.RenderCount >= 1);
         var baselineRenderCount = runtime.RenderCount;
 
-        handler.OnRuntimeEvent("input", "A");
-        handler.OnRuntimeEvent("input", "AB");
-        handler.OnRuntimeEvent("input", "ABC");
+        coordinator.OnEvent(inputNode.NodeId, "input", "A");
+        coordinator.OnEvent(inputNode.NodeId, "input", "AB");
+        coordinator.OnEvent(inputNode.NodeId, "input", "ABC");
 
         Assert.Equal(string.Empty, entry.Text);
         Assert.Equal(1, inputDispatcher.PendingCount);
@@ -4698,7 +4703,7 @@ public sealed class HandlerRuntimeIntegrationTests
         await Task.Delay(30);
 
         Assert.Equal("ABC", entry.Text);
-        Assert.Equal("ABC", handler.PlatformView.GetPropertyString("Text"));
+        Assert.Equal("ABC", inputNode.GetPropertyString("value"));
         Assert.Equal(baselineRenderCount, runtime.RenderCount);
     }
 
@@ -4721,12 +4726,17 @@ public sealed class HandlerRuntimeIntegrationTests
 
         var entry = new Entry { Text = string.Empty };
         ((IElementHandler)handler).SetVirtualView(entry);
+        var inputNode = handler.PlatformView.Children
+            .Single(static child =>
+                child.NodeType == PlatformNodeType.Web
+                && string.Equals(child.ElementName, "input", StringComparison.Ordinal)
+                && child.Classes.Contains("mirage-entry-input", StringComparer.Ordinal));
 
         coordinator.Register(handler.PlatformView, handler);
         coordinator.SetRoot(handler.PlatformView);
         await WaitUntilAsync(() => runtime.RenderCount >= 1);
 
-        handler.OnRuntimeEvent("input", "runtime-value");
+        coordinator.OnEvent(inputNode.NodeId, "input", "runtime-value");
         Assert.Equal(1, inputDispatcher.PendingCount);
 
         entry.Text = "programmatic-value";
@@ -4736,7 +4746,109 @@ public sealed class HandlerRuntimeIntegrationTests
         await Task.Delay(30);
 
         Assert.Equal("programmatic-value", entry.Text);
-        Assert.Equal("programmatic-value", handler.PlatformView.GetPropertyString("Text"));
+        Assert.Equal("programmatic-value", inputNode.GetPropertyString("value"));
+    }
+
+    [Fact]
+    public async Task EntryHandler_Completed_UsesLatestBufferedRuntimeInput()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var inputDispatcher = new QueuedDispatcher();
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .AddSingleton<IDispatcher>(inputDispatcher)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageEntryHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        string? completedText = null;
+        var entry = new Entry { Text = string.Empty };
+        entry.Completed += (_, _) => completedText = entry.Text;
+        ((IElementHandler)handler).SetVirtualView(entry);
+        var inputNode = handler.PlatformView.Children
+            .Single(static child =>
+                child.NodeType == PlatformNodeType.Web
+                && string.Equals(child.ElementName, "input", StringComparison.Ordinal)
+                && child.Classes.Contains("mirage-entry-input", StringComparer.Ordinal));
+
+        coordinator.Register(handler.PlatformView, handler);
+        coordinator.SetRoot(handler.PlatformView);
+        await WaitUntilAsync(() => runtime.RenderCount >= 1);
+
+        coordinator.OnEvent(inputNode.NodeId, "input", "runtime-value");
+        Assert.Equal(string.Empty, entry.Text);
+        Assert.Equal(1, inputDispatcher.PendingCount);
+
+        coordinator.OnEvent(inputNode.NodeId, "keydown", "Enter");
+        Assert.Equal("runtime-value", completedText);
+        Assert.Equal("runtime-value", entry.Text);
+        Assert.Equal("runtime-value", inputNode.GetPropertyString("value"));
+
+        // The queued delayed callback remains scheduled but should no-op after explicit submit flush.
+        inputDispatcher.FlushAll();
+        await Task.Delay(30);
+        Assert.Equal("runtime-value", entry.Text);
+    }
+
+    [Fact]
+    public async Task EntryHandler_ClearButtonDiscardedPendingBufferedInput_DoesNotResurrectText()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var inputDispatcher = new QueuedDispatcher();
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .AddSingleton<IDispatcher>(inputDispatcher)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageEntryHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var entry = new Entry
+        {
+            Text = "seed",
+            IsEnabled = true,
+            IsReadOnly = false,
+            ClearButtonVisibility = ClearButtonVisibility.WhileEditing
+        };
+        ((IElementHandler)handler).SetVirtualView(entry);
+
+        var inputNode = handler.PlatformView.Children
+            .Single(static child =>
+                child.NodeType == PlatformNodeType.Web
+                && string.Equals(child.ElementName, "input", StringComparison.Ordinal)
+                && child.Classes.Contains("mirage-entry-input", StringComparer.Ordinal));
+        var clearNode = handler.PlatformView.Children
+            .Single(static child =>
+                child.NodeType == PlatformNodeType.Web
+                && string.Equals(child.ElementName, "button", StringComparison.Ordinal)
+                && child.Classes.Contains("mirage-entry-clear", StringComparer.Ordinal));
+
+        coordinator.Register(handler.PlatformView, handler);
+        coordinator.SetRoot(handler.PlatformView);
+        await WaitUntilAsync(() => runtime.RenderCount >= 1);
+
+        coordinator.OnEvent(inputNode.NodeId, "input", "runtime-value");
+        Assert.Equal("seed", entry.Text);
+        Assert.Equal(1, inputDispatcher.PendingCount);
+
+        coordinator.OnEvent(inputNode.NodeId, "focus", null);
+        coordinator.OnEvent(clearNode.NodeId, "click", null);
+        Assert.Equal(string.Empty, entry.Text);
+        Assert.Equal(string.Empty, inputNode.GetPropertyString("value"));
+
+        inputDispatcher.FlushAll();
+        await Task.Delay(30);
+        Assert.Equal(string.Empty, entry.Text);
+        Assert.Equal(string.Empty, inputNode.GetPropertyString("value"));
     }
 
     [Fact]
@@ -5446,6 +5558,22 @@ public sealed class HandlerRuntimeIntegrationTests
         {
             _ = nodeId;
             _ = isFocused;
+            return true;
+        }
+
+        public bool TryGetNodeTextSelection(string nodeId, out int selectionStart, out int selectionEnd)
+        {
+            _ = nodeId;
+            selectionStart = 0;
+            selectionEnd = 0;
+            return false;
+        }
+
+        public bool TrySetNodeTextSelection(string nodeId, int selectionStart, int selectionEnd)
+        {
+            _ = nodeId;
+            _ = selectionStart;
+            _ = selectionEnd;
             return true;
         }
 

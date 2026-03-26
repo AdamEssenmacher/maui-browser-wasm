@@ -34,4 +34,8 @@ public interface IMirageRenderCoordinator : IMirageEventSink
         out double actualTop);
 
     bool TrySetNodeFocus(string nodeId, bool isFocused);
+
+    bool TryGetNodeTextSelection(string nodeId, out int selectionStart, out int selectionEnd);
+
+    bool TrySetNodeTextSelection(string nodeId, int selectionStart, int selectionEnd);
 }
