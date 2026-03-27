@@ -292,12 +292,21 @@ echo "Public target: ${PAGES_PUBLIC_REPO_URL} [branch: ${PAGES_PUBLIC_BRANCH}] -
 
 WORK_DIR="$(mktemp -d "/tmp/mirage-gh-pages-${DEMO_ID}.XXXXXX")"
 trap 'rm -rf "$WORK_DIR"' EXIT
-PUBLISH_OUTPUT_DIR="$WORK_DIR/publish-output"
 
-dotnet clean "$PROJECT_ABS_PATH" -c Release -r browser-wasm
-dotnet publish "$PROJECT_ABS_PATH" -c Release -r browser-wasm -o "$PUBLISH_OUTPUT_DIR"
+PROJECT_DIR="$(cd "$(dirname "$PROJECT_ABS_PATH")" && pwd)"
+BUILD_OUTPUT_ROOT="$PROJECT_DIR/bin/Release/net10.0-browser"
 
-PUBLISH_WWWROOT="$PUBLISH_OUTPUT_DIR/wwwroot"
+run_demo_build() {
+  local restore_arg="$1"
+  zsh -lc "cd \"$REPO_ROOT\" && dotnet build \"$DEMO_PROJECT_PATH\" -c Release -r browser-wasm $restore_arg -p:WasmBuildAppBundle=true"
+}
+
+if ! run_demo_build "--no-restore"; then
+  echo "Build with --no-restore failed, retrying with restore..."
+  run_demo_build ""
+fi
+
+PUBLISH_WWWROOT="$BUILD_OUTPUT_ROOT/wwwroot"
 [[ -f "$PUBLISH_WWWROOT/index.html" ]] || fail "Publish output missing index.html: $PUBLISH_WWWROOT"
 
 STAGED_SITE_ROOT="$WORK_DIR/site-root"
