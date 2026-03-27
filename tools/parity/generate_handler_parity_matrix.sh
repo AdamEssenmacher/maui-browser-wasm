@@ -286,7 +286,7 @@ shape_grade_for_type() {
     fi
 
     case "$key" in
-        CollectionView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|IndicatorView|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton)
+        CollectionView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|IndicatorView|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|Page)
             echo "A"
             ;;
         ContentView|Button|Window|NavigationPage|Image|Border|Picker|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame)
@@ -316,7 +316,7 @@ implementation_grade_for_type() {
     case "$key" in
         CollectionView) echo "C" ;;
         Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton) echo "B" ;;
-        ContentView|Button|Window|NavigationPage|Image|Border|Picker|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame|IndicatorView) echo "C" ;;
+        ContentView|Button|Window|NavigationPage|Image|Border|Picker|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame|IndicatorView|Page) echo "C" ;;
         Entry|Editor|TimePicker) echo "B" ;;
         TabbedPage) echo "D" ;;
         *) echo "C" ;;
@@ -353,6 +353,9 @@ notes_for_type() {
             ;;
         RadioButton)
             echo "Mirage-owned host now covers checked-state sync, content projection, and MAUI group-authoritative selection flow; native radio chrome fidelity remains browser-approximated."
+            ;;
+        Page)
+            echo "Mirage now maps MAUI page-title semantics through a dedicated Page handler with active-runtime ownership; iOS-only PageHandler visuals remain browser-inapplicable."
             ;;
         ScrollView)
             echo "Handler shape and request timing are MAUI-aligned; parity contract enforced in integration tests."

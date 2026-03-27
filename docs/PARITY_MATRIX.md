@@ -11,6 +11,7 @@ Status values:
 | MAUI virtual view | Upstream MAUI handler | Browser handler | Status | iOS reference | Android reference | Sample page ID | E2E test ID |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `Window` | `WindowHandler` | `BrowserWindowHandler` | complete | `src/Core/src/Handlers/Window/WindowHandler.iOS.cs` | `src/Core/src/Handlers/Window/WindowHandler.Android.cs` | `parity-page-navigation-window` | `NavigationAndScrollFlowWorks` |
+| `Page` | `PageHandler` | `MiragePageHandler` | partial | `src/Core/src/Handlers/Page/PageHandler.iOS.cs` | `src/Core/src/Handlers/Page/PageHandler.Android.cs` | `n/a` | `PageHandler_TitleProjection_IgnoresDetachedAndNavigationOwnedPages` |
 | `NavigationPage` | `NavigationViewHandler` | `BrowserNavigationPageHandler` | partial | `src/Controls/src/Core/Handlers/NavigationPage/NavigationViewHandler.iOS.cs` | `src/Controls/src/Core/Handlers/NavigationPage/NavigationViewHandler.Android.cs` | `parity-page-navigation-window` | `NavigationAndScrollFlowWorks` |
 | `ContentPage` | `PageHandler` | `BrowserContentPageHandler` | complete | `src/Core/src/Handlers/Page/PageHandler.iOS.cs` | `src/Core/src/Handlers/Page/PageHandler.Android.cs` | `parity-page-containers-layout` | `EntryAndButtonFlowWork` |
 | `ContentView` | `ContentViewHandler` | `BrowserContentViewHandler` | complete | `src/Core/src/Handlers/ContentView/ContentViewHandler.iOS.cs` | `src/Core/src/Handlers/ContentView/ContentViewHandler.Android.cs` | `parity-page-containers-layout` | `EntryAndButtonFlowWork` |
@@ -55,7 +56,7 @@ Status values:
 
 ## Current browser coverage snapshot
 - Complete: `Window`, `ContentPage`, `ContentView`, stack/grid/absolute layout mapping, `Button`, `CheckBox`
-- Partial: `NavigationPage`, `ScrollView`, `FlexLayout`, `Label`, `Entry`, `Editor`, `SearchBar`, `RadioButton`, `Switch`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `Stepper`, `ProgressBar`, `ActivityIndicator`, `Image`, `ImageButton`, `Border`, `Shapes.Ellipse`, `Shapes.Line`, `Shapes.Path`, `Shapes.Polygon`, `Shapes.Polyline`, `Shapes.Rectangle`, `Shapes.RoundRectangle`, `CollectionView`, `IndicatorView`, `RefreshView`
+- Partial: `Page`, `NavigationPage`, `ScrollView`, `FlexLayout`, `Label`, `Entry`, `Editor`, `SearchBar`, `RadioButton`, `Switch`, `Slider`, `Picker`, `DatePicker`, `TimePicker`, `Stepper`, `ProgressBar`, `ActivityIndicator`, `Image`, `ImageButton`, `Border`, `Shapes.Ellipse`, `Shapes.Line`, `Shapes.Path`, `Shapes.Polygon`, `Shapes.Polyline`, `Shapes.Rectangle`, `Shapes.RoundRectangle`, `CollectionView`, `IndicatorView`, `RefreshView`
 - Missing: `GraphicsView`, `CarouselView`, `SwipeView`, `WebView`
 - Shared core substrate: `IView.Clip` (`RectangleGeometry`/`RoundRectangleGeometry`), `IView.Shadow` (solid paint), and `IView.Background` (`SolidPaint` + `LinearGradientPaint`) are implemented in the common browser mapper.
 - Styling/presentation proof: showcase pages (`showcase-page-home`, `showcase-page-text-input`, `showcase-page-form-media`, `showcase-page-layout-collection`) now validate MAUI style-system behavior (`implicit`, `explicit`, `BasedOn`, `StyleClass`, `DynamicResource`) on top of parity handlers.
@@ -65,3 +66,4 @@ Status values:
 - Editor note: Mirage now uses a MAUI-shaped `Editor` handler with a Mirage-owned textarea host, including controls remap (`Text` + `TextTransform`), two-way cursor/selection synchronization, and completed-on-blur semantics; residual browser IME edge cases remain partial.
 - RadioButton note: Mirage now uses a MAUI-shaped `RadioButton` handler on the ControlNode path with a Mirage-owned host (`input[type=radio]` + content slot), including two-way checked synchronization, group-authoritative MAUI selection flow, and deterministic content/style projection; native radio chrome fidelity remains browser-approximated.
 - TimePicker note: Mirage now uses a MAUI-shaped `TimePicker` handler on the ControlNode path with deterministic `Time`/`Format` projection, two-way `IsOpen` roundtrip via a generic runtime picker-open seam, and explicit browser-native format-depth subset behavior (`hh:mm`/`hh:mm:ss`).
+- Page note: Mirage now includes a dedicated MAUI-shaped `MiragePageHandler` for `Page.Title` projection with active-runtime ownership; `NavigationPage` remains the title authority for navigation-stack children.

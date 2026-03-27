@@ -50,6 +50,7 @@ public sealed class ArchitectureBoundaryTests
             "MirageMapHandler.cs",
             "MirageLabelHandler.cs",
             "MirageBoxViewHandler.cs",
+            "MiragePageHandler.cs",
             "MirageContentViewHandler.cs",
             "MirageContentPageHandler.cs",
             "MirageNavigationPageHandler.cs",
@@ -299,6 +300,7 @@ public sealed class ArchitectureBoundaryTests
         var scrollViewHandlerText = File.ReadAllText(Path.Combine(handlersPath, "MirageScrollViewHandler.cs"));
         Assert.Contains(": MirageContentViewHandlerBase<ContentView>", contentViewHandlerText, StringComparison.Ordinal);
         Assert.Contains(": MirageContentViewHandlerBase<ContentPage>", contentPageHandlerText, StringComparison.Ordinal);
+        Assert.Contains("nameof(Page.Title)", contentPageHandlerText, StringComparison.Ordinal);
         Assert.Contains(": MirageSingleContentHostHandler<IScrollView>", scrollViewHandlerText, StringComparison.Ordinal);
         Assert.DoesNotContain("NormalizeContentPosition(", scrollViewHandlerText, StringComparison.Ordinal);
     }
@@ -586,6 +588,30 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("typeof(NavigationPage)", text, StringComparison.Ordinal);
         Assert.Contains("typeof(MirageNavigationPageHandler)", text, StringComparison.Ordinal);
         Assert.Contains("UseMirageNavigation(", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BrowserPlatform_RegistersPageHandler()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var text = File.ReadAllText(hostingPath);
+        Assert.Contains("typeof(Page)", text, StringComparison.Ordinal);
+        Assert.Contains("typeof(MiragePageHandler)", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PageTitleProjection_UsesSharedDispatcherAcrossContainerHosts()
+    {
+        var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");
+        Assert.True(Directory.Exists(handlersPath), $"Handlers path was not found: {handlersPath}");
+
+        var windowText = File.ReadAllText(Path.Combine(handlersPath, "MirageWindowHandler.cs"));
+        var tabbedText = File.ReadAllText(Path.Combine(handlersPath, "MirageTabbedPageHandler.cs"));
+
+        Assert.Contains("MiragePageHandler.TryProjectActivePageTitle(pageHandler)", windowText, StringComparison.Ordinal);
+        Assert.Contains("TryProjectActivePageTitle()", tabbedText, StringComparison.Ordinal);
     }
 
     [Fact]

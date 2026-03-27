@@ -107,6 +107,11 @@ Upstream MAUI shared-code risks for unofficial/browser targets are tracked separ
 - Current behavior: group-authoritative MAUI selection flow is preserved by routing runtime selection through `VirtualView.IsChecked`, with named-group projection to DOM `name` when available and deterministic `RadioButtonGroup.SelectedValue` roundtrip behavior.
 - Deferred: native radio chrome fidelity (`StrokeColor`/`StrokeThickness`/`CornerRadius` semantics) remains browser-approximated via deterministic CSS host projection.
 
+23. Page parity depth
+- Current behavior: `Page` now maps through a dedicated `MiragePageHandler` with active-runtime title projection to browser document title (`Page.Title` via navigation title policy), and `ContentPage` inherits the same title channel.
+- Current behavior: detached/off-screen page handlers do not claim title ownership, and navigation-stack children defer to `MirageNavigationPageHandler` as document-title authority.
+- Deferred: MAUI iOS-only PageHandler semantics (`IsHomeIndicatorAutoHidden`, `PrefersStatusBarHiddenMode`, controller background updates) remain non-applicable on browser DOM hosts.
+
 ## Gap lifecycle policy
 
 1. Any new gap requires:

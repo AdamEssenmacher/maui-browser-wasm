@@ -1,0 +1,10 @@
+{
+  "entries": [
+    {
+      "id": "page-ios-specifics-are-not-browser-semantic-keys",
+      "summary": "MAUI iOS PageHandler mappings (status-bar/home-indicator/controller-background behavior) have no browser-semantic equivalent on Mirage's DOM platform path.",
+      "upstreamReference": "src/Core/src/Handlers/Page/PageHandler.iOS.cs",
+      "testReference": "PageHandler_TitleProjection_IgnoresDetachedAndNavigationOwnedPages"
+    }
+  ]
+}
