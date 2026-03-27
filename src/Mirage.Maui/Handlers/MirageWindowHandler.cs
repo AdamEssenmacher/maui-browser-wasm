@@ -94,6 +94,8 @@ internal sealed class MirageWindowHandler : ElementHandler<Window, MiragePlatfor
         PlatformView.AddChild(pagePlatformView);
         _currentPage = page;
         _currentPageHandler = pageHandler;
+        _ = MiragePageHandler.TryProjectActivePageTitle(pageHandler);
+
         GetCoordinator().RequestRender();
     }
 

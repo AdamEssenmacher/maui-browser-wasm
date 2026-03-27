@@ -7,7 +7,7 @@ using Microsoft.Maui.Platform;
 
 namespace Mirage.Maui.Handlers;
 
-internal sealed class MirageTabbedPageHandler : MirageViewHandler<TabbedPage>
+internal sealed class MirageTabbedPageHandler : MirageViewHandler<TabbedPage>, IMiragePageTitleProjectionHost
 {
     private readonly Dictionary<Page, IElementHandler> _pageHandlers = [];
     private Page? _currentPage;
@@ -148,6 +148,7 @@ internal sealed class MirageTabbedPageHandler : MirageViewHandler<TabbedPage>
 
         NormalizeHostedContentFlowStyles(pagePlatformView);
         platformView.AddChild(pagePlatformView);
+        _ = TryProjectActivePageTitle();
 
         if (_hasArrangedFrame)
         {
@@ -156,6 +157,20 @@ internal sealed class MirageTabbedPageHandler : MirageViewHandler<TabbedPage>
 
         RequestRender();
     }
+
+    internal bool TryProjectActivePageTitle()
+    {
+        if (_currentPage is null
+            || MauiContext is null
+            || !_pageHandlers.TryGetValue(_currentPage, out var currentPageHandler))
+        {
+            return false;
+        }
+
+        return MiragePageHandler.TryProjectActivePageTitle(currentPageHandler);
+    }
+
+    bool IMiragePageTitleProjectionHost.TryProjectActivePageTitle() => TryProjectActivePageTitle();
 
     private IElementHandler GetOrCreatePageHandler(Page page)
     {

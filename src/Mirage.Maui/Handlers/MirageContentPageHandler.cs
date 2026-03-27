@@ -8,7 +8,7 @@ using Microsoft.Maui.Handlers;
 
 namespace Mirage.Maui.Handlers;
 
-internal sealed class MirageContentPageHandler : MirageContentViewHandlerBase<ContentPage>
+internal sealed class MirageContentPageHandler : MirageContentViewHandlerBase<ContentPage>, IMiragePageTitleProjectionHost
 {
     private IMirageImageSourceResolver? _imageSourceResolver;
     private CancellationTokenSource? _backgroundImageResolutionCancellation;
@@ -20,6 +20,7 @@ internal sealed class MirageContentPageHandler : MirageContentViewHandlerBase<Co
         {
             [nameof(ContentPage.Content)] = MapContent,
             [nameof(ContentPage.Padding)] = MapPadding,
+            [nameof(Page.Title)] = MapTitle,
             [nameof(IView.Background)] = MapBackground,
             ["BackgroundColor"] = MapBackground,
             [nameof(Page.BackgroundImageSource)] = MapBackgroundImageSource,
@@ -56,6 +57,12 @@ internal sealed class MirageContentPageHandler : MirageContentViewHandlerBase<Co
     public static void MapPadding(MirageContentPageHandler handler, ContentPage page)
     {
         MirageViewMapper.MapPadding(handler, page);
+    }
+
+    public static void MapTitle(MirageContentPageHandler handler, ContentPage page)
+    {
+        _ = page;
+        handler.TryProjectActivePageTitle();
     }
 
     public static void MapBackground(MirageContentPageHandler handler, ContentPage page)
@@ -239,6 +246,14 @@ internal sealed class MirageContentPageHandler : MirageContentViewHandlerBase<Co
 
         GetImageSourceResolver()?.Release(resolved.BrowserUrl);
     }
+
+    internal bool TryProjectActivePageTitle()
+    {
+        return TryGetPlatformView(out var platformView)
+            && MiragePageHandler.TryProjectActivePageTitle(MauiContext, platformView, VirtualView);
+    }
+
+    bool IMiragePageTitleProjectionHost.TryProjectActivePageTitle() => TryProjectActivePageTitle();
 
     private void ReleaseOwnedBackgroundObjectUrl()
     {

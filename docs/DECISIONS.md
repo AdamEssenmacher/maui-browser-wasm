@@ -2,6 +2,15 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-26 (Page parity wave: MAUI-shaped PageHandler + active title ownership)
+- Added `MiragePageHandler` and registered `Page` in `UseMirageBrowserPlatform` so Mirage now has an explicit MAUI-shaped handler surface for `Page` (`Title` mapper key, empty command mapper) instead of leaving the row unimplemented.
+- Page title projection now flows through `IMirageBrowserHistory` + `INavigationTitlePolicy`, but only when the page handler is actively attached in the realized runtime tree; detached/off-screen handlers no longer claim document-title ownership.
+- `MirageContentPageHandler` now includes the same page-title mapper surface and reuses shared title-projection logic, while preserving existing ContentPage behavior for content/padding/background/background-image/style.
+- `MirageWindowHandler` now triggers a post-attach page-title projection pass for `MiragePageHandler`/`MirageContentPageHandler` so initial root-page titles project deterministically after attachment.
+- Title projection dispatch is now centralized so container hosts (including `TabbedPage`) can project active child page titles through the same guard path, and detached subtrees do not claim browser title ownership until they are rooted under `ComponentKind.Root`.
+- Navigation-stack title authority is unchanged: child pages under `NavigationPage` defer document-title writes to `MirageNavigationPageHandler`.
+- `MiragePageHandler` now fails fast for unsupported `Page` subtypes so `Page` fallback registration cannot silently realize inert browser containers for unimplemented page families (`FlyoutPage`/`CarouselPage`/custom page subclasses); unsupported types must register dedicated handlers.
+
 ## 2026-03-26 (TimePicker parity wave: MAUI-shaped handler + built-in time input host)
 - Added `MirageTimePickerHandler` on the built-in ControlNode path (`ComponentKind.TimePicker`) with MAUI-aligned mapper shape for `TimePicker` core properties and explicit Mirage extension mapping for `IsEnabled`.
 - TimePicker realization now uses browser-native `<input type="time">` projection with deterministic `Time`/`Format` mapping (`hh:mm` + `hh:mm:ss` subset via `step=60|1`), two-way runtime `change` parsing, and disabled-state mutation gating.

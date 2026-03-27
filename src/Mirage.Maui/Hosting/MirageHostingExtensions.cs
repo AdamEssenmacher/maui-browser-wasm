@@ -31,6 +31,7 @@ public static class MirageHostingExtensions
         builder.ConfigureMauiHandlers(handlers =>
         {
             handlers.AddHandler(typeof(Window), typeof(MirageWindowHandler));
+            handlers.AddHandler(typeof(Page), typeof(MiragePageHandler));
             handlers.AddHandler(typeof(NavigationPage), typeof(MirageNavigationPageHandler));
             handlers.AddHandler(typeof(ContentPage), typeof(MirageContentPageHandler));
             handlers.AddHandler(typeof(TabbedPage), typeof(MirageTabbedPageHandler));

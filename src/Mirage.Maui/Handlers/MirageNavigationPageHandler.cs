@@ -15,7 +15,7 @@ using Microsoft.Maui.Platform;
 
 namespace Mirage.Maui.Handlers;
 
-internal sealed class MirageNavigationPageHandler : MirageViewHandler<NavigationPage>, INavigationViewHandler
+internal sealed class MirageNavigationPageHandler : MirageViewHandler<NavigationPage>, INavigationViewHandler, IMiragePageTitleProjectionHost
 {
     private const double DefaultNavigationBarHeight = 46;
     private const string NavigationBarAutomationId = "mirage-navigation-bar";
@@ -80,6 +80,13 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
     IStackNavigationView INavigationViewHandler.VirtualView => VirtualView;
 
     object INavigationViewHandler.PlatformView => PlatformView;
+
+    internal bool TryProjectActivePageTitle()
+    {
+        return ProjectCurrentRoute(MirageNavigationTrigger.Manual);
+    }
+
+    bool IMiragePageTitleProjectionHost.TryProjectActivePageTitle() => TryProjectActivePageTitle();
 
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
@@ -1074,16 +1081,16 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
         return true;
     }
 
-    private void ProjectCurrentRoute(MirageNavigationTrigger trigger)
+    private bool ProjectCurrentRoute(MirageNavigationTrigger trigger)
     {
         if (_historyWriteSuppressed)
         {
-            return;
+            return false;
         }
 
         if (_currentPage is null)
         {
-            return;
+            return false;
         }
 
         if (!TryResolveNavigationServices(
@@ -1096,12 +1103,12 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
                 out var titlePolicy,
                 out var browserHistory))
         {
-            return;
+            return false;
         }
 
         if (!routeSerializer.TrySerialize(_currentPage, routeRegistry, out var path))
         {
-            return;
+            return false;
         }
 
         MirageRouteMatch? currentMatch = null;
@@ -1148,6 +1155,7 @@ internal sealed class MirageNavigationPageHandler : MirageViewHandler<Navigation
 
         _lastProjectedPath = path;
         browserHistory.SetDocumentTitle(titlePolicy.ResolveTitle(_currentPage, currentMatch?.Path));
+        return true;
     }
 
     private async ValueTask<NavigationGuardDecision> EvaluateGuardsAsync(MirageRouteMatch targetRoute, MirageNavigationTrigger trigger)
