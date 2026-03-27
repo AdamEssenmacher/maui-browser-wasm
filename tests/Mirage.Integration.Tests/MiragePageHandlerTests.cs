@@ -25,19 +25,19 @@ public sealed class MiragePageHandlerTests
             Title = "Detached Title"
         };
 
-        var detachedHandler = new MiragePageHandler();
+        var detachedHandler = new MirageContentPageHandler();
         ((IElementHandler)detachedHandler).SetMauiContext(mauiContext);
         ((IElementHandler)detachedHandler).SetVirtualView(detachedPage);
 
         // Detached handlers should not claim document-title ownership.
         Assert.Equal(string.Empty, history.DocumentTitle);
-        MiragePageHandler.Mapper.UpdateProperty(detachedHandler, detachedPage, nameof(Page.Title));
+        MirageContentPageHandler.Mapper.UpdateProperty(detachedHandler, detachedPage, nameof(Page.Title));
         Assert.Equal(string.Empty, history.DocumentTitle);
 
         var rootNode = MiragePlatformView.CreateControl(Core.Semantics.ComponentKind.Root);
         rootNode.AssignNodeId("node-root-page-test");
         rootNode.AddChild(detachedHandler.PlatformView);
-        MiragePageHandler.Mapper.UpdateProperty(detachedHandler, detachedPage, nameof(Page.Title));
+        MirageContentPageHandler.Mapper.UpdateProperty(detachedHandler, detachedPage, nameof(Page.Title));
         Assert.Equal("Detached Title", history.DocumentTitle);
 
         var navOwnedPage = new ContentPage
@@ -53,6 +53,21 @@ public sealed class MiragePageHandlerTests
 
         MirageContentPageHandler.Mapper.UpdateProperty(navOwnedHandler, navOwnedPage, nameof(Page.Title));
         Assert.Equal("Detached Title", history.DocumentTitle);
+    }
+
+    [Fact]
+    public void PageHandler_UnsupportedPageSubtype_ThrowsClearError()
+    {
+        var history = new BrowserHistoryProbe("/");
+        var mauiContext = CreateMauiContext(history, includeNavigationServices: false);
+
+        var unsupportedPage = new FlyoutPage();
+        var handler = new MiragePageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var error = Assert.Throws<NotSupportedException>(() => ((IElementHandler)handler).SetVirtualView(unsupportedPage));
+        Assert.Contains(nameof(FlyoutPage), error.Message, StringComparison.Ordinal);
+        Assert.Contains("dedicated handler", error.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

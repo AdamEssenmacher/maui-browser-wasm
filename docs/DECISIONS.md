@@ -9,6 +9,7 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - `MirageWindowHandler` now triggers a post-attach page-title projection pass for `MiragePageHandler`/`MirageContentPageHandler` so initial root-page titles project deterministically after attachment.
 - Title projection dispatch is now centralized so container hosts (including `TabbedPage`) can project active child page titles through the same guard path, and detached subtrees do not claim browser title ownership until they are rooted under `ComponentKind.Root`.
 - Navigation-stack title authority is unchanged: child pages under `NavigationPage` defer document-title writes to `MirageNavigationPageHandler`.
+- `MiragePageHandler` now fails fast for unsupported `Page` subtypes so `Page` fallback registration cannot silently realize inert browser containers for unimplemented page families (`FlyoutPage`/`CarouselPage`/custom page subclasses); unsupported types must register dedicated handlers.
 
 ## 2026-03-26 (TimePicker parity wave: MAUI-shaped handler + built-in time input host)
 - Added `MirageTimePickerHandler` on the built-in ControlNode path (`ComponentKind.TimePicker`) with MAUI-aligned mapper shape for `TimePicker` core properties and explicit Mirage extension mapping for `IsEnabled`.

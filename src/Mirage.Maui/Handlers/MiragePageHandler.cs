@@ -33,6 +33,7 @@ internal sealed class MiragePageHandler : MirageViewHandler<Page>, IMiragePageTi
 
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
+        EnsureSupportedPageType(VirtualView);
         platformView.SetStyle("display", "grid");
         base.ConnectHandler(platformView);
         TryProjectActivePageTitle();
@@ -112,5 +113,17 @@ internal sealed class MiragePageHandler : MirageViewHandler<Page>, IMiragePageTi
         }
 
         return false;
+    }
+
+    private static void EnsureSupportedPageType(Page page)
+    {
+        if (page.GetType() == typeof(Page))
+        {
+            return;
+        }
+
+        throw new NotSupportedException(
+            $"MiragePageHandler does not support '{page.GetType().FullName}'. " +
+            "Register a dedicated handler for this Page subtype instead of relying on Page fallback mapping.");
     }
 }
