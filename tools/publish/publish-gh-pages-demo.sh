@@ -311,6 +311,7 @@ SOURCE_REPO_URL="$(git -C "$REPO_ROOT" remote get-url origin)"
 SOURCE_COMMIT="$(git -C "$REPO_ROOT" rev-parse HEAD)"
 GENERATED_AT_UTC="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 PUBLISH_CACHE_STAMP="$(git -C "$REPO_ROOT" rev-parse --short=12 HEAD)"
+PUBLISH_CACHE_STAMP="${PUBLISH_CACHE_STAMP}-$(date -u +"%Y%m%d%H%M%S")"
 
 stamp_demo_entrypoints "$STAGED_DEMO_DIR" "$PUBLISH_CACHE_STAMP"
 
