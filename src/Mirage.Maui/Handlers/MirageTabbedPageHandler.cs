@@ -162,13 +162,12 @@ internal sealed class MirageTabbedPageHandler : MirageViewHandler<TabbedPage>, I
     {
         if (_currentPage is null
             || MauiContext is null
-            || !_pageHandlers.TryGetValue(_currentPage, out var currentPageHandler)
-            || currentPageHandler.PlatformView is not MiragePlatformView currentPlatformView)
+            || !_pageHandlers.TryGetValue(_currentPage, out var currentPageHandler))
         {
             return false;
         }
 
-        return MiragePageHandler.TryProjectActivePageTitle(MauiContext, currentPlatformView, _currentPage);
+        return MiragePageHandler.TryProjectActivePageTitle(currentPageHandler);
     }
 
     bool IMiragePageTitleProjectionHost.TryProjectActivePageTitle() => TryProjectActivePageTitle();

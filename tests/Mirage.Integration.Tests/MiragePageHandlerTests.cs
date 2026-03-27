@@ -151,6 +151,62 @@ public sealed class MiragePageHandlerTests
     }
 
     [Fact]
+    public void TabbedPageHandler_TitleProjection_DelegatesToNavigationPageAuthority_ForNavigationTabs()
+    {
+        var originalDispatcherProvider = DispatcherProvider.Current;
+        try
+        {
+            DispatcherProvider.SetCurrent(new BrowserDispatcherProvider());
+            var history = new BrowserHistoryProbe("/");
+            var mauiContext = CreateMauiContext(
+                history,
+                includeNavigationServices: true,
+                configureNavigation: builder =>
+                {
+                    builder.Map<FirstTabbedRoutePage>("/first");
+                    builder.Map<NavigationTabHomePage>("/nav/home");
+                    builder.SetFallback<FirstTabbedRoutePage>();
+                });
+
+            var firstTab = AttachContentPageHandler(mauiContext, new FirstTabbedRoutePage
+            {
+                Title = "First Tab"
+            });
+            var navigationHome = AttachContentPageHandler(mauiContext, new NavigationTabHomePage
+            {
+                Title = "Navigation Home"
+            });
+            var navigationTab = AttachNavigationPageHandler(mauiContext, new NavigationPage(navigationHome));
+
+            var tabbedPage = new TabbedPage();
+            tabbedPage.Children.Add(firstTab);
+            tabbedPage.Children.Add(navigationTab);
+            tabbedPage.CurrentPage = firstTab;
+
+            var tabbedHandler = new MirageTabbedPageHandler();
+            ((IElementHandler)tabbedHandler).SetMauiContext(mauiContext);
+            ((IElementHandler)tabbedHandler).SetVirtualView(tabbedPage);
+
+            var rootNode = MiragePlatformView.CreateControl(Core.Semantics.ComponentKind.Root);
+            rootNode.AssignNodeId("node-root-tabbed-nav-title");
+            rootNode.AddChild(tabbedHandler.PlatformView);
+
+            Assert.True(tabbedHandler.TryProjectActivePageTitle());
+            Assert.Equal("First Tab", history.DocumentTitle);
+
+            tabbedPage.CurrentPage = navigationTab;
+            MirageTabbedPageHandler.Mapper.UpdateProperty(tabbedHandler, tabbedPage, nameof(TabbedPage.CurrentPage));
+
+            // NavigationPage remains the title authority for its stack when hosted in TabbedPage.
+            Assert.Equal("Navigation Home", history.DocumentTitle);
+        }
+        finally
+        {
+            DispatcherProvider.SetCurrent(originalDispatcherProvider);
+        }
+    }
+
+    [Fact]
     public void ContentPageHandler_TitleProjection_RequiresRootAncestry_NotOnlyImmediateParent()
     {
         var history = new BrowserHistoryProbe("/");
@@ -193,7 +249,27 @@ public sealed class MiragePageHandlerTests
         return page;
     }
 
-    private static IMauiContext CreateMauiContext(BrowserHistoryProbe history, bool includeNavigationServices)
+    private static TPage AttachContentPageHandler<TPage>(IMauiContext mauiContext, TPage page)
+        where TPage : ContentPage
+    {
+        var handler = new MirageContentPageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        ((IElementHandler)handler).SetVirtualView(page);
+        return page;
+    }
+
+    private static NavigationPage AttachNavigationPageHandler(IMauiContext mauiContext, NavigationPage navigationPage)
+    {
+        var handler = new MirageNavigationPageHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        ((IElementHandler)handler).SetVirtualView(navigationPage);
+        return navigationPage;
+    }
+
+    private static IMauiContext CreateMauiContext(
+        BrowserHistoryProbe history,
+        bool includeNavigationServices,
+        Action<MirageNavigationBuilder>? configureNavigation = null)
     {
         var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
         var services = new ServiceCollection();
@@ -201,8 +277,8 @@ public sealed class MiragePageHandlerTests
         services.AddSingleton<IMirageBrowserHistory>(history);
         services.AddSingleton(
             includeNavigationServices
-                ? BuildNavigationConfiguration(defaultTitle: "Mirage Navigation Tests")
-                : BuildNavigationConfiguration(defaultTitle: "Mirage"));
+                ? BuildNavigationConfiguration(defaultTitle: "Mirage Navigation Tests", configureNavigation)
+                : BuildNavigationConfiguration(defaultTitle: "Mirage", configureNavigation));
         services.AddSingleton<INavigationTitlePolicy, DefaultNavigationTitlePolicy>();
 
         if (includeNavigationServices)
@@ -219,12 +295,19 @@ public sealed class MiragePageHandlerTests
         return new MauiContext(services.BuildServiceProvider());
     }
 
-    private static MirageNavigationConfiguration BuildNavigationConfiguration(string defaultTitle)
+    private static MirageNavigationConfiguration BuildNavigationConfiguration(
+        string defaultTitle,
+        Action<MirageNavigationBuilder>? configureNavigation = null)
     {
         var builder = new MirageNavigationBuilder();
         builder.SetDefaultTitle(defaultTitle);
+        configureNavigation?.Invoke(builder);
         return builder.Build();
     }
+
+    private sealed class FirstTabbedRoutePage : ContentPage;
+
+    private sealed class NavigationTabHomePage : ContentPage;
 
     private sealed class BrowserHistoryProbe(string initialLocation) : IMirageBrowserHistory
     {
