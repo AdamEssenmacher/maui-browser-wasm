@@ -4,6 +4,7 @@ using Mirage.Maui.Handlers;
 using Mirage.Maui.Images;
 using Mirage.Maui.Navigation;
 using Mirage.Web.Runtime;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Maui.ApplicationModel;
@@ -122,7 +123,7 @@ public static class MirageHostingExtensions
         return builder;
     }
 
-    public static MauiAppBuilder UseMirageComponentProvider<TProvider>(this MauiAppBuilder builder)
+    public static MauiAppBuilder UseMirageComponentProvider<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TProvider>(this MauiAppBuilder builder)
         where TProvider : class, IMirageComponentProvider
     {
         builder.Services.AddSingleton<IMirageComponentProvider, TProvider>();

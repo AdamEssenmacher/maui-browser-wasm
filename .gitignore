@@ -204,6 +204,9 @@ DocProject/Help/html
 
 # Click-Once directory
 publish/
+!tools/publish/
+!tools/publish/demos.manifest.json
+!tools/publish/publish-gh-pages-demo.sh
 
 # Publish Web Output
 *.[Pp]ublish.xml

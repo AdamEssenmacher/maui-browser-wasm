@@ -10,7 +10,8 @@ namespace Mirage.Maui.Images;
 
 internal sealed class MirageManifestImageSourceResolver : IMirageImageSourceResolver
 {
-    private const string ManifestPath = "/_mirage/assets/images.manifest.v1.json";
+    // Keep manifest lookup relative so project-site hosts (e.g. GitHub Pages /<repo>/...) resolve correctly.
+    private const string ManifestPath = "_mirage/assets/images.manifest.v1.json";
     private const int SupportedManifestVersion = 1;
     private const int ManifestLoadMaxAttempts = 5;
     private const int ManifestLoadRetryDelayMilliseconds = 150;
