@@ -807,7 +807,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         ApplyScrollToRequest(e);
     }
 
-    private void ApplyScrollToRequest(ScrollToRequestEventArgs request)
+    protected virtual void ApplyScrollToRequest(ScrollToRequestEventArgs request)
     {
         if (Coordinator is null || _itemRealizations.Count == 0 || string.IsNullOrWhiteSpace(PlatformView.NodeId))
         {

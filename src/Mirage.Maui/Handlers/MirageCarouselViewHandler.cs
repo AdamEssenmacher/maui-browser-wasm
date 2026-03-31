@@ -18,6 +18,7 @@ internal sealed class MirageCarouselViewHandler : MirageItemsViewHandler<Carouse
     private bool _updatingCurrentItemFromHandler;
     private bool _updatingPositionFromHandler;
     private bool _dispatchingProgrammaticScroll;
+    private bool _awaitingProgrammaticScrollRequest;
     private bool _awaitingAnimatedProgrammaticScroll;
     private int? _pendingAnimatedWrapLogicalIndex;
     private double? _pendingAnimatedTargetMainAxisOffset;
@@ -90,6 +91,7 @@ internal sealed class MirageCarouselViewHandler : MirageItemsViewHandler<Carouse
         _lastArrangedHeight = 0;
         _lastScrollLeft = 0;
         _lastScrollTop = 0;
+        _awaitingProgrammaticScrollRequest = false;
         _awaitingAnimatedProgrammaticScroll = false;
         _pendingAnimatedWrapLogicalIndex = null;
         _pendingAnimatedTargetMainAxisOffset = null;
@@ -157,7 +159,9 @@ internal sealed class MirageCarouselViewHandler : MirageItemsViewHandler<Carouse
         _lastScrollLeft = left;
         _lastScrollTop = top;
 
-        var isProgrammaticScroll = _dispatchingProgrammaticScroll || _awaitingAnimatedProgrammaticScroll;
+        var isProgrammaticScroll = _dispatchingProgrammaticScroll
+            || _awaitingProgrammaticScrollRequest
+            || _awaitingAnimatedProgrammaticScroll;
         if (!isProgrammaticScroll && (!VirtualView.IsEnabled || !VirtualView.IsSwipeEnabled))
         {
             return;
@@ -179,6 +183,11 @@ internal sealed class MirageCarouselViewHandler : MirageItemsViewHandler<Carouse
             return;
         }
 
+        if (_awaitingProgrammaticScrollRequest)
+        {
+            _awaitingProgrammaticScrollRequest = false;
+        }
+
         if (isProgrammaticScroll)
         {
             return;
@@ -195,6 +204,7 @@ internal sealed class MirageCarouselViewHandler : MirageItemsViewHandler<Carouse
 
     protected override void SendProgrammaticScrolled(double horizontalOffset, double verticalOffset)
     {
+        _awaitingProgrammaticScrollRequest = false;
         _dispatchingProgrammaticScroll = true;
         try
         {
@@ -203,6 +213,26 @@ internal sealed class MirageCarouselViewHandler : MirageItemsViewHandler<Carouse
         finally
         {
             _dispatchingProgrammaticScroll = false;
+        }
+    }
+
+    protected override void ApplyScrollToRequest(ScrollToRequestEventArgs request)
+    {
+        if (ItemRealizations.Count == 0)
+        {
+            return;
+        }
+
+        var targetIndex = ResolveScrollToTargetIndex(request);
+        if (targetIndex < 0 || targetIndex >= ItemRealizations.Count)
+        {
+            return;
+        }
+
+        _awaitingProgrammaticScrollRequest = true;
+        if (!ScrollLogicalIndexIntoView(targetIndex, request.IsAnimated))
+        {
+            _awaitingProgrammaticScrollRequest = false;
         }
     }
 
@@ -689,6 +719,7 @@ internal sealed class MirageCarouselViewHandler : MirageItemsViewHandler<Carouse
 
     private void CompleteAnimatedProgrammaticScroll(int logicalIndex)
     {
+        _awaitingProgrammaticScrollRequest = false;
         _awaitingAnimatedProgrammaticScroll = false;
         _pendingAnimatedTargetMainAxisOffset = null;
         _scrollSettleVersion++;

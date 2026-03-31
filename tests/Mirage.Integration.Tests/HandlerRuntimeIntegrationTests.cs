@@ -2337,6 +2337,125 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void CarouselViewHandler_AnimatedScrollTo_DoesNotSetDragging()
+    {
+        var dispatcher = new QueuedDispatcher();
+        var coordinator = new MirageRenderCoordinator(dispatcher);
+        var runtime = new RuntimeProbe
+        {
+            HorizontalScrollChildIntoViewDelta = 10
+        };
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var items = new[]
+        {
+            new SectionModel(typeof(ContentPage), "Alpha", "First"),
+            new SectionModel(typeof(ContentPage), "Beta", "Second"),
+            new SectionModel(typeof(ContentPage), "Gamma", "Third")
+        };
+
+        var handler = new MirageCarouselViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var carousel = new CarouselView
+        {
+            ItemsSource = items,
+            ItemsLayout = new LinearItemsLayout(ItemsLayoutOrientation.Horizontal)
+            {
+                ItemSpacing = 0
+            },
+            PeekAreaInsets = new Thickness(0),
+            CurrentItem = items[0],
+            Position = 0,
+            Loop = false,
+            IsSwipeEnabled = true
+        };
+
+        ((IElementHandler)handler).SetVirtualView(carousel);
+        coordinator.SetRoot(handler.PlatformView);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        dispatcher.FlushAll();
+
+        var baselineCalls = runtime.ScrollChildIntoViewCallCount;
+        carousel.ScrollTo(2, position: ScrollToPosition.Center, animate: true);
+
+        Assert.True(runtime.ScrollChildIntoViewCallCount >= baselineCalls + 1);
+        Assert.True(runtime.LastScrollChildIntoViewIsHorizontal);
+        Assert.False(carousel.IsDragging);
+
+        Assert.True(coordinator.TrySetNodeScrollPosition(handler.PlatformView.NodeId, 640, 0, out _, out _));
+        handler.OnRuntimeEvent("scroll", null);
+
+        Assert.Equal(2, carousel.Position);
+        Assert.Same(items[2], carousel.CurrentItem);
+        Assert.False(carousel.IsDragging);
+    }
+
+    [Fact]
+    public void CarouselViewHandler_AnimatedScrollTo_RemainsProgrammaticWhenSwipeIsDisabled()
+    {
+        var dispatcher = new QueuedDispatcher();
+        var coordinator = new MirageRenderCoordinator(dispatcher);
+        var runtime = new RuntimeProbe
+        {
+            HorizontalScrollChildIntoViewDelta = 10
+        };
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var items = new[]
+        {
+            new SectionModel(typeof(ContentPage), "Alpha", "First"),
+            new SectionModel(typeof(ContentPage), "Beta", "Second"),
+            new SectionModel(typeof(ContentPage), "Gamma", "Third")
+        };
+
+        var handler = new MirageCarouselViewHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+
+        var carousel = new CarouselView
+        {
+            ItemsSource = items,
+            ItemsLayout = new LinearItemsLayout(ItemsLayoutOrientation.Horizontal)
+            {
+                ItemSpacing = 0
+            },
+            PeekAreaInsets = new Thickness(0),
+            CurrentItem = items[0],
+            Position = 0,
+            Loop = false,
+            IsSwipeEnabled = false
+        };
+
+        ((IElementHandler)handler).SetVirtualView(carousel);
+        coordinator.SetRoot(handler.PlatformView);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        dispatcher.FlushAll();
+
+        var baselineCalls = runtime.ScrollChildIntoViewCallCount;
+        carousel.ScrollTo(2, position: ScrollToPosition.Center, animate: true);
+
+        Assert.True(runtime.ScrollChildIntoViewCallCount >= baselineCalls + 1);
+        Assert.False(carousel.IsDragging);
+
+        Assert.True(coordinator.TrySetNodeScrollPosition(handler.PlatformView.NodeId, 640, 0, out _, out _));
+        handler.OnRuntimeEvent("scroll", null);
+
+        Assert.Equal(2, carousel.Position);
+        Assert.Same(items[2], carousel.CurrentItem);
+        Assert.False(carousel.IsDragging);
+    }
+
+    [Fact]
     public void CarouselViewHandler_LoopLeadingCloneScroll_WrapsAndClearsDragging()
     {
         var dispatcher = new QueuedDispatcher();
