@@ -63,6 +63,7 @@ public static class MirageHostingExtensions
             handlers.AddHandler(typeof(Stepper), typeof(MirageStepperHandler));
             handlers.AddHandler(typeof(IndicatorView), typeof(MirageIndicatorViewHandler));
             handlers.AddHandler(typeof(Image), typeof(MirageImageHandler));
+            handlers.AddHandler(typeof(ImageButton), typeof(MirageImageButtonHandler));
             handlers.AddHandler(typeof(Border), typeof(MirageBorderHandler));
             handlers.AddHandler(typeof(BoxView), typeof(MirageBoxViewHandler));
             handlers.AddHandler(typeof(MauiShapes.Ellipse), typeof(MirageShapeViewHandler));

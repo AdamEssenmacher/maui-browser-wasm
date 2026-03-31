@@ -118,6 +118,39 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentImageButtonDescriptor_MapsToMirageOwnedButtonAndSecondaryImage()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.ImageButton);
+
+        Assert.Equal("button", descriptor.ElementTagName);
+        Assert.Equal("button", descriptor.DefaultAttributes["type"]);
+        Assert.Equal("img", descriptor.SecondaryElementTagName);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["AriaLabel"].Target);
+        Assert.Equal("aria-label", descriptor.PropertyMappings["AriaLabel"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["AriaDescription"].Target);
+        Assert.Equal("aria-description", descriptor.PropertyMappings["AriaDescription"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Disabled"].Target);
+        Assert.Equal("disabled", descriptor.PropertyMappings["Disabled"].Name);
+        Assert.Equal(PropertyElementTarget.SecondaryElement, descriptor.PropertyMappings["Source"].ElementTarget);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Source"].Target);
+        Assert.Equal("src", descriptor.PropertyMappings["Source"].Name);
+        Assert.Equal(PropertyElementTarget.SecondaryElement, descriptor.PropertyMappings["ImageObjectFit"].ElementTarget);
+        Assert.True(descriptor.EventMappings.ContainsKey("click"));
+        Assert.True(descriptor.EventMappings.ContainsKey("pointerdown"));
+        Assert.True(descriptor.EventMappings.ContainsKey("pointerup"));
+        Assert.False(descriptor.EventMappings.ContainsKey("pointerleave"));
+        Assert.True(descriptor.EventMappings.ContainsKey("keydown"));
+        Assert.Equal(EventPayloadKind.Key, descriptor.EventMappings["keydown"].PayloadKind);
+        Assert.True(descriptor.EventMappings.ContainsKey("load"));
+        Assert.Equal(EventTarget.SecondaryElement, descriptor.EventMappings["load"].Target);
+        Assert.Equal(EventPayloadKind.SourceAttribute, descriptor.EventMappings["load"].PayloadKind);
+        Assert.True(descriptor.EventMappings.ContainsKey("error"));
+        Assert.Equal(EventTarget.SecondaryElement, descriptor.EventMappings["error"].Target);
+        Assert.Equal(EventPayloadKind.SourceAttribute, descriptor.EventMappings["error"].PayloadKind);
+    }
+
+    [Fact]
     public void FluentBorderDescriptor_MapsAutomationId()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();

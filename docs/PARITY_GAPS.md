@@ -57,8 +57,8 @@ Upstream MAUI shared-code risks for unofficial/browser targets are tracked separ
 - Deferred: native long-press stepper repeat behavior and activity-indicator visual parity are best-effort in this slice.
 
 12. Media source parity depth (`Image` / `ImageButton`)
-- Current behavior: `UriImageSource`, `FileImageSource`, and `FontImageSource` project to DOM `<img src=...>` with deterministic source-kind + load-state attributes.
-- Deferred: stream/image-source service pipeline parity (including cancellation semantics and decode caching) remains unsupported fallback in this slice.
+- Current behavior: `Image` and `ImageButton` use a resolver-first async source pipeline with cancellation/version guards, deterministic source-kind + load-state attributes, stale load/error filtering, GIF playback projection, and managed object-url cleanup.
+- Deferred: deeper stream/image-source service pipeline parity (including decode caching and browser/native decode semantics) remains partial in this slice.
 
 13. Border parity depth
 - Current behavior: single-child hosting, solid stroke color/thickness, round-rectangle/rectangle shape mapping, and dashed best-effort stroke style are projected to CSS.

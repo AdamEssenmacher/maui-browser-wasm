@@ -208,6 +208,13 @@ public static class ControlsSampleCatalog
             description: "Runnable in Mirage today: exercises URI/file/font/stream image sources plus GIF playback toggles and opacity scenarios.",
             pageFactory: CreateImagePage),
         new(
+            id: "imagebuttonparitypage",
+            title: "ImageButtonParityProbePage",
+            upstreamPath: "App/ImageButtonParityProbePage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(ImageButtonParityProbePage),
+            description: "Mirage parity probe: exercises ImageButton source/aspect projection, interaction counters, chrome updates, and enabled-state gating."),
+        new(
             id: "sliderpage",
             title: "SliderPage",
             upstreamPath: "Pages/Controls/SliderPage.xaml",
