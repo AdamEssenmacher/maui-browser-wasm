@@ -2,6 +2,13 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-03-31 (CarouselView parity wave: MAUI-shaped ItemsView handler + snap carousel runtime)
+- Added `MirageCarouselViewHandler : MirageItemsViewHandler<CarouselView>` and registered `CarouselView` in `UseMirageBrowserPlatform`, keeping the handler aligned to MAUI's direct `ItemsViewHandler<CarouselView>` shape instead of routing through the `CollectionView` chain.
+- Browser realization now uses a stable scroll host + items track with CSS scroll-snap, two-way `Position`/`CurrentItem` synchronization, `PeekAreaInsets` sizing, `IsSwipeEnabled` gating, `IsBounceEnabled` overscroll approximation, and linked `IndicatorView` behavior through MAUI's existing binding-based linkage.
+- Carousel loop support is handler-owned rather than provider-special-cased: Mirage maintains leading/trailing loop clones, wraps settled scroll positions back onto logical items, updates `VisibleViews`, and applies `CurrentItem` / `NextItem` / `PreviousItem` / `DefaultItem` visual states without item-handler churn.
+- Non-animated programmatic carousel alignment now derives the snapped logical offset from handler-owned carousel geometry before updating runtime scroll state, so looped carousels do not depend on the generic child-scroll seam to infer carousel-specific snap positions.
+- Added parity governance artifacts plus ControlsSample probe/E2E proof (`CarouselViewParityProbePage`) so CarouselView moves from missing-handler status into tracked partial parity with explicit browser divergence notes.
+
 ## 2026-03-26 (Page parity wave: MAUI-shaped PageHandler + active title ownership)
 - Added `MiragePageHandler` and registered `Page` in `UseMirageBrowserPlatform` so Mirage now has an explicit MAUI-shaped handler surface for `Page` (`Title` mapper key, empty command mapper) instead of leaving the row unimplemented.
 - Page title projection now flows through `IMirageBrowserHistory` + `INavigationTitlePolicy`, but only when the page handler is actively attached in the realized runtime tree; detached/off-screen handlers no longer claim document-title ownership.

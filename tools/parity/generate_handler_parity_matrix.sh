@@ -286,7 +286,7 @@ shape_grade_for_type() {
     fi
 
     case "$key" in
-        CollectionView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|IndicatorView|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|Page|ImageButton)
+        CollectionView|CarouselView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|IndicatorView|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|Page|ImageButton)
             echo "A"
             ;;
         ContentView|Button|Window|NavigationPage|Image|Border|Picker|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame)
@@ -315,7 +315,7 @@ implementation_grade_for_type() {
 
     case "$key" in
         CollectionView) echo "C" ;;
-        Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|ImageButton) echo "B" ;;
+        CarouselView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|ImageButton) echo "B" ;;
         ContentView|Button|Window|NavigationPage|Image|Border|Picker|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame|IndicatorView|Page) echo "C" ;;
         Entry|Editor|TimePicker) echo "B" ;;
         TabbedPage) echo "D" ;;
@@ -335,6 +335,9 @@ notes_for_type() {
     case "$key" in
         CollectionView)
             echo "Non-virtualized parity path; grouped/reorder/full anchoring remain partial. See \`docs/PARITY_GAPS.md\` (CollectionView entries)."
+            ;;
+        CarouselView)
+            echo "Dedicated MAUI-shaped ItemsView parity path with snap scrolling, loop/drag/visible-view updates, and linked IndicatorView proof; bounce physics and inherited ItemsUpdatingScrollMode limits remain partial. See \`docs/PARITY_GAPS.md\`."
             ;;
         Label)
             echo "Core mapper + text-source parity implemented; HTML breadth and span hit-region parity remain partial. See \`docs/PARITY_GAPS.md\`."

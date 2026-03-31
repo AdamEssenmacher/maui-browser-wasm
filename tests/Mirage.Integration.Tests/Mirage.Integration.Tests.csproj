@@ -39,6 +39,7 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageGroupableItemsViewHandler.cs" Link="Handlers\MirageGroupableItemsViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageReorderableItemsViewHandler.cs" Link="Handlers\MirageReorderableItemsViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageCollectionViewHandler.cs" Link="Handlers\MirageCollectionViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageCarouselViewHandler.cs" Link="Handlers\MirageCarouselViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageBoxViewHandler.cs" Link="Handlers\MirageBoxViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageShapeViewHandler.cs" Link="Handlers\MirageShapeViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageLineHandler.cs" Link="Handlers\MirageLineHandler.cs" />
