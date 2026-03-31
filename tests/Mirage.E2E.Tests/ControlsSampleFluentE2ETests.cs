@@ -87,6 +87,62 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         "controls-sample-collectionviewgallery-open-filterable-single-selection"
     ];
 
+    private static readonly string[] ExpectedHomeCategoryAutomationIds =
+    [
+        "controls-sample-open-category-layouts",
+        "controls-sample-open-category-controls",
+        "controls-sample-open-category-core",
+        "controls-sample-open-category-parityprobes",
+        "controls-sample-open-category-compatibility"
+    ];
+
+    private static readonly IReadOnlyDictionary<string, string> EntryCategoryById =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["absolutelayoutpage"] = "layouts",
+            ["layoutspage"] = "layouts",
+            ["gridpage"] = "layouts",
+            ["layoutupdatespage"] = "layouts",
+            ["relativelayoutpage"] = "layouts",
+            ["horizontalstacklayoutpage"] = "layouts",
+            ["stacklayoutpage"] = "layouts",
+            ["verticalstacklayoutpage"] = "layouts",
+            ["templatedviewpage"] = "layouts",
+            ["zindexpage"] = "layouts",
+            ["scrollviewpage"] = "layouts",
+            ["clippingpage"] = "layouts",
+            ["contentviewpage"] = "layouts",
+            ["customlayoutpage"] = "layouts",
+            ["flexlayoutpage"] = "layouts",
+            ["layoutisenabledpage"] = "layouts",
+
+            ["activityindicatorpage"] = "controls",
+            ["boxviewpage"] = "controls",
+            ["buttonpage"] = "controls",
+            ["checkboxpage"] = "controls",
+            ["imagepage"] = "controls",
+            ["sliderpage"] = "controls",
+            ["stepperpage"] = "controls",
+            ["mapsgallery"] = "controls",
+            ["collectionviewgallery"] = "controls",
+
+            ["clippage"] = "core",
+            ["brushespage"] = "core",
+            ["contentpagegallery"] = "core",
+            ["transformationspage"] = "core",
+            ["borderpage"] = "core",
+
+            ["absolutelayoutparitypage"] = "parityprobes",
+            ["imagebuttonparitypage"] = "parityprobes",
+            ["indicatorviewparitypage"] = "parityprobes",
+            ["shapesparitypage"] = "parityprobes",
+            ["editorparitypage"] = "parityprobes",
+            ["radiobuttonparitypage"] = "parityprobes",
+            ["timepickerparitypage"] = "parityprobes",
+
+            ["tabbedpagegallerymainpage"] = "compatibility"
+        };
+
     private readonly ControlsSampleHostFixture _fixture;
 
     public ControlsSampleFluentE2ETests(ControlsSampleHostFixture fixture)
@@ -100,44 +156,16 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await using var context = await _fixture.NewContextAsync();
         var (page, diagnostics) = await OpenAsync(context);
 
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutparitypage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-clippingpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-clippage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-contentviewpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-customlayoutpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-flexlayoutpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-gridpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-layoutspage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-layoutupdatespage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-relativelayoutpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-horizontalstacklayoutpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stacklayoutpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-templatedviewpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-verticalstacklayoutpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-zindexpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-scrollviewpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-layoutisenabledpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-boxviewpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-buttonpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-activityindicatorpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-imagepage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-imagebuttonparitypage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stepperpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-transformationspage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-contentpagegallery']").CountAsync());
+        foreach (var categoryAutomationId in ExpectedHomeCategoryAutomationIds)
+        {
+            Assert.Equal(1, await page.Locator($"[data-automation-id='{categoryAutomationId}']").CountAsync());
+        }
+
+        foreach (var entryId in EntryCategoryById.Keys)
+        {
+            Assert.Equal(0, await page.Locator($"[data-automation-id='controls-sample-open-{entryId}']").CountAsync());
+        }
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-contentpagebackgroundgallery']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-borderpage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-mapsgallery']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-collectionviewgallery']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-indicatorviewparitypage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-shapesparitypage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-editorparitypage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-radiobuttonparitypage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-timepickerparitypage']").CountAsync());
-        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-tabbedpagegallerymainpage']").CountAsync());
         Assert.Equal(0, await page.Locator("[data-automation-id='controls-sample-open-blazorpage']").CountAsync());
 
         await NavigateWithDiagnosticsAsync(
@@ -145,7 +173,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-gridpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "gridpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-gridpage']");
             });
 
@@ -155,6 +183,8 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             async () =>
             {
                 await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-category-layouts']");
+                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-home']");
             });
 
@@ -163,7 +193,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-contentviewpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "contentviewpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-contentviewpage']");
             });
 
@@ -330,6 +360,46 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
+    public async Task BrowserCatalog_GroupsEntriesIntoCategoryPages()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var (page, diagnostics) = await OpenAsync(context);
+
+        var categoryMatrix = new (string CategoryId, string[] PresentEntryIds, string[] AbsentEntryIds)[]
+        {
+            ("layouts", ["gridpage", "scrollviewpage"], ["buttonpage", "indicatorviewparitypage"]),
+            ("controls", ["buttonpage", "mapsgallery"], ["gridpage", "borderpage"]),
+            ("core", ["brushespage", "borderpage"], ["sliderpage", "editorparitypage"]),
+            ("parityprobes", ["editorparitypage", "timepickerparitypage"], ["gridpage", "boxviewpage"]),
+            ("compatibility", ["tabbedpagegallerymainpage"], ["gridpage", "shapesparitypage"])
+        };
+
+        foreach (var (categoryId, presentEntryIds, absentEntryIds) in categoryMatrix)
+        {
+            await OpenCatalogCategoryAsync(page, diagnostics, categoryId);
+
+            foreach (var entryId in presentEntryIds)
+            {
+                Assert.Equal(1, await page.Locator($"[data-automation-id='controls-sample-open-{entryId}']").CountAsync());
+            }
+
+            foreach (var entryId in absentEntryIds)
+            {
+                Assert.Equal(0, await page.Locator($"[data-automation-id='controls-sample-open-{entryId}']").CountAsync());
+            }
+
+            await NavigateWithDiagnosticsAsync(
+                page,
+                diagnostics,
+                async () =>
+                {
+                    await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                    await page.WaitForSelectorAsync("[data-automation-id='controls-sample-home']");
+                });
+        }
+    }
+
+    [Fact]
     public async Task AbsoluteLayoutParityProbe_UpdatesBoundsFlagsAndZOrderAtRuntime()
     {
         await using var context = await _fixture.NewContextAsync(width: 1180, height: 860);
@@ -340,7 +410,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-absolutelayoutparitypage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "absolutelayoutparitypage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-absolutelayoutparitypage']");
             });
 
@@ -379,7 +449,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-indicatorviewparitypage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "indicatorviewparitypage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-indicatorviewparitypage']");
             });
 
@@ -433,7 +503,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-shapesparitypage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "shapesparitypage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-shapesparitypage']");
             });
 
@@ -526,7 +596,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-editorparitypage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "editorparitypage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-editorparitypage']");
             });
 
@@ -590,7 +660,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-radiobuttonparitypage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "radiobuttonparitypage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-radiobuttonparitypage']");
             });
 
@@ -647,7 +717,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-timepickerparitypage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "timepickerparitypage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-timepickerparitypage']");
             });
 
@@ -722,7 +792,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-imagebuttonparitypage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "imagebuttonparitypage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-imagebuttonparitypage']");
             });
 
@@ -816,7 +886,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-customlayoutpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "customlayoutpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-customlayoutpage']");
             });
 
@@ -885,7 +955,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-horizontalstacklayoutpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "horizontalstacklayoutpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-horizontalstacklayoutpage']");
             });
 
@@ -934,7 +1004,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-flexlayoutpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "flexlayoutpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-flexlayoutpage']");
             });
 
@@ -1032,7 +1102,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-verticalstacklayoutpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "verticalstacklayoutpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-verticalstacklayoutpage']");
             });
 
@@ -1081,7 +1151,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-stacklayoutpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "stacklayoutpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-stacklayoutpage']");
             });
 
@@ -1163,7 +1233,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-layoutspage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "layoutspage");
                 await page.WaitForSelectorAsync(layoutsHostSelector);
                 await page.WaitForSelectorAsync(sectionsSelector);
             });
@@ -1225,6 +1295,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
+                await OpenCatalogCategoryAsync(page, diagnostics, "layouts");
                 var button = page.Locator("[data-automation-id='controls-sample-open-templatedviewpage']");
                 await button.ScrollIntoViewIfNeededAsync();
                 await button.ClickAsync();
@@ -1243,7 +1314,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-scrollviewpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "scrollviewpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-scrollviewpage']");
             });
 
@@ -1289,7 +1360,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-scrollviewpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "scrollviewpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-scrollviewpage']");
             });
 
@@ -1408,7 +1479,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-buttonpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "buttonpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-buttonpage']");
             });
 
@@ -1587,7 +1658,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-boxviewpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "boxviewpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-boxviewpage']");
             });
 
@@ -1669,7 +1740,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "checkboxpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-checkboxpage']");
             });
 
@@ -1710,7 +1781,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "sliderpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-sliderpage']");
             });
 
@@ -1831,7 +1902,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-transformationspage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "transformationspage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-transformationspage']");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-transformationspage-target']");
             });
@@ -1877,7 +1948,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-stepperpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "stepperpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-stepperpage']");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-stepperpage-enable-stepper']");
             });
@@ -1978,7 +2049,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-activityindicatorpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "activityindicatorpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-activityindicatorpage']");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-activityindicatorpage-default']");
             });
@@ -2096,7 +2167,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-imagepage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "imagepage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-imagepage']");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-imagepage-uri']");
             });
@@ -2172,7 +2243,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-brushespage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "brushespage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-brushespage']");
             });
 
@@ -2221,7 +2292,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-contentpagegallery']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "contentpagegallery");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-contentpagegallery']");
             });
 
@@ -2343,7 +2414,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-borderpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "borderpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-borderpage']");
             });
 
@@ -2883,7 +2954,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-mapsgallery']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "mapsgallery");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-mapsgallery']");
             });
 
@@ -3075,7 +3146,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-collectionviewgallery']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "collectionviewgallery");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-collectionviewgallery']");
             });
 
@@ -3099,7 +3170,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-clippingpage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "clippingpage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-clippingpage']");
             });
 
@@ -3158,7 +3229,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-clippage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "clippage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-clippage']");
             });
 
@@ -3312,6 +3383,39 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 $"{ex.Message}\nBody text snapshot: {bodyText}\nHost logs:\n{hostLogs}\nPage diagnostics:\n{diagnosticsSnapshot}",
                 ex);
         }
+    }
+
+    private async Task OpenCatalogCategoryAsync(
+        IPage page,
+        ConcurrentQueue<string> diagnostics,
+        string categoryId)
+    {
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator($"[data-automation-id='controls-sample-open-category-{categoryId}']").ClickAsync();
+                await page.WaitForSelectorAsync($"[data-automation-id='controls-sample-category-{categoryId}']");
+            });
+    }
+
+    private async Task OpenCatalogEntryAsync(
+        IPage page,
+        ConcurrentQueue<string> diagnostics,
+        string entryId)
+    {
+        var categoryId = EntryCategoryById[entryId];
+        await OpenCatalogCategoryAsync(page, diagnostics, categoryId);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator($"[data-automation-id='controls-sample-open-{entryId}']").ClickAsync();
+                await page.WaitForSelectorAsync($"[data-automation-id='controls-sample-page-{entryId}']");
+            });
     }
 
     private static async Task<double[]> WaitForBoundingClientRectChangeAsync(
@@ -3900,21 +4004,24 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             var parentHostAutomationId = await ReadCurrentControlsSamplePageHostAutomationIdAsync(page);
             Assert.False(string.IsNullOrWhiteSpace(parentHostAutomationId));
             var parentHostNodeId = await ReadCurrentControlsSamplePageHostNodeIdAsync(page);
+            var parentHostFingerprint = $"{parentHostAutomationId}|{parentHostNodeId}";
 
             await NavigateWithDiagnosticsAsync(
                 page,
                 diagnostics,
                 async () =>
                 {
-                    var navButtonSelector = string.IsNullOrWhiteSpace(parentHostNodeId)
-                        ? $"[data-automation-id='{navButtonId}']:visible"
+                    var domNavButtonSelector = string.IsNullOrWhiteSpace(parentHostNodeId)
+                        ? $"[data-automation-id='{navButtonId}']"
                         : $"[data-mirage-node-id='{parentHostNodeId}'] [data-automation-id='{navButtonId}']";
-                    var navButtonLocator = page.Locator(navButtonSelector).Last;
-                    await ClickCollectionNavButtonAsync(navButtonLocator);
+                    var locatorNavButtonSelector = string.IsNullOrWhiteSpace(parentHostNodeId)
+                        ? $"{domNavButtonSelector}:visible"
+                        : domNavButtonSelector;
+                    await ClickCollectionNavButtonAsync(page, locatorNavButtonSelector, domNavButtonSelector);
 
                     await page.WaitForFunctionAsync(
                         """
-                        (previousHostNodeId) => {
+                        (previousFingerprint) => {
                             const isVisible = (element) => {
                                 if (!(element instanceof HTMLElement) || !element.isConnected) {
                                     return false;
@@ -3937,45 +4044,22 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                                 return false;
                             }
 
-                            const points = [
-                                [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.floor(window.innerHeight / 2))],
-                                [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.min(window.innerHeight - 2, 140))],
-                                [Math.max(1, Math.min(window.innerWidth - 2, 24)), Math.max(1, Math.min(window.innerHeight - 2, 140))]
-                            ];
-
-                            let activeHost = null;
-                            for (const [x, y] of points) {
-                                const stacked = document.elementsFromPoint(x, y);
-                                for (const node of stacked) {
-                                    if (!(node instanceof Element)) {
-                                        continue;
-                                    }
-
-                                    const host = node.closest("[data-automation-id^='controls-sample-page-']");
-                                    if (host instanceof HTMLElement && hosts.includes(host)) {
-                                        activeHost = host;
-                                        break;
-                                    }
-                                }
-
-                                if (activeHost) {
-                                    break;
-                                }
-                            }
-
-                            if (!(activeHost instanceof HTMLElement)) {
-                                activeHost = hosts.at(-1) ?? null;
-                            }
+                            const activeHost = hosts.at(-1) ?? null;
 
                             if (!(activeHost instanceof HTMLElement)) {
                                 return false;
                             }
 
+                            const currentAutomationId = activeHost.getAttribute("data-automation-id") ?? "";
                             const currentNodeId = activeHost.getAttribute("data-mirage-node-id") ?? "";
-                            return currentNodeId.length > 0 && currentNodeId !== previousHostNodeId;
+                            if (currentAutomationId.length === 0 || currentNodeId.length === 0) {
+                                return false;
+                            }
+
+                            return `${currentAutomationId}|${currentNodeId}` !== previousFingerprint;
                         }
                         """,
-                        parentHostNodeId ?? string.Empty,
+                        parentHostFingerprint,
                         new()
                         {
                             Timeout = 15000
@@ -3992,7 +4076,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                     await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
                     await page.WaitForFunctionAsync(
                         """
-                        (expectedHostNodeId) => {
+                        (expectedAutomationId) => {
                             const isVisible = (element) => {
                                 if (!(element instanceof HTMLElement) || !element.isConnected) {
                                     return false;
@@ -4015,44 +4099,17 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                                 return false;
                             }
 
-                            const points = [
-                                [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.floor(window.innerHeight / 2))],
-                                [Math.max(1, Math.floor(window.innerWidth / 2)), Math.max(1, Math.min(window.innerHeight - 2, 140))],
-                                [Math.max(1, Math.min(window.innerWidth - 2, 24)), Math.max(1, Math.min(window.innerHeight - 2, 140))]
-                            ];
-
-                            let activeHost = null;
-                            for (const [x, y] of points) {
-                                const stacked = document.elementsFromPoint(x, y);
-                                for (const node of stacked) {
-                                    if (!(node instanceof Element)) {
-                                        continue;
-                                    }
-
-                                    const host = node.closest("[data-automation-id^='controls-sample-page-']");
-                                    if (host instanceof HTMLElement && hosts.includes(host)) {
-                                        activeHost = host;
-                                        break;
-                                    }
-                                }
-
-                                if (activeHost) {
-                                    break;
-                                }
-                            }
-
-                            if (!(activeHost instanceof HTMLElement)) {
-                                activeHost = hosts.at(-1) ?? null;
-                            }
+                            const activeHost = hosts.at(-1) ?? null;
 
                             if (!(activeHost instanceof HTMLElement)) {
                                 return false;
                             }
 
-                            return (activeHost.getAttribute("data-mirage-node-id") ?? "") === expectedHostNodeId;
+                            const currentAutomationId = activeHost.getAttribute("data-automation-id") ?? "";
+                            return currentAutomationId === expectedAutomationId;
                         }
                         """,
-                        parentHostNodeId ?? string.Empty,
+                        parentHostAutomationId,
                         new()
                         {
                             Timeout = 15000
@@ -4345,10 +4402,17 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             """);
     }
 
-    private static async Task ClickCollectionNavButtonAsync(ILocator navButtonLocator)
+    private static async Task ClickCollectionNavButtonAsync(IPage page, string locatorSelector, string domSelector)
     {
         try
         {
+            var navButtonLocator = page.Locator(locatorSelector).Last;
+            await navButtonLocator.WaitForAsync(new()
+            {
+                State = WaitForSelectorState.Visible,
+                Timeout = 15000
+            });
+            await navButtonLocator.ScrollIntoViewIfNeededAsync();
             await navButtonLocator.ClickAsync(new()
             {
 #pragma warning disable CS0612 // NoWaitAfter is obsolete in Playwright API but still required here to avoid false navigation waits for in-app MAUI routing.
@@ -4358,6 +4422,38 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         }
         catch (TimeoutException)
         {
+            var clicked = await page.EvaluateAsync<bool>(
+                """
+                (selector) => {
+                    const elements = Array.from(document.querySelectorAll(selector));
+                    const target = elements.at(-1);
+                    if (!(target instanceof HTMLElement) || !target.isConnected) {
+                        return false;
+                    }
+
+                    const style = window.getComputedStyle(target);
+                    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+                        return false;
+                    }
+
+                    target.click();
+                    return true;
+                }
+                """,
+                domSelector);
+
+            if (clicked)
+            {
+                return;
+            }
+
+            var navButtonLocator = page.Locator(locatorSelector).Last;
+            await navButtonLocator.WaitForAsync(new()
+            {
+                State = WaitForSelectorState.Visible,
+                Timeout = 15000
+            });
+            await navButtonLocator.ScrollIntoViewIfNeededAsync();
             await navButtonLocator.ClickAsync(new()
             {
                 Position = new Position

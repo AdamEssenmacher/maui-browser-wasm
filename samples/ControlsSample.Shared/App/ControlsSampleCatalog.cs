@@ -10,7 +10,11 @@ namespace ControlsSample.Shared.App;
 
 public static class ControlsSampleCatalog
 {
-    public static IReadOnlyList<ControlsSampleEntry> All { get; } =
+    public static IReadOnlyList<ControlsSampleEntry> All => _all.Value;
+
+    private static readonly Lazy<IReadOnlyList<ControlsSampleEntry>> _all = new(CreateCategorizedEntries);
+
+    private static IReadOnlyList<ControlsSampleEntry> AllEntries { get; } =
     [
         new(
             id: "absolutelayoutpage",
@@ -314,6 +318,69 @@ public static class ControlsSampleCatalog
             description: "Runnable in Mirage today: exercises CollectionView gallery navigation across templates, grouping, selection, scrolling, and layout variations (excluding deferred SearchBar/Carousel/Indicator dependencies).",
             pageFactory: CreateCollectionViewGallery)
     ];
+
+    private static IReadOnlyDictionary<string, ControlsSampleCategory> CategoryByEntryId { get; } =
+        new Dictionary<string, ControlsSampleCategory>(StringComparer.Ordinal)
+        {
+            ["absolutelayoutpage"] = ControlsSampleCategory.Layouts,
+            ["layoutspage"] = ControlsSampleCategory.Layouts,
+            ["gridpage"] = ControlsSampleCategory.Layouts,
+            ["layoutupdatespage"] = ControlsSampleCategory.Layouts,
+            ["relativelayoutpage"] = ControlsSampleCategory.Layouts,
+            ["horizontalstacklayoutpage"] = ControlsSampleCategory.Layouts,
+            ["stacklayoutpage"] = ControlsSampleCategory.Layouts,
+            ["verticalstacklayoutpage"] = ControlsSampleCategory.Layouts,
+            ["templatedviewpage"] = ControlsSampleCategory.Layouts,
+            ["zindexpage"] = ControlsSampleCategory.Layouts,
+            ["scrollviewpage"] = ControlsSampleCategory.Layouts,
+            ["clippingpage"] = ControlsSampleCategory.Layouts,
+            ["contentviewpage"] = ControlsSampleCategory.Layouts,
+            ["customlayoutpage"] = ControlsSampleCategory.Layouts,
+            ["flexlayoutpage"] = ControlsSampleCategory.Layouts,
+            ["layoutisenabledpage"] = ControlsSampleCategory.Layouts,
+
+            ["activityindicatorpage"] = ControlsSampleCategory.Controls,
+            ["boxviewpage"] = ControlsSampleCategory.Controls,
+            ["buttonpage"] = ControlsSampleCategory.Controls,
+            ["checkboxpage"] = ControlsSampleCategory.Controls,
+            ["imagepage"] = ControlsSampleCategory.Controls,
+            ["sliderpage"] = ControlsSampleCategory.Controls,
+            ["stepperpage"] = ControlsSampleCategory.Controls,
+            ["mapsgallery"] = ControlsSampleCategory.Controls,
+            ["collectionviewgallery"] = ControlsSampleCategory.Controls,
+
+            ["clippage"] = ControlsSampleCategory.Core,
+            ["brushespage"] = ControlsSampleCategory.Core,
+            ["contentpagegallery"] = ControlsSampleCategory.Core,
+            ["transformationspage"] = ControlsSampleCategory.Core,
+            ["borderpage"] = ControlsSampleCategory.Core,
+            ["inputtransparentpage"] = ControlsSampleCategory.Core,
+            ["blazorpage"] = ControlsSampleCategory.Core,
+
+            ["absolutelayoutparitypage"] = ControlsSampleCategory.ParityProbes,
+            ["imagebuttonparitypage"] = ControlsSampleCategory.ParityProbes,
+            ["indicatorviewparitypage"] = ControlsSampleCategory.ParityProbes,
+            ["shapesparitypage"] = ControlsSampleCategory.ParityProbes,
+            ["editorparitypage"] = ControlsSampleCategory.ParityProbes,
+            ["radiobuttonparitypage"] = ControlsSampleCategory.ParityProbes,
+            ["timepickerparitypage"] = ControlsSampleCategory.ParityProbes,
+
+            ["tabbedpagegallerymainpage"] = ControlsSampleCategory.Compatibility
+        };
+
+    private static IReadOnlyList<ControlsSampleEntry> CreateCategorizedEntries()
+    {
+        return AllEntries.Select(entry =>
+        {
+            if (!CategoryByEntryId.TryGetValue(entry.Id, out var category))
+            {
+                throw new InvalidOperationException(
+                    $"Controls sample entry '{entry.Id}' is missing an explicit category assignment.");
+            }
+
+            return entry.WithCategory(category);
+        }).ToArray();
+    }
 
     private static Page CreateLayoutsPage(IServiceProvider services)
     {

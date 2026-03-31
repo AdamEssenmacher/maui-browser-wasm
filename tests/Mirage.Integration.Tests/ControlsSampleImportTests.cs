@@ -24,6 +24,45 @@ public sealed class ControlsSampleImportTests
     }
 
     [Fact]
+    public void CatalogEntries_HaveExplicitCategoriesAssigned()
+    {
+        foreach (var entry in ControlsSampleCatalog.All)
+        {
+            _ = entry.Category;
+        }
+    }
+
+    [Fact]
+    public void MirageVisibilityPolicy_GroupsVisibleEntriesIntoExpectedCategories()
+    {
+        var policy = new MirageControlsSampleVisibilityPolicy();
+        var visible = ControlsSampleCatalog.All.Where(policy.IsVisible).ToArray();
+        var categoryOrder = new[]
+        {
+            ControlsSampleCategory.Layouts,
+            ControlsSampleCategory.Controls,
+            ControlsSampleCategory.Core,
+            ControlsSampleCategory.ParityProbes,
+            ControlsSampleCategory.Compatibility
+        };
+
+        var grouped = categoryOrder
+            .Select(category => (Category: category, Entries: visible.Where(entry => entry.Category == category).ToArray()))
+            .Where(group => group.Entries.Length > 0)
+            .ToArray();
+
+        Assert.Equal(categoryOrder, grouped.Select(group => group.Category));
+        Assert.Equal(visible.Length, grouped.Sum(group => group.Entries.Length));
+
+        var probeEntries = grouped.Single(group => group.Category == ControlsSampleCategory.ParityProbes).Entries;
+        Assert.All(probeEntries, entry => Assert.StartsWith("App/", entry.UpstreamPath, StringComparison.Ordinal));
+
+        Assert.DoesNotContain(
+            grouped.Where(group => group.Category != ControlsSampleCategory.ParityProbes).SelectMany(group => group.Entries),
+            entry => entry.UpstreamPath.StartsWith("App/", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void NativeVisibilityPolicy_AllowsMirageUnsupportedButBlocksExternalCategories()
     {
         var policy = new NativeControlsSampleVisibilityPolicy();

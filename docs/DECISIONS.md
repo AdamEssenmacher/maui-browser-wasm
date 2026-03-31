@@ -850,3 +850,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Restored MAUI-style semantics projection on the Mirage common-view path (`IView.Semantics` -> `aria-label` / `aria-description`, plus label heading metadata) so image-only controls like `ImageButton` get an explicit accessible name from semantic descriptions instead of leaking `AutomationId` into the accessibility tree.
 - Mirage `ImageButton` now reports the same 52x52 unconstrained fallback size used by the legacy browser handler, while still honoring explicit/min/max size requests so unsized image buttons do not collapse in layout.
 - Pending keyboard activation is cleared as soon as a real pointer press begins, so interrupted keydown paths cannot leak synthetic keyboard `Pressed`/`Released` behavior into a later pointer click.
+
+## 2026-03-31 (ControlsSample Catalog Reorganization: Category Drill-Down)
+- Replaced the flat ControlsSample home-page card list with a category landing page plus category detail pages so the growing runnable sample set remains navigable without adding a search surface yet.
+- Added explicit category metadata to each `ControlsSampleEntry` through a catalog-owned entry-id map instead of inferring from `UpstreamPath`, keeping grouping stable as more wrapper-only pages and gallery roots are added.
+- Separated Mirage-specific parity probes into their own `Parity Probes` category so upstream sample pages remain easier to scan, while still keeping gallery/index pages visible inside their natural categories.
+- Preserved existing per-entry automation IDs (`controls-sample-open-{entryId}`) on category pages so deeper E2E flows could migrate to drill-down navigation without destabilizing page-specific selectors.
