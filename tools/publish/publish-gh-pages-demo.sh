@@ -156,7 +156,15 @@ write_root_404_html() {
 
       if (segments.length >= 2 && segments[0] === "demos") {
         var demoId = segments[1];
-        window.location.replace(siteRoot + "demos/" + demoId + "/" + search + hash);
+        var demoRoot = siteRoot + "demos/" + demoId + "/";
+        var deepLinkSuffix = path.substring(demoRoot.length) + search + hash;
+        var redirectUrl = new URL(demoRoot, window.location.origin);
+
+        if (deepLinkSuffix) {
+          redirectUrl.searchParams.set("__mirage_route__", deepLinkSuffix);
+        }
+
+        window.location.replace(redirectUrl.toString());
         return;
       }
 
@@ -178,6 +186,30 @@ normalize_demo_index_html() {
 my $base = $ENV{"BASE_HREF"};
 if (!s{<base\s+href="[^"]*"\s*/?>}{<base href="$base">}i) {
   s{<head>}{<head>\n  <base href="$base">}i;
+}
+' "$index_path"
+
+  perl -0777 -i -pe '
+my $script = <<'"'"'SCRIPT'"'"';
+  <script>
+    (function () {
+      var currentUrl = new URL(window.location.href);
+      var pendingRoute = currentUrl.searchParams.get("__mirage_route__");
+
+      if (!pendingRoute) {
+        return;
+      }
+
+      currentUrl.searchParams.delete("__mirage_route__");
+
+      var baseHref = document.querySelector("base")?.getAttribute("href") || "/";
+      history.replaceState(null, "", baseHref + pendingRoute);
+    })();
+  </script>
+SCRIPT
+
+if (index($_, "__mirage_route__") < 0) {
+  s{</head>}{$script\n</head>}i;
 }
 ' "$index_path"
 }
@@ -307,7 +339,16 @@ PROJECT_WWWROOT="$PROJECT_DIR/wwwroot"
 
 run_demo_build() {
   local restore_arg="$1"
-  zsh -lc "cd \"$REPO_ROOT\" && dotnet build \"$DEMO_PROJECT_PATH\" -c Release -r browser-wasm $restore_arg -p:WasmBuildAppBundle=true"
+  local args=(dotnet build "$DEMO_PROJECT_PATH" -c Release -r browser-wasm -p:WasmBuildAppBundle=true)
+
+  if [[ -n "$restore_arg" ]]; then
+    args+=("$restore_arg")
+  fi
+
+  (
+    cd "$REPO_ROOT"
+    "${args[@]}"
+  )
 }
 
 if ! run_demo_build "--no-restore"; then
