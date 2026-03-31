@@ -792,7 +792,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-imagebuttonparitypage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "imagebuttonparitypage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-imagebuttonparitypage']");
             });
 
@@ -4076,7 +4076,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                     await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
                     await page.WaitForFunctionAsync(
                         """
-                        (expectedFingerprint) => {
+                        (expectedAutomationId) => {
                             const isVisible = (element) => {
                                 if (!(element instanceof HTMLElement) || !element.isConnected) {
                                     return false;
@@ -4106,11 +4106,10 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                             }
 
                             const currentAutomationId = activeHost.getAttribute("data-automation-id") ?? "";
-                            const currentNodeId = activeHost.getAttribute("data-mirage-node-id") ?? "";
-                            return `${currentAutomationId}|${currentNodeId}` === expectedFingerprint;
+                            return currentAutomationId === expectedAutomationId;
                         }
                         """,
-                        parentHostFingerprint,
+                        parentHostAutomationId,
                         new()
                         {
                             Timeout = 15000

@@ -358,6 +358,7 @@ public static class ControlsSampleCatalog
             ["blazorpage"] = ControlsSampleCategory.Core,
 
             ["absolutelayoutparitypage"] = ControlsSampleCategory.ParityProbes,
+            ["imagebuttonparitypage"] = ControlsSampleCategory.ParityProbes,
             ["indicatorviewparitypage"] = ControlsSampleCategory.ParityProbes,
             ["shapesparitypage"] = ControlsSampleCategory.ParityProbes,
             ["editorparitypage"] = ControlsSampleCategory.ParityProbes,
