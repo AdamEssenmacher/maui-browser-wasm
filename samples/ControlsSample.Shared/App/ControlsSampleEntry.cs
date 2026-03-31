@@ -4,6 +4,8 @@ namespace ControlsSample.Shared.App;
 
 public sealed class ControlsSampleEntry
 {
+    private readonly ControlsSampleCategory? _category;
+
     public ControlsSampleEntry(
         string id,
         string title,
@@ -11,7 +13,8 @@ public sealed class ControlsSampleEntry
         ControlsSampleStatus status,
         Type pageType,
         string description,
-        Func<IServiceProvider, Page>? pageFactory = null)
+        Func<IServiceProvider, Page>? pageFactory = null,
+        ControlsSampleCategory? category = null)
     {
         Id = id;
         Title = title;
@@ -20,6 +23,7 @@ public sealed class ControlsSampleEntry
         PageType = pageType;
         Description = description;
         PageFactory = pageFactory;
+        _category = category;
     }
 
     public string Id { get; }
@@ -28,6 +32,9 @@ public sealed class ControlsSampleEntry
 
     public string UpstreamPath { get; }
 
+    public ControlsSampleCategory Category => _category
+        ?? throw new InvalidOperationException($"Controls sample entry '{Id}' has no assigned category.");
+
     public ControlsSampleStatus Status { get; }
 
     public Type PageType { get; }
@@ -35,6 +42,19 @@ public sealed class ControlsSampleEntry
     public string Description { get; }
 
     public Func<IServiceProvider, Page>? PageFactory { get; }
+
+    public ControlsSampleEntry WithCategory(ControlsSampleCategory category)
+    {
+        return new ControlsSampleEntry(
+            id: Id,
+            title: Title,
+            upstreamPath: UpstreamPath,
+            status: Status,
+            pageType: PageType,
+            description: Description,
+            pageFactory: PageFactory,
+            category: category);
+    }
 
     public Page CreatePage(IServiceProvider services)
     {
