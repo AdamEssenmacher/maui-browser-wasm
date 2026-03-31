@@ -137,6 +137,13 @@ public sealed class MirageImageButtonHandlerTests
         Assert.Equal(2, pressedCount);
         Assert.Equal(2, releasedCount);
         Assert.Equal(2, clickedCount);
+
+        coordinator.OnEvent(handler.PlatformView.NodeId, "keydown", " ");
+        coordinator.OnEvent(handler.PlatformView.NodeId, "click", null);
+
+        Assert.Equal(3, pressedCount);
+        Assert.Equal(3, releasedCount);
+        Assert.Equal(3, clickedCount);
     }
 
     [Fact]

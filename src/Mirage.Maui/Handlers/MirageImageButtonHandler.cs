@@ -586,7 +586,7 @@ internal sealed class MirageImageButtonHandler : MirageViewHandler<IImageButton>
 
     private static bool IsActivationKey(string? payload)
     {
-        if (string.IsNullOrWhiteSpace(payload))
+        if (string.IsNullOrEmpty(payload))
         {
             return false;
         }
