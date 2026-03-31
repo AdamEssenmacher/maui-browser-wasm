@@ -203,6 +203,14 @@ s{'"'"'\./_framework/dotnet\.js(?:\?v=[^'"'"']*)?'"'"'}{'"'"'./_framework/dotnet
 s{"\./_framework/mirage-dom\.js(?:\?v=[^"]*)?"}{"./_framework/mirage-dom.js?v=$stamp"}g;
 s{'"'"'\./_framework/mirage-dom\.js(?:\?v=[^'"'"']*)?'"'"'}{'"'"'./_framework/mirage-dom.js?v=$stamp'"'"'}g;
 ' "$main_path"
+
+  # GH Pages demo deploys intentionally omit .pdb assets (ignored in the public repo),
+  # so ensure runtime startup doesn't hard-fail when symbol downloads are unavailable.
+  perl -0777 -i -pe '
+if (index($_, ".withDebugging(0)") < 0) {
+  s/\.withDiagnosticTracing\(false\)/.withDiagnosticTracing(false)\n      .withDebugging(0)\n      .withConfig({ ignorePdbLoadErrors: true })/g;
+}
+' "$main_path"
 }
 
 DEMO_ID=""
@@ -295,6 +303,7 @@ trap 'rm -rf "$WORK_DIR"' EXIT
 
 PROJECT_DIR="$(cd "$(dirname "$PROJECT_ABS_PATH")" && pwd)"
 BUILD_OUTPUT_ROOT="$PROJECT_DIR/bin/Release/net10.0-browser"
+PROJECT_WWWROOT="$PROJECT_DIR/wwwroot"
 
 run_demo_build() {
   local restore_arg="$1"
@@ -308,12 +317,21 @@ fi
 
 PUBLISH_WWWROOT="$BUILD_OUTPUT_ROOT/wwwroot"
 [[ -f "$PUBLISH_WWWROOT/index.html" ]] || fail "Publish output missing index.html: $PUBLISH_WWWROOT"
+[[ -d "$PROJECT_WWWROOT" ]] || fail "Project wwwroot missing: $PROJECT_WWWROOT"
 
 STAGED_SITE_ROOT="$WORK_DIR/site-root"
 STAGED_DEMO_DIR="$STAGED_SITE_ROOT/$DEMO_DEST_REL"
 mkdir -p "$STAGED_DEMO_DIR"
 
-rsync -a --delete "$PUBLISH_WWWROOT"/ "$STAGED_DEMO_DIR"/
+# Preserve project-owned static assets (including Mirage manifests/assets), then
+# overlay the generated browser bundle from the build output.
+rsync -a --delete "$PROJECT_WWWROOT"/ "$STAGED_DEMO_DIR"/
+rsync -a "$PUBLISH_WWWROOT"/ "$STAGED_DEMO_DIR"/
+
+if [[ -f "$PROJECT_WWWROOT/_mirage/assets/images.manifest.v1.json" && ! -f "$STAGED_DEMO_DIR/_mirage/assets/images.manifest.v1.json" ]]; then
+  fail "Staged demo is missing Mirage image manifest after merge: $STAGED_DEMO_DIR/_mirage/assets/images.manifest.v1.json"
+fi
+
 normalize_demo_index_html "$STAGED_DEMO_DIR/index.html" "$DEMO_BASE_HREF"
 
 SOURCE_REPO_URL="$(git -C "$REPO_ROOT" remote get-url origin)"
