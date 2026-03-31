@@ -1149,9 +1149,33 @@ export function applyMutationBatch(batchJson) {
   }
 }
 
+function tryCapturePointer(element, eventName, event) {
+  if (eventName !== "pointerdown" || !event || typeof event !== "object") {
+    return;
+  }
+
+  if (typeof element?.setPointerCapture !== "function") {
+    return;
+  }
+
+  const pointerId = event.pointerId;
+  if (!Number.isInteger(pointerId)) {
+    return;
+  }
+
+  try {
+    element.setPointerCapture(pointerId);
+  } catch {
+    // Best effort only. Some browsers reject pointer capture for unsupported targets.
+  }
+}
+
 export function subscribeEvent(elementHandle, eventName, callback) {
   const element = fromHandle(elementHandle);
-  const listener = () => callback();
+  const listener = (event) => {
+    tryCapturePointer(element, eventName, event);
+    callback();
+  };
   const subscriptionId = nextEventSubscriptionId++;
   eventSubscriptions.set(subscriptionId, { element, eventName, listener });
   element.addEventListener(eventName, listener);
@@ -1219,6 +1243,7 @@ export function consumeTrackedEventPayload(elementHandle, payloadKind) {
 export function subscribeEventWithPayload(elementHandle, eventName, payloadKind, callback) {
   const element = fromHandle(elementHandle);
   const listener = (event) => {
+    tryCapturePointer(element, eventName, event);
     setTrackedEventPayload(elementHandle, payloadKind, getEventPayload(event, payloadKind, element));
     callback();
   };

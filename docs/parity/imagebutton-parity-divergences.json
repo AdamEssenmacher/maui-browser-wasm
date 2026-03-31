@@ -1,0 +1,19 @@
+{
+  "entries": [
+    {
+      "id": "imagebutton-extension-isenabled-interaction-gate",
+      "summary": "Mirage maps IsEnabled explicitly so host-owned browser button/input interactions remain deterministic across runtime hosts.",
+      "upstreamReference": "src/Core/src/Handlers/ImageButton/ImageButtonHandler.cs",
+      "testReference": "ImageButtonHandler_DisabledState_BlocksRuntimeInteractionAndMutation",
+      "extensionKeys": [
+        "IsEnabled"
+      ]
+    },
+    {
+      "id": "imagebutton-browser-chrome-approximation",
+      "summary": "ImageButton stroke/background/corner rendering is projected through deterministic browser CSS approximation rather than platform-native chrome fidelity.",
+      "upstreamReference": "src/Core/src/Handlers/ImageButton/ImageButtonHandler.Android.cs",
+      "testReference": "ImageButtonHandler_StrokePaddingCornerAndBackgroundProjection_AreDeterministic"
+    }
+  ]
+}

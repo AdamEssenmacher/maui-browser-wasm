@@ -16,6 +16,7 @@ public enum ComponentKind
     Button,
     ActivityIndicator,
     Image,
+    ImageButton,
     Border,
     BoxView,
     ShapeView,

@@ -286,7 +286,7 @@ shape_grade_for_type() {
     fi
 
     case "$key" in
-        CollectionView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|IndicatorView|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|Page)
+        CollectionView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|IndicatorView|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|Page|ImageButton)
             echo "A"
             ;;
         ContentView|Button|Window|NavigationPage|Image|Border|Picker|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame)
@@ -315,7 +315,7 @@ implementation_grade_for_type() {
 
     case "$key" in
         CollectionView) echo "C" ;;
-        Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton) echo "B" ;;
+        Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|ImageButton) echo "B" ;;
         ContentView|Button|Window|NavigationPage|Image|Border|Picker|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame|IndicatorView|Page) echo "C" ;;
         Entry|Editor|TimePicker) echo "B" ;;
         TabbedPage) echo "D" ;;
@@ -350,6 +350,9 @@ notes_for_type() {
             ;;
         SearchBar)
             echo "SearchBar text-input parity is improved, but icon-channel fidelity and IME edge cases remain partial. See \`docs/PARITY_GAPS.md\` (text-input depth)."
+            ;;
+        ImageButton)
+            echo "Mirage-owned ImageButton now mirrors MAUI handler layering with a provider-managed \`button\` + secondary \`img\`, including async source lifecycle and deterministic pressed/released/clicked synthesis; browser chrome fidelity remains CSS-approximated."
             ;;
         RadioButton)
             echo "Mirage-owned host now covers checked-state sync, content projection, and MAUI group-authoritative selection flow; native radio chrome fidelity remains browser-approximated."

@@ -46,6 +46,7 @@ public sealed class ArchitectureBoundaryTests
         var builtInHandlerFiles = new[]
         {
             "MirageButtonHandler.cs",
+            "MirageImageButtonHandler.cs",
             "MirageImageHandler.cs",
             "MirageMapHandler.cs",
             "MirageLabelHandler.cs",
@@ -518,6 +519,24 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("ComponentKind.RadioButton", radioButtonHandlerText, StringComparison.Ordinal);
         Assert.Contains("CreateWeb(\"input\")", radioButtonHandlerText, StringComparison.Ordinal);
         Assert.Contains("CreateWeb(\"div\")", radioButtonHandlerText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BrowserPlatform_RegistersImageButtonHandlerAsBuiltInControlNode()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var imageButtonHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageImageButtonHandler.cs");
+        Assert.True(File.Exists(imageButtonHandlerPath), $"Expected ImageButton handler file not found: {imageButtonHandlerPath}");
+
+        var hostingText = File.ReadAllText(hostingPath);
+        var imageButtonHandlerText = File.ReadAllText(imageButtonHandlerPath);
+
+        Assert.Contains("typeof(ImageButton)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageImageButtonHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.ImageButton", imageButtonHandlerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("CreateWeb(", imageButtonHandlerText, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -9,6 +9,7 @@ public static class MirageViewMapper
     public static IPropertyMapper<IView, IViewHandler> CommonViewMapper = new PropertyMapper<IView, IViewHandler>(ViewHandler.ViewMapper)
     {
         [nameof(IView.AutomationId)] = MapAutomationId,
+        [nameof(IView.Semantics)] = MapSemantics,
         [nameof(IView.Margin)] = MapMargin,
         [nameof(IView.Visibility)] = MapVisibility,
         ["IsVisible"] = MapVisibility,
@@ -52,6 +53,16 @@ public static class MirageViewMapper
     public static void MapAutomationId(IViewHandler handler, IView view)
     {
         if (!MirageCommonViewProjection.MapAutomationId(handler, view))
+        {
+            return;
+        }
+
+        ((IMiragePlatformHandler)handler).RequestRender();
+    }
+
+    public static void MapSemantics(IViewHandler handler, IView view)
+    {
+        if (!MirageCommonViewProjection.MapSemantics(handler, view))
         {
             return;
         }

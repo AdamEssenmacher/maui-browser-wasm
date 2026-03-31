@@ -12,6 +12,7 @@ namespace Mirage.Maui.Handlers;
 
 internal static class MirageCommonViewProjection
 {
+    private const string HeadingRoleMarker = "HeadingRoleMarker";
     internal const string DefaultSystemTextColor = "CanvasText";
     internal const string DefaultSystemFontFamily = "system-ui";
     private const double DefaultTextFallbackFontSize = 14;
@@ -47,6 +48,42 @@ internal static class MirageCommonViewProjection
 
         platformHandler.MiragePlatformView.SetProperty("AutomationId", nextAutomationId);
         return true;
+    }
+
+    public static bool MapSemantics(IViewHandler handler, IView view)
+    {
+        if (!TryGetPlatformHandler(handler, out var platformHandler))
+        {
+            return false;
+        }
+
+        var semantics = view.Semantics;
+        var changed = SetPropertyIfChanged(platformHandler, "AriaLabel", string.IsNullOrWhiteSpace(semantics?.Description) ? null : semantics.Description);
+        changed |= SetPropertyIfChanged(platformHandler, "AriaDescription", string.IsNullOrWhiteSpace(semantics?.Hint) ? null : semantics.Hint);
+
+        if (view is not ILabel)
+        {
+            changed |= SetPropertyIfChanged(platformHandler, "AriaLevel", null);
+            changed |= SetPropertyIfChanged(platformHandler, "AriaRole", null);
+            changed |= SetPropertyIfChanged(platformHandler, HeadingRoleMarker, null);
+            return changed;
+        }
+
+        var headingLevel = semantics?.HeadingLevel ?? SemanticHeadingLevel.None;
+        var isHeading = (semantics?.IsHeading ?? false) || headingLevel != SemanticHeadingLevel.None;
+        if (!isHeading)
+        {
+            changed |= SetPropertyIfChanged(platformHandler, "AriaLevel", null);
+            changed |= SetPropertyIfChanged(platformHandler, "AriaRole", null);
+            changed |= SetPropertyIfChanged(platformHandler, HeadingRoleMarker, null);
+            return changed;
+        }
+
+        var level = headingLevel == SemanticHeadingLevel.None ? 1 : Math.Clamp((int)headingLevel, 1, 9);
+        changed |= SetPropertyIfChanged(platformHandler, "AriaRole", "heading");
+        changed |= SetPropertyIfChanged(platformHandler, "AriaLevel", level.ToString(CultureInfo.InvariantCulture));
+        changed |= SetPropertyIfChanged(platformHandler, HeadingRoleMarker, "true");
+        return changed;
     }
 
     public static bool MapMargin(IViewHandler handler, IView view)
@@ -1219,6 +1256,17 @@ internal static class MirageCommonViewProjection
     private static string CssNumber(double value) => value.ToString("0.###", CultureInfo.InvariantCulture);
 
     private static double NormalizeFinite(double value, double fallback) => double.IsFinite(value) ? value : fallback;
+
+    private static bool SetPropertyIfChanged(IMiragePlatformHandler platformHandler, string propertyName, string? value)
+    {
+        if (string.Equals(platformHandler.MiragePlatformView.GetPropertyString(propertyName), value, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        platformHandler.MiragePlatformView.SetProperty(propertyName, value);
+        return true;
+    }
 
     private static bool GetRequestedFlag(RequestedSizeState state, RequestedLength requestedLength)
     {

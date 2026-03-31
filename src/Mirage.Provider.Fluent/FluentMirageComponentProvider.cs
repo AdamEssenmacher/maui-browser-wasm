@@ -8,7 +8,12 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
     private static readonly IReadOnlyDictionary<string, ProviderPropertyDescriptor> CommonProperties =
         new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
         {
-            ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id")
+            ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
+            ["AriaLabel"] = new(PropertyTarget.Attribute, "aria-label"),
+            ["AriaDescription"] = new(PropertyTarget.Attribute, "aria-description"),
+            ["AriaRole"] = new(PropertyTarget.Attribute, "role"),
+            ["AriaLevel"] = new(PropertyTarget.Attribute, "aria-level"),
+            ["HeadingRoleMarker"] = new(PropertyTarget.Attribute, "data-maui-heading-role")
         };
 
     private static readonly IReadOnlyDictionary<ComponentKind, ControlComponentDescriptor> ControlComponents =
@@ -54,12 +59,11 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
             [ComponentKind.Label] = new(
                 ComponentKind.Label,
                 "span",
-                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
-                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
                     ["Text"] = new(PropertyTarget.TextContent),
                     ["TextHtml"] = new(PropertyTarget.Property, "innerHTML")
-                }),
+                })),
             [ComponentKind.Entry] = new(
                 ComponentKind.Entry,
                 "div",
@@ -79,9 +83,8 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 {
                     ["type"] = "button"
                 },
-                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
-                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
                     ["Text"] = new(PropertyTarget.TextContent, ElementTarget: PropertyElementTarget.ValueElement),
                     ["TextDisplay"] = new(PropertyTarget.Style, "display", ElementTarget: PropertyElementTarget.ValueElement),
                     ["TextWhiteSpace"] = new(PropertyTarget.Style, "whiteSpace", ElementTarget: PropertyElementTarget.ValueElement),
@@ -101,7 +104,7 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                     ["ImageObjectFit"] = new(PropertyTarget.Style, "objectFit", ElementTarget: PropertyElementTarget.SecondaryElement),
                     ["ImagePointerEvents"] = new(PropertyTarget.Style, "pointerEvents", ElementTarget: PropertyElementTarget.SecondaryElement),
                     ["TooltipText"] = new(PropertyTarget.Attribute, "title")
-                },
+                }),
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
                     ["click"] = new("click")
@@ -112,13 +115,12 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
             [ComponentKind.ActivityIndicator] = new(
                 ComponentKind.ActivityIndicator,
                 "div",
-                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
-                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
                     ["IsRunning"] = new(PropertyTarget.Attribute, "data-maui-activity-running"),
                     ["BusyState"] = new(PropertyTarget.Attribute, "aria-busy"),
                     ["SpinnerColor"] = new(PropertyTarget.Style, "--mirage-activity-color")
-                }),
+                })),
             [ComponentKind.Image] = new(
                 ComponentKind.Image,
                 "img",
@@ -128,27 +130,58 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                     ["decoding"] = "async",
                     ["loading"] = "eager"
                 },
-                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
-                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
                     ["Source"] = new(PropertyTarget.Attribute, "src"),
                     ["SourceKind"] = new(PropertyTarget.Attribute, "data-maui-image-source-kind"),
                     ["SourceState"] = new(PropertyTarget.Attribute, "data-maui-image-state"),
                     ["IsOpaque"] = new(PropertyTarget.Attribute, "data-maui-image-opaque")
-                },
+                }),
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
                     ["load"] = new("load", EventTarget.Self, EventPayloadKind.SourceAttribute),
                     ["error"] = new("error", EventTarget.Self, EventPayloadKind.SourceAttribute)
                 }),
+            [ComponentKind.ImageButton] = new(
+                ComponentKind.ImageButton,
+                "button",
+                defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["type"] = "button"
+                },
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["Disabled"] = new(PropertyTarget.Attribute, "disabled"),
+                    ["Source"] = new(PropertyTarget.Attribute, "src", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["SourceKind"] = new(PropertyTarget.Attribute, "data-maui-image-source-kind"),
+                    ["SourceState"] = new(PropertyTarget.Attribute, "data-maui-image-state"),
+                    ["IsOpaque"] = new(PropertyTarget.Attribute, "data-maui-image-opaque"),
+                    ["ImageDisplay"] = new(PropertyTarget.Style, "display", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["ImageWidth"] = new(PropertyTarget.Style, "width", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["ImageHeight"] = new(PropertyTarget.Style, "height", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["ImageObjectFit"] = new(PropertyTarget.Style, "objectFit", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["ImageObjectPosition"] = new(PropertyTarget.Style, "objectPosition", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["ImagePointerEvents"] = new(PropertyTarget.Style, "pointerEvents", ElementTarget: PropertyElementTarget.SecondaryElement),
+                    ["ImageAlt"] = new(PropertyTarget.Attribute, "alt", ElementTarget: PropertyElementTarget.SecondaryElement)
+                }),
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["click"] = new("click"),
+                    ["pointerdown"] = new("pointerdown"),
+                    ["pointerup"] = new("pointerup"),
+                    ["pointercancel"] = new("pointercancel"),
+                    ["keydown"] = new("keydown", EventTarget.Self, EventPayloadKind.Key),
+                    ["load"] = new("load", EventTarget.SecondaryElement, EventPayloadKind.SourceAttribute),
+                    ["error"] = new("error", EventTarget.SecondaryElement, EventPayloadKind.SourceAttribute)
+                },
+                secondaryElementTagName: "img"),
             [ComponentKind.Border] = new(
                 ComponentKind.Border,
                 "div",
-                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
-                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
                     ["StrokeDashOffset"] = new(PropertyTarget.Attribute, "data-maui-border-dash-offset")
-                }),
+                })),
             [ComponentKind.BoxView] = new(
                 ComponentKind.BoxView,
                 "div",
@@ -164,12 +197,11 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 {
                     ["type"] = "checkbox"
                 },
-                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
-                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
                     ["IsChecked"] = new(PropertyTarget.InputChecked),
                     ["Disabled"] = new(PropertyTarget.Attribute, "disabled")
-                },
+                }),
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
                     ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputChecked)
@@ -189,12 +221,11 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 {
                     ["type"] = "checkbox"
                 },
-                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
-                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
                     ["IsOn"] = new(PropertyTarget.InputChecked),
                     ["Disabled"] = new(PropertyTarget.Attribute, "disabled")
-                },
+                }),
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
                     ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputChecked)
@@ -207,9 +238,8 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                     ["type"] = "range",
                     ["step"] = "any"
                 },
-                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
-                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
                     ["Minimum"] = new(PropertyTarget.Attribute, "min"),
                     ["Maximum"] = new(PropertyTarget.Attribute, "max"),
                     ["Step"] = new(PropertyTarget.Attribute, "step"),
@@ -219,7 +249,7 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                     ["ThumbAccent"] = new(PropertyTarget.Style, "--mirage-slider-thumb-color"),
                     ["ThumbImage"] = new(PropertyTarget.Style, "--mirage-slider-thumb-image"),
                     ["ThumbImageState"] = new(PropertyTarget.Attribute, "data-maui-slider-thumb-image-state")
-                },
+                }),
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
                     ["input"] = new("input", EventTarget.Self, EventPayloadKind.InputValue),
@@ -228,13 +258,12 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
             [ComponentKind.Picker] = new(
                 ComponentKind.Picker,
                 "select",
-                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
-                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
                     ["Title"] = new(PropertyTarget.Attribute, "aria-label"),
                     ["SelectedValue"] = new(PropertyTarget.InputValue),
                     ["Disabled"] = new(PropertyTarget.Attribute, "disabled")
-                },
+                }),
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
                     ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue)
@@ -247,14 +276,13 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                     ["type"] = "time",
                     ["step"] = "60"
                 },
-                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
-                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
                     ["Value"] = new(PropertyTarget.InputValue),
                     ["Step"] = new(PropertyTarget.Attribute, "step"),
                     ["Format"] = new(PropertyTarget.Attribute, "data-maui-time-format"),
                     ["Disabled"] = new(PropertyTarget.Attribute, "disabled")
-                },
+                }),
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
                     ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue),
@@ -264,9 +292,8 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
             [ComponentKind.Stepper] = new(
                 ComponentKind.Stepper,
                 "div",
-                propertyMappings: new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
-                    ["AutomationId"] = new(PropertyTarget.Attribute, "data-automation-id"),
                     ["Minimum"] = new(PropertyTarget.Attribute, "data-maui-stepper-min"),
                     ["Maximum"] = new(PropertyTarget.Attribute, "data-maui-stepper-max"),
                     ["Step"] = new(PropertyTarget.Attribute, "data-maui-stepper-step"),
@@ -276,7 +303,7 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                     ["IncrementText"] = new(PropertyTarget.TextContent, ElementTarget: PropertyElementTarget.ValueElement),
                     ["DecrementDisabled"] = new(PropertyTarget.Attribute, "disabled", ElementTarget: PropertyElementTarget.SecondaryElement),
                     ["IncrementDisabled"] = new(PropertyTarget.Attribute, "disabled", ElementTarget: PropertyElementTarget.ValueElement)
-                },
+                }),
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
                     ["decrement"] = new("click", EventTarget.SecondaryElement),
@@ -392,5 +419,17 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
             supportsStyles: true,
             supportsClasses: true,
             supportsEvents: true);
+    }
+
+    private static IReadOnlyDictionary<string, ProviderPropertyDescriptor> WithCommonProperties(
+        IReadOnlyDictionary<string, ProviderPropertyDescriptor> specificProperties)
+    {
+        var merged = new Dictionary<string, ProviderPropertyDescriptor>(CommonProperties, StringComparer.Ordinal);
+        foreach (var pair in specificProperties)
+        {
+            merged[pair.Key] = pair.Value;
+        }
+
+        return merged;
     }
 }

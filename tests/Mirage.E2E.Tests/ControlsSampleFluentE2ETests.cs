@@ -123,6 +123,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-activityindicatorpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-checkboxpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-imagepage']").CountAsync());
+        Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-imagebuttonparitypage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-sliderpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-stepperpage']").CountAsync());
         Assert.Equal(1, await page.Locator("[data-automation-id='controls-sample-open-transformationspage']").CountAsync());
@@ -708,6 +709,100 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             """,
             hostSelector);
         await WaitForLabelTextContainsAsync(page, timeStateSelector, "time=07:11:12");
+    }
+
+    [Fact]
+    public async Task ImageButtonParityProbe_ProjectsInteractionSourceAndStyleState()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1160, height: 860);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-imagebuttonparitypage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-imagebuttonparitypage']");
+            });
+
+        const string hostSelector = "[data-automation-id='controls-sample-imagebutton-parity-host']";
+        const string eventsSelector = "[data-automation-id='controls-sample-imagebutton-parity-events']";
+        const string projectionSelector = "[data-automation-id='controls-sample-imagebutton-parity-projection']";
+        const string styleSelector = "[data-automation-id='controls-sample-imagebutton-parity-style']";
+
+        await page.WaitForSelectorAsync(hostSelector);
+        Assert.Equal("ImageButton", await page.GetAttributeAsync(hostSelector, "data-mirage-kind"));
+        Assert.Equal("file", await page.GetAttributeAsync(hostSelector, "data-maui-image-source-kind"));
+        Assert.Equal("Image button parity probe", await page.GetAttributeAsync(hostSelector, "aria-label"));
+        Assert.Equal("Activates the parity probe image button", await page.GetAttributeAsync(hostSelector, "aria-description"));
+        Assert.Equal(string.Empty, await page.Locator($"{hostSelector} img").GetAttributeAsync("alt"));
+        await page.WaitForFunctionAsync(
+            "(selector) => (document.querySelector(selector)?.getAttribute('data-maui-image-state') ?? '') === 'loaded'",
+            hostSelector);
+
+        var initialSource = await page.Locator($"{hostSelector} img").GetAttributeAsync("src");
+        Assert.False(string.IsNullOrWhiteSpace(initialSource));
+        await WaitForLabelTextContainsAsync(page, eventsSelector, "clicked=0");
+
+        await page.Locator(hostSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, eventsSelector, "pressed=1");
+        await WaitForLabelTextContainsAsync(page, eventsSelector, "released=1");
+        await WaitForLabelTextContainsAsync(page, eventsSelector, "clicked=1");
+
+        await page.Locator("[data-automation-id='controls-sample-imagebutton-parity-toggle-source']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, projectionSelector, "source=dotnet_bot.png");
+        await page.WaitForFunctionAsync(
+            """
+            (args) => {
+                const current = document.querySelector(args.selector + " img")?.getAttribute("src") ?? "";
+                return current !== "" && current !== args.previous;
+            }
+            """,
+            new
+            {
+                selector = hostSelector,
+                previous = initialSource!
+            });
+        await page.WaitForFunctionAsync(
+            "(selector) => (document.querySelector(selector)?.getAttribute('data-maui-image-state') ?? '') === 'loaded'",
+            hostSelector);
+
+        await page.Locator("[data-automation-id='controls-sample-imagebutton-parity-toggle-aspect']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, projectionSelector, "aspect=AspectFill");
+        var objectFit = await page.EvaluateAsync<string>(
+            """
+            (selector) => getComputedStyle(document.querySelector(selector + " img")).objectFit
+            """,
+            hostSelector);
+        Assert.Equal("cover", objectFit);
+
+        await page.Locator("[data-automation-id='controls-sample-imagebutton-parity-toggle-style']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, styleSelector, "borderWidth=4");
+        var hostChrome = await page.EvaluateAsync<string[]>(
+            """
+            (selector) => {
+                const style = getComputedStyle(document.querySelector(selector));
+                return [style.borderWidth, style.borderRadius, style.padding];
+            }
+            """,
+            hostSelector);
+        Assert.Equal("4px", hostChrome[0]);
+        Assert.Equal("30px", hostChrome[1]);
+        Assert.Equal("10px 14px 18px 6px", hostChrome[2]);
+
+        await page.Locator("[data-automation-id='controls-sample-imagebutton-parity-toggle-enabled']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, projectionSelector, "enabled=False");
+        Assert.Equal("disabled", await page.GetAttributeAsync(hostSelector, "disabled"));
+        await page.EvaluateAsync(
+            "selector => { document.querySelector(selector)?.click(); }",
+            hostSelector);
+        await WaitForLabelTextContainsAsync(page, eventsSelector, "clicked=1");
+
+        await page.Locator("[data-automation-id='controls-sample-imagebutton-parity-toggle-enabled']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, projectionSelector, "enabled=True");
+        await page.Locator(hostSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, eventsSelector, "clicked=2");
     }
 
     [Fact]
