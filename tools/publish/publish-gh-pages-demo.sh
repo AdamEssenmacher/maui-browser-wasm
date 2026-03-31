@@ -305,6 +305,10 @@ DEMO_BASE_HREF="${PAGES_SITE_BASE_PATH%/}/${DEMO_DEST_REL}/"
 PROJECT_ABS_PATH="$REPO_ROOT/$DEMO_PROJECT_PATH"
 [[ -f "$PROJECT_ABS_PATH" ]] || fail "Demo project not found: $PROJECT_ABS_PATH"
 
+if [[ "$DRY_RUN" -eq 0 && -n "$(git -C "$REPO_ROOT" status --porcelain)" ]]; then
+  fail "Source repo working tree must be clean before publishing: $REPO_ROOT"
+fi
+
 PUBLIC_REPO_DIR="$(cd "$PUBLIC_REPO_DIR" 2>/dev/null && pwd)" \
   || fail "Public repo directory does not exist: $PUBLIC_REPO_DIR"
 [[ -d "$PUBLIC_REPO_DIR/.git" ]] || fail "Public repo dir is not a git checkout: $PUBLIC_REPO_DIR"
