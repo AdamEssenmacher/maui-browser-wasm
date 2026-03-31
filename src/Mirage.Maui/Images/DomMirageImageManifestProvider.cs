@@ -10,11 +10,13 @@ internal sealed class DomMirageImageManifestProvider : IMirageImageManifestProvi
 
         var normalizedPath = manifestPath.Trim();
         var relativePath = normalizedPath.TrimStart('/');
+        var rootAbsolutePath = $"/{relativePath}";
         var candidates = new[]
         {
             normalizedPath,
             relativePath,
-            $"./{relativePath}"
+            $"./{relativePath}",
+            rootAbsolutePath
         };
 
         var lastStatusCode = 0;
