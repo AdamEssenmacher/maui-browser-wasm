@@ -6,6 +6,7 @@
       "mirageType": "MirageEditorHandler",
       "propertyMapperKeys": [
         "Background",
+        "AutoSize",
         "CharacterSpacing",
         "Font",
         "IsReadOnly",

@@ -133,6 +133,9 @@ internal static partial class DomApi
     [JSImport("unsubscribePullToRefresh", Module)]
     internal static partial void UnsubscribePullToRefresh(int subscriptionId);
 
+    [JSImport("getTextInputContentHeight", Module)]
+    internal static partial double GetTextInputContentHeight(nint element);
+
     [JSImport("focusElement", Module)]
     internal static partial bool FocusElement(nint element);
 

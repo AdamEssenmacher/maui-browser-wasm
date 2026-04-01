@@ -92,8 +92,8 @@ Visual legend:
 | `ButtonPage.xaml` | `Pages/Controls/ButtonPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `CheckBoxPage.xaml` | `Pages/Controls/CheckBoxPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `DatePickerPage.xaml` | `Pages/Controls/DatePickerPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `EditorPage.xaml` | `Pages/Controls/EditorPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `EntryPage.xaml` | `Pages/Controls/EntryPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `EditorPage.xaml` | `Pages/Controls/EditorPage.xaml` | `[x]` | `[x]` | `[ ]` |
+| `EntryPage.xaml` | `Pages/Controls/EntryPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `HybridWebViewPage.xaml` | `Pages/Controls/HybridWebViewPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ImageButtonPage.xaml` | `Pages/Controls/ImageButtonPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ImagePage.xaml` | `Pages/Controls/ImagePage.xaml` | `[x]` | `[x]` | `[ ]` |

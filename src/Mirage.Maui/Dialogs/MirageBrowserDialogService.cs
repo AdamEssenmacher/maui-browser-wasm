@@ -391,7 +391,9 @@ internal sealed class MirageBrowserDialogService : IMirageBrowserDialogService, 
             if (shouldRestoreFocus && !string.IsNullOrWhiteSpace(_restoreFocusNodeId))
             {
                 var focusNodeId = _restoreFocusNodeId;
-                _coordinator.DispatchDelayed(FocusDispatchDelay, () => _coordinator.TrySetNodeFocus(focusNodeId, isFocused: true));
+                _coordinator.DispatchDelayed(
+                    FocusDispatchDelay,
+                    () => _coordinator.TrySetNodeFocus(focusNodeId, isFocused: true, suppressNextFocusEvent: true));
                 _restoreFocusNodeId = null;
             }
 

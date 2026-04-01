@@ -248,6 +248,16 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         return _runtime.TrySetNodeFocus(nodeId, isFocused);
     }
 
+    public bool TrySetNodeFocus(string nodeId, bool isFocused, bool suppressNextFocusEvent)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TrySetNodeFocus(nodeId, isFocused, suppressNextFocusEvent);
+    }
+
     public bool TryGetNodeTextSelection(string nodeId, out int selectionStart, out int selectionEnd)
     {
         if (_runtime is null)
@@ -299,6 +309,17 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         }
 
         return _runtime.TryRenderNodeCanvas(nodeId, commandsJson);
+    }
+
+    public bool TryGetNodeTextContentHeight(string nodeId, out double height)
+    {
+        if (_runtime is null)
+        {
+            height = 0;
+            return false;
+        }
+
+        return _runtime.TryGetNodeTextContentHeight(nodeId, out height);
     }
 
     public void OnEvent(string nodeId, string eventName, string? payload)
