@@ -217,6 +217,47 @@ public sealed class MirageBrowserDialogServiceTests
     }
 
     [Fact]
+    public async Task DisplayAlertAsync_RestoredSearchBarFocus_SynchronizesLogicalStateWithoutReopeningDialog()
+    {
+        using var harness = new DialogHarness();
+        var focusedCount = 0;
+        var searchBar = new SearchBar
+        {
+            AutomationId = "focus-searchbar"
+        };
+        var page = new ContentPage
+        {
+            Content = searchBar
+        };
+
+        searchBar.Focused += async (_, _) =>
+        {
+            focusedCount++;
+            if (focusedCount == 1)
+            {
+                await page.DisplayAlertAsync("Focused", "SearchBar focused", "OK");
+            }
+        };
+
+        harness.Attach(page);
+        await harness.WaitForAutomationIdAsync("focus-searchbar");
+
+        Assert.True(searchBar.Focus());
+        harness.SendActiveFocusEvent();
+        await harness.WaitForDialogTitleAsync("Focused");
+
+        Assert.True(searchBar.IsFocused);
+        Assert.Equal(1, focusedCount);
+
+        harness.ClickByAutomationId("mirage-dialog-accept");
+        await harness.WaitForNoDialogAsync();
+        await harness.WaitForAsync(() => searchBar.IsFocused);
+
+        Assert.True(searchBar.IsFocused);
+        Assert.Equal(1, focusedCount);
+    }
+
+    [Fact]
     public async Task CancelDialogs_ResolvesPendingDialogsPredictably()
     {
         using var harness = new DialogHarness();
@@ -288,6 +329,7 @@ public sealed class MirageBrowserDialogServiceTests
                 handlers.AddHandler(typeof(BoxView), typeof(MirageBoxViewHandler));
                 handlers.AddHandler(typeof(Entry), typeof(MirageEntryHandler));
                 handlers.AddHandler(typeof(Editor), typeof(MirageEditorHandler));
+                handlers.AddHandler(typeof(SearchBar), typeof(MirageSearchBarHandler));
             });
 
             builder.Services.AddSingleton<IMirageRenderCoordinator>(_coordinator);
