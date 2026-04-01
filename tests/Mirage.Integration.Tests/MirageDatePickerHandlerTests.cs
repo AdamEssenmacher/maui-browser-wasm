@@ -422,6 +422,12 @@ public sealed class MirageDatePickerHandlerTests
             return null;
         }
 
+        public bool TryGetActiveNodeId(out string? nodeId)
+        {
+            nodeId = LastFocusState ? LastFocusedNodeId : null;
+            return !string.IsNullOrWhiteSpace(nodeId);
+        }
+
         public bool TryGetNodeScrollPosition(string nodeId, out double left, out double top)
         {
             _ = nodeId;

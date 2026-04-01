@@ -876,3 +876,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - DatePicker realization now uses a browser-native `input[type=date]` host with deterministic ISO wire projection for `Date`, `MinimumDate`, and `MaximumDate`, while preserving nullable-date semantics by clearing the input value when `Date` is `null`.
 - `IsOpen` reuses the generic runtime picker-open seam and follows the same retry/rollback posture as `TimePicker`: programmatic open requests can be retried and rolled back when the runtime cannot accept them, while runtime `change` / `blur` close the picker and raw browser focus alone does not claim open-state ownership.
 - Browser-native date display formatting remains a deliberate subset in this wave: Mirage records `Format` as diagnostic metadata and preserves date-only wire behavior rather than introducing a custom popup/display layer that would diverge from the native-input host strategy.
+
+## 2026-03-31 (ControlsSample AlertsPage + Mirage Browser Dialog Foundation)
+- Promoted upstream `AlertsPage` to a runnable ControlsSample entry and added deterministic automation IDs for its six trigger buttons and two prompt result labels.
+- Added a Mirage-owned browser dialog foundation that subscribes to MAUI page-dialog messages (`DisplayAlertAsync`, `DisplayActionSheetAsync`, and `DisplayPromptAsync`) through the shared MAUI dialog seam instead of patching individual sample pages.
+- Dialog presentation is DOM-owned and window-scoped: one active dialog per window, FIFO queueing for later requests, deterministic cancel semantics on disconnect/navigation cleanup, and focus restoration after dismissal.
+- Prompt dialogs map browser input hints through `inputmode` rather than hard validation, and action sheets only allow backdrop/Escape dismissal when a cancel option exists.

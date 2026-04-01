@@ -23,6 +23,7 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageSingleContentHostHandler.cs" Link="Handlers\MirageSingleContentHostHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentViewHandlerBase.cs" Link="Handlers\MirageContentViewHandlerBase.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MiragePageHandler.cs" Link="Handlers\MiragePageHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageWindowHandler.cs" Link="Handlers\MirageWindowHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentPageHandler.cs" Link="Handlers\MirageContentPageHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageContentViewHandler.cs" Link="Handlers\MirageContentViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageTemplatedViewHandler.cs" Link="Handlers\MirageTemplatedViewHandler.cs" />
@@ -68,6 +69,8 @@
     <Compile Include="..\..\src\Mirage.Maui\Images\MirageManifestImageSourceResolver.cs" Link="Images\MirageManifestImageSourceResolver.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageImageSourceProjection.cs" Link="Handlers\MirageImageSourceProjection.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageImageHandler.cs" Link="Handlers\MirageImageHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Dialogs\IMirageBrowserDialogService.cs" Link="Dialogs\IMirageBrowserDialogService.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Dialogs\MirageBrowserDialogService.cs" Link="Dialogs\MirageBrowserDialogService.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageLayoutHandlerOrdering.cs" Link="Handlers\MirageLayoutHandlerOrdering.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageLayoutProjection.cs" Link="Handlers\MirageLayoutProjection.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageLayoutHandler.cs" Link="Handlers\MirageLayoutHandler.cs" />

@@ -111,6 +111,12 @@ public sealed class MirageRuntime : IMirageRuntime
             : null;
     }
 
+    public bool TryGetActiveNodeId(out string? nodeId)
+    {
+        nodeId = DomElement.GetActiveMirageNodeId();
+        return !string.IsNullOrWhiteSpace(nodeId);
+    }
+
     public bool TryGetNodeScrollPosition(string nodeId, out double left, out double top)
     {
         left = 0;

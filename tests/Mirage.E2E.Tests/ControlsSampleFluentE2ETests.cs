@@ -136,6 +136,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ["collectionviewgallery"] = "controls",
 
             ["clippage"] = "core",
+            ["alertspage"] = "core",
             ["brushespage"] = "core",
             ["contentpagegallery"] = "core",
             ["transformationspage"] = "core",
@@ -2594,6 +2595,72 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
+    public async Task AlertsPage_IsRunnable_AndExercisesSharedBrowserDialogs()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1200, height: 1200);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "alertspage");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-alertspage']");
+                await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']");
+            });
+
+        await ExpectDialogAsync(page, "Alert", "Welcome to the Alerts Page", "modal");
+        await page.Locator("[data-automation-id='mirage-dialog-accept']").ClickAsync();
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']", new() { State = WaitForSelectorState.Detached });
+
+        await page.Locator("[data-automation-id='controls-sample-alertspage-alert-simple']").ClickAsync();
+        await ExpectDialogAsync(page, "Alert", "You have been alerted", "modal");
+        Assert.Equal("OK", await page.Locator("[data-automation-id='mirage-dialog-accept']").InnerTextAsync());
+        Assert.Equal(0, await page.Locator("[data-automation-id='mirage-dialog-cancel']").CountAsync());
+        await page.Locator("[data-automation-id='mirage-dialog-accept']").ClickAsync();
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']", new() { State = WaitForSelectorState.Detached });
+
+        await page.Locator("[data-automation-id='controls-sample-alertspage-alert-yesno']").ClickAsync();
+        await ExpectDialogAsync(page, "Question?", "Would you like to play a game", "modal");
+        Assert.Equal("Yes", await page.Locator("[data-automation-id='mirage-dialog-accept']").InnerTextAsync());
+        Assert.Equal("No", await page.Locator("[data-automation-id='mirage-dialog-cancel']").InnerTextAsync());
+        await page.Locator("[data-automation-id='mirage-dialog-cancel']").ClickAsync();
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']", new() { State = WaitForSelectorState.Detached });
+
+        await page.Locator("[data-automation-id='controls-sample-alertspage-actionsheet-simple']").ClickAsync();
+        await ExpectDialogAsync(page, "ActionSheet: Send to?", null, "sheet");
+        Assert.Equal("Email", await page.Locator("[data-automation-id='mirage-dialog-option-0']").InnerTextAsync());
+        Assert.Equal("Twitter", await page.Locator("[data-automation-id='mirage-dialog-option-1']").InnerTextAsync());
+        Assert.Equal("Facebook", await page.Locator("[data-automation-id='mirage-dialog-option-2']").InnerTextAsync());
+        Assert.Equal("Cancel", await page.Locator("[data-automation-id='mirage-dialog-cancel']").InnerTextAsync());
+        await page.Locator("[data-automation-id='mirage-dialog-option-1']").ClickAsync();
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']", new() { State = WaitForSelectorState.Detached });
+
+        await page.Locator("[data-automation-id='controls-sample-alertspage-actionsheet-cancel-delete']").ClickAsync();
+        await ExpectDialogAsync(page, "ActionSheet: SavePhoto?", null, "sheet");
+        Assert.Equal("Delete", await page.Locator("[data-automation-id='mirage-dialog-destruction']").InnerTextAsync());
+        await page.Locator("[data-automation-id='mirage-dialog-destruction']").ClickAsync();
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']", new() { State = WaitForSelectorState.Detached });
+
+        await page.Locator("[data-automation-id='controls-sample-alertspage-question-1']").ClickAsync();
+        await ExpectDialogAsync(page, "Question 1", "What's your name?", "modal");
+        await page.Locator("[data-automation-id='mirage-dialog-input']").FillAsync("Ada");
+        await page.Locator("[data-automation-id='mirage-dialog-accept']").ClickAsync();
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']", new() { State = WaitForSelectorState.Detached });
+        Assert.Equal("Hello Ada.", await page.Locator("[data-automation-id='controls-sample-alertspage-question1-result']").InnerTextAsync());
+
+        await page.Locator("[data-automation-id='controls-sample-alertspage-question-2']").ClickAsync();
+        await ExpectDialogAsync(page, "Question 2", "What's 5 + 5?", "modal");
+        Assert.Equal("numeric", await page.Locator("[data-automation-id='mirage-dialog-input']").GetAttributeAsync("inputmode"));
+        Assert.Equal("2", await page.Locator("[data-automation-id='mirage-dialog-input']").GetAttributeAsync("maxlength"));
+        await page.Locator("[data-automation-id='mirage-dialog-input']").FillAsync("10");
+        await page.Locator("[data-automation-id='mirage-dialog-accept']").ClickAsync();
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']", new() { State = WaitForSelectorState.Detached });
+        Assert.Equal("Correct.", await page.Locator("[data-automation-id='controls-sample-alertspage-question2-result']").InnerTextAsync());
+    }
+
+    [Fact]
     public async Task ImagePage_IsRunnable_AndExercisesResolverBackedSourcesStreamAndGifPlayback()
     {
         await using var context = await _fixture.NewContextAsync(width: 1200, height: 1400);
@@ -4872,6 +4939,23 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 return activeHost.getAttribute("data-mirage-node-id") ?? "";
             }
             """);
+    }
+
+    private static async Task ExpectDialogAsync(IPage page, string title, string? message, string presentation)
+    {
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']");
+        Assert.Equal(
+            presentation,
+            await page.Locator("[data-automation-id='mirage-dialog-surface']").GetAttributeAsync("data-mirage-dialog-presentation"));
+        Assert.Equal(title, await page.Locator("[data-automation-id='mirage-dialog-title']").InnerTextAsync());
+
+        if (message is null)
+        {
+            Assert.Equal(0, await page.Locator("[data-automation-id='mirage-dialog-message']").CountAsync());
+            return;
+        }
+
+        Assert.Equal(message, await page.Locator("[data-automation-id='mirage-dialog-message']").InnerTextAsync());
     }
 
     private static async Task ClickCollectionNavButtonAsync(IPage page, string locatorSelector, string domSelector)

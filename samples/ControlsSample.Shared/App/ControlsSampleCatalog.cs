@@ -113,6 +113,14 @@ public static class ControlsSampleCatalog
             description: "Runnable in Mirage today: exercises Image clipping with RectangleGeometry, EllipseGeometry, GeometryGroup, and PathGeometry scenarios.",
             pageFactory: CreateClipPage),
         new(
+            id: "alertspage",
+            title: "AlertsPage",
+            upstreamPath: "Pages/Core/AlertsPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(AlertsPage),
+            description: "Runnable in Mirage today: exercises DisplayAlertAsync, DisplayActionSheetAsync, and DisplayPromptAsync through the shared Mirage browser dialog foundation.",
+            pageFactory: CreateAlertsPage),
+        new(
             id: "brushespage",
             title: "BrushesPage",
             upstreamPath: "Pages/Core/BrushesPage.xaml",
@@ -371,6 +379,7 @@ public static class ControlsSampleCatalog
             ["collectionviewgallery"] = ControlsSampleCategory.Controls,
 
             ["clippage"] = ControlsSampleCategory.Core,
+            ["alertspage"] = ControlsSampleCategory.Core,
             ["brushespage"] = ControlsSampleCategory.Core,
             ["contentpagegallery"] = ControlsSampleCategory.Core,
             ["transformationspage"] = ControlsSampleCategory.Core,
@@ -498,6 +507,23 @@ public static class ControlsSampleCatalog
                 images[i].AutomationId = automationIds[i];
             }
         }
+
+        return page;
+    }
+
+    private static Page CreateAlertsPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new AlertsPage();
+
+        SetButtonAutomationIdByText(page, "Alert Simple", "controls-sample-alertspage-alert-simple");
+        SetButtonAutomationIdByText(page, "Alert Yes/No", "controls-sample-alertspage-alert-yesno");
+        SetButtonAutomationIdByText(page, "ActionSheet Simple", "controls-sample-alertspage-actionsheet-simple");
+        SetButtonAutomationIdByText(page, "ActionSheet Cancel/Delete", "controls-sample-alertspage-actionsheet-cancel-delete");
+        SetButtonAutomationIdByText(page, "Question 1", "controls-sample-alertspage-question-1");
+        SetButtonAutomationIdByText(page, "Question 2", "controls-sample-alertspage-question-2");
+        SetNamedElementAutomationId(page, "question1ResultLabel", "controls-sample-alertspage-question1-result");
+        SetNamedElementAutomationId(page, "question2ResultLabel", "controls-sample-alertspage-question2-result");
 
         return page;
     }

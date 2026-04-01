@@ -345,6 +345,129 @@ input[data-mirage-kind="Switch"][type="checkbox"]:disabled {
   cursor: default;
 }
 
+.mirage-dialog-host {
+  position: absolute;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+}
+
+.mirage-dialog-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: auto;
+}
+
+.mirage-dialog-overlay[data-mirage-dialog-presentation="sheet"] {
+  align-items: flex-end;
+}
+
+.mirage-dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.mirage-dialog-surface {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: min(420px, calc(100vw - 48px));
+  max-width: min(520px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  padding: 20px;
+  border-radius: 16px;
+  background: Canvas;
+  color: CanvasText;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.3);
+  box-sizing: border-box;
+  overflow: auto;
+}
+
+.mirage-dialog-surface[data-mirage-dialog-presentation="sheet"] {
+  width: min(560px, calc(100vw - 24px));
+  max-width: min(560px, calc(100vw - 24px));
+  border-radius: 20px 20px 0 0;
+}
+
+.mirage-dialog-title {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.mirage-dialog-message {
+  font-size: 15px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.mirage-dialog-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  border-radius: 10px;
+  background: Canvas;
+  color: CanvasText;
+  box-sizing: border-box;
+}
+
+.mirage-dialog-input:focus-visible {
+  outline: 2px solid rgba(59,130,246,0.95);
+  outline-offset: 2px;
+}
+
+.mirage-dialog-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.mirage-dialog-footer[data-mirage-dialog-presentation="sheet"] {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.mirage-dialog-button {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 40px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(226, 232, 240, 0.9);
+  color: CanvasText;
+  font: inherit;
+  cursor: pointer;
+}
+
+.mirage-dialog-button[data-mirage-dialog-button-role="primary"] {
+  background: rgba(37, 99, 235, 0.96);
+  color: white;
+}
+
+.mirage-dialog-button[data-mirage-dialog-button-role="destructive"] {
+  background: rgba(220, 38, 38, 0.96);
+  color: white;
+}
+
+.mirage-dialog-button:focus-visible {
+  outline: 2px solid rgba(59,130,246,0.95);
+  outline-offset: 2px;
+}
+
+.mirage-dialog-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 [data-mirage-kind="IndicatorView"] {
   display: inline-flex;
   align-items: center;
@@ -952,6 +1075,11 @@ function removePropertyFromElement(element, name) {
     return;
   }
 
+  if (name === "textContent") {
+    element.textContent = "";
+    return;
+  }
+
   let prototype = Object.getPrototypeOf(element);
   let isPrototypeBackedProperty = false;
   while (prototype) {
@@ -1003,6 +1131,11 @@ function applyPropertyMutation(element, mutation) {
 
   switch (mutation.kind) {
     case "string":
+      if (mutation.name === "textContent") {
+        element.textContent = mutation.stringValue ?? "";
+        return;
+      }
+
       element[mutation.name] = mutation.stringValue ?? "";
       return;
     case "bool":
@@ -1012,6 +1145,11 @@ function applyPropertyMutation(element, mutation) {
       element[mutation.name] = Number.isFinite(mutation.numberValue) ? mutation.numberValue : 0;
       return;
     case "json":
+      if (mutation.name === "textContent") {
+        element.textContent = "";
+        return;
+      }
+
       if (mutation.stringValue == null || mutation.stringValue.length === 0) {
         element[mutation.name] = null;
         return;
@@ -1024,6 +1162,11 @@ function applyPropertyMutation(element, mutation) {
       }
       return;
     case "null":
+      if (mutation.name === "textContent") {
+        element.textContent = "";
+        return;
+      }
+
       element[mutation.name] = null;
       return;
     case "remove":
@@ -1280,6 +1423,16 @@ export function setInputValue(elementHandle, value) {
 export function getInputValue(elementHandle) {
   const element = fromHandle(elementHandle);
   return element.value ?? "";
+}
+
+export function getActiveMirageNodeId() {
+  const activeElement = document.activeElement;
+  if (!activeElement || typeof activeElement.closest !== "function") {
+    return null;
+  }
+
+  const mirageNode = activeElement.closest("[data-mirage-node-id]");
+  return mirageNode?.getAttribute("data-mirage-node-id") ?? null;
 }
 
 export function setInputChecked(elementHandle, value) {

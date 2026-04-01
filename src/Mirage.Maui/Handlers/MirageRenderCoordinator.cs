@@ -161,6 +161,23 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         return new RenderBatchScope(this);
     }
 
+    public bool TryGetNodeInputValue(string nodeId, out string? value)
+    {
+        value = _runtime?.TryGetNodeInputValue(nodeId);
+        return value is not null;
+    }
+
+    public bool TryGetActiveNodeId(out string? nodeId)
+    {
+        if (_runtime is null)
+        {
+            nodeId = null;
+            return false;
+        }
+
+        return _runtime.TryGetActiveNodeId(out nodeId);
+    }
+
     public bool TryGetNodeScrollPosition(string nodeId, out double left, out double top)
     {
         if (_runtime is null)

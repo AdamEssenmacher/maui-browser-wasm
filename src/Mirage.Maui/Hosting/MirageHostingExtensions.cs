@@ -1,4 +1,5 @@
 using Mirage.Core.Providers;
+using Mirage.Maui.Dialogs;
 using Mirage.Maui.Essentials;
 using Mirage.Maui.Handlers;
 using Mirage.Maui.Images;
@@ -95,6 +96,7 @@ public static class MirageHostingExtensions
         builder.Services.TryAddSingleton<IMirageImageManifestProvider, DomMirageImageManifestProvider>();
         builder.Services.TryAddSingleton<IMirageObjectUrlFactory, DomMirageObjectUrlFactory>();
         builder.Services.TryAddSingleton<IMirageImageSourceResolver, MirageManifestImageSourceResolver>();
+        builder.Services.TryAddSingleton<IMirageBrowserDialogService, MirageBrowserDialogService>();
         EnsureNavigationServices(builder.Services);
 
         return builder;
