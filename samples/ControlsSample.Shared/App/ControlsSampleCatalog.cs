@@ -265,6 +265,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(GraphicsViewParityProbePage),
             description: "Mirage parity probe: exercises GraphicsView canvas redraw/invalidate flow, runtime size updates, background/flow-direction projection, and pointer/hover interaction routing."),
         new(
+            id: "refreshviewparitypage",
+            title: "RefreshViewParityProbePage",
+            upstreamPath: "App/RefreshViewParityProbePage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(RefreshViewParityProbePage),
+            description: "Mirage parity probe: exercises RefreshView trigger-button refresh, pull-threshold activation across collection and plain content, enabled gating, and deterministic browser diagnostics."),
+        new(
             id: "tabbedpagegallerymainpage",
             title: "TabbedPageGalleryMainPage",
             upstreamPath: "Pages/Compatibility/TabbedPageGalleryMainPage.xaml",
@@ -420,6 +427,7 @@ public static class ControlsSampleCatalog
             ["pickerparitypage"] = ControlsSampleCategory.ParityProbes,
             ["progressbarparitypage"] = ControlsSampleCategory.ParityProbes,
             ["graphicsviewparitypage"] = ControlsSampleCategory.ParityProbes,
+            ["refreshviewparitypage"] = ControlsSampleCategory.ParityProbes,
             ["datepickerparitypage"] = ControlsSampleCategory.ParityProbes,
             ["timepickerparitypage"] = ControlsSampleCategory.ParityProbes,
 

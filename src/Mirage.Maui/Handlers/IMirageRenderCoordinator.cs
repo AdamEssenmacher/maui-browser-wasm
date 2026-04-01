@@ -48,6 +48,8 @@ public interface IMirageRenderCoordinator : IMirageEventSink
 
     bool TrySetNodeTextSelection(string nodeId, int selectionStart, int selectionEnd);
 
+    bool TryConfigureNodePullToRefresh(string ownerNodeId, string sourceNodeId, bool enabled, double threshold) => false;
+
     bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)
     {
         displayScale = 1;

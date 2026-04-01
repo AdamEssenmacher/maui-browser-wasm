@@ -19,8 +19,9 @@ Upstream MAUI shared-code risks for unofficial/browser targets are tracked separ
 - Deferred: full item-size strategy parity, grouped template realization, reorder interactions, and complete `KeepItemsInView` anchoring semantics.
 
 4. RefreshView native affordance parity depth
-- Current behavior: `RefreshView` supports command/state-first interaction plus pull-drag threshold activation on scroll-top content (`Content`, `IsRefreshing`, `IsRefreshEnabled`, `RefreshColor`, `Command`, `CommandParameter`).
-- Deferred: platform-native overscroll elasticity/physics and deeper affordance parity beyond the current deterministic browser indicator row.
+- Current behavior: `RefreshView` now maps through `MirageRefreshViewHandler` on the ControlNode path with MAUI-shaped handler surface coverage for `Content`, `IsRefreshing`, `IsRefreshEnabled`, `RefreshColor`, `Command`, and `CommandParameter`, plus Mirage extension `IsEnabled`.
+- Current behavior: Mirage uses a handler-owned indicator row, spinner, trigger button, and diagnostics state on top of a dedicated runtime pull-observation seam; pull refresh binds to the presented child scroll host when the child is scroll-backed and falls back to the handler-owned viewport for plain content.
+- Deferred: platform-native overscroll elasticity/physics and exact native pull-affordance visuals remain browser-limited; Mirage keeps a deterministic visible indicator/trigger model instead of attempting to emulate native bounce behavior.
 
 5. Clip geometry coverage
 - Current behavior: `RectangleGeometry` and `RoundRectangleGeometry` project to CSS `clip-path`.

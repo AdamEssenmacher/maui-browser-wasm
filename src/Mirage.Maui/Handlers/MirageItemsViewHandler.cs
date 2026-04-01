@@ -13,7 +13,7 @@ using Microsoft.Maui.Platform;
 
 namespace Mirage.Maui.Handlers;
 
-internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<TItemsView>, IMirageRuntimeEventTarget
+internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<TItemsView>, IMirageRuntimeEventTarget, IMirageScrollSourceProvider
     where TItemsView : ItemsView
 {
     private const string ScrollEventName = "scroll";
@@ -178,6 +178,12 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
     protected virtual LinearItemsLayout? ResolveLinearItemsLayout()
     {
         return GetStructuredItemsView()?.ItemsLayout as LinearItemsLayout;
+    }
+
+    public bool TryGetScrollSourceNodeId(out string nodeId)
+    {
+        nodeId = PlatformView.NodeId;
+        return !string.IsNullOrWhiteSpace(nodeId);
     }
 
     public void OnRuntimeEvent(string eventName, string? payload)

@@ -457,6 +457,12 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - `BrowserRefreshViewHandler` now keeps explicit pull state attributes (`data-maui-rv-pull-active`, `data-maui-rv-pull-armed`, `data-maui-rv-pull-distance`) for deterministic diagnostics/E2E assertions and maps pull triggers through the same `IsEnabled`/`IsRefreshEnabled`/`IsRefreshing` gate as button-triggered refresh.
 - Native overscroll elasticity physics and platform-specific pull affordance visuals remain deferred; this slice targets behavior parity first.
 
+## 2026-04-01 (RefreshView Mirage Parity)
+- Replaced the legacy browser-only `RefreshView` path with a real `MirageRefreshViewHandler`, mirroring MAUI `RefreshViewHandler` mapper shape on the ControlNode path while keeping browser-specific divergence explicit and minimal.
+- RefreshView now owns a deterministic internal chrome tree on the handler side: root host, indicator row, spinner, state label, trigger button, and content viewport, instead of relying on a provider-only widget abstraction.
+- Added a dedicated runtime pull seam, `TryConfigureNodePullToRefresh(ownerNodeId, sourceNodeId, enabled, threshold)`, so pull observation can follow the active child scroll host when content is scroll-backed and fall back to the handler-owned viewport for plain content.
+- Browser parity intentionally keeps the explicit indicator-row/trigger affordance model for reviewability and diagnostics; native overscroll elasticity, physics, and exact platform visuals remain divergence-documented rather than being approximated with hidden magic.
+
 ## 2026-03-07 (Vertical Slice 15: Styling + Presentation Showcase)
 - Added a dedicated showcase track alongside parity lab pages so polished product presentation and parity-regression proof can evolve independently.
 - Themeing uses MAUI `DynamicResource` tokens updated in `Application.Resources`, enabling live theme swaps without full reload while preserving page state.

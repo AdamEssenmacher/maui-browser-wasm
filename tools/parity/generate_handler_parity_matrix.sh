@@ -286,7 +286,7 @@ shape_grade_for_type() {
     fi
 
     case "$key" in
-        CollectionView|CarouselView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|IndicatorView|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|Page|ImageButton|ProgressBar|GraphicsView)
+        CollectionView|CarouselView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|IndicatorView|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|Page|ImageButton|ProgressBar|GraphicsView|RefreshView)
             echo "A"
             ;;
         ContentView|Button|Window|NavigationPage|Image|Border|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame)
@@ -315,7 +315,7 @@ implementation_grade_for_type() {
 
     case "$key" in
         CollectionView) echo "C" ;;
-        CarouselView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|ImageButton|ProgressBar) echo "B" ;;
+        CarouselView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|ImageButton|ProgressBar|RefreshView) echo "B" ;;
         GraphicsView) echo "C" ;;
         ContentView|Button|Window|NavigationPage|Image|Border|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame|IndicatorView|Page) echo "C" ;;
         Entry|Editor|DatePicker|TimePicker|Picker) echo "B" ;;
@@ -339,6 +339,9 @@ notes_for_type() {
             ;;
         CarouselView)
             echo "Dedicated MAUI-shaped ItemsView parity path with snap scrolling, loop/drag/visible-view updates, and linked IndicatorView proof; bounce physics and inherited ItemsUpdatingScrollMode limits remain partial. See \`docs/PARITY_GAPS.md\`."
+            ;;
+        RefreshView)
+            echo "Mirage-owned RefreshView now mirrors the MAUI handler surface with handler-owned chrome, child scroll-source rebinding, deterministic trigger/pull diagnostics, and a dedicated runtime pull seam; native overscroll physics and exact affordance visuals remain browser-limited."
             ;;
         Label)
             echo "Core mapper + text-source parity implemented; HTML breadth and span hit-region parity remain partial. See \`docs/PARITY_GAPS.md\`."

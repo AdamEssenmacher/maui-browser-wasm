@@ -22,6 +22,7 @@ public sealed class MirageRuntime : IMirageRuntime
     private readonly Dictionary<string, RealizedNode> _nodes = new(StringComparer.Ordinal);
     private readonly Dictionary<(string NodeId, string EventName), int> _eventSubscriptions = new();
     private readonly Dictionary<string, int> _mapProviderInitializationRetries = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, PullToRefreshSubscription> _pullToRefreshSubscriptions = new(StringComparer.Ordinal);
 
     private NodeBase? _currentRoot;
     private IMirageEventSink? _eventSink;
@@ -231,6 +232,54 @@ public sealed class MirageRuntime : IMirageRuntime
         return node.GetValueElement().TrySetInputSelection(selectionStart, selectionEnd);
     }
 
+    public bool TryConfigureNodePullToRefresh(string ownerNodeId, string sourceNodeId, bool enabled, double threshold)
+    {
+        if (_pullToRefreshSubscriptions.TryGetValue(ownerNodeId, out var existing))
+        {
+            if (!enabled)
+            {
+                RemovePullToRefreshSubscription(ownerNodeId);
+                return true;
+            }
+
+            if (string.Equals(existing.SourceNodeId, sourceNodeId, StringComparison.Ordinal)
+                && Math.Abs(existing.Threshold - threshold) < 0.001)
+            {
+                return true;
+            }
+
+            RemovePullToRefreshSubscription(ownerNodeId);
+        }
+
+        if (!enabled)
+        {
+            return true;
+        }
+
+        if (!_nodes.TryGetValue(ownerNodeId, out var ownerNode)
+            || !_nodes.TryGetValue(sourceNodeId, out var sourceNode))
+        {
+            return false;
+        }
+
+        var subscriptionId = ownerNode.Element.ConfigurePullToRefresh(
+            sourceNode.Element,
+            threshold,
+            () =>
+            {
+                var payload = ownerNode.Element.ConsumePullToRefreshStateJson();
+                _eventSink?.OnEvent(ownerNodeId, "pullstate", payload);
+            },
+            () => _eventSink?.OnEvent(ownerNodeId, "pulltrigger", null));
+        if (subscriptionId <= 0)
+        {
+            return false;
+        }
+
+        _pullToRefreshSubscriptions[ownerNodeId] = new PullToRefreshSubscription(sourceNodeId, subscriptionId, threshold);
+        return true;
+    }
+
     public bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)
     {
         displayScale = 1;
@@ -263,6 +312,12 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         _eventSubscriptions.Clear();
+        foreach (var subscription in _pullToRefreshSubscriptions.Values.ToArray())
+        {
+            DomElement.UnsubscribePullToRefresh(subscription.SubscriptionId);
+        }
+
+        _pullToRefreshSubscriptions.Clear();
         _mapProviderInitializationRetries.Clear();
 
         foreach (var node in _nodes.Values.ToArray())
@@ -531,10 +586,39 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         RemoveEventSubscriptionsForNode(operation.NodeId);
+        RemovePullToRefreshSubscriptionsForNode(operation.NodeId);
         _mapProviderInitializationRetries.Remove(operation.NodeId);
         node.DisposeMapAdapter();
         InvokeInterop(() => node.Element.Release());
         _nodes.Remove(operation.NodeId);
+    }
+
+    private void RemovePullToRefreshSubscriptionsForNode(string nodeId)
+    {
+        if (_pullToRefreshSubscriptions.Count == 0)
+        {
+            return;
+        }
+
+        var ownerNodeIds = _pullToRefreshSubscriptions
+            .Where(pair => string.Equals(pair.Key, nodeId, StringComparison.Ordinal)
+                           || string.Equals(pair.Value.SourceNodeId, nodeId, StringComparison.Ordinal))
+            .Select(static pair => pair.Key)
+            .ToArray();
+        foreach (var ownerNodeId in ownerNodeIds)
+        {
+            RemovePullToRefreshSubscription(ownerNodeId);
+        }
+    }
+
+    private void RemovePullToRefreshSubscription(string ownerNodeId)
+    {
+        if (!_pullToRefreshSubscriptions.Remove(ownerNodeId, out var subscription))
+        {
+            return;
+        }
+
+        DomElement.UnsubscribePullToRefresh(subscription.SubscriptionId);
     }
 
     private void ApplySetProperty(SetPropertyOperation operation)
@@ -1999,4 +2083,6 @@ public sealed class MirageRuntime : IMirageRuntime
             return coordinates;
         }
     }
+
+    private sealed record PullToRefreshSubscription(string SourceNodeId, int SubscriptionId, double Threshold);
 }

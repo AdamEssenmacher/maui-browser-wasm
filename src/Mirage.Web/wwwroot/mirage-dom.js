@@ -29,6 +29,16 @@ function ensureMirageFrameworkStyles() {
   }
 }
 
+@keyframes maui-rv-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 [data-mirage-kind="ActivityIndicator"] {
   position: relative;
   display: inline-flex;
@@ -933,6 +943,7 @@ export function clearChildren(parentHandle) {
 
 const eventSubscriptions = new Map();
 const trackedEventPayloads = new Map();
+const pullToRefreshStatePayloads = new Map();
 let nextEventSubscriptionId = 1;
 
 function releaseElementRecursive(element) {
@@ -945,8 +956,7 @@ function releaseElementRecursive(element) {
       continue;
     }
 
-    subscription.element.removeEventListener(subscription.eventName, subscription.listener);
-    eventSubscriptions.delete(subscriptionId);
+    removeEventSubscription(subscriptionId);
   }
 
   const handle = handleByElement.get(element);
@@ -961,8 +971,26 @@ function releaseElementRecursive(element) {
     }
   }
 
+  pullToRefreshStatePayloads.delete(handle);
+
   handleByElement.delete(element);
   elementByHandle.delete(handle);
+}
+
+function removeEventSubscription(subscriptionId) {
+  const subscription = eventSubscriptions.get(subscriptionId);
+  if (!subscription) {
+    return;
+  }
+
+  if (typeof subscription.dispose === "function") {
+    subscription.dispose();
+    eventSubscriptions.delete(subscriptionId);
+    return;
+  }
+
+  subscription.element.removeEventListener(subscription.eventName, subscription.listener);
+  eventSubscriptions.delete(subscriptionId);
 }
 
 export function releaseElement(elementHandle) {
@@ -1445,13 +1473,211 @@ export function subscribeInputEvent(elementHandle, eventName, callback) {
 }
 
 export function unsubscribeEvent(subscriptionId) {
-  const subscription = eventSubscriptions.get(subscriptionId);
-  if (!subscription) {
+  removeEventSubscription(subscriptionId);
+}
+
+function publishPullToRefreshState(ownerHandle, stateCallback, active, armed, distance) {
+  if (!Number.isInteger(ownerHandle)) {
     return;
   }
 
-  subscription.element.removeEventListener(subscription.eventName, subscription.listener);
-  eventSubscriptions.delete(subscriptionId);
+  pullToRefreshStatePayloads.set(ownerHandle, JSON.stringify({
+    active: !!active,
+    armed: !!armed,
+    distance: Number.isFinite(distance) ? Math.max(0, Math.round(distance)) : 0
+  }));
+  stateCallback();
+}
+
+export function consumePullToRefreshStateJson(ownerHandle) {
+  if (!Number.isInteger(ownerHandle)) {
+    return null;
+  }
+
+  if (!pullToRefreshStatePayloads.has(ownerHandle)) {
+    return null;
+  }
+
+  const payload = pullToRefreshStatePayloads.get(ownerHandle);
+  pullToRefreshStatePayloads.delete(ownerHandle);
+  return typeof payload === "string" ? payload : null;
+}
+
+export function configurePullToRefresh(ownerHandle, sourceHandle, threshold, stateCallback, triggerCallback) {
+  const owner = fromHandle(ownerHandle);
+  const source = fromHandle(sourceHandle);
+  if (!(owner instanceof HTMLElement) || !(source instanceof HTMLElement)) {
+    return 0;
+  }
+
+  const normalizedThreshold = Number.isFinite(threshold) && threshold > 8 ? threshold : 72;
+  const maxDistance = normalizedThreshold * 1.8;
+  const state = {
+    tracking: false,
+    pointerId: -1,
+    startY: 0,
+    initialScrollTop: 0,
+    touchActionOverridden: false,
+    priorTouchAction: "",
+    armed: false,
+    lastActive: false,
+    lastArmed: false,
+    lastDistance: 0
+  };
+
+  const emitState = (active, armed, distance) => {
+    const normalizedDistance = Number.isFinite(distance) ? Math.max(0, Math.round(distance)) : 0;
+    if (state.lastActive === !!active && state.lastArmed === !!armed && state.lastDistance === normalizedDistance) {
+      return;
+    }
+
+    state.lastActive = !!active;
+    state.lastArmed = !!armed;
+    state.lastDistance = normalizedDistance;
+    publishPullToRefreshState(ownerHandle, stateCallback, state.lastActive, state.lastArmed, state.lastDistance);
+  };
+
+  const enableGestureTouchAction = () => {
+    if (state.touchActionOverridden) {
+      return;
+    }
+
+    state.priorTouchAction = source.style.touchAction;
+    source.style.touchAction = "none";
+    state.touchActionOverridden = true;
+  };
+
+  const restoreGestureTouchAction = () => {
+    if (!state.touchActionOverridden) {
+      return;
+    }
+
+    source.style.touchAction = state.priorTouchAction;
+    state.priorTouchAction = "";
+    state.touchActionOverridden = false;
+  };
+
+  const completeTracking = (triggerRefresh) => {
+    const shouldTrigger = Boolean(triggerRefresh && state.armed);
+    state.tracking = false;
+    state.pointerId = -1;
+    state.startY = 0;
+    state.initialScrollTop = 0;
+    state.armed = false;
+    restoreGestureTouchAction();
+    emitState(false, false, 0);
+
+    if (shouldTrigger) {
+      triggerCallback();
+    }
+  };
+
+  const pointerDownListener = (event) => {
+    if (!(event instanceof PointerEvent) || state.tracking) {
+      return;
+    }
+
+    if (event.pointerType !== "touch" && event.button !== 0) {
+      return;
+    }
+
+    state.tracking = true;
+    state.pointerId = event.pointerId;
+    state.startY = event.clientY;
+    state.initialScrollTop = Number.isFinite(source.scrollTop) ? Math.max(0, source.scrollTop) : 0;
+    if (state.initialScrollTop <= 0.5) {
+      enableGestureTouchAction();
+      event.preventDefault();
+    }
+
+    state.armed = false;
+    emitState(false, false, 0);
+  };
+
+  const pointerMoveListener = (event) => {
+    if (!state.tracking || !(event instanceof PointerEvent) || event.pointerId !== state.pointerId) {
+      return;
+    }
+
+    const rawDeltaY = event.clientY - state.startY;
+    const reachedTopByScroll = source.scrollTop <= 0.5;
+    if (reachedTopByScroll && rawDeltaY > 0) {
+      enableGestureTouchAction();
+    }
+
+    if (!reachedTopByScroll) {
+      state.armed = false;
+      emitState(false, false, 0);
+      return;
+    }
+
+    const deltaY = rawDeltaY - state.initialScrollTop;
+    if (deltaY <= 0) {
+      state.armed = false;
+      emitState(false, false, 0);
+      return;
+    }
+
+    const clampedDistance = Math.min(maxDistance, deltaY);
+    state.armed = clampedDistance >= normalizedThreshold;
+    emitState(true, state.armed, clampedDistance);
+    event.preventDefault();
+  };
+
+  const pointerUpListener = (event) => {
+    if (!(event instanceof PointerEvent) || event.pointerId !== state.pointerId) {
+      return;
+    }
+
+    completeTracking(true);
+  };
+
+  const pointerCancelListener = (event) => {
+    if (event instanceof PointerEvent && state.pointerId >= 0 && event.pointerId !== state.pointerId) {
+      return;
+    }
+
+    completeTracking(false);
+  };
+
+  const scrollListener = () => {
+    if (!state.tracking) {
+      return;
+    }
+
+    const currentTop = Number.isFinite(source.scrollTop) ? source.scrollTop : 0;
+    if (currentTop > state.initialScrollTop + 0.5) {
+      completeTracking(false);
+    }
+  };
+
+  emitState(false, false, 0);
+  const subscriptionId = nextEventSubscriptionId++;
+  source.addEventListener("pointerdown", pointerDownListener, { passive: false });
+  window.addEventListener("pointermove", pointerMoveListener, { passive: false, capture: true });
+  source.addEventListener("scroll", scrollListener, true);
+  window.addEventListener("pointerup", pointerUpListener, true);
+  window.addEventListener("pointercancel", pointerCancelListener, true);
+  window.addEventListener("blur", pointerCancelListener);
+
+  eventSubscriptions.set(subscriptionId, {
+    element: owner,
+    dispose: () => {
+      source.removeEventListener("pointerdown", pointerDownListener);
+      window.removeEventListener("pointermove", pointerMoveListener, true);
+      source.removeEventListener("scroll", scrollListener, true);
+      window.removeEventListener("pointerup", pointerUpListener, true);
+      window.removeEventListener("pointercancel", pointerCancelListener, true);
+      window.removeEventListener("blur", pointerCancelListener);
+      completeTracking(false);
+    }
+  });
+
+  return subscriptionId;
+}
+
+export function unsubscribePullToRefresh(subscriptionId) {
+  removeEventSubscription(subscriptionId);
 }
 
 export function setInputValue(elementHandle, value) {

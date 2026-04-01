@@ -1,0 +1,25 @@
+{
+  "entries": [
+    {
+      "id": "refreshview-extension-isenabled-gates-trigger-and-pull",
+      "summary": "Mirage maps IsEnabled explicitly so the built-in trigger affordance and pull-to-refresh runtime seam stay aligned without making the hosted content path click-through or dependent on provider-specific disabled propagation.",
+      "upstreamReference": "src/Core/src/Handlers/RefreshView/RefreshViewHandler.Android.cs",
+      "testReference": "RefreshViewHandler_DisabledOrRefreshDisabled_GatesTriggerAndPullConfiguration",
+      "extensionKeys": [
+        "IsEnabled"
+      ]
+    },
+    {
+      "id": "refreshview-browser-deterministic-affordance",
+      "summary": "Mirage uses an always-visible indicator row, trigger button, and deterministic pull-state diagnostics instead of attempting to emulate native platform affordance chrome exactly on the DOM host.",
+      "upstreamReference": "src/Core/src/Handlers/RefreshView/RefreshViewHandler.iOS.cs",
+      "testReference": "RefreshViewParityProbe_ProjectsTriggerAndPullRefreshAcrossContentModes"
+    },
+    {
+      "id": "refreshview-no-native-overscroll-physics",
+      "summary": "Mirage intentionally leaves native overscroll elasticity and pull-physics fidelity deferred while keeping pull-threshold activation and refresh state transitions deterministic on browser scroll hosts.",
+      "upstreamReference": "src/Core/src/Handlers/RefreshView/RefreshViewHandler.Android.cs",
+      "testReference": "RefreshViewParityProbe_ProjectsTriggerAndPullRefreshAcrossContentModes"
+    }
+  ]
+}

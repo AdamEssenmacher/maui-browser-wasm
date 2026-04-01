@@ -28,6 +28,7 @@ public enum ComponentKind
     DatePicker,
     TimePicker,
     Stepper,
+    RefreshView,
     ProgressBar,
     IndicatorView,
     GraphicsView,
