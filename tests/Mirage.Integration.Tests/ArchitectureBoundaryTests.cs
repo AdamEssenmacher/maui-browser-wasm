@@ -605,6 +605,34 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void BrowserPlatform_RegistersPickerHandlerAsBuiltInControlNode()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var pickerHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MiragePickerHandler.cs");
+        Assert.True(File.Exists(pickerHandlerPath), $"Expected Picker handler file not found: {pickerHandlerPath}");
+
+        var coordinatorPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageRenderCoordinator.cs");
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(coordinatorPath), $"Expected render coordinator file not found: {coordinatorPath}");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var hostingText = File.ReadAllText(hostingPath);
+        var pickerHandlerText = File.ReadAllText(pickerHandlerPath);
+        var coordinatorText = File.ReadAllText(coordinatorPath);
+        var runtimeText = File.ReadAllText(runtimePath);
+
+        Assert.Contains("typeof(Picker)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MiragePickerHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.Picker", pickerHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryRequestNodePickerOpen(", pickerHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TrySetNodeFocus(", pickerHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryRequestNodePickerOpen(", coordinatorText, StringComparison.Ordinal);
+        Assert.Contains("TryRequestNodePickerOpen(", runtimeText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CollectionViewHandler_UsesMauiShapedHierarchy_AndGenericScrollSeam()
     {
         var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");

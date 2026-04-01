@@ -266,7 +266,9 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 }),
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
-                    ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue)
+                    ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue),
+                    ["focus"] = new("focus"),
+                    ["blur"] = new("blur")
                 }),
             [ComponentKind.DatePicker] = new(
                 ComponentKind.DatePicker,

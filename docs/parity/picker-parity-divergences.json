@@ -1,0 +1,25 @@
+{
+  "entries": [
+    {
+      "id": "picker-extension-isenabled-input-gate",
+      "summary": "Mirage maps IsEnabled explicitly so browser-native select interaction remains deterministic across runtime hosts without becoming click-through when disabled.",
+      "upstreamReference": "src/Core/src/Handlers/Picker/PickerHandler.cs",
+      "testReference": "PickerHandler_DisabledState_BlocksRuntimeChanges",
+      "extensionKeys": [
+        "IsEnabled"
+      ]
+    },
+    {
+      "id": "picker-open-state-no-focus-inference",
+      "summary": "Mirage does not infer IsOpen=true from raw focus events because browser focus does not reliably indicate native picker-popup visibility; successful programmatic open requests are the strongest browser signal available, and close reconciliation still comes from change/blur.",
+      "upstreamReference": "src/Core/src/Handlers/Picker/PickerHandler.iOS.cs",
+      "testReference": "PickerHandler_IsOpen_UsesProgrammaticOpenAndIgnoresFocusAsOpenSignal"
+    },
+    {
+      "id": "picker-vertical-alignment-best-effort",
+      "summary": "Mirage projects VerticalTextAlignment through deterministic native-select padding adjustments, but browser-native select chrome may not match Android/iOS picker text positioning exactly.",
+      "upstreamReference": "src/Core/src/Handlers/Picker/PickerHandler.Android.cs",
+      "testReference": "PickerHandler_MapsCoreProperties_Deterministically"
+    }
+  ]
+}

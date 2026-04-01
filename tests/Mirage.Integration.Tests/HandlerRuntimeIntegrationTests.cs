@@ -1403,8 +1403,8 @@ public sealed class HandlerRuntimeIntegrationTests
         MiragePickerHandler.Mapper.UpdateProperty(handler, picker, nameof(IView.IsEnabled));
 
         Assert.Equal("disabled", handler.PlatformView.GetPropertyString("Disabled"));
-        Assert.Equal("not-allowed", handler.PlatformView.GetStyleValue("cursor"));
-        Assert.Equal("none", handler.PlatformView.GetStyleValue("pointerEvents"));
+        Assert.Equal("default", handler.PlatformView.GetStyleValue("cursor"));
+        Assert.NotEqual("none", handler.PlatformView.GetStyleValue("pointerEvents"));
     }
 
     [Fact]
