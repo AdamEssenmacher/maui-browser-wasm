@@ -430,7 +430,7 @@ public sealed class MirageTimePickerHandlerTests
             return false;
         }
 
-        public bool TryOpenNodePicker(string nodeId)
+        public bool TryRequestNodePickerOpen(string nodeId)
         {
             OpenPickerCallCount++;
             LastOpenPickerNodeId = nodeId;

@@ -510,7 +510,7 @@ public sealed class MirageEditorHandlerTests
             return false;
         }
 
-        public bool TryOpenNodePicker(string nodeId)
+        public bool TryRequestNodePickerOpen(string nodeId)
         {
             _ = nodeId;
             return false;
@@ -673,7 +673,7 @@ public sealed class MirageEditorHandlerTests
             return false;
         }
 
-        public bool TryOpenNodePicker(string nodeId)
+        public bool TryRequestNodePickerOpen(string nodeId)
         {
             _ = nodeId;
             return false;

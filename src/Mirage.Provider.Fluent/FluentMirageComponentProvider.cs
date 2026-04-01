@@ -268,6 +268,27 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 {
                     ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue)
                 }),
+            [ComponentKind.DatePicker] = new(
+                ComponentKind.DatePicker,
+                "input",
+                defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["type"] = "date"
+                },
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["Value"] = new(PropertyTarget.InputValue),
+                    ["Min"] = new(PropertyTarget.Attribute, "min"),
+                    ["Max"] = new(PropertyTarget.Attribute, "max"),
+                    ["Format"] = new(PropertyTarget.Attribute, "data-maui-date-format"),
+                    ["Disabled"] = new(PropertyTarget.Attribute, "disabled")
+                }),
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["change"] = new("change", EventTarget.Self, EventPayloadKind.InputValue),
+                    ["focus"] = new("focus"),
+                    ["blur"] = new("blur")
+                }),
             [ComponentKind.TimePicker] = new(
                 ComponentKind.TimePicker,
                 "input",

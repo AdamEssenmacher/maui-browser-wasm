@@ -96,6 +96,15 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         "controls-sample-open-category-compatibility"
     ];
 
+    private static readonly string[] KnownCategoryIds =
+    [
+        "layouts",
+        "controls",
+        "core",
+        "parityprobes",
+        "compatibility"
+    ];
+
     private static readonly IReadOnlyDictionary<string, string> EntryCategoryById =
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
@@ -133,12 +142,14 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ["borderpage"] = "core",
 
             ["absolutelayoutparitypage"] = "parityprobes",
+            ["carouselviewparitypage"] = "parityprobes",
             ["imagebuttonparitypage"] = "parityprobes",
             ["indicatorviewparitypage"] = "parityprobes",
             ["shapesparitypage"] = "parityprobes",
             ["editorparitypage"] = "parityprobes",
             ["radiobuttonparitypage"] = "parityprobes",
             ["timepickerparitypage"] = "parityprobes",
+            ["datepickerparitypage"] = "parityprobes",
 
             ["tabbedpagegallerymainpage"] = "compatibility"
         };
@@ -370,7 +381,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ("layouts", ["gridpage", "scrollviewpage"], ["buttonpage", "indicatorviewparitypage"]),
             ("controls", ["buttonpage", "mapsgallery"], ["gridpage", "borderpage"]),
             ("core", ["brushespage", "borderpage"], ["sliderpage", "editorparitypage"]),
-            ("parityprobes", ["editorparitypage", "timepickerparitypage"], ["gridpage", "boxviewpage"]),
+            ("parityprobes", ["editorparitypage", "timepickerparitypage", "carouselviewparitypage", "datepickerparitypage"], ["gridpage", "boxviewpage"]),
             ("compatibility", ["tabbedpagegallerymainpage"], ["gridpage", "shapesparitypage"])
         };
 
@@ -503,7 +514,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             diagnostics,
             async () =>
             {
-                await page.Locator("[data-automation-id='controls-sample-open-carouselviewparitypage']").ClickAsync();
+                await OpenCatalogEntryAsync(page, diagnostics, "carouselviewparitypage");
                 await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-carouselviewparitypage']");
             });
 
@@ -923,6 +934,93 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             """,
             hostSelector);
         await WaitForLabelTextContainsAsync(page, timeStateSelector, "time=07:11:12");
+    }
+
+    [Fact]
+    public async Task DatePickerParityProbe_ProjectsDateBoundsFormatOpenAndEnabledState()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1160, height: 860);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "datepickerparitypage");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-datepickerparitypage']");
+            });
+
+        const string hostSelector = "[data-automation-id='controls-sample-datepicker-parity-host']";
+        const string dateStateSelector = "[data-automation-id='controls-sample-datepicker-parity-date-state']";
+        const string boundsStateSelector = "[data-automation-id='controls-sample-datepicker-parity-bounds-state']";
+        const string formatStateSelector = "[data-automation-id='controls-sample-datepicker-parity-format-state']";
+        const string openStateSelector = "[data-automation-id='controls-sample-datepicker-parity-open-state']";
+
+        await page.WaitForSelectorAsync(hostSelector);
+        Assert.Equal("DatePicker", await page.GetAttributeAsync(hostSelector, "data-mirage-kind"));
+        await WaitForInputValueContainsAsync(page, hostSelector, "2026-04-02");
+
+        await page.Locator("[data-automation-id='controls-sample-datepicker-parity-set-20260412']").ClickAsync();
+        await WaitForInputValueContainsAsync(page, hostSelector, "2026-04-12");
+        await WaitForLabelTextContainsAsync(page, dateStateSelector, "date=2026-04-12");
+
+        await page.Locator("[data-automation-id='controls-sample-datepicker-parity-clear-date']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, dateStateSelector, "date=null");
+        Assert.Equal(string.Empty, await page.InputValueAsync(hostSelector));
+
+        await page.Locator("[data-automation-id='controls-sample-datepicker-parity-toggle-bounds']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, boundsStateSelector, "min=2026-04-05");
+        await WaitForLabelTextContainsAsync(page, boundsStateSelector, "max=2026-04-20");
+        Assert.Equal("2026-04-05", await page.GetAttributeAsync(hostSelector, "min"));
+        Assert.Equal("2026-04-20", await page.GetAttributeAsync(hostSelector, "max"));
+
+        await page.Locator("[data-automation-id='controls-sample-datepicker-parity-toggle-format']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, formatStateSelector, "format=D");
+        Assert.Equal("D", await page.GetAttributeAsync(hostSelector, "data-maui-date-format"));
+
+        await page.Locator("[data-automation-id='controls-sample-datepicker-parity-open']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "isOpen=True");
+
+        await page.Locator("[data-automation-id='controls-sample-datepicker-parity-close']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "isOpen=False");
+
+        await page.Locator("[data-automation-id='controls-sample-datepicker-parity-toggle-enabled']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "enabled=False");
+        Assert.Equal("disabled", await page.GetAttributeAsync(hostSelector, "disabled"));
+
+        await page.EvaluateAsync(
+            """
+            (selector) => {
+                const input = document.querySelector(selector);
+                if (!(input instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                input.value = "2026-04-18";
+                input.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            """,
+            hostSelector);
+        await WaitForLabelTextContainsAsync(page, dateStateSelector, "date=null");
+
+        await page.Locator("[data-automation-id='controls-sample-datepicker-parity-toggle-enabled']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "enabled=True");
+        await page.EvaluateAsync(
+            """
+            (selector) => {
+                const input = document.querySelector(selector);
+                if (!(input instanceof HTMLInputElement)) {
+                    return;
+                }
+
+                input.value = "2026-04-18";
+                input.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            """,
+            hostSelector);
+        await WaitForLabelTextContainsAsync(page, dateStateSelector, "date=2026-04-18");
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "isOpen=False");
     }
 
     [Fact]
@@ -3549,16 +3647,51 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         ConcurrentQueue<string> diagnostics,
         string entryId)
     {
-        var categoryId = EntryCategoryById[entryId];
-        await OpenCatalogCategoryAsync(page, diagnostics, categoryId);
+        if (EntryCategoryById.TryGetValue(entryId, out var categoryId))
+        {
+            await OpenCatalogCategoryAsync(page, diagnostics, categoryId);
+            if (await page.Locator($"[data-automation-id='controls-sample-open-{entryId}']").CountAsync() > 0)
+            {
+                await NavigateWithDiagnosticsAsync(
+                    page,
+                    diagnostics,
+                    async () =>
+                    {
+                        await page.Locator($"[data-automation-id='controls-sample-open-{entryId}']").ClickAsync();
+                        await page.WaitForSelectorAsync($"[data-automation-id='controls-sample-page-{entryId}']");
+                    });
+                return;
+            }
 
+            throw new KeyNotFoundException($"Controls sample entry '{entryId}' is mapped to category '{categoryId}', but no matching entry button was found there.");
+        }
+
+        foreach (var fallbackCategoryId in KnownCategoryIds)
+        {
+            await OpenCatalogCategoryAsync(page, diagnostics, fallbackCategoryId);
+            if (await page.Locator($"[data-automation-id='controls-sample-open-{entryId}']").CountAsync() == 0)
+            {
+                await ReturnToCatalogHomeAsync(page, diagnostics);
+                continue;
+            }
+
+            throw new KeyNotFoundException($"Controls sample entry '{entryId}' is missing from EntryCategoryById. It was discovered under category '{fallbackCategoryId}'.");
+        }
+
+        throw new KeyNotFoundException($"Unable to resolve controls sample entry '{entryId}' from the known catalog categories.");
+    }
+
+    private async Task ReturnToCatalogHomeAsync(
+        IPage page,
+        ConcurrentQueue<string> diagnostics)
+    {
         await NavigateWithDiagnosticsAsync(
             page,
             diagnostics,
             async () =>
             {
-                await page.Locator($"[data-automation-id='controls-sample-open-{entryId}']").ClickAsync();
-                await page.WaitForSelectorAsync($"[data-automation-id='controls-sample-page-{entryId}']");
+                await page.Locator("[data-automation-id='mirage-navigation-back-button']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-home']");
             });
     }
 
