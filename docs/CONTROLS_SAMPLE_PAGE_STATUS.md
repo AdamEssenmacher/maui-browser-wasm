@@ -39,7 +39,7 @@ Visual legend:
 | `VerticalStackLayoutPage.xaml` | `Pages/Layouts/VerticalStackLayoutPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ZIndexPage.xaml` | `Pages/Layouts/ZIndexPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `LayoutsPage.xaml` | `Pages/LayoutsPage.xaml` | `[x]` | `[x]` | `[ ]` |
-| `AlertsPage.xaml` | `Pages/Core/AlertsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `AlertsPage.xaml` | `Pages/Core/AlertsPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `AppThemeBindingPage.xaml` | `Pages/Core/AppThemeBindingPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ApplicationControlPage.xaml` | `Pages/Core/ApplicationControlPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `BorderAlignment.xaml` | `Pages/Core/BorderGalleries/BorderAlignment.xaml` | `[x]` | `[x]` | `[ ]` |

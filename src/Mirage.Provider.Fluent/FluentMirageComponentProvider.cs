@@ -418,6 +418,22 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 supportsEvents: true);
         }
 
+        if (string.Equals(elementName, "button", StringComparison.OrdinalIgnoreCase))
+        {
+            return new WebComponentDescriptor(
+                elementName,
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["click"] = new("click"),
+                    ["keydown"] = new("keydown", EventTarget.Self, EventPayloadKind.Key)
+                },
+                supportsAttributes: true,
+                supportsProperties: true,
+                supportsStyles: true,
+                supportsClasses: true,
+                supportsEvents: true);
+        }
+
         if (string.Equals(elementName, "mirage-monaco-editor", StringComparison.Ordinal))
         {
             return new WebComponentDescriptor(

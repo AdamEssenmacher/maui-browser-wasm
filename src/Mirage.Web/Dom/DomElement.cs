@@ -110,6 +110,8 @@ public sealed class DomElement
 
     public string GetInputValue() => DomApi.GetInputValue(Handle);
 
+    public static string? GetActiveMirageNodeId() => DomApi.GetActiveMirageNodeId();
+
     public void SetInputChecked(bool value) => DomApi.SetInputChecked(Handle, value);
 
     public bool GetInputChecked() => DomApi.GetInputChecked(Handle);

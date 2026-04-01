@@ -473,6 +473,12 @@ public sealed class MirageEditorHandlerTests
             return null;
         }
 
+        public bool TryGetActiveNodeId(out string? nodeId)
+        {
+            nodeId = null;
+            return false;
+        }
+
         public bool TryGetNodeScrollPosition(string nodeId, out double left, out double top)
         {
             _ = nodeId;
@@ -641,6 +647,19 @@ public sealed class MirageEditorHandlerTests
             _ = nodeId;
             left = 0;
             top = 0;
+            return false;
+        }
+
+        public bool TryGetNodeInputValue(string nodeId, out string? value)
+        {
+            _ = nodeId;
+            value = null;
+            return false;
+        }
+
+        public bool TryGetActiveNodeId(out string? nodeId)
+        {
+            nodeId = null;
             return false;
         }
 

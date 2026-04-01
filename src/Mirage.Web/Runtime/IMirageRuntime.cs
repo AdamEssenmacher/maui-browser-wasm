@@ -14,6 +14,8 @@ public interface IMirageRuntime : IDisposable
     // prefer explicit event payload mappings or dedicated runtime queries.
     string? TryGetNodeInputValue(string nodeId);
 
+    bool TryGetActiveNodeId(out string? nodeId);
+
     bool TryGetNodeScrollPosition(string nodeId, out double left, out double top);
 
     bool TrySetNodeScrollPosition(string nodeId, double left, double top, out double actualLeft, out double actualTop);

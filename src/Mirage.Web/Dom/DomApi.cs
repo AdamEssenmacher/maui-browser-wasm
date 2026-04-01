@@ -104,6 +104,9 @@ internal static partial class DomApi
     [JSImport("getInputValue", Module)]
     internal static partial string GetInputValue(nint element);
 
+    [JSImport("getActiveMirageNodeId", Module)]
+    internal static partial string? GetActiveMirageNodeId();
+
     [JSImport("setInputChecked", Module)]
     internal static partial void SetInputChecked(nint element, bool value);
 

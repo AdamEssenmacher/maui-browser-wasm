@@ -1,5 +1,7 @@
 using Mirage.Core.Semantics;
+using Mirage.Maui.Dialogs;
 using Microsoft.Maui.Controls;
+using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 using Microsoft.Maui.Platform;
@@ -16,6 +18,7 @@ internal sealed class MirageWindowHandler : ElementHandler<Window, MiragePlatfor
 
     private Page? _currentPage;
     private IElementHandler? _currentPageHandler;
+    private MiragePlatformView? _dialogHost;
     private double _lastArrangedWidth;
     private double _lastArrangedHeight;
     private bool _hasArrangedWindowFrame;
@@ -34,15 +37,25 @@ internal sealed class MirageWindowHandler : ElementHandler<Window, MiragePlatfor
         coordinator.SetRoot(platformView);
 
         ApplyWindowStyles();
+        EnsureDialogHost(coordinator);
         SetPage(VirtualView.Page);
         base.ConnectHandler(platformView);
     }
 
     protected override void DisconnectHandler(MiragePlatformView platformView)
     {
+        GetDialogService()?.CancelDialogs(VirtualView);
         DisconnectCurrentPage();
 
         var coordinator = GetCoordinator();
+        if (_dialogHost is not null)
+        {
+            GetDialogService()?.DetachWindow(VirtualView);
+            platformView.RemoveChild(_dialogHost);
+            coordinator.Unregister(_dialogHost);
+            _dialogHost = null;
+        }
+
         coordinator.SetRoot(null);
         coordinator.Unregister(platformView);
 
@@ -72,12 +85,13 @@ internal sealed class MirageWindowHandler : ElementHandler<Window, MiragePlatfor
 
     private void SetPage(Page? page)
     {
+        var previousPage = _currentPage;
+
         if (_currentPageHandler is not null && !ReferenceEquals(_currentPage, page))
         {
+            GetDialogService()?.CancelDialogs(VirtualView);
             DisconnectCurrentPage();
         }
-
-        PlatformView.ClearChildren();
 
         if (page is null || MauiContext is null)
         {
@@ -91,21 +105,56 @@ internal sealed class MirageWindowHandler : ElementHandler<Window, MiragePlatfor
             throw new InvalidOperationException("MirageWindowHandler requires page handlers to expose MiragePlatformView.");
         }
 
-        PlatformView.AddChild(pagePlatformView);
+        if (_dialogHost is not null && ReferenceEquals(_dialogHost.Parent, PlatformView))
+        {
+            PlatformView.InsertChild(Math.Max(0, PlatformView.Children.Count - 1), pagePlatformView);
+        }
+        else
+        {
+            PlatformView.AddChild(pagePlatformView);
+        }
+
         _currentPage = page;
         _currentPageHandler = pageHandler;
+        if (_dialogHost is not null)
+        {
+            GetDialogService()?.AttachWindow(VirtualView, _dialogHost, GetCoordinator());
+        }
+
         _ = MiragePageHandler.TryProjectActivePageTitle(pageHandler);
+
+        if (previousPage is not null && !ReferenceEquals(previousPage, page))
+        {
+            ((IVisualElementController)previousPage).IsPlatformEnabled = false;
+            previousPage.SendDisappearing();
+        }
+
+        if (!ReferenceEquals(previousPage, page))
+        {
+            ((IVisualElementController)page).IsPlatformEnabled = true;
+            page.SendAppearing();
+        }
 
         GetCoordinator().RequestRender();
     }
 
     private void DisconnectCurrentPage()
     {
+        if (_currentPageHandler?.PlatformView is MiragePlatformView currentPagePlatformView
+            && ReferenceEquals(currentPagePlatformView.Parent, PlatformView))
+        {
+            PlatformView.RemoveChild(currentPagePlatformView);
+        }
+
         MirageHandlerDisconnect.SafeDisconnect(_currentPageHandler);
+
+        if (_currentPage is not null)
+        {
+            ((IVisualElementController)_currentPage).IsPlatformEnabled = false;
+        }
 
         _currentPageHandler = null;
         _currentPage = null;
-        PlatformView.ClearChildren();
         GetCoordinator().RequestRender();
     }
 
@@ -139,6 +188,28 @@ internal sealed class MirageWindowHandler : ElementHandler<Window, MiragePlatfor
         PlatformView.SetStyle("padding", "0");
         PlatformView.SetStyle("colorScheme", "light dark");
         GetCoordinator().RequestRender();
+    }
+
+    private void EnsureDialogHost(IMirageRenderCoordinator coordinator)
+    {
+        if (_dialogHost is not null)
+        {
+            if (!ReferenceEquals(_dialogHost.Parent, PlatformView))
+            {
+                PlatformView.AddChild(_dialogHost);
+            }
+
+            return;
+        }
+
+        _dialogHost = MiragePlatformView.CreateControl(ComponentKind.ContentContainer);
+        coordinator.Register(_dialogHost, null);
+        PlatformView.AddChild(_dialogHost);
+    }
+
+    private IMirageBrowserDialogService? GetDialogService()
+    {
+        return MauiContext?.Services.GetService(typeof(IMirageBrowserDialogService)) as IMirageBrowserDialogService;
     }
 
     private IMirageRenderCoordinator GetCoordinator()

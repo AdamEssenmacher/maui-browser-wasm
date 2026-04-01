@@ -484,6 +484,12 @@ public sealed class MirageSearchBarHandlerTests
             return null;
         }
 
+        public bool TryGetActiveNodeId(out string? nodeId)
+        {
+            nodeId = null;
+            return false;
+        }
+
         public bool TryGetNodeScrollPosition(string nodeId, out double left, out double top)
         {
             _ = nodeId;
