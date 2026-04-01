@@ -12,6 +12,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
 {
     private const string InputNodeClass = "mirage-editor-input";
     private const string ControlMinHeightExpression = "calc(var(--base-height-multiplier, 11) * 8px)";
+    private const double ControlMinHeight = 88;
     private const double DefaultWidth = 240;
     private const double DefaultHeight = 96;
     private const double AutoSizeMeasurementEpsilon = 0.5;
@@ -127,6 +128,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         }
 
         var autoSizeHeight = _autoSizeMeasuredHeight.GetValueOrDefault(fallbackHeight);
+        autoSizeHeight = Math.Max(autoSizeHeight, ResolveEditorHostMinimumHeight(VirtualView));
         return ResolveMeasuredSizeWithConstraints(VirtualView, widthConstraint, heightConstraint, fallbackWidth, autoSizeHeight);
     }
 
@@ -171,6 +173,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
 
         if (!IsAutoSizeActive(VirtualView))
         {
+            ClearAutoSizeMeasurement(VirtualView, invalidateMeasure: false);
             return;
         }
 
@@ -932,6 +935,26 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         }
 
         return ControlMinHeightExpression;
+    }
+
+    private static double ResolveEditorHostMinimumHeight(IEditor editor)
+    {
+        if (editor is not VisualElement visualElement)
+        {
+            return ControlMinHeight;
+        }
+
+        if (double.IsFinite(visualElement.MinimumHeightRequest) && visualElement.MinimumHeightRequest >= 0)
+        {
+            return visualElement.MinimumHeightRequest;
+        }
+
+        if (double.IsFinite(visualElement.HeightRequest) && visualElement.HeightRequest >= 0)
+        {
+            return 0;
+        }
+
+        return ControlMinHeight;
     }
 
     private static Size ResolveMeasuredSizeWithConstraints(
