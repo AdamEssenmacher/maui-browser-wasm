@@ -525,6 +525,36 @@ public sealed class MirageEditorHandlerTests
     }
 
     [Fact]
+    public void EditorHandler_AutoSize_RecomputesProjectionWhenArrangeHeightChanges()
+    {
+        var editor = new Editor
+        {
+            AutoSize = EditorAutoSizeOption.TextChanges,
+            Text = "line one"
+        };
+
+        var (handler, _, _, runtime) = CreateAttachedHandler(editor);
+        var inputNode = GetInputNode(handler);
+
+        runtime.SetContentHeight(inputNode.NodeId, 144);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(Editor.AutoSize));
+
+        Assert.Equal("144px", inputNode.GetStyleValue("height"));
+        Assert.Equal("hidden", inputNode.GetStyleValue("overflowY"));
+
+        handler.PlatformArrange(new Rect(0, 0, 320, 120));
+
+        Assert.Equal("120px", inputNode.GetStyleValue("height"));
+        Assert.Equal("auto", inputNode.GetStyleValue("overflowY"));
+
+        handler.PlatformArrange(new Rect(0, 0, 320, 180));
+
+        Assert.Equal("144px", inputNode.GetStyleValue("height"));
+        Assert.Equal("hidden", inputNode.GetStyleValue("overflowY"));
+    }
+
+    [Fact]
     public void EditorHandler_FocusCommand_TargetsTextAreaNode()
     {
         var editor = new Editor

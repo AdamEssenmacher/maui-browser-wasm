@@ -17,6 +17,7 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\IMirageScrollSourceProvider.cs" Link="Handlers\IMirageScrollSourceProvider.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\IMiragePageTitleProjectionHost.cs" Link="Handlers\IMiragePageTitleProjectionHost.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageCommonViewProjection.cs" Link="Handlers\MirageCommonViewProjection.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageFocusStateSynchronizer.cs" Link="Handlers\MirageFocusStateSynchronizer.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MiragePlatformView.cs" Link="Handlers\MiragePlatformView.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageRenderCoordinator.cs" Link="Handlers\MirageRenderCoordinator.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageHandlerDisconnect.cs" Link="Handlers\MirageHandlerDisconnect.cs" />
@@ -100,6 +101,7 @@
     <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageEventSink.cs" Link="Runtime\IMirageEventSink.cs" />
     <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageBrowserHistory.cs" Link="Runtime\IMirageBrowserHistory.cs" />
     <Compile Include="..\..\src\Mirage.Web\Runtime\IMirageRuntime.cs" Link="Runtime\IMirageRuntime.cs" />
+    <Compile Include="..\..\src\Mirage.Web\Runtime\MirageRuntimeEventNames.cs" Link="Runtime\MirageRuntimeEventNames.cs" />
     <Compile Include="..\..\src\Mirage.Web\Runtime\DomMutationBatch.cs" Link="Runtime\DomMutationBatch.cs" />
   </ItemGroup>
 

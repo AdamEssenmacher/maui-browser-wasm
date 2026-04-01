@@ -224,6 +224,11 @@ public sealed class MirageRuntime : IMirageRuntime
             {
                 DecrementSuppressedFocusEventCount(nodeId);
             }
+            else if (focused && suppressNextFocusEvent)
+            {
+                // Keep MAUI logical focus in sync without replaying user-facing Focused handlers.
+                _eventSink?.OnEvent(nodeId, MirageRuntimeEventNames.SuppressedFocusStateSync, "true");
+            }
 
             return focused;
         }

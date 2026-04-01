@@ -1,5 +1,6 @@
 using Mirage.Core.Semantics;
 using Mirage.Maui.TextInput;
+using Mirage.Web.Runtime;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Internals;
@@ -169,6 +170,8 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
     {
         var widthChanged = !double.IsFinite(_lastArrangedWidth)
             || Math.Abs(_lastArrangedWidth - frame.Width) > AutoSizeMeasurementEpsilon;
+        var heightChanged = !double.IsFinite(_lastArrangedHeight)
+            || Math.Abs(_lastArrangedHeight - frame.Height) > AutoSizeMeasurementEpsilon;
         _lastArrangedWidth = frame.Width;
         _lastArrangedHeight = frame.Height;
 
@@ -184,6 +187,12 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         {
             RefreshAutoSizeBehavior(VirtualView, invalidateMeasure: true);
             ScheduleAutoSizeRefresh();
+            return;
+        }
+
+        if (heightChanged && UpdateAutoSizeProjection(VirtualView))
+        {
+            RequestRender();
         }
     }
 
@@ -644,6 +653,9 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
     {
         switch (eventName)
         {
+            case MirageRuntimeEventNames.SuppressedFocusStateSync:
+                SyncSuppressedFocusState(isFocused: true);
+                return;
             case "input":
             case "change":
                 if (!VirtualView.IsEnabled || VirtualView.IsReadOnly)
@@ -713,6 +725,20 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         }
 
         RefreshAutoSizeBehavior(VirtualView, invalidateMeasure: true);
+    }
+
+    private void SyncSuppressedFocusState(bool isFocused)
+    {
+        if (VirtualView is not VisualElement visualElement
+            || !MirageFocusStateSynchronizer.TrySetFocusedStateSilently(visualElement, isFocused))
+        {
+            return;
+        }
+
+        if (UpdateFocusProjection(VirtualView))
+        {
+            RequestRender();
+        }
     }
 
     private void RefreshAutoSizeBehavior(IEditor editor, bool invalidateMeasure)
