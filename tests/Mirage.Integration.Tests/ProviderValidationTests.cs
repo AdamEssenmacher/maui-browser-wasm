@@ -255,6 +255,28 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentDatePickerDescriptor_MapsInputProjectionChannels()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.DatePicker);
+
+        Assert.Equal("input", descriptor.ElementTagName);
+        Assert.Equal("date", descriptor.DefaultAttributes["type"]);
+        Assert.Equal(PropertyTarget.InputValue, descriptor.PropertyMappings["Value"].Target);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Min"].Target);
+        Assert.Equal("min", descriptor.PropertyMappings["Min"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Max"].Target);
+        Assert.Equal("max", descriptor.PropertyMappings["Max"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Format"].Target);
+        Assert.Equal("data-maui-date-format", descriptor.PropertyMappings["Format"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["Disabled"].Target);
+        Assert.True(descriptor.EventMappings.ContainsKey("change"));
+        Assert.Equal(EventPayloadKind.InputValue, descriptor.EventMappings["change"].PayloadKind);
+        Assert.True(descriptor.EventMappings.ContainsKey("focus"));
+        Assert.True(descriptor.EventMappings.ContainsKey("blur"));
+    }
+
+    [Fact]
     public void FluentStepperDescriptor_MapsSplitButtonProjectionChannels()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();

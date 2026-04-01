@@ -27,7 +27,10 @@ public interface IMirageRuntime : IDisposable
         out double actualLeft,
         out double actualTop);
 
-    bool TryOpenNodePicker(string nodeId);
+    // Browser hosts do not expose a definitive "picker popup is visible" callback.
+    // True here means the runtime accepted the open request using the strongest
+    // signal available on the current platform (for example, successful showPicker()).
+    bool TryRequestNodePickerOpen(string nodeId);
 
     bool TrySetNodeFocus(string nodeId, bool isFocused);
 

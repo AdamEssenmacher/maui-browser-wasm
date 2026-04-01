@@ -137,7 +137,10 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
                     return;
                 }
 
-                if (coordinator.TryOpenNodePicker(handler.PlatformView.NodeId))
+                // Browsers do not expose a definitive picker-visible callback.
+                // A successful open request is the strongest signal available,
+                // and close reconciliation still comes from change/blur.
+                if (coordinator.TryRequestNodePickerOpen(handler.PlatformView.NodeId))
                 {
                     handler.ResetOpenRetryState();
                     return;
@@ -337,7 +340,10 @@ internal sealed class MirageTimePickerHandler : MirageViewHandler<ITimePicker>, 
             return;
         }
 
-        if (coordinator.TryOpenNodePicker(PlatformView.NodeId))
+        // Browsers do not expose a definitive picker-visible callback.
+        // A successful open request is the strongest signal available,
+        // and close reconciliation still comes from change/blur.
+        if (coordinator.TryRequestNodePickerOpen(PlatformView.NodeId))
         {
             ResetOpenRetryState();
             return;

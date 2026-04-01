@@ -1,0 +1,25 @@
+{
+  "entries": [
+    {
+      "id": "datepicker-extension-isenabled-input-gate",
+      "summary": "Mirage maps IsEnabled explicitly so browser-native date-input interaction remains deterministic across runtime hosts.",
+      "upstreamReference": "src/Core/src/Handlers/DatePicker/DatePickerHandler.cs",
+      "testReference": "DatePickerHandler_DisabledState_BlocksRuntimeChanges",
+      "extensionKeys": [
+        "IsEnabled"
+      ]
+    },
+    {
+      "id": "datepicker-format-subset-browser-native",
+      "summary": "Mirage currently supports browser-native ISO date wire projection and stores Format as diagnostic metadata; full MAUI custom format breadth remains deterministic subset behavior in this wave.",
+      "upstreamReference": "src/Core/src/Handlers/DatePicker/DatePickerHandler.cs",
+      "testReference": "DatePickerHandler_FormatProjection_UsesDeterministicBrowserSubset"
+    },
+    {
+      "id": "datepicker-open-state-no-focus-inference",
+      "summary": "Mirage does not infer IsOpen=true from raw focus events because browser focus does not reliably indicate native picker UI visibility; successful programmatic open requests are the strongest browser signal available, and close reconciliation still comes from change/blur.",
+      "upstreamReference": "src/Core/src/Handlers/DatePicker/DatePickerHandler.iOS.cs",
+      "testReference": "DatePickerHandler_IsOpen_UsesProgrammaticOpenAndIgnoresFocusAsOpenSignal"
+    }
+  ]
+}

@@ -176,7 +176,7 @@ public sealed class MirageRuntime : IMirageRuntime
         return true;
     }
 
-    public bool TryOpenNodePicker(string nodeId)
+    public bool TryRequestNodePickerOpen(string nodeId)
     {
         if (!_nodes.TryGetValue(nodeId, out var node))
         {

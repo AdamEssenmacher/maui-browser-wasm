@@ -21,9 +21,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 ## 2026-03-26 (TimePicker parity wave: MAUI-shaped handler + built-in time input host)
 - Added `MirageTimePickerHandler` on the built-in ControlNode path (`ComponentKind.TimePicker`) with MAUI-aligned mapper shape for `TimePicker` core properties and explicit Mirage extension mapping for `IsEnabled`.
 - TimePicker realization now uses browser-native `<input type="time">` projection with deterministic `Time`/`Format` mapping (`hh:mm` + `hh:mm:ss` subset via `step=60|1`), two-way runtime `change` parsing, and disabled-state mutation gating.
-- Added a provider-neutral runtime picker-open seam (`TryOpenNodePicker`) implemented via `showPicker()` with deterministic fallback (`focus` + `click`) so `IsOpen` can roundtrip without TimePicker-specific runtime APIs.
-- Open-state handling follows MAUI intent by reconciling `IsOpen` to runtime truth: failed picker-open requests take a short deferred retry window (to survive pre-materialization misses) and then roll back to `false` if open cannot be confirmed.
-- Browser focus events are no longer treated as picker-open signals; `IsOpen=true` is only kept when programmatic open succeeds, while `blur` continues to close state deterministically.
+- Added a provider-neutral runtime picker-open seam (`TryRequestNodePickerOpen`) implemented via `showPicker()` with deterministic fallback (`focus` + `click`) so `IsOpen` can roundtrip without TimePicker-specific runtime APIs while making the request-acceptance semantics explicit.
+- Open-state handling follows MAUI intent as closely as the browser allows: failed picker-open requests take a short deferred retry window (to survive pre-materialization misses) and then roll back to `false` if the runtime cannot even accept the request.
+- Browser focus events are no longer treated as picker-open signals; successful programmatic open requests are the strongest browser signal available, while `blur` continues to close state deterministically.
 - Disabled controls reject `IsOpen=true` requests up front, and the DOM fallback open path also reports failure for disabled inputs to avoid false-positive open state.
 - Added parity governance artifacts (`timepicker-parity-contract.json`, `timepicker-parity-divergences.json`) plus integration/E2E probe coverage (`TimePickerParityProbePage`) and updated parity ledgers.
 
@@ -863,3 +863,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added explicit category metadata to each `ControlsSampleEntry` through a catalog-owned entry-id map instead of inferring from `UpstreamPath`, keeping grouping stable as more wrapper-only pages and gallery roots are added.
 - Separated Mirage-specific parity probes into their own `Parity Probes` category so upstream sample pages remain easier to scan, while still keeping gallery/index pages visible inside their natural categories.
 - Preserved existing per-entry automation IDs (`controls-sample-open-{entryId}`) on category pages so deeper E2E flows could migrate to drill-down navigation without destabilizing page-specific selectors.
+
+## 2026-03-31 (DatePicker Handler Parity Wave)
+- Added a dedicated MAUI-shaped `MirageDatePickerHandler` on the built-in `ControlNode` path (`ComponentKind.DatePicker`) and registered it in `UseMirageBrowserPlatform`, replacing the remaining Mirage gap for `DatePicker` in the upstream-sourced handler matrix.
+- DatePicker realization now uses a browser-native `input[type=date]` host with deterministic ISO wire projection for `Date`, `MinimumDate`, and `MaximumDate`, while preserving nullable-date semantics by clearing the input value when `Date` is `null`.
+- `IsOpen` reuses the generic runtime picker-open seam and follows the same retry/rollback posture as `TimePicker`: programmatic open requests can be retried and rolled back when the runtime cannot accept them, while runtime `change` / `blur` close the picker and raw browser focus alone does not claim open-state ownership.
+- Browser-native date display formatting remains a deliberate subset in this wave: Mirage records `Format` as diagnostic metadata and preserves date-only wire behavior rather than introducing a custom popup/display layer that would diverge from the native-input host strategy.

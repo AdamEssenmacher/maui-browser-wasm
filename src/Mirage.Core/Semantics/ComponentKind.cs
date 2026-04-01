@@ -25,6 +25,7 @@ public enum ComponentKind
     Switch,
     Slider,
     Picker,
+    DatePicker,
     TimePicker,
     Stepper,
     IndicatorView,

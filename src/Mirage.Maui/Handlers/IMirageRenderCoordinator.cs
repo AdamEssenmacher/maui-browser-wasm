@@ -33,7 +33,10 @@ public interface IMirageRenderCoordinator : IMirageEventSink
         out double actualLeft,
         out double actualTop);
 
-    bool TryOpenNodePicker(string nodeId);
+    // Mirrors IMirageRuntime.TryRequestNodePickerOpen: true means the runtime accepted
+    // the request via the strongest available browser signal, not that popup
+    // visibility is directly observable.
+    bool TryRequestNodePickerOpen(string nodeId);
 
     bool TrySetNodeFocus(string nodeId, bool isFocused);
 
