@@ -536,7 +536,8 @@ internal sealed class MirageCarouselViewHandler : MirageItemsViewHandler<Carouse
         var usingWrapClone = animate && targetDisplayedIndex != MapLogicalIndexToDisplayedIndex(logicalIndex);
         _pendingAnimatedWrapLogicalIndex = usingWrapClone ? logicalIndex : null;
         var (targetLeft, targetTop) = ResolveTargetScrollPositionForDisplayedIndex(targetDisplayedIndex);
-        _pendingAnimatedTargetMainAxisOffset = animate ? GetMainAxisOffset(targetLeft, targetTop) : null;
+        var targetMainAxisOffset = GetMainAxisOffset(targetLeft, targetTop);
+        _pendingAnimatedTargetMainAxisOffset = animate ? targetMainAxisOffset : null;
 
         if (!animate)
         {
@@ -553,8 +554,7 @@ internal sealed class MirageCarouselViewHandler : MirageItemsViewHandler<Carouse
         }
 
         var currentMainAxisOffset = GetCurrentMainAxisOffset();
-        var actualMainAxisOffset = GetMainAxisOffset(actualLeft, actualTop);
-        _awaitingAnimatedProgrammaticScroll = animate && Math.Abs(actualMainAxisOffset - currentMainAxisOffset) > 0.5;
+        _awaitingAnimatedProgrammaticScroll = animate && Math.Abs(targetMainAxisOffset - currentMainAxisOffset) > 0.5;
         if (!animate)
         {
             SendProgrammaticScrolled(actualLeft, actualTop);
@@ -564,6 +564,11 @@ internal sealed class MirageCarouselViewHandler : MirageItemsViewHandler<Carouse
             _pendingAnimatedWrapLogicalIndex = null;
             _pendingAnimatedTargetMainAxisOffset = null;
             JumpToLoopWrappedIndex(immediateWrapIndex);
+        }
+        else if (!_awaitingAnimatedProgrammaticScroll)
+        {
+            _awaitingProgrammaticScrollRequest = false;
+            _pendingAnimatedTargetMainAxisOffset = null;
         }
         else if (_awaitingAnimatedProgrammaticScroll)
         {
@@ -1155,6 +1160,11 @@ internal sealed class MirageCarouselViewHandler : MirageItemsViewHandler<Carouse
         }
 
         var mainAxisOffset = displayedIndex * itemStride;
+        if (ShouldUseLoopClones())
+        {
+            mainAxisOffset = Math.Max(0, mainAxisOffset - ResolveLeadingMainAxisPeekInset());
+        }
+
         return ResolveItemsLayoutOrientation() == ItemsLayoutOrientation.Horizontal
             ? (mainAxisOffset, 0)
             : (0, mainAxisOffset);
