@@ -214,17 +214,18 @@ public sealed class MirageRuntime : IMirageRuntime
                 return true;
             }
 
-            if (suppressNextFocusEvent)
+            var shouldSuppressForwardedFocus = suppressNextFocusEvent && _eventSubscriptions.ContainsKey((nodeId, "focus"));
+            if (shouldSuppressForwardedFocus)
             {
                 IncrementSuppressedFocusEventCount(nodeId);
             }
 
             var focused = node.Element.Focus();
-            if (!focused && suppressNextFocusEvent)
+            if (!focused && shouldSuppressForwardedFocus)
             {
                 DecrementSuppressedFocusEventCount(nodeId);
             }
-            else if (focused && suppressNextFocusEvent)
+            else if (focused && shouldSuppressForwardedFocus)
             {
                 // Keep MAUI logical focus in sync without replaying user-facing Focused handlers.
                 _eventSink?.OnEvent(nodeId, MirageRuntimeEventNames.SuppressedFocusStateSync, "true");
