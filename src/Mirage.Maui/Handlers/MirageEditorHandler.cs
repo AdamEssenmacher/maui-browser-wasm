@@ -109,6 +109,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
     private bool _autoSizeRefreshScheduled;
     private double? _autoSizeMeasuredHeight;
     private double _lastArrangedWidth = double.NaN;
+    private double _lastArrangedHeight = double.NaN;
 
     public MirageEditorHandler()
         : base(ComponentKind.Editor, Mapper, CommandMapper)
@@ -159,6 +160,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         _autoSizeRefreshScheduled = false;
         _autoSizeMeasuredHeight = null;
         _lastArrangedWidth = double.NaN;
+        _lastArrangedHeight = double.NaN;
         DisconnectStructure();
         base.DisconnectHandler(platformView);
     }
@@ -168,6 +170,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         var widthChanged = !double.IsFinite(_lastArrangedWidth)
             || Math.Abs(_lastArrangedWidth - frame.Width) > AutoSizeMeasurementEpsilon;
         _lastArrangedWidth = frame.Width;
+        _lastArrangedHeight = frame.Height;
 
         base.PlatformArrange(frame);
 
@@ -494,15 +497,28 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
     private bool UpdateAutoSizeProjection(IEditor editor)
     {
         var isAutoSize = IsAutoSizeActive(editor);
-        var changed = SetStyleIfChanged(_inputNode, "overflowY", isAutoSize ? "hidden" : null);
+        var changed = false;
 
         if (!isAutoSize || _autoSizeMeasuredHeight is not double measuredHeight || measuredHeight <= 0)
         {
+            changed |= SetStyleIfChanged(_inputNode, "overflowY", null);
             changed |= SetStyleIfChanged(_inputNode, "height", "100%");
             return changed;
         }
 
-        var cssHeight = $"{Math.Ceiling(measuredHeight):0}px";
+        var projectedHeight = measuredHeight;
+        var overflowY = "hidden";
+        if (double.IsFinite(_lastArrangedHeight) && _lastArrangedHeight >= 0)
+        {
+            projectedHeight = Math.Min(projectedHeight, _lastArrangedHeight);
+            if (projectedHeight + AutoSizeMeasurementEpsilon < measuredHeight)
+            {
+                overflowY = "auto";
+            }
+        }
+
+        changed |= SetStyleIfChanged(_inputNode, "overflowY", overflowY);
+        var cssHeight = $"{Math.Ceiling(projectedHeight):0}px";
         changed |= SetStyleIfChanged(_inputNode, "height", cssHeight);
         return changed;
     }

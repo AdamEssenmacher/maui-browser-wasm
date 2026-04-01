@@ -516,6 +516,26 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void MirageRuntime_SkipsSuppressionForAlreadyFocusedNodes()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var runtimeText = File.ReadAllText(runtimePath);
+        var activeCheck = "var alreadyActive = string.Equals(DomElement.GetActiveMirageNodeId(), nodeId, StringComparison.Ordinal);";
+        var earlyReturn = "if (alreadyActive)";
+        var increment = "IncrementSuppressedFocusEventCount(nodeId);";
+
+        var activeCheckIndex = runtimeText.IndexOf(activeCheck, StringComparison.Ordinal);
+        var earlyReturnIndex = runtimeText.IndexOf(earlyReturn, StringComparison.Ordinal);
+        var incrementIndex = runtimeText.IndexOf(increment, StringComparison.Ordinal);
+
+        Assert.True(activeCheckIndex >= 0, "Expected MirageRuntime to detect already-focused nodes before arming focus suppression.");
+        Assert.True(earlyReturnIndex > activeCheckIndex, "Expected MirageRuntime to short-circuit no-op focus requests after checking active focus state.");
+        Assert.True(incrementIndex > earlyReturnIndex, "Expected focus suppression to arm only after the already-focused no-op guard.");
+    }
+
+    [Fact]
     public void BrowserPlatform_RegistersRadioButtonHandlerAsBuiltInControlNode()
     {
         var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
