@@ -142,6 +142,12 @@ internal static partial class DomApi
         bool isHorizontalOrientation,
         bool isAnimated);
 
+    [JSImport("configureCanvas", Module)]
+    internal static partial double[] ConfigureCanvas(nint element, double logicalWidth, double logicalHeight);
+
+    [JSImport("renderCanvasCommands", Module)]
+    internal static partial bool RenderCanvasCommands(nint element, string commandsJson);
+
     [JSImport("subscribeWindowResize", Module)]
     internal static partial int SubscribeWindowResize([JSMarshalAs<JSType.Function>] Action callback);
 

@@ -49,6 +49,7 @@ public sealed class ArchitectureBoundaryTests
             "MirageImageButtonHandler.cs",
             "MirageImageHandler.cs",
             "MirageProgressBarHandler.cs",
+            "MirageGraphicsViewHandler.cs",
             "MirageMapHandler.cs",
             "MirageLabelHandler.cs",
             "MirageBoxViewHandler.cs",
@@ -649,6 +650,42 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("typeof(MirageProgressBarHandler)", hostingText, StringComparison.Ordinal);
         Assert.Contains("ComponentKind.ProgressBar", progressBarHandlerText, StringComparison.Ordinal);
         Assert.DoesNotContain("CreateWeb(", progressBarHandlerText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BrowserPlatform_RegistersGraphicsViewHandlerAsBuiltInCanvasControlNode()
+    {
+        var repositoryRoot = GetRepositoryRoot();
+        var hostingPath = Path.Combine(repositoryRoot, "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var graphicsHandlerPath = Path.Combine(repositoryRoot, "src", "Mirage.Maui", "Handlers", "MirageGraphicsViewHandler.cs");
+        Assert.True(File.Exists(graphicsHandlerPath), $"Expected GraphicsView handler file not found: {graphicsHandlerPath}");
+
+        var coordinatorPath = Path.Combine(repositoryRoot, "src", "Mirage.Maui", "Handlers", "MirageRenderCoordinator.cs");
+        var runtimePath = Path.Combine(repositoryRoot, "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        var providerPath = Path.Combine(repositoryRoot, "src", "Mirage.Provider.Fluent", "FluentMirageComponentProvider.cs");
+        Assert.True(File.Exists(coordinatorPath), $"Expected render coordinator file not found: {coordinatorPath}");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+        Assert.True(File.Exists(providerPath), $"Expected provider file not found: {providerPath}");
+
+        var hostingText = File.ReadAllText(hostingPath);
+        var graphicsHandlerText = File.ReadAllText(graphicsHandlerPath);
+        var coordinatorText = File.ReadAllText(coordinatorPath);
+        var runtimeText = File.ReadAllText(runtimePath);
+        var providerText = File.ReadAllText(providerPath);
+
+        Assert.Contains("typeof(GraphicsView)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageGraphicsViewHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.GraphicsView", graphicsHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryConfigureNodeCanvas(", graphicsHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryRenderNodeCanvas(", graphicsHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryConfigureNodeCanvas(", coordinatorText, StringComparison.Ordinal);
+        Assert.Contains("TryRenderNodeCanvas(", coordinatorText, StringComparison.Ordinal);
+        Assert.Contains("TryConfigureNodeCanvas(", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("TryRenderNodeCanvas(", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("EventPayloadKind.Pointer", providerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("CreateWeb(", graphicsHandlerText, StringComparison.Ordinal);
     }
 
     [Fact]

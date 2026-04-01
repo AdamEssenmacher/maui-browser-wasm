@@ -484,6 +484,12 @@ public sealed class MiragePickerHandlerTests
             return null;
         }
 
+        public bool TryGetActiveNodeId(out string? nodeId)
+        {
+            nodeId = null;
+            return false;
+        }
+
         public bool TryGetNodeScrollPosition(string nodeId, out double left, out double top)
         {
             _ = nodeId;
@@ -622,6 +628,19 @@ public sealed class MiragePickerHandlerTests
         public IDisposable BeginRenderBatch()
         {
             return NullDisposable.Instance;
+        }
+
+        public bool TryGetNodeInputValue(string nodeId, out string? value)
+        {
+            _ = nodeId;
+            value = null;
+            return false;
+        }
+
+        public bool TryGetActiveNodeId(out string? nodeId)
+        {
+            nodeId = null;
+            return false;
         }
 
         public bool TryGetNodeScrollPosition(string nodeId, out double left, out double top)

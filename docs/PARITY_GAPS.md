@@ -119,6 +119,13 @@ Upstream MAUI shared-code risks for unofficial/browser targets are tracked separ
 - Current behavior: detached/off-screen page handlers do not claim title ownership, and navigation-stack children defer to `MirageNavigationPageHandler` as document-title authority.
 - Deferred: MAUI iOS-only PageHandler semantics (`IsHomeIndicatorAutoHidden`, `PrefersStatusBarHiddenMode`, controller background updates) remain non-applicable on browser DOM hosts.
 
+25. GraphicsView parity depth
+- Current behavior: `GraphicsView` now maps through `MirageGraphicsViewHandler` to a built-in browser-native `canvas` host with device-pixel-ratio-aware backing-store sizing, batched Wave 1 draw-command replay, deterministic redraw triggers (`Drawable`, `Background`, `FlowDirection`, `Invalidate`, size changes), and queued invalidate coalescing.
+- Current behavior: transient canvas-configure failures now retry quickly during the initial readiness window and then back off to a slower background cadence, so late runtime readiness can still recover without a permanent 16ms retry loop.
+- Current behavior: `IGraphicsView` interaction routing is implemented on the native canvas host through pointer payload projection and handler-owned routing for hover/start/drag/end/cancel interactions.
+- Current behavior: `DrawText(IAttributedText, ...)` now degrades to deterministic plain-text content replay through the current canvas text state, so Wave 1 no longer drops attributed text entirely even though span-level styling is still deferred.
+- Deferred: `DrawImage` / `IImage` bridge depth, advanced text measurement/layout (`GetStringSize`, attributed span styling, justified/overflow fidelity), broader clip/path measurement breadth, and non-solid stroke-paint breadth remain explicit Wave 2 divergences for the browser canvas backend.
+
 25. CarouselView parity depth
 - Current behavior: `CarouselView` now maps through `MirageCarouselViewHandler : MirageItemsViewHandler<CarouselView>` on the built-in ControlNode path, with browser-native snap scrolling, two-way `Position`/`CurrentItem` synchronization, programmatic `ScrollTo`, horizontal/vertical `LinearItemsLayout` support, `PeekAreaInsets` sizing, and `IsSwipeEnabled` interaction gating.
 - Current behavior: Mirage now maintains handler-owned loop clones plus settled wraparound, updates `IsDragging` and `VisibleViews` from runtime scroll activity, and applies `CurrentItem` / `NextItem` / `PreviousItem` / `DefaultItem` visual states to realized item views without item-handler churn.

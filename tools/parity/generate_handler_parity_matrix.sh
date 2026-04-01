@@ -286,7 +286,7 @@ shape_grade_for_type() {
     fi
 
     case "$key" in
-        CollectionView|CarouselView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|IndicatorView|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|Page|ImageButton|ProgressBar)
+        CollectionView|CarouselView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|IndicatorView|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|Page|ImageButton|ProgressBar|GraphicsView)
             echo "A"
             ;;
         ContentView|Button|Window|NavigationPage|Image|Border|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame)
@@ -316,6 +316,7 @@ implementation_grade_for_type() {
     case "$key" in
         CollectionView) echo "C" ;;
         CarouselView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|ImageButton|ProgressBar) echo "B" ;;
+        GraphicsView) echo "C" ;;
         ContentView|Button|Window|NavigationPage|Image|Border|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame|IndicatorView|Page) echo "C" ;;
         Entry|Editor|DatePicker|TimePicker|Picker) echo "B" ;;
         TabbedPage) echo "D" ;;
@@ -356,6 +357,9 @@ notes_for_type() {
             ;;
         ProgressBar)
             echo "Mirage-owned native \`progress\` host now mirrors the MAUI handler surface with deterministic \`Progress\` clamping and \`ProgressColor\` projection; exact track/background styling remains browser-limited."
+            ;;
+        GraphicsView)
+            echo "Mirage-owned canvas host now mirrors the MAUI GraphicsView handler surface with DPR-aware batched redraws, invalidate coalescing, and pointer/hover interaction routing; \`DrawImage\`, advanced text measurement/layout, and broader clip/path fidelity remain Wave 2 divergences."
             ;;
         Picker)
             echo "Mirage-owned select host now mirrors MAUI Picker handler shape with placeholder/title-color behavior, MAUI-authored \`ItemsSource\`/\`SelectedItem\` refresh, and \`IsOpen\` request roundtrip via the generic picker-open seam; popup visibility and vertical alignment remain browser-limited."

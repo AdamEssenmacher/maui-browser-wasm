@@ -151,6 +151,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ["radiobuttonparitypage"] = "parityprobes",
             ["pickerparitypage"] = "parityprobes",
             ["progressbarparitypage"] = "parityprobes",
+            ["graphicsviewparitypage"] = "parityprobes",
             ["timepickerparitypage"] = "parityprobes",
             ["datepickerparitypage"] = "parityprobes",
 
@@ -384,7 +385,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ("layouts", ["gridpage", "scrollviewpage"], ["buttonpage", "indicatorviewparitypage"]),
             ("controls", ["buttonpage", "mapsgallery"], ["gridpage", "borderpage"]),
             ("core", ["brushespage", "borderpage"], ["sliderpage", "editorparitypage"]),
-            ("parityprobes", ["editorparitypage", "pickerparitypage", "progressbarparitypage", "timepickerparitypage", "carouselviewparitypage", "datepickerparitypage"], ["gridpage", "boxviewpage"]),
+            ("parityprobes", ["editorparitypage", "pickerparitypage", "progressbarparitypage", "graphicsviewparitypage", "timepickerparitypage", "carouselviewparitypage", "datepickerparitypage"], ["gridpage", "boxviewpage"]),
             ("compatibility", ["tabbedpagegallerymainpage"], ["gridpage", "shapesparitypage"])
         };
 
@@ -1291,6 +1292,363 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
 
         await page.Locator("[data-automation-id='controls-sample-progressbar-parity-reset']").ClickAsync();
         await WaitForLabelTextContainsAsync(page, progressStateSelector, "progress=0.25");
+    }
+
+    [Fact]
+    public async Task GraphicsViewParityProbe_ProjectsCanvasDrawingAndInteractionState()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1160, height: 860);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "graphicsviewparitypage");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-graphicsviewparitypage']");
+            });
+
+        const string hostSelector = "[data-automation-id='controls-sample-graphicsview-parity-host']";
+        const string drawStateSelector = "[data-automation-id='controls-sample-graphicsview-parity-draw-state']";
+        const string interactionStateSelector = "[data-automation-id='controls-sample-graphicsview-parity-interaction-state']";
+        const string styleStateSelector = "[data-automation-id='controls-sample-graphicsview-parity-style-state']";
+        const string sizeStateSelector = "[data-automation-id='controls-sample-graphicsview-parity-size-state']";
+
+        static string CanvasPixelReadyScript() =>
+            """
+            (args) => {
+                const canvas = document.querySelector(args.selector);
+                if (!(canvas instanceof HTMLCanvasElement) || canvas.width <= 0 || canvas.height <= 0) {
+                    return false;
+                }
+
+                const context = canvas.getContext("2d");
+                if (!context) {
+                    return false;
+                }
+
+                const x = Math.max(0, Math.min(canvas.width - 1, Math.round(canvas.width * args.xRatio)));
+                const y = Math.max(0, Math.min(canvas.height - 1, Math.round(canvas.height * args.yRatio)));
+                const pixel = context.getImageData(x, y, 1, 1).data;
+                return pixel[3] > 0;
+            }
+            """;
+
+        async Task<int[]> SampleCanvasPixelAsync(double xRatio, double yRatio)
+        {
+            return await page.EvaluateAsync<int[]>(
+                """
+                (args) => {
+                    const canvas = document.querySelector(args.selector);
+                    if (!(canvas instanceof HTMLCanvasElement) || canvas.width <= 0 || canvas.height <= 0) {
+                        return [-1, -1, -1, -1];
+                    }
+
+                    const context = canvas.getContext("2d");
+                    if (!context) {
+                        return [-1, -1, -1, -1];
+                    }
+
+                    const x = Math.max(0, Math.min(canvas.width - 1, Math.round(canvas.width * args.xRatio)));
+                    const y = Math.max(0, Math.min(canvas.height - 1, Math.round(canvas.height * args.yRatio)));
+                    return Array.from(context.getImageData(x, y, 1, 1).data);
+                }
+                """,
+                new
+                {
+                    selector = hostSelector,
+                    xRatio,
+                    yRatio
+                });
+        }
+
+        async Task<int> GetCanvasRenderCountAsync()
+        {
+            return await page.EvaluateAsync<int>(
+                """
+                (selector) => {
+                    const canvas = document.querySelector(selector);
+                    if (!(canvas instanceof HTMLCanvasElement)) {
+                        return -1;
+                    }
+
+                    const value = Number.parseInt(canvas.getAttribute("data-mirage-canvas-renders") ?? "0", 10);
+                    return Number.isFinite(value) ? value : -1;
+                }
+                """,
+                hostSelector);
+        }
+
+        async Task WaitForOpaqueCanvasRegionAsync(double leftRatio, double topRatio, double rightRatio, double bottomRatio)
+        {
+            await page.WaitForFunctionAsync(
+                """
+                (args) => {
+                    const canvas = document.querySelector(args.selector);
+                    if (!(canvas instanceof HTMLCanvasElement) || canvas.width <= 0 || canvas.height <= 0) {
+                        return false;
+                    }
+
+                    const context = canvas.getContext("2d");
+                    if (!context) {
+                        return false;
+                    }
+
+                    const startX = Math.max(0, Math.min(canvas.width - 1, Math.floor(canvas.width * args.leftRatio)));
+                    const endX = Math.max(startX, Math.min(canvas.width - 1, Math.ceil(canvas.width * args.rightRatio)));
+                    const startY = Math.max(0, Math.min(canvas.height - 1, Math.floor(canvas.height * args.topRatio)));
+                    const endY = Math.max(startY, Math.min(canvas.height - 1, Math.ceil(canvas.height * args.bottomRatio)));
+
+                    for (let y = startY; y <= endY; y++) {
+                        for (let x = startX; x <= endX; x++) {
+                            if (context.getImageData(x, y, 1, 1).data[3] > 0) {
+                                return true;
+                            }
+                        }
+                    }
+
+                    return false;
+                }
+                """,
+                new
+                {
+                    selector = hostSelector,
+                    leftRatio,
+                    topRatio,
+                    rightRatio,
+                    bottomRatio
+                });
+        }
+
+        await page.WaitForSelectorAsync(hostSelector);
+        Assert.Equal("GraphicsView", await page.GetAttributeAsync(hostSelector, "data-mirage-kind"));
+        await page.WaitForFunctionAsync(
+            """
+            (selector) => {
+                const canvas = document.querySelector(selector);
+                if (!(canvas instanceof HTMLCanvasElement)) {
+                    return false;
+                }
+
+                const width = Number(canvas.getAttribute("data-mirage-canvas-width") ?? "");
+                const height = Number(canvas.getAttribute("data-mirage-canvas-height") ?? "");
+                return Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0;
+            }
+            """,
+            hostSelector);
+        var initialCanvasMetrics = await page.EvaluateAsync<double[]>(
+            """
+            (selector) => {
+                const canvas = document.querySelector(selector);
+                if (!(canvas instanceof HTMLCanvasElement)) {
+                    return [-1, -1];
+                }
+
+                return [
+                    Number(canvas.getAttribute("data-mirage-canvas-width") ?? ""),
+                    Number(canvas.getAttribute("data-mirage-canvas-height") ?? "")
+                ];
+            }
+            """,
+            hostSelector);
+        Assert.True(initialCanvasMetrics[0] > 0);
+        Assert.True(initialCanvasMetrics[1] > 0);
+        await WaitForLabelTextContainsAsync(page, drawStateSelector, "mode=Square");
+        await page.WaitForFunctionAsync(CanvasPixelReadyScript(), new
+        {
+            selector = hostSelector,
+            xRatio = 0.30,
+            yRatio = 0.58
+        });
+
+        var initialPixel = await SampleCanvasPixelAsync(0.30, 0.58);
+        Assert.True(initialPixel[0] > initialPixel[2], "Expected the default square sample to be red-dominant.");
+        var initialRenderCount = await GetCanvasRenderCountAsync();
+        Assert.True(initialRenderCount >= 1);
+
+        await page.Locator("[data-automation-id='controls-sample-graphicsview-parity-toggle-color']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, drawStateSelector, "2563EB");
+        await page.WaitForFunctionAsync(
+            """
+            (args) => {
+                const canvas = document.querySelector(args.selector);
+                if (!(canvas instanceof HTMLCanvasElement)) {
+                    return false;
+                }
+
+                const renderCount = Number.parseInt(canvas.getAttribute("data-mirage-canvas-renders") ?? "0", 10);
+                return Number.isFinite(renderCount) && renderCount > args.previousRenderCount;
+            }
+            """,
+            new
+            {
+                selector = hostSelector,
+                previousRenderCount = initialRenderCount
+            });
+
+        var recoloredPixel = await SampleCanvasPixelAsync(0.30, 0.58);
+        Assert.True(recoloredPixel[2] > recoloredPixel[0], "Expected the recolored square sample to be blue-dominant.");
+
+        await page.Locator("[data-automation-id='controls-sample-graphicsview-parity-triangle']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, drawStateSelector, "mode=Triangle");
+        await page.WaitForFunctionAsync(
+            """
+            (args) => {
+                const canvas = document.querySelector(args.selector);
+                if (!(canvas instanceof HTMLCanvasElement) || canvas.width <= 0 || canvas.height <= 0) {
+                    return false;
+                }
+
+                const context = canvas.getContext("2d");
+                if (!context) {
+                    return false;
+                }
+
+                const x = Math.max(0, Math.min(canvas.width - 1, Math.round(canvas.width * args.xRatio)));
+                const y = Math.max(0, Math.min(canvas.height - 1, Math.round(canvas.height * args.yRatio)));
+                const pixel = context.getImageData(x, y, 1, 1).data;
+                return pixel[3] === 0;
+            }
+            """,
+            new
+            {
+                selector = hostSelector,
+                xRatio = 0.30,
+                yRatio = 0.58
+            });
+
+        await page.Locator("[data-automation-id='controls-sample-graphicsview-parity-text']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, drawStateSelector, "mode=Text");
+        await WaitForOpaqueCanvasRegionAsync(0.32, 0.35, 0.68, 0.70);
+
+        await page.Locator("[data-automation-id='controls-sample-graphicsview-parity-toggle-background']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, styleStateSelector, "background=alt");
+        var alternateBackground = await page.EvaluateAsync<string>(
+            "selector => getComputedStyle(document.querySelector(selector)).backgroundColor",
+            hostSelector);
+        Assert.Contains("254", alternateBackground, StringComparison.Ordinal);
+
+        await page.Locator("[data-automation-id='controls-sample-graphicsview-parity-toggle-flow']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, styleStateSelector, "flow=RightToLeft");
+        var direction = await page.EvaluateAsync<string>(
+            "selector => getComputedStyle(document.querySelector(selector)).direction",
+            hostSelector);
+        Assert.Equal("rtl", direction);
+
+        var preResizeRenderCount = await GetCanvasRenderCountAsync();
+        await page.Locator("[data-automation-id='controls-sample-graphicsview-parity-toggle-size']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, sizeStateSelector, "request=160x120");
+        await page.WaitForFunctionAsync(
+            """
+            (args) => {
+                const canvas = document.querySelector(args.selector);
+                if (!(canvas instanceof HTMLCanvasElement)) {
+                    return false;
+                }
+
+                const renderCount = Number.parseInt(canvas.getAttribute("data-mirage-canvas-renders") ?? "0", 10);
+                return Number.isFinite(renderCount) && renderCount > args.previousRenderCount;
+            }
+            """,
+            new
+            {
+                selector = hostSelector,
+                previousRenderCount = preResizeRenderCount
+            });
+        var compactCanvasMetrics = await page.EvaluateAsync<double[]>(
+            """
+            (selector) => {
+                const canvas = document.querySelector(selector);
+                if (!(canvas instanceof HTMLCanvasElement)) {
+                    return [-1, -1];
+                }
+
+                return [
+                    Number(canvas.getAttribute("data-mirage-canvas-width") ?? ""),
+                    Number(canvas.getAttribute("data-mirage-canvas-height") ?? "")
+                ];
+            }
+            """,
+            hostSelector);
+        Assert.True(compactCanvasMetrics[0] > 0);
+        Assert.True(compactCanvasMetrics[1] > 0);
+        Assert.False(string.IsNullOrWhiteSpace(await page.GetAttributeAsync(hostSelector, "data-mirage-canvas-dpr")));
+
+        var canvasBox = await page.Locator(hostSelector).BoundingBoxAsync();
+        Assert.NotNull(canvasBox);
+        var insideX = canvasBox!.X + 24;
+        var insideY = canvasBox.Y + 24;
+
+        async Task WaitForHoverStateAsync()
+        {
+            await page.WaitForFunctionAsync(
+                """
+                (selector) => {
+                    const label = document.querySelector(selector);
+                    if (!label) {
+                        return false;
+                    }
+
+                    const text = label.textContent ?? "";
+                    return text.includes("interaction=hover-start") || text.includes("interaction=hover-move");
+                }
+                """,
+                interactionStateSelector);
+        }
+
+        await page.Mouse.MoveAsync(Math.Max(0, canvasBox.X - 24), Math.Max(0, canvasBox.Y - 24));
+        await page.Mouse.MoveAsync(insideX, insideY);
+        await WaitForHoverStateAsync();
+
+        await page.Mouse.MoveAsync(canvasBox.X + 56, canvasBox.Y + 44);
+        await WaitForLabelTextContainsAsync(page, interactionStateSelector, "interaction=hover-move");
+
+        await page.Mouse.DownAsync();
+        await WaitForLabelTextContainsAsync(page, interactionStateSelector, "interaction=start");
+
+        await page.Mouse.MoveAsync(canvasBox.X + 96, canvasBox.Y + 72);
+        await WaitForLabelTextContainsAsync(page, interactionStateSelector, "interaction=drag");
+
+        await page.Mouse.UpAsync();
+        await WaitForLabelTextContainsAsync(page, interactionStateSelector, "interaction=end inside=True");
+
+        await page.Mouse.MoveAsync(canvasBox.X + 40, canvasBox.Y + 36);
+        await WaitForHoverStateAsync();
+
+        await page.Mouse.MoveAsync(canvasBox.X - 10, canvasBox.Y - 10);
+        await WaitForLabelTextContainsAsync(page, interactionStateSelector, "interaction=hover-end");
+
+        await page.Mouse.MoveAsync(canvasBox.X + 48, canvasBox.Y + 40);
+        await page.Mouse.DownAsync();
+        await WaitForLabelTextContainsAsync(page, interactionStateSelector, "interaction=start");
+
+        await page.EvaluateAsync(
+            """
+            (args) => {
+                const canvas = document.querySelector(args.selector);
+                if (!(canvas instanceof HTMLCanvasElement)) {
+                    return;
+                }
+
+                const rect = canvas.getBoundingClientRect();
+                canvas.dispatchEvent(new PointerEvent("pointercancel", {
+                    bubbles: true,
+                    pointerId: 1,
+                    pointerType: "mouse",
+                    clientX: rect.left + args.offsetX,
+                    clientY: rect.top + args.offsetY
+                }));
+            }
+            """,
+            new
+            {
+                selector = hostSelector,
+                offsetX = 48,
+                offsetY = 40
+            });
+        await WaitForLabelTextContainsAsync(page, interactionStateSelector, "interaction=cancel");
+        await page.Mouse.UpAsync();
     }
 
     [Fact]

@@ -346,6 +346,19 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 {
                     ["Value"] = new(PropertyTarget.Property, "value")
                 })),
+            [ComponentKind.GraphicsView] = new(
+                ComponentKind.GraphicsView,
+                "canvas",
+                propertyMappings: CommonProperties,
+                eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
+                {
+                    ["pointerdown"] = new("pointerdown", EventTarget.Self, EventPayloadKind.Pointer),
+                    ["pointermove"] = new("pointermove", EventTarget.Self, EventPayloadKind.Pointer),
+                    ["pointerup"] = new("pointerup", EventTarget.Self, EventPayloadKind.Pointer),
+                    ["pointercancel"] = new("pointercancel", EventTarget.Self, EventPayloadKind.Pointer),
+                    ["pointerenter"] = new("pointerenter", EventTarget.Self, EventPayloadKind.Pointer),
+                    ["pointerleave"] = new("pointerleave", EventTarget.Self, EventPayloadKind.Pointer)
+                }),
             [ComponentKind.IndicatorView] = new(
                 ComponentKind.IndicatorView,
                 "div",
@@ -372,7 +385,7 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
             supportsOverlayHosting: false,
             supportsVirtualization: false,
             supportsThemingTokens: true,
-            eventPayloadSupport: ProviderEventPayloadSupport.InputValueString),
+            eventPayloadSupport: ProviderEventPayloadSupport.StructuredPayload),
         values: new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["provider"] = "fluent",

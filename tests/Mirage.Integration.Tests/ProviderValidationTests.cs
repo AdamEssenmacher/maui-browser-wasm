@@ -317,6 +317,32 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentGraphicsViewDescriptor_MapsCanvasPointerProjectionChannels()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.GraphicsView);
+
+        Assert.Equal("canvas", descriptor.ElementTagName);
+        Assert.True(descriptor.PropertyMappings.ContainsKey("AutomationId"));
+        Assert.True(descriptor.EventMappings.ContainsKey("pointerdown"));
+        Assert.True(descriptor.EventMappings.ContainsKey("pointermove"));
+        Assert.True(descriptor.EventMappings.ContainsKey("pointerup"));
+        Assert.True(descriptor.EventMappings.ContainsKey("pointercancel"));
+        Assert.True(descriptor.EventMappings.ContainsKey("pointerenter"));
+        Assert.True(descriptor.EventMappings.ContainsKey("pointerleave"));
+        Assert.Equal(EventPayloadKind.Pointer, descriptor.EventMappings["pointerdown"].PayloadKind);
+        Assert.Equal(EventPayloadKind.Pointer, descriptor.EventMappings["pointermove"].PayloadKind);
+    }
+
+    [Fact]
+    public void FluentProvider_ReportsStructuredPayloadSupport()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+
+        Assert.Equal(ProviderEventPayloadSupport.StructuredPayload, provider.Capabilities.Features.EventPayloadSupport);
+    }
+
+    [Fact]
     public void FluentMapDescriptor_MapsToMirageOwnedMapHost()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();

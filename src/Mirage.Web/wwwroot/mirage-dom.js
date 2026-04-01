@@ -1336,6 +1336,10 @@ function getEventPayload(event, payloadKind, fallbackElement) {
       : null;
   }
 
+  if (payloadKind === "pointer") {
+    return buildPointerPayload(event, fallbackElement);
+  }
+
   if (payloadKind !== "source-attribute") {
     return null;
   }
@@ -1357,6 +1361,41 @@ function getEventPayload(event, payloadKind, fallbackElement) {
   }
 
   return null;
+}
+
+function buildPointerPayload(event, fallbackElement) {
+  if (!event || typeof event !== "object") {
+    return null;
+  }
+
+  const eventTarget = (event.currentTarget && typeof event.currentTarget === "object")
+    ? event.currentTarget
+    : fallbackElement;
+  const rect = eventTarget && typeof eventTarget.getBoundingClientRect === "function"
+    ? eventTarget.getBoundingClientRect()
+    : null;
+  const clientX = Number.isFinite(event.clientX) ? event.clientX : 0;
+  const clientY = Number.isFinite(event.clientY) ? event.clientY : 0;
+  const width = Number.isFinite(rect?.width) ? rect.width : 0;
+  const height = Number.isFinite(rect?.height) ? rect.height : 0;
+  const localX = rect ? clientX - rect.left : 0;
+  const localY = rect ? clientY - rect.top : 0;
+  const pointerType = typeof event.pointerType === "string" && event.pointerType.length > 0
+    ? event.pointerType
+    : "mouse";
+  const pointerId = Number.isInteger(event.pointerId) ? event.pointerId : 0;
+  const eventType = typeof event.type === "string" ? event.type : "";
+  const isInsideBounds = eventType === "pointerleave"
+    ? false
+    : localX >= 0 && localY >= 0 && localX <= width && localY <= height;
+
+  return JSON.stringify({
+    pointerId,
+    pointerType,
+    x: Number.isFinite(localX) ? localX : 0,
+    y: Number.isFinite(localY) ? localY : 0,
+    isInsideBounds
+  });
 }
 
 function setTrackedEventPayload(elementHandle, payloadKind, payload) {
@@ -1671,6 +1710,553 @@ export function scrollChildIntoView(containerHandle, childHandle, scrollToPositi
   const actualLeft = readLogicalScrollLeft(container, maxLeft);
   const actualTop = Number.isFinite(container.scrollTop) ? container.scrollTop : normalizedTop;
   return [actualLeft, actualTop];
+}
+
+export function configureCanvas(elementHandle, logicalWidth, logicalHeight) {
+  const canvas = fromHandle(elementHandle);
+  const width = Number.isFinite(logicalWidth)
+    ? Math.max(0, logicalWidth)
+    : Math.max(0, Number.isFinite(canvas.clientWidth) ? canvas.clientWidth : 0);
+  const height = Number.isFinite(logicalHeight)
+    ? Math.max(0, logicalHeight)
+    : Math.max(0, Number.isFinite(canvas.clientHeight) ? canvas.clientHeight : 0);
+  const devicePixelRatio = Number.isFinite(window?.devicePixelRatio) && window.devicePixelRatio > 0
+    ? window.devicePixelRatio
+    : 1;
+
+  canvas.width = Math.max(0, Math.round(width * devicePixelRatio));
+  canvas.height = Math.max(0, Math.round(height * devicePixelRatio));
+  canvas.setAttribute("data-mirage-canvas-width", String(width));
+  canvas.setAttribute("data-mirage-canvas-height", String(height));
+  canvas.setAttribute("data-mirage-canvas-dpr", String(devicePixelRatio));
+  return [width, height, devicePixelRatio];
+}
+
+export function renderCanvasCommands(elementHandle, commandsJson) {
+  const canvas = fromHandle(elementHandle);
+  if (typeof commandsJson !== "string" || commandsJson.length === 0) {
+    return false;
+  }
+
+  const context = typeof canvas?.getContext === "function"
+    ? canvas.getContext("2d")
+    : null;
+  if (!context) {
+    return false;
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(commandsJson);
+  } catch {
+    return false;
+  }
+
+  const logicalWidth = Number.isFinite(payload?.logicalWidth)
+    ? Math.max(0, payload.logicalWidth)
+    : Math.max(0, Number.isFinite(canvas.clientWidth) ? canvas.clientWidth : 0);
+  const logicalHeight = Number.isFinite(payload?.logicalHeight)
+    ? Math.max(0, payload.logicalHeight)
+    : Math.max(0, Number.isFinite(canvas.clientHeight) ? canvas.clientHeight : 0);
+  const displayScale = Number.isFinite(payload?.displayScale) && payload.displayScale > 0
+    ? payload.displayScale
+    : 1;
+  const commands = Array.isArray(payload?.commands) ? payload.commands : [];
+
+  if (typeof context.resetTransform === "function") {
+    context.resetTransform();
+  } else {
+    context.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  context.clearRect(0, 0, canvas.width || 0, canvas.height || 0);
+  context.setTransform(displayScale, 0, 0, displayScale, 0, 0);
+  context.clearRect(0, 0, logicalWidth, logicalHeight);
+
+  const computedStyle = typeof window.getComputedStyle === "function"
+    ? window.getComputedStyle(canvas)
+    : null;
+
+  const stateStack = [];
+  const state = {
+    fillStyle: "#000000",
+    strokeStyle: "#000000",
+    textFillStyle: "#000000",
+    font: "14px system-ui",
+    direction: computedStyle?.direction === "rtl" ? "rtl" : "ltr"
+  };
+
+  context.fillStyle = state.fillStyle;
+  context.strokeStyle = state.strokeStyle;
+  context.font = state.font;
+  context.direction = state.direction;
+  context.lineWidth = 1;
+  context.lineCap = "butt";
+  context.lineJoin = "miter";
+  context.miterLimit = 10;
+  context.textAlign = "left";
+  context.textBaseline = "top";
+  if ("imageSmoothingEnabled" in context) {
+    context.imageSmoothingEnabled = true;
+  }
+
+  for (const command of commands) {
+    applyCanvasCommand(context, command, state, stateStack);
+  }
+
+  const renderCount = Number.parseInt(canvas.getAttribute("data-mirage-canvas-renders") ?? "0", 10);
+  canvas.setAttribute(
+    "data-mirage-canvas-renders",
+    String(Number.isFinite(renderCount) && renderCount >= 0 ? renderCount + 1 : 1));
+
+  return true;
+}
+
+function applyCanvasCommand(context, command, state, stateStack) {
+  if (!command || typeof command !== "object") {
+    return;
+  }
+
+  switch (command.type) {
+    case "save":
+      stateStack.push({ ...state });
+      context.save();
+      return;
+    case "restore":
+      if (stateStack.length > 0) {
+        const restored = stateStack.pop();
+        context.restore();
+        Object.assign(state, restored);
+      } else {
+        context.restore();
+      }
+      return;
+    case "alpha":
+      context.globalAlpha = normalizeFinite(command.value, 1);
+      return;
+    case "stroke-color":
+      state.strokeStyle = normalizeColor(command.color, state.strokeStyle);
+      context.strokeStyle = state.strokeStyle;
+      return;
+    case "fill-color":
+      state.fillStyle = normalizeColor(command.color, state.fillStyle);
+      context.fillStyle = state.fillStyle;
+      return;
+    case "font-color":
+      state.textFillStyle = normalizeColor(command.color, state.textFillStyle);
+      return;
+    case "stroke-size":
+      context.lineWidth = Math.max(0, normalizeFinite(command.value, 1));
+      return;
+    case "miter-limit":
+      context.miterLimit = Math.max(0, normalizeFinite(command.value, 10));
+      return;
+    case "line-cap":
+      context.lineCap = mapCanvasLineCap(readCommandTextValue(command));
+      return;
+    case "line-join":
+      context.lineJoin = mapCanvasLineJoin(readCommandTextValue(command));
+      return;
+    case "dash":
+      context.setLineDash(Array.isArray(command.pattern) ? command.pattern.map((value) => Math.max(0, normalizeFinite(value, 0))) : []);
+      context.lineDashOffset = normalizeFinite(command.offset, 0);
+      return;
+    case "font":
+      state.font = readCommandTextValue(command) || state.font;
+      context.font = state.font;
+      return;
+    case "translate":
+      context.translate(normalizeFinite(command.x, 0), normalizeFinite(command.y, 0));
+      return;
+    case "scale":
+      context.scale(normalizeFinite(command.x, 1), normalizeFinite(command.y, 1));
+      return;
+    case "rotate":
+      context.rotate(normalizeFinite(command.radians, 0));
+      return;
+    case "rotate-at": {
+      const x = normalizeFinite(command.x, 0);
+      const y = normalizeFinite(command.y, 0);
+      context.translate(x, y);
+      context.rotate(normalizeFinite(command.radians, 0));
+      context.translate(-x, -y);
+      return;
+    }
+    case "matrix": {
+      const matrix = Array.isArray(command.matrix) ? command.matrix : [];
+      if (matrix.length >= 6) {
+        context.transform(
+          normalizeFinite(matrix[0], 1),
+          normalizeFinite(matrix[1], 0),
+          normalizeFinite(matrix[2], 0),
+          normalizeFinite(matrix[3], 1),
+          normalizeFinite(matrix[4], 0),
+          normalizeFinite(matrix[5], 0));
+      }
+      return;
+    }
+    case "clip-rect":
+      context.beginPath();
+      context.rect(
+        normalizeFinite(command.x, 0),
+        normalizeFinite(command.y, 0),
+        Math.max(0, normalizeFinite(command.width, 0)),
+        Math.max(0, normalizeFinite(command.height, 0)));
+      context.clip();
+      return;
+    case "line":
+      context.beginPath();
+      context.moveTo(normalizeFinite(command.x1, 0), normalizeFinite(command.y1, 0));
+      context.lineTo(normalizeFinite(command.x2, 0), normalizeFinite(command.y2, 0));
+      context.stroke();
+      return;
+    case "rectangle":
+      context.strokeRect(
+        normalizeFinite(command.x, 0),
+        normalizeFinite(command.y, 0),
+        Math.max(0, normalizeFinite(command.width, 0)),
+        Math.max(0, normalizeFinite(command.height, 0)));
+      return;
+    case "fill-rectangle":
+      context.fillRect(
+        normalizeFinite(command.x, 0),
+        normalizeFinite(command.y, 0),
+        Math.max(0, normalizeFinite(command.width, 0)),
+        Math.max(0, normalizeFinite(command.height, 0)));
+      return;
+    case "rounded-rectangle":
+      drawRoundedRectanglePath(context, command);
+      context.stroke();
+      return;
+    case "fill-rounded-rectangle":
+      drawRoundedRectanglePath(context, command);
+      context.fill();
+      return;
+    case "ellipse":
+      drawEllipsePath(context, command);
+      context.stroke();
+      return;
+    case "fill-ellipse":
+      drawEllipsePath(context, command);
+      context.fill();
+      return;
+    case "circle":
+      drawCirclePath(context, command);
+      context.stroke();
+      return;
+    case "fill-circle":
+      drawCirclePath(context, command);
+      context.fill();
+      return;
+    case "arc":
+      drawArcPath(context, command, false);
+      context.stroke();
+      return;
+    case "fill-arc":
+      drawArcPath(context, command, true);
+      context.fill();
+      return;
+    case "path-stroke": {
+      const path = createCanvasPath(command.pathData);
+      if (path) {
+        context.stroke(path);
+      }
+      return;
+    }
+    case "path-fill": {
+      const path = createCanvasPath(command.pathData);
+      if (path) {
+        context.fill(path, command.fillRule === "evenodd" ? "evenodd" : "nonzero");
+      }
+      return;
+    }
+    case "fill-paint":
+      applyFillPaint(context, state, command.paint, command.rectangle);
+      return;
+    case "shadow":
+      context.shadowOffsetX = normalizeFinite(command.offsetX, 0);
+      context.shadowOffsetY = normalizeFinite(command.offsetY, 0);
+      context.shadowBlur = Math.max(0, normalizeFinite(command.blur, 0));
+      context.shadowColor = normalizeColor(command.color, "rgba(0,0,0,0)");
+      return;
+    case "draw-string-point":
+      drawStringAtPoint(context, state, command);
+      return;
+    case "draw-string-rect":
+      drawStringInRectangle(context, state, command);
+      return;
+    default:
+      return;
+  }
+}
+
+function normalizeFinite(value, fallback) {
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function normalizeColor(value, fallback) {
+  return typeof value === "string" && value.length > 0 ? value : fallback;
+}
+
+function readCommandTextValue(command) {
+  if (typeof command?.valueText === "string" && command.valueText.length > 0) {
+    return command.valueText;
+  }
+
+  if (typeof command?.value === "string" && command.value.length > 0) {
+    return command.value;
+  }
+
+  return "";
+}
+
+function createCanvasPath(pathData) {
+  if (typeof pathData !== "string" || pathData.length === 0 || typeof Path2D !== "function") {
+    return null;
+  }
+
+  try {
+    return new Path2D(pathData);
+  } catch {
+    return null;
+  }
+}
+
+function mapCanvasLineCap(value) {
+  switch (value) {
+    case "round":
+    case "square":
+      return value;
+    default:
+      return "butt";
+  }
+}
+
+function mapCanvasLineJoin(value) {
+  switch (value) {
+    case "round":
+    case "bevel":
+      return value;
+    default:
+      return "miter";
+  }
+}
+
+function drawRoundedRectanglePath(context, command) {
+  const x = normalizeFinite(command.x, 0);
+  const y = normalizeFinite(command.y, 0);
+  const width = Math.max(0, normalizeFinite(command.width, 0));
+  const height = Math.max(0, normalizeFinite(command.height, 0));
+  const radius = Math.max(0, normalizeFinite(command.radius, 0));
+  const clampedRadius = Math.min(radius, width / 2, height / 2);
+
+  context.beginPath();
+  context.moveTo(x + clampedRadius, y);
+  context.lineTo(x + width - clampedRadius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + clampedRadius);
+  context.lineTo(x + width, y + height - clampedRadius);
+  context.quadraticCurveTo(x + width, y + height, x + width - clampedRadius, y + height);
+  context.lineTo(x + clampedRadius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - clampedRadius);
+  context.lineTo(x, y + clampedRadius);
+  context.quadraticCurveTo(x, y, x + clampedRadius, y);
+  context.closePath();
+}
+
+function drawEllipsePath(context, command) {
+  const x = normalizeFinite(command.x, 0);
+  const y = normalizeFinite(command.y, 0);
+  const width = Math.max(0, normalizeFinite(command.width, 0));
+  const height = Math.max(0, normalizeFinite(command.height, 0));
+
+  context.beginPath();
+  context.ellipse(x + (width / 2), y + (height / 2), width / 2, height / 2, 0, 0, Math.PI * 2);
+}
+
+function drawCirclePath(context, command) {
+  const cx = normalizeFinite(command.cx, 0);
+  const cy = normalizeFinite(command.cy, 0);
+  const radius = Math.max(0, normalizeFinite(command.radius, 0));
+
+  context.beginPath();
+  context.arc(cx, cy, radius, 0, Math.PI * 2);
+}
+
+function drawArcPath(context, command, closeForFill) {
+  const x = normalizeFinite(command.x, 0);
+  const y = normalizeFinite(command.y, 0);
+  const width = Math.max(0, normalizeFinite(command.width, 0));
+  const height = Math.max(0, normalizeFinite(command.height, 0));
+  const start = degreesToRadians(normalizeFinite(command.startAngle, 0));
+  const end = degreesToRadians(normalizeFinite(command.endAngle, 0));
+  const clockwise = Boolean(command.clockwise);
+  const centerX = x + (width / 2);
+  const centerY = y + (height / 2);
+
+  context.beginPath();
+  context.ellipse(centerX, centerY, width / 2, height / 2, 0, start, end, !clockwise);
+
+  if (Boolean(command.closed) || closeForFill) {
+    context.lineTo(centerX, centerY);
+    context.closePath();
+  }
+}
+
+function degreesToRadians(value) {
+  return (normalizeFinite(value, 0) * Math.PI) / 180;
+}
+
+function applyFillPaint(context, state, paint, rectangle) {
+  const nextFillStyle = createPaintStyle(context, paint, rectangle) ?? state.fillStyle;
+  state.fillStyle = nextFillStyle;
+  context.fillStyle = nextFillStyle;
+}
+
+function createPaintStyle(context, paint, rectangle) {
+  if (!paint || typeof paint !== "object") {
+    return null;
+  }
+
+  if (paint.kind === "solid") {
+    return normalizeColor(paint.color, null);
+  }
+
+  const x = normalizeFinite(rectangle?.x, 0);
+  const y = normalizeFinite(rectangle?.y, 0);
+  const width = Math.max(0, normalizeFinite(rectangle?.width, 0));
+  const height = Math.max(0, normalizeFinite(rectangle?.height, 0));
+
+  if (paint.kind === "linear") {
+    const gradient = context.createLinearGradient(
+      x + (width * normalizeFinite(paint.startX, 0)),
+      y + (height * normalizeFinite(paint.startY, 0)),
+      x + (width * normalizeFinite(paint.endX, 1)),
+      y + (height * normalizeFinite(paint.endY, 1)));
+    applyGradientStops(gradient, paint.stops);
+    return gradient;
+  }
+
+  if (paint.kind === "radial") {
+    const centerX = x + (width * normalizeFinite(paint.centerX, 0.5));
+    const centerY = y + (height * normalizeFinite(paint.centerY, 0.5));
+    const radiusScale = Math.max(width, height);
+    const gradient = context.createRadialGradient(
+      centerX,
+      centerY,
+      0,
+      centerX,
+      centerY,
+      Math.max(0, radiusScale * normalizeFinite(paint.radius, 0.5)));
+    applyGradientStops(gradient, paint.stops);
+    return gradient;
+  }
+
+  return null;
+}
+
+function applyGradientStops(gradient, stops) {
+  if (!Array.isArray(stops) || stops.length === 0) {
+    gradient.addColorStop(0, "#000000");
+    gradient.addColorStop(1, "#000000");
+    return;
+  }
+
+  for (const stop of stops) {
+    gradient.addColorStop(
+      Math.min(Math.max(normalizeFinite(stop?.offset, 0), 0), 1),
+      normalizeColor(stop?.color, "#000000"));
+  }
+}
+
+function drawStringAtPoint(context, state, command) {
+  const text = readCommandTextValue(command);
+  if (text.length === 0) {
+    return;
+  }
+
+  context.save();
+  context.fillStyle = state.textFillStyle ?? state.fillStyle;
+  context.textAlign = mapCanvasTextAlign(command.horizontalAlignment);
+  context.textBaseline = "top";
+  context.fillText(text, normalizeFinite(command.x, 0), normalizeFinite(command.y, 0));
+  context.restore();
+}
+
+function drawStringInRectangle(context, state, command) {
+  const text = readCommandTextValue(command);
+  if (text.length === 0) {
+    return;
+  }
+
+  const x = normalizeFinite(command.x, 0);
+  const y = normalizeFinite(command.y, 0);
+  const width = Math.max(0, normalizeFinite(command.width, 0));
+  const height = Math.max(0, normalizeFinite(command.height, 0));
+
+  context.save();
+  context.fillStyle = state.textFillStyle ?? state.fillStyle;
+  context.textAlign = mapCanvasTextAlign(command.horizontalAlignment);
+  context.textBaseline = "top";
+
+  if (command.textFlow !== "OverflowBounds") {
+    context.beginPath();
+    context.rect(x, y, width, height);
+    context.clip();
+  }
+
+  const metrics = typeof context.measureText === "function"
+    ? context.measureText(text)
+    : null;
+  const textHeight = Number.isFinite(metrics?.actualBoundingBoxAscent) && Number.isFinite(metrics?.actualBoundingBoxDescent)
+    ? metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
+    : estimateFontSize(state.font);
+  const drawX = resolveAlignedTextX(x, width, command.horizontalAlignment);
+  const drawY = resolveAlignedTextY(y, height, textHeight, command.verticalAlignment);
+
+  context.fillText(text, drawX, drawY);
+  context.restore();
+}
+
+function resolveAlignedTextX(x, width, horizontalAlignment) {
+  switch (horizontalAlignment) {
+    case "Center":
+      return x + (width / 2);
+    case "Right":
+      return x + width;
+    default:
+      return x;
+  }
+}
+
+function resolveAlignedTextY(y, height, textHeight, verticalAlignment) {
+  switch (verticalAlignment) {
+    case "Center":
+      return y + ((height - textHeight) / 2);
+    case "Bottom":
+      return y + height - textHeight;
+    default:
+      return y;
+  }
+}
+
+function mapCanvasTextAlign(horizontalAlignment) {
+  switch (horizontalAlignment) {
+    case "Center":
+      return "center";
+    case "Right":
+      return "right";
+    default:
+      return "left";
+  }
+}
+
+function estimateFontSize(fontSpec) {
+  if (typeof fontSpec !== "string") {
+    return 14;
+  }
+
+  const match = /([0-9]+(?:\.[0-9]+)?)px/.exec(fontSpec);
+  return match ? Number.parseFloat(match[1]) : 14;
 }
 
 function parseScrollPaddingValue(value) {

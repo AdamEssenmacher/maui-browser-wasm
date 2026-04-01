@@ -167,6 +167,25 @@ public sealed class DomElement
         return (values.Length > 0 ? values[0] : 0, values.Length > 1 ? values[1] : 0);
     }
 
+    public (double LogicalWidth, double LogicalHeight, double DisplayScale) ConfigureCanvas(double logicalWidth, double logicalHeight)
+    {
+        var values = DomApi.ConfigureCanvas(Handle, logicalWidth, logicalHeight);
+        return (
+            values.Length > 0 ? values[0] : 0,
+            values.Length > 1 ? values[1] : 0,
+            values.Length > 2 ? values[2] : 1);
+    }
+
+    public bool RenderCanvasCommands(string commandsJson)
+    {
+        if (string.IsNullOrWhiteSpace(commandsJson))
+        {
+            return false;
+        }
+
+        return DomApi.RenderCanvasCommands(Handle, commandsJson);
+    }
+
     public static int SubscribeWindowResize(Action callback) => DomApi.SubscribeWindowResize(callback);
 
     public static void UnsubscribeWindowResize(int subscriptionId) => DomApi.UnsubscribeWindowResize(subscriptionId);
