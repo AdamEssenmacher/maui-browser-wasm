@@ -423,7 +423,7 @@ public sealed class MirageBrowserDialogServiceTests
             return false;
         }
 
-        public bool TryOpenNodePicker(string nodeId)
+        public bool TryRequestNodePickerOpen(string nodeId)
         {
             _ = nodeId;
             return false;
