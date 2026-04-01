@@ -915,18 +915,9 @@ internal sealed class MirageGraphicsViewHandler : MirageViewHandler<IGraphicsVie
 
         public void ResetState()
         {
+            _stateStack.Clear();
             _state = CanvasStateSnapshot.CreateDefault(DisplayScale, _flowDirection);
-            _commands.Add(new CanvasCommand { Type = "alpha", Value = _state.Alpha });
-            _commands.Add(new CanvasCommand { Type = "stroke-color", Color = ToCssColor(_state.StrokeColor) });
-            _commands.Add(new CanvasCommand { Type = "fill-color", Color = ToCssColor(_state.FillColor) });
-            _commands.Add(new CanvasCommand { Type = "font-color", Color = ToCssColor(_state.FontColor) });
-            _commands.Add(new CanvasCommand { Type = "stroke-size", Value = _state.StrokeSize });
-            _commands.Add(new CanvasCommand { Type = "miter-limit", Value = _state.MiterLimit });
-            _commands.Add(new CanvasCommand { Type = "line-cap", ValueText = "butt" });
-            _commands.Add(new CanvasCommand { Type = "line-join", ValueText = "miter" });
-            _commands.Add(new CanvasCommand { Type = "dash", Pattern = [], Offset = 0 });
-            RecordFontCommand();
-            _commands.Add(new CanvasCommand { Type = "shadow", OffsetX = 0, OffsetY = 0, Blur = 0, Color = "rgba(0,0,0,0)" });
+            _commands.Add(new CanvasCommand { Type = "reset-state" });
         }
 
         public void SetShadow(SizeF offset, float blur, Color color)

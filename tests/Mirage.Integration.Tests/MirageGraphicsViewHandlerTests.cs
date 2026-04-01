@@ -348,6 +348,33 @@ public sealed class MirageGraphicsViewHandlerTests
     }
 
     [Fact]
+    public void GraphicsViewHandler_ResetState_RecordsExplicitResetCommand_AfterTransformAndClip()
+    {
+        var coordinator = new CanvasCoordinatorProbe();
+        var graphicsView = new TestGraphicsView
+        {
+            Drawable = new ResetStateDrawable()
+        };
+
+        var (handler, _, _) = CreateAttachedHandler(graphicsView, coordinator);
+        handler.PlatformArrange(new Rect(0, 0, 160, 120));
+        coordinator.FlushAllDelayed();
+
+        var payload = coordinator.GetLastCanvasPayload();
+        Assert.NotNull(payload);
+
+        var translateIndex = Array.FindIndex(payload!.Commands, static command => string.Equals(command.Type, "translate", StringComparison.Ordinal));
+        var clipIndex = Array.FindIndex(payload.Commands, static command => string.Equals(command.Type, "clip-rect", StringComparison.Ordinal));
+        var resetIndex = Array.FindIndex(payload.Commands, static command => string.Equals(command.Type, "reset-state", StringComparison.Ordinal));
+        var drawIndex = Array.FindIndex(payload.Commands, static command => string.Equals(command.Type, "fill-rectangle", StringComparison.Ordinal));
+
+        Assert.True(translateIndex >= 0);
+        Assert.True(clipIndex > translateIndex);
+        Assert.True(resetIndex > clipIndex);
+        Assert.True(drawIndex > resetIndex);
+    }
+
+    [Fact]
     public void GraphicsViewHandler_RoutesPointerAndHoverInteractions()
     {
         var graphicsView = new TestGraphicsView();
@@ -802,6 +829,20 @@ public sealed class MirageGraphicsViewHandlerTests
         public void Draw(ICanvas canvas, RectF dirtyRect)
         {
             canvas.DrawImage(new StubImage(), 10, 10, dirtyRect.Width - 20, dirtyRect.Height - 20);
+        }
+    }
+
+    private sealed class ResetStateDrawable : IDrawable
+    {
+        public void Draw(ICanvas canvas, RectF dirtyRect)
+        {
+            _ = dirtyRect;
+
+            canvas.Translate(12, 8);
+            canvas.ClipRectangle(0, 0, 80, 50);
+            canvas.ResetState();
+            canvas.FillColor = Colors.ForestGreen;
+            canvas.FillRectangle(0, 0, 24, 18);
         }
     }
 

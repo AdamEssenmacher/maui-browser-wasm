@@ -1778,30 +1778,20 @@ export function renderCanvasCommands(elementHandle, commandsJson) {
     : null;
 
   const stateStack = [];
-  const state = {
+  const initialState = {
     fillStyle: "#000000",
     strokeStyle: "#000000",
     textFillStyle: "#000000",
     font: "14px system-ui",
     direction: computedStyle?.direction === "rtl" ? "rtl" : "ltr"
   };
+  const state = { ...initialState };
 
-  context.fillStyle = state.fillStyle;
-  context.strokeStyle = state.strokeStyle;
-  context.font = state.font;
-  context.direction = state.direction;
-  context.lineWidth = 1;
-  context.lineCap = "butt";
-  context.lineJoin = "miter";
-  context.miterLimit = 10;
-  context.textAlign = "left";
-  context.textBaseline = "top";
-  if ("imageSmoothingEnabled" in context) {
-    context.imageSmoothingEnabled = true;
-  }
+  applyInitialCanvasState(context, state);
+  context.save();
 
   for (const command of commands) {
-    applyCanvasCommand(context, command, state, stateStack);
+    applyCanvasCommand(context, command, state, stateStack, initialState);
   }
 
   const renderCount = Number.parseInt(canvas.getAttribute("data-mirage-canvas-renders") ?? "0", 10);
@@ -1812,7 +1802,41 @@ export function renderCanvasCommands(elementHandle, commandsJson) {
   return true;
 }
 
-function applyCanvasCommand(context, command, state, stateStack) {
+function applyInitialCanvasState(context, state) {
+  context.fillStyle = state.fillStyle;
+  context.strokeStyle = state.strokeStyle;
+  context.font = state.font;
+  context.direction = state.direction;
+  context.lineWidth = 1;
+  context.lineCap = "butt";
+  context.lineJoin = "miter";
+  context.miterLimit = 10;
+  context.globalAlpha = 1;
+  context.setLineDash([]);
+  context.lineDashOffset = 0;
+  context.shadowOffsetX = 0;
+  context.shadowOffsetY = 0;
+  context.shadowBlur = 0;
+  context.shadowColor = "rgba(0,0,0,0)";
+  context.textAlign = "left";
+  context.textBaseline = "top";
+  if ("imageSmoothingEnabled" in context) {
+    context.imageSmoothingEnabled = true;
+  }
+}
+
+function resetCanvasReplayState(context, state, stateStack, initialState) {
+  while (stateStack.length > 0) {
+    stateStack.pop();
+    context.restore();
+  }
+
+  context.restore();
+  Object.assign(state, initialState);
+  context.save();
+}
+
+function applyCanvasCommand(context, command, state, stateStack, initialState) {
   if (!command || typeof command !== "object") {
     return;
   }
@@ -1827,9 +1851,10 @@ function applyCanvasCommand(context, command, state, stateStack) {
         const restored = stateStack.pop();
         context.restore();
         Object.assign(state, restored);
-      } else {
-        context.restore();
       }
+      return;
+    case "reset-state":
+      resetCanvasReplayState(context, state, stateStack, initialState);
       return;
     case "alpha":
       context.globalAlpha = normalizeFinite(command.value, 1);
