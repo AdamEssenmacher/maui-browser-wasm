@@ -248,6 +248,12 @@ public sealed class DomElement
 
     public static string GetPreferredColorScheme() => DomApi.GetPreferredColorScheme();
 
+    public static (double Width, double Height) GetViewportSize()
+    {
+        var values = DomApi.GetViewportSize();
+        return (values.Length > 0 ? values[0] : 0, values.Length > 1 ? values[1] : 0);
+    }
+
     public static int SubscribePreferredColorSchemeChanged(Action callback)
     {
         ArgumentNullException.ThrowIfNull(callback);

@@ -2,6 +2,7 @@ using System.Reflection;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Storage;
 
 namespace Mirage.Maui.Essentials;
@@ -12,11 +13,13 @@ internal static class MirageEssentialsStaticPatcher
     private static readonly MirageEssentialsPatchDescriptor[] DefaultDescriptors =
     [
         new(typeof(Preferences), typeof(IPreferences), "defaultImplementation"),
-        new(typeof(AppInfo), typeof(IAppInfo), "currentImplementation")
+        new(typeof(AppInfo), typeof(IAppInfo), "currentImplementation"),
+        new(typeof(DeviceInfo), typeof(IDeviceInfo), "currentImplementation")
     ];
 
     [DynamicDependency("defaultImplementation", typeof(Preferences))]
     [DynamicDependency("currentImplementation", typeof(AppInfo))]
+    [DynamicDependency("currentImplementation", typeof(DeviceInfo))]
     public static IDisposable Apply(IServiceProvider services) => Apply(services, DefaultDescriptors);
 
     internal static IDisposable Apply(IServiceProvider services, params MirageEssentialsPatchDescriptor[] descriptors)

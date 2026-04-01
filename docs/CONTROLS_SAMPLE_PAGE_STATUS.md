@@ -57,7 +57,7 @@ Visual legend:
 | `ContentPageBackgroundImageGallery.xaml` | `Pages/Core/ContentPageGalleries/ContentPageBackgroundImageGallery.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ContentPageGallery.cs` | `Pages/Core/ContentPageGalleries/ContentPageGallery.cs` | `[x]` | `[x]` | `[ ]` |
 | `ContextFlyoutPage.xaml` | `Pages/Core/ContextFlyoutPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `DevicePage.xaml` | `Pages/Core/DevicePage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `DevicePage.xaml` | `Pages/Core/DevicePage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `DispatcherPage.xaml` | `Pages/Core/DispatcherPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `DragAndDropBetweenLayouts.xaml` | `Pages/Core/DragAndDropBetweenLayouts.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `DropFileToMauiApp.xaml` | `Pages/Core/DropFileToMauiApp.xaml` | `[ ]` | `[ ]` | `[ ]` |
