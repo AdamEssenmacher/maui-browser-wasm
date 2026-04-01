@@ -12,6 +12,7 @@ using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Maps;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Hosting;
 using Microsoft.Maui.Storage;
@@ -89,6 +90,7 @@ public static class MirageHostingExtensions
         builder.Services.TryAddSingleton<IDispatcherProvider>(dispatcherProvider);
         builder.Services.TryAddSingleton(sp => sp.GetRequiredService<IDispatcherProvider>().GetForCurrentThread() ?? new BrowserDispatcher());
         builder.Services.TryAddSingleton<IAppInfo, MirageBrowserAppInfo>();
+        builder.Services.TryAddSingleton<IDeviceInfo, MirageBrowserDeviceInfo>();
         builder.Services.TryAddSingleton<IPreferences, MirageBrowserPreferences>();
         builder.Services.TryAddSingleton<IMirageRenderCoordinator, MirageRenderCoordinator>();
         builder.Services.TryAddSingleton<BrowserPageNavigator>();

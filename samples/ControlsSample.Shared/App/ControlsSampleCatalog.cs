@@ -128,6 +128,14 @@ public static class ControlsSampleCatalog
             pageType: typeof(BrushesPage),
             description: "Runnable in Mirage today: exercises solid/gradient brush scenarios and live brush updates across content surfaces."),
         new(
+            id: "devicepage",
+            title: "DevicePage",
+            upstreamPath: "Pages/Core/DevicePage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(DevicePage),
+            description: "Runnable in Mirage today: exercises MAUI OnPlatform default selection alongside browser-backed DeviceInfo idiom classification.",
+            pageFactory: CreateDevicePage),
+        new(
             id: "contentpagegallery",
             title: "ContentPageGallery",
             upstreamPath: "Pages/Core/ContentPageGalleries/ContentPageGallery.cs",
@@ -388,6 +396,7 @@ public static class ControlsSampleCatalog
             ["clippage"] = ControlsSampleCategory.Core,
             ["alertspage"] = ControlsSampleCategory.Core,
             ["brushespage"] = ControlsSampleCategory.Core,
+            ["devicepage"] = ControlsSampleCategory.Core,
             ["contentpagegallery"] = ControlsSampleCategory.Core,
             ["transformationspage"] = ControlsSampleCategory.Core,
             ["borderpage"] = ControlsSampleCategory.Core,
@@ -532,6 +541,33 @@ public static class ControlsSampleCatalog
         SetButtonAutomationIdByText(page, "Question 2", "controls-sample-alertspage-question-2");
         SetNamedElementAutomationId(page, "question1ResultLabel", "controls-sample-alertspage-question1-result");
         SetNamedElementAutomationId(page, "question2ResultLabel", "controls-sample-alertspage-question2-result");
+
+        return page;
+    }
+
+    private static Page CreateDevicePage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new DevicePage();
+
+        SetLabelAutomationIdByTextCandidates(
+            page,
+            "controls-sample-devicepage-platform-label",
+            "Default Platform",
+            "Android",
+            "iOS",
+            "MacCatalyst",
+            "Tizen",
+            "WinUI");
+        SetLabelAutomationIdByTextCandidates(
+            page,
+            "controls-sample-devicepage-idiom-label",
+            "Default Idiom",
+            "Phone",
+            "Tablet",
+            "Desktop",
+            "TV",
+            "Watch");
 
         return page;
     }
@@ -931,6 +967,20 @@ public static class ControlsSampleCatalog
         }
 
         button.AutomationId = automationId;
+    }
+
+    private static void SetLabelAutomationIdByTextCandidates(Page page, string automationId, params string[] candidateTexts)
+    {
+        var label = FindDescendants<Label>(page)
+            .FirstOrDefault(candidate =>
+                !string.IsNullOrWhiteSpace(candidate.Text)
+                && candidateTexts.Any(text => string.Equals(candidate.Text, text, StringComparison.Ordinal)));
+        if (label is null || !string.IsNullOrWhiteSpace(label.AutomationId))
+        {
+            return;
+        }
+
+        label.AutomationId = automationId;
     }
 
     private static IEnumerable<TView> FindDescendants<TView>(Element root)

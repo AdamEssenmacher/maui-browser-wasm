@@ -2061,6 +2061,16 @@ export function getPreferredColorScheme() {
   return resolvePreferredColorScheme();
 }
 
+export function getViewportSize() {
+  if (typeof window === "undefined") {
+    return [0, 0];
+  }
+
+  const width = Number.isFinite(window.innerWidth) ? window.innerWidth : 0;
+  const height = Number.isFinite(window.innerHeight) ? window.innerHeight : 0;
+  return [width, height];
+}
+
 const preferredColorSchemeSubscriptions = new Map();
 let nextPreferredColorSchemeSubscriptionId = 1;
 

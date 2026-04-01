@@ -138,6 +138,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ["clippage"] = "core",
             ["alertspage"] = "core",
             ["brushespage"] = "core",
+            ["devicepage"] = "core",
             ["contentpagegallery"] = "core",
             ["transformationspage"] = "core",
             ["borderpage"] = "core",
@@ -383,7 +384,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         {
             ("layouts", ["gridpage", "scrollviewpage"], ["buttonpage", "indicatorviewparitypage"]),
             ("controls", ["buttonpage", "mapsgallery"], ["gridpage", "borderpage"]),
-            ("core", ["brushespage", "borderpage"], ["sliderpage", "editorparitypage"]),
+            ("core", ["brushespage", "devicepage", "borderpage"], ["sliderpage", "editorparitypage"]),
             ("parityprobes", ["editorparitypage", "pickerparitypage", "progressbarparitypage", "timepickerparitypage", "carouselviewparitypage", "datepickerparitypage"], ["gridpage", "boxviewpage"]),
             ("compatibility", ["tabbedpagegallerymainpage"], ["gridpage", "shapesparitypage"])
         };
@@ -2732,6 +2733,31 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await page.Locator("[data-automation-id='mirage-dialog-accept']").ClickAsync();
         await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']", new() { State = WaitForSelectorState.Detached });
         Assert.Equal("Correct.", await page.Locator("[data-automation-id='controls-sample-alertspage-question2-result']").InnerTextAsync());
+    }
+
+    [Fact]
+    public async Task DevicePage_IsRunnable_AndUsesDefaultPlatformPlusBrowserIdiom()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "devicepage");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-devicepage']");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-devicepage-platform-label']");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-devicepage-idiom-label']");
+            });
+
+        Assert.Equal(
+            "Default Platform",
+            await page.Locator("[data-automation-id='controls-sample-devicepage-platform-label']").InnerTextAsync());
+        Assert.Equal(
+            "Desktop",
+            await page.Locator("[data-automation-id='controls-sample-devicepage-idiom-label']").InnerTextAsync());
     }
 
     [Fact]

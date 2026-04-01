@@ -1,6 +1,7 @@
 using Mirage.Maui.Essentials;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui.ApplicationModel;
+using Microsoft.Maui.Devices;
 using Microsoft.Maui.Storage;
 using Xunit;
 
@@ -12,7 +13,7 @@ public sealed class MirageEssentialsStaticPatcherTests
     public void Apply_PatchesPreferencesDefault_FromRegisteredService()
     {
         var preferences = new TestPreferences();
-        var services = CreateServices(preferences, new TestAppInfo());
+        var services = CreateServices(preferences, new TestAppInfo(), new TestDeviceInfo());
 
         using var patchScope = MirageEssentialsStaticPatcher.Apply(services);
 
@@ -23,7 +24,7 @@ public sealed class MirageEssentialsStaticPatcherTests
     public void Apply_PatchesAppInfoCurrent_FromRegisteredService()
     {
         var appInfo = new TestAppInfo();
-        var services = CreateServices(new TestPreferences(), appInfo);
+        var services = CreateServices(new TestPreferences(), appInfo, new TestDeviceInfo());
 
         using var patchScope = MirageEssentialsStaticPatcher.Apply(services);
 
@@ -31,10 +32,21 @@ public sealed class MirageEssentialsStaticPatcherTests
     }
 
     [Fact]
+    public void Apply_PatchesDeviceInfoCurrent_FromRegisteredService()
+    {
+        var deviceInfo = new TestDeviceInfo();
+        var services = CreateServices(new TestPreferences(), new TestAppInfo(), deviceInfo);
+
+        using var patchScope = MirageEssentialsStaticPatcher.Apply(services);
+
+        Assert.Same(deviceInfo, DeviceInfo.Current);
+    }
+
+    [Fact]
     public void Apply_AllowsStaticAndInjectedPreferencesToShareState()
     {
         var preferences = new TestPreferences();
-        var services = CreateServices(preferences, new TestAppInfo());
+        var services = CreateServices(preferences, new TestAppInfo(), new TestDeviceInfo());
 
         using var patchScope = MirageEssentialsStaticPatcher.Apply(services);
 
@@ -48,7 +60,7 @@ public sealed class MirageEssentialsStaticPatcherTests
     [Fact]
     public void Apply_ThrowsWhenFieldDescriptorDrifts()
     {
-        var services = CreateServices(new TestPreferences(), new TestAppInfo());
+        var services = CreateServices(new TestPreferences(), new TestAppInfo(), new TestDeviceInfo());
 
         var error = Assert.Throws<InvalidOperationException>(() =>
             MirageEssentialsStaticPatcher.Apply(
@@ -63,7 +75,7 @@ public sealed class MirageEssentialsStaticPatcherTests
     public void Apply_RollsBackEarlierPatchesWhenALaterDescriptorFails()
     {
         var preferences = new TestPreferences();
-        var services = CreateServices(preferences, new TestAppInfo());
+        var services = CreateServices(preferences, new TestAppInfo(), new TestDeviceInfo());
 
         Assert.Throws<InvalidOperationException>(() =>
             MirageEssentialsStaticPatcher.Apply(
@@ -79,23 +91,27 @@ public sealed class MirageEssentialsStaticPatcherTests
     {
         var preferences = new TestPreferences();
         var appInfo = new TestAppInfo();
-        var services = CreateServices(preferences, appInfo);
+        var deviceInfo = new TestDeviceInfo();
+        var services = CreateServices(preferences, appInfo, deviceInfo);
 
         using (MirageEssentialsStaticPatcher.Apply(services))
         {
             Assert.Same(preferences, Preferences.Default);
             Assert.Same(appInfo, AppInfo.Current);
+            Assert.Same(deviceInfo, DeviceInfo.Current);
         }
 
         Assert.NotSame(preferences, Preferences.Default);
         Assert.NotSame(appInfo, AppInfo.Current);
+        Assert.NotSame(deviceInfo, DeviceInfo.Current);
     }
 
-    private static ServiceProvider CreateServices(IPreferences preferences, IAppInfo appInfo)
+    private static ServiceProvider CreateServices(IPreferences preferences, IAppInfo appInfo, IDeviceInfo deviceInfo)
     {
         var services = new ServiceCollection();
         services.AddSingleton<IPreferences>(preferences);
         services.AddSingleton<IAppInfo>(appInfo);
+        services.AddSingleton<IDeviceInfo>(deviceInfo);
         return services.BuildServiceProvider();
     }
 
@@ -154,5 +170,24 @@ public sealed class MirageEssentialsStaticPatcherTests
         public void ShowSettingsUI()
         {
         }
+    }
+
+    private sealed class TestDeviceInfo : IDeviceInfo
+    {
+        public string Model => "Browser";
+
+        public string Manufacturer => "Browser";
+
+        public string Name => "Browser";
+
+        public string VersionString => "0.0";
+
+        public Version Version => new(0, 0);
+
+        public DevicePlatform Platform => DevicePlatform.Create("Browser");
+
+        public DeviceIdiom Idiom => DeviceIdiom.Desktop;
+
+        public DeviceType DeviceType => DeviceType.Physical;
     }
 }
