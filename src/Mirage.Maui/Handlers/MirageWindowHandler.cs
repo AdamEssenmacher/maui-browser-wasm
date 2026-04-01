@@ -123,12 +123,6 @@ internal sealed class MirageWindowHandler : ElementHandler<Window, MiragePlatfor
 
         _ = MiragePageHandler.TryProjectActivePageTitle(pageHandler);
 
-        if (previousPage is not null && !ReferenceEquals(previousPage, page))
-        {
-            ((IVisualElementController)previousPage).IsPlatformEnabled = false;
-            previousPage.SendDisappearing();
-        }
-
         if (!ReferenceEquals(previousPage, page))
         {
             ((IVisualElementController)page).IsPlatformEnabled = true;
@@ -140,6 +134,11 @@ internal sealed class MirageWindowHandler : ElementHandler<Window, MiragePlatfor
 
     private void DisconnectCurrentPage()
     {
+        if (_currentPage is not null)
+        {
+            _currentPage.SendDisappearing();
+        }
+
         if (_currentPageHandler?.PlatformView is MiragePlatformView currentPagePlatformView
             && ReferenceEquals(currentPagePlatformView.Parent, PlatformView))
         {
