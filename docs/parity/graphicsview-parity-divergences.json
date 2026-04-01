@@ -1,0 +1,34 @@
+{
+  "entries": [
+    {
+      "id": "graphicsview-wave1-no-drawimage",
+      "summary": "Wave 1 intentionally defers DrawImage and the full platform image bridge; Mirage records a curated canvas subset first and leaves image drawing for Wave 2.",
+      "upstreamReference": "src/Core/src/Handlers/GraphicsView/GraphicsViewHandler.Android.cs",
+      "testReference": "GraphicsViewHandler_DoesNotRecordDrawImageCommandsInWaveOne"
+    },
+    {
+      "id": "graphicsview-wave1-no-advanced-text-measurement",
+      "summary": "Wave 1 records deterministic DrawString commands, falls back to plain text content for DrawText(IAttributedText, ...), and still defers GetStringSize, attributed span styling, justified text, and broader overflow/layout fidelity on the browser canvas backend.",
+      "upstreamReference": "src/Core/src/Handlers/GraphicsView/GraphicsViewHandler.iOS.cs",
+      "testReference": "GraphicsViewHandler_FallsBackToPlainStringForAttributedText"
+    },
+    {
+      "id": "graphicsview-wave1-fill-paint-only",
+      "summary": "Wave 1 replays solid, linear, and radial fill paints through the current ICanvas surface, while non-solid stroke paint breadth remains deferred until a browser-compatible stroke-paint strategy is added in a follow-up wave.",
+      "upstreamReference": "src/Core/src/Handlers/GraphicsView/GraphicsViewHandler.Android.cs",
+      "testReference": "GraphicsViewHandler_RecordsWaveOneCanvasCommands"
+    },
+    {
+      "id": "graphicsview-wave1-no-clip-subtract-or-path-measurement",
+      "summary": "Wave 1 supports rectangle clip commands for deterministic canvas replay but still defers ClipPath, SubtractFromClip, and path-measurement breadth to the follow-up wave.",
+      "upstreamReference": "src/Core/src/Handlers/GraphicsView/GraphicsViewHandler.Android.cs",
+      "testReference": "GraphicsViewHandler_RecordsWaveOneCanvasCommands"
+    },
+    {
+      "id": "graphicsview-browser-canvas-text-and-shadow-fidelity",
+      "summary": "Mirage uses the native browser canvas engine for text and shadow replay, so exact Android/iOS glyph metrics and shadow rendering can differ while staying deterministic for the supported subset.",
+      "upstreamReference": "src/Core/src/Handlers/GraphicsView/GraphicsViewHandler.iOS.cs",
+      "testReference": "GraphicsViewHandler_ProjectsBuiltInCanvasHost_AndRepaintsAfterArrange"
+    }
+  ]
+}

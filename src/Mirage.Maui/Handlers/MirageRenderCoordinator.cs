@@ -270,6 +270,27 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         return _runtime.TrySetNodeTextSelection(nodeId, selectionStart, selectionEnd);
     }
 
+    public bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)
+    {
+        if (_runtime is null)
+        {
+            displayScale = 1;
+            return false;
+        }
+
+        return _runtime.TryConfigureNodeCanvas(nodeId, logicalWidth, logicalHeight, out displayScale);
+    }
+
+    public bool TryRenderNodeCanvas(string nodeId, string commandsJson)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TryRenderNodeCanvas(nodeId, commandsJson);
+    }
+
     public void OnEvent(string nodeId, string eventName, string? payload)
     {
         if (!_eventTargetsByNodeId.TryGetValue(nodeId, out var target))

@@ -23,7 +23,7 @@ public abstract class ProviderConformanceTestsBase
     }
 
     [Fact]
-    public void Conformance_ResolvesAllPhaseOneControlKindsWithoutCanvasRoot()
+    public void Conformance_ResolvesAllPhaseOneControlKinds_WithGraphicsViewAsTheOnlyCanvasRootException()
     {
         var provider = CreateProvider();
 
@@ -31,6 +31,12 @@ public abstract class ProviderConformanceTestsBase
         {
             var descriptor = provider.ResolveControl(kind);
             Assert.False(string.IsNullOrWhiteSpace(descriptor.ElementTagName));
+            if (kind == ComponentKind.GraphicsView)
+            {
+                Assert.Equal("canvas", descriptor.ElementTagName);
+                continue;
+            }
+
             Assert.False(string.Equals("canvas", descriptor.ElementTagName, StringComparison.OrdinalIgnoreCase));
         }
     }

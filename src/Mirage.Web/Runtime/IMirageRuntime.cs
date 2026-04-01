@@ -39,4 +39,12 @@ public interface IMirageRuntime : IDisposable
     bool TryGetNodeTextSelection(string nodeId, out int selectionStart, out int selectionEnd);
 
     bool TrySetNodeTextSelection(string nodeId, int selectionStart, int selectionEnd);
+
+    bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)
+    {
+        displayScale = 1;
+        return false;
+    }
+
+    bool TryRenderNodeCanvas(string nodeId, string commandsJson) => false;
 }

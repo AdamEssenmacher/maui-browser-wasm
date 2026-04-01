@@ -4450,6 +4450,41 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void RenderCoordinator_CanvasBridge_RoutesConfigureToRuntimeDeterministically()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe
+        {
+            CanvasDisplayScale = 2
+        };
+        coordinator.AttachRuntime(runtime);
+
+        var configured = coordinator.TryConfigureNodeCanvas("node-canvas", 220, 160, out var displayScale);
+
+        Assert.True(configured);
+        Assert.Equal(1, runtime.ConfigureCanvasCallCount);
+        Assert.Equal("node-canvas", runtime.LastConfiguredCanvasNodeId);
+        Assert.Equal(220, runtime.LastConfiguredCanvasWidth, 3);
+        Assert.Equal(160, runtime.LastConfiguredCanvasHeight, 3);
+        Assert.Equal(2, displayScale, 3);
+    }
+
+    [Fact]
+    public void RenderCoordinator_CanvasBridge_RoutesRenderBatchToRuntimeDeterministically()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var rendered = coordinator.TryRenderNodeCanvas("node-canvas", """{"logicalWidth":220,"logicalHeight":160,"commands":[{"type":"fill-rectangle"}]}""");
+
+        Assert.True(rendered);
+        Assert.Equal(1, runtime.RenderCanvasCallCount);
+        Assert.Equal("node-canvas", runtime.LastRenderedCanvasNodeId);
+        Assert.Contains("fill-rectangle", runtime.LastCanvasJson, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BasePage_InstrumentPage_AssignsScrollViewOrientationAutomationIds()
     {
         var page = Assert.IsType<ScrollViewOrientationPage>(
@@ -6297,6 +6332,22 @@ public sealed class HandlerRuntimeIntegrationTests
 
         public double VerticalScrollChildIntoViewDelta { get; set; } = 10;
 
+        public int ConfigureCanvasCallCount { get; private set; }
+
+        public int RenderCanvasCallCount { get; private set; }
+
+        public string? LastConfiguredCanvasNodeId { get; private set; }
+
+        public double LastConfiguredCanvasWidth { get; private set; }
+
+        public double LastConfiguredCanvasHeight { get; private set; }
+
+        public double CanvasDisplayScale { get; set; } = 1;
+
+        public string? LastRenderedCanvasNodeId { get; private set; }
+
+        public string LastCanvasJson { get; private set; } = string.Empty;
+
         public void SetEventSink(IMirageEventSink? eventSink)
         {
             Sink = eventSink;
@@ -6399,6 +6450,24 @@ public sealed class HandlerRuntimeIntegrationTests
         {
             _ = nodeId;
             return false;
+        }
+
+        public bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)
+        {
+            ConfigureCanvasCallCount++;
+            LastConfiguredCanvasNodeId = nodeId;
+            LastConfiguredCanvasWidth = logicalWidth;
+            LastConfiguredCanvasHeight = logicalHeight;
+            displayScale = CanvasDisplayScale;
+            return true;
+        }
+
+        public bool TryRenderNodeCanvas(string nodeId, string commandsJson)
+        {
+            RenderCanvasCallCount++;
+            LastRenderedCanvasNodeId = nodeId;
+            LastCanvasJson = commandsJson;
+            return true;
         }
 
         public bool TrySetNodeFocus(string nodeId, bool isFocused)

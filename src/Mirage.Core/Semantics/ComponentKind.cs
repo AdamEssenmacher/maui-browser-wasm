@@ -30,5 +30,6 @@ public enum ComponentKind
     Stepper,
     ProgressBar,
     IndicatorView,
+    GraphicsView,
     Map
 }

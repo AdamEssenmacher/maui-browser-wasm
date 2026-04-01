@@ -231,6 +231,30 @@ public sealed class MirageRuntime : IMirageRuntime
         return node.GetValueElement().TrySetInputSelection(selectionStart, selectionEnd);
     }
 
+    public bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)
+    {
+        displayScale = 1;
+
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        var result = node.Element.ConfigureCanvas(logicalWidth, logicalHeight);
+        displayScale = result.DisplayScale;
+        return true;
+    }
+
+    public bool TryRenderNodeCanvas(string nodeId, string commandsJson)
+    {
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        return node.Element.RenderCanvasCommands(commandsJson);
+    }
+
     public void Dispose()
     {
         foreach (var subscriptionId in _eventSubscriptions.Values.ToArray())
@@ -1074,6 +1098,13 @@ public sealed class MirageRuntime : IMirageRuntime
         else if (eventDescriptor.PayloadKind == EventPayloadKind.Key)
         {
             subscriptionId = InvokeInterop(() => targetElement.On(eventDescriptor.DomEventName, "key", payload =>
+            {
+                _eventSink?.OnEvent(nodeId, eventName, payload);
+            }));
+        }
+        else if (eventDescriptor.PayloadKind == EventPayloadKind.Pointer)
+        {
+            subscriptionId = InvokeInterop(() => targetElement.On(eventDescriptor.DomEventName, "pointer", payload =>
             {
                 _eventSink?.OnEvent(nodeId, eventName, payload);
             }));

@@ -2,6 +2,15 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-04-01 (GraphicsView parity wave: MAUI-shaped handler + DPR-aware canvas host)
+- Added `MirageGraphicsViewHandler` and registered `GraphicsView` in `UseMirageBrowserPlatform`, making `GraphicsView` the explicit canvas-backed exception in Mirage while keeping the handler surface aligned to MAUI (`Background`, `Drawable`, `FlowDirection`, empty command mapper except `Invalidate`).
+- GraphicsView realization now uses a built-in `ControlNode` canvas host (`ComponentKind.GraphicsView`) plus generic runtime canvas seams for backing-store configuration and batched draw-command replay, so redraws stay handler-shaped instead of turning into per-operation JS chatter or a separate widget system.
+- Wave 1 supports a curated but real drawing subset (core primitives, paths, fill paints/gradients, shadow, text, transforms) with invalidate coalescing, device-pixel-ratio-aware sizing, and pointer/hover routing through the `IGraphicsView` interaction surface.
+- Wave 1 now falls back to plain text content for `DrawText(IAttributedText, ...)` instead of silently dropping attributed text entirely, while span-level styling and broader text/layout fidelity remain explicit follow-up work.
+- The repaint path now uses a fast startup retry window followed by a slower background retry cadence, so GraphicsView can still recover if canvas readiness lags while avoiding the previous unbounded 60fps retry loop on permanent runtime failures.
+- We intentionally stopped at partial parity for the first reviewable wave: `DrawImage`, advanced text measurement/layout, broader clip/path fidelity, and non-solid stroke-paint breadth remain explicit Wave 2 divergences rather than browser-specific half-implementations.
+- Added parity governance artifacts, focused integration coverage, and a dedicated ControlsSample proof surface (`GraphicsViewParityProbePage`) so GraphicsView now follows the same contract/probe discipline as the recent Picker/DateTime/ProgressBar parity waves.
+
 ## 2026-04-01 (ProgressBar parity wave: MAUI-shaped handler + native progress host)
 - Added `MirageProgressBarHandler` and registered `ProgressBar` in `UseMirageBrowserPlatform`, keeping the Mirage path aligned to MAUI's simple `ProgressBarHandler` surface (`Progress`, `ProgressColor`, empty command mapper) instead of leaving the row on the legacy browser handler only.
 - ProgressBar realization now uses a built-in `ControlNode` host (`ComponentKind.ProgressBar`) backed by a native browser `<progress>` element with deterministic `[0,1]` value clamping, invariant value serialization, `ProgressColor` accent projection, and legacy browser sizing fallback (`220x18`) resolved through explicit/min/max request constraints.

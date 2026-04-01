@@ -258,6 +258,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(ProgressBarParityProbePage),
             description: "Mirage parity probe: exercises ProgressBar determinate value clamping, native progress-host color projection, and browser-limited style updates."),
         new(
+            id: "graphicsviewparitypage",
+            title: "GraphicsViewParityProbePage",
+            upstreamPath: "App/GraphicsViewParityProbePage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(GraphicsViewParityProbePage),
+            description: "Mirage parity probe: exercises GraphicsView canvas redraw/invalidate flow, runtime size updates, background/flow-direction projection, and pointer/hover interaction routing."),
+        new(
             id: "tabbedpagegallerymainpage",
             title: "TabbedPageGalleryMainPage",
             upstreamPath: "Pages/Compatibility/TabbedPageGalleryMainPage.xaml",
@@ -412,6 +419,7 @@ public static class ControlsSampleCatalog
             ["radiobuttonparitypage"] = ControlsSampleCategory.ParityProbes,
             ["pickerparitypage"] = ControlsSampleCategory.ParityProbes,
             ["progressbarparitypage"] = ControlsSampleCategory.ParityProbes,
+            ["graphicsviewparitypage"] = ControlsSampleCategory.ParityProbes,
             ["datepickerparitypage"] = ControlsSampleCategory.ParityProbes,
             ["timepickerparitypage"] = ControlsSampleCategory.ParityProbes,
 
