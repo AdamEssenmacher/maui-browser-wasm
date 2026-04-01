@@ -46,74 +46,79 @@ Upstream MAUI shared-code risks for unofficial/browser targets are tracked separ
 - Current behavior: `SearchBar` maps text/placeholder/placeholder-color, read-only, keyboard hinting, max-length, spell-check, prediction, return/search events, and deterministic browser clear/search button interactions on the ControlNode path.
 - Deferred: IME composition edge-case parity for text inputs and native icon-channel fidelity for `SearchBar` (`CancelButtonColor`/`SearchIconColor` projected to button text-color channels) remain partial.
 
-10. Date/time format parity depth
+10. Picker popup/alignment parity depth
+- Current behavior: `Picker` now maps through `MiragePickerHandler` to a built-in browser-native `select` host with deterministic placeholder-option rebuilds for `Title`, `TitleColor` placeholder styling, `SelectedIndex` roundtrip support, and MAUI-authored `ItemsSource` / `SelectedItem` / `ItemDisplayBinding` refresh through the control remap path.
+- Current behavior: `Picker` does not infer `IsOpen=true` from raw focus events because browser focus does not reliably imply popup visibility; successful programmatic open requests are the strongest browser signal available, and runtime `change` / `blur` still own close reconciliation.
+- Deferred: native-select popup visibility confirmation and exact vertical text-alignment parity remain browser-limited; Mirage uses deterministic best-effort CSS projection for vertical alignment and explicit request-acceptance semantics for `IsOpen`.
+
+11. Date/time format parity depth
 - Current behavior: `DatePicker` now maps through `MirageDatePickerHandler` to a built-in browser-native date input path with deterministic ISO wire projection, nullable date support, min/max bounds, and `IsOpen` roundtrip support.
 - Current behavior: `DatePicker` does not infer `IsOpen=true` from raw focus events because browser focus does not reliably imply picker-popup visibility; successful programmatic open requests are the strongest browser signal available, and runtime `change` / `blur` still own close reconciliation.
 - Current behavior: `TimePicker` now maps through `MirageTimePickerHandler` to a built-in browser-native time input path with deterministic `hh:mm`/`hh:mm:ss` wire projection and `IsOpen` roundtrip support.
 - Current behavior: `TimePicker` does not infer `IsOpen=true` from raw focus events because browser focus does not reliably imply picker-popup visibility; successful programmatic open requests are the strongest browser signal available, and runtime `change` / `blur` still own close reconciliation.
 - Deferred: full custom MAUI format token breadth across browser locales remains incomplete for date/time controls in this slice.
 
-11. Numeric/status control parity depth
+12. Numeric/status control parity depth
 - Current behavior: `Stepper`, `ProgressBar`, and `ActivityIndicator` handlers are implemented with deterministic browser projections and two-way state updates.
 - Deferred: native long-press stepper repeat behavior and activity-indicator visual parity are best-effort in this slice.
 
-12. Media source parity depth (`Image` / `ImageButton`)
+13. Media source parity depth (`Image` / `ImageButton`)
 - Current behavior: `Image` and `ImageButton` use a resolver-first async source pipeline with cancellation/version guards, deterministic source-kind + load-state attributes, stale load/error filtering, GIF playback projection, and managed object-url cleanup.
 - Deferred: deeper stream/image-source service pipeline parity (including decode caching and browser/native decode semantics) remains partial in this slice.
 
-13. Border parity depth
+14. Border parity depth
 - Current behavior: single-child hosting, solid stroke color/thickness, round-rectangle/rectangle shape mapping, and dashed best-effort stroke style are projected to CSS.
 - Deferred: full stroke-shape and stroke-paint parity (ellipse/path/geometry groups, non-solid stroke paint, line-cap/join/miter exact behavior) remains partial.
 
-14. FlexLayout parity depth
+15. FlexLayout parity depth
 - Current behavior: semantic CSS flex projection is implemented for container properties (`Direction`, `Wrap`, `JustifyContent`, `AlignItems`, `AlignContent`) and item attached properties (`Order`, `Grow`, `Shrink`, `Basis`, `AlignSelf`).
 - Current behavior: nested `FlexLayout` children with `Position=Absolute` are projected through frame-driven geometry (`left`/`top`/`width`/`height`) during arrange, while relative flex children stay semantic.
 - Current behavior: runtime `Position` toggles for nested `FlexLayout` children deterministically reproject between absolute-frame and flex-item styles (`order`/`grow`/`shrink`/`basis`/`align-self`) without child-handler churn.
 - Upstream MAUI constraint: `FlexLayout.Position` is valid only for `FlexLayout` children; non-`FlexLayout` controls do not participate in the absolute-position path.
 
-15. Font-load synchronized measurement
+16. Font-load synchronized measurement
 - Current behavior: text measurement is canvas-based with deterministic fallback.
 - Deferred: async font readiness synchronization and re-measure strategy.
 
-16. Browser-hard controls not yet implemented
+17. Browser-hard controls not yet implemented
 - Current behavior: no browser handlers yet for controls marked `missing` in `PARITY_MATRIX.md`.
 - Deferred: implementation waves by family per roadmap.
 
-17. Shell
+18. Shell
 - Current behavior: out of scope by decision.
 - Deferred: no Shell implementation planned in this parity program.
 
-18. MAUI style-system parity depth
+19. MAUI style-system parity depth
 - Current behavior: showcase track proves implicit/explicit styles, `BasedOn`, `StyleClass`, runtime `DynamicResource` theme switching, and common control state styling (`Pressed`/`Disabled`/`Focused`) across mapped browser handlers.
 - Deferred: advanced trigger precedence edge cases, full VisualState parity across all control families, and complex style/resource merge-order compatibility are still partial.
 
-19. Label text-source parity depth (`FormattedText` / `TextType` / `TextTransform`)
+20. Label text-source parity depth (`FormattedText` / `TextType` / `TextTransform`)
 - Current behavior: browser `Label` mapping includes MAUI-aligned core style primitives (`CharacterSpacing`, `TextDecorations`, `LineHeight`, `Padding`), wrap/clamp projection (`LineBreakMode`, `MaxLines`), and controls text-source projection for `FormattedText`, `TextType`, and `TextTransform`.
 - Current behavior: `TextType.Html` uses a deterministic safe-subset sanitizer; unsupported tags/attributes are stripped while preserving text content.
 - Deferred: full HTML breadth parity and span-level gesture hit-region parity for formatted text remain partial in this slice.
 
-20. IndicatorView parity depth
+21. IndicatorView parity depth
 - Current behavior: `IndicatorView` is mapped through a dedicated Mirage handler with MAUI-aligned mapper keys (`Count`, `Position`, `HideSingle`, `MaximumVisible`, `IndicatorSize`, `IndicatorColor`, `SelectedIndicatorColor`, `IndicatorsShape`) and deterministic default-dot projection on the ControlNode path.
 - Current behavior: template hosting is supported through `ITemplatedIndicatorView.IndicatorsLayoutOverride` with a stable host pipeline that suppresses default dots while template layout is active.
 - Deferred: non-solid indicator paint parity and deeper templated-indicator interaction parity remain partial; unsupported paints currently fall back deterministically to default solid colors.
 
-21. Shapes handler parity depth (`Shapes.*`)
+22. Shapes handler parity depth (`Shapes.*`)
 - Current behavior: all `Shapes.*` rows (`Ellipse`, `Line`, `Path`, `Polygon`, `Polyline`, `Rectangle`, `RoundRectangle`) are mapped through MAUI-shaped Mirage handlers on the built-in `ControlNode` path with stable SVG-host realization.
 - Current behavior: deterministic geometry projection, aspect updates, stroke option mapping (dash/cap/join/miter), and solid/linear/radial paint projection are implemented; image brush fill/stroke projection resolves through `IMirageImageSourceResolver`.
 - Current behavior: `ControlsSample.Shared/App/ShapesParityProbePage.cs` is the parity probe surface with E2E coverage for runtime shape switching plus points/path-data/path-transform mutation flows.
 - Deferred: graphics-native `PatternPaint`/`ImagePaint`, exact native arc fidelity, and non-translate `Path.RenderTransform` types are still divergence-documented deterministic fallback/flattened paths in this slice.
 
-22. RadioButton parity depth
+23. RadioButton parity depth
 - Current behavior: `RadioButton` is mapped through `MirageRadioButtonHandler` on the built-in `ControlNode` path with a Mirage-owned host (`input[type=radio]` + content slot), two-way checked synchronization, and deterministic content projection (text + hosted view content).
 - Current behavior: group-authoritative MAUI selection flow is preserved by routing runtime selection through `VirtualView.IsChecked`, with named-group projection to DOM `name` when available and deterministic `RadioButtonGroup.SelectedValue` roundtrip behavior.
 - Deferred: native radio chrome fidelity (`StrokeColor`/`StrokeThickness`/`CornerRadius` semantics) remains browser-approximated via deterministic CSS host projection.
 
-23. Page parity depth
+24. Page parity depth
 - Current behavior: `Page` now maps through a dedicated `MiragePageHandler` with active-runtime title projection to browser document title (`Page.Title` via navigation title policy), and `ContentPage` inherits the same title channel.
 - Current behavior: detached/off-screen page handlers do not claim title ownership, and navigation-stack children defer to `MirageNavigationPageHandler` as document-title authority.
 - Deferred: MAUI iOS-only PageHandler semantics (`IsHomeIndicatorAutoHidden`, `PrefersStatusBarHiddenMode`, controller background updates) remain non-applicable on browser DOM hosts.
 
-24. CarouselView parity depth
+25. CarouselView parity depth
 - Current behavior: `CarouselView` now maps through `MirageCarouselViewHandler : MirageItemsViewHandler<CarouselView>` on the built-in ControlNode path, with browser-native snap scrolling, two-way `Position`/`CurrentItem` synchronization, programmatic `ScrollTo`, horizontal/vertical `LinearItemsLayout` support, `PeekAreaInsets` sizing, and `IsSwipeEnabled` interaction gating.
 - Current behavior: Mirage now maintains handler-owned loop clones plus settled wraparound, updates `IsDragging` and `VisibleViews` from runtime scroll activity, and applies `CurrentItem` / `NextItem` / `PreviousItem` / `DefaultItem` visual states to realized item views without item-handler churn.
 - Current behavior: linked `IndicatorView` parity stays on the MAUI path; Mirage does not add a Carousel-only side channel and instead proves the existing MAUI binding linkage through the dedicated probe page.

@@ -231,6 +231,8 @@ public sealed class ProviderValidationTests
         Assert.Equal("disabled", descriptor.PropertyMappings["Disabled"].Name);
         Assert.True(descriptor.EventMappings.ContainsKey("change"));
         Assert.Equal(EventPayloadKind.InputValue, descriptor.EventMappings["change"].PayloadKind);
+        Assert.True(descriptor.EventMappings.ContainsKey("focus"));
+        Assert.True(descriptor.EventMappings.ContainsKey("blur"));
     }
 
     [Fact]

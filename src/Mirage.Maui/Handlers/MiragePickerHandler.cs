@@ -8,51 +8,108 @@ namespace Mirage.Maui.Handlers;
 
 internal sealed class MiragePickerHandler : MirageViewHandler<IPicker>, IMirageRuntimeEventTarget
 {
+    private static readonly TimeSpan OpenRetryDelay = TimeSpan.FromMilliseconds(16);
+    private const int MaxOpenRetryAttempts = 2;
+    private const double DefaultWidth = 180;
+    private const double DefaultHeight = 36;
+    private const string CenterVerticalInset = "3px";
+    private const string EdgeVerticalInset = "6px";
     private static int s_optionNodeIdCounter;
+
+    internal static readonly string[] ParityPropertyKeys =
+    [
+        nameof(IPicker.Background),
+        nameof(IPicker.CharacterSpacing),
+        nameof(IPicker.Font),
+        nameof(IPicker.SelectedIndex),
+        nameof(IPicker.TextColor),
+        nameof(IPicker.Title),
+        nameof(IPicker.TitleColor),
+        nameof(ITextAlignment.HorizontalTextAlignment),
+        nameof(ITextAlignment.VerticalTextAlignment),
+        nameof(IPicker.Items),
+        nameof(IPicker.IsOpen)
+    ];
+
+    internal static readonly string[] ParityCommandKeys =
+    [
+        nameof(IPicker.Focus),
+        nameof(IPicker.Unfocus)
+    ];
+
+    internal static readonly string[] ParityControlsRemapPropertyKeys =
+    [
+        nameof(Picker.ItemsSource)
+    ];
+
+    internal static readonly string[] ParityExtensionPropertyKeys =
+    [
+        nameof(IView.IsEnabled)
+    ];
 
     public static IPropertyMapper<IPicker, MiragePickerHandler> Mapper =
         new PropertyMapper<IPicker, MiragePickerHandler>(MirageViewMapper.CommonViewMapper)
         {
-            [nameof(IPicker.Items)] = MapItems,
+            [nameof(IPicker.Background)] = MapBackground,
+            ["BackgroundColor"] = MapBackground,
+            [nameof(IPicker.CharacterSpacing)] = MapCharacterSpacing,
+            [nameof(IPicker.Font)] = MapFont,
+            ["FontFamily"] = MapFont,
+            ["FontSize"] = MapFont,
+            ["FontAttributes"] = MapFont,
+            ["FontAutoScalingEnabled"] = MapFont,
             [nameof(IPicker.SelectedIndex)] = MapSelectedIndex,
+            [nameof(IPicker.TextColor)] = MapTextColor,
+            ["TextColor"] = MapTextColor,
             [nameof(IPicker.Title)] = MapTitle,
             [nameof(IPicker.TitleColor)] = MapTitleColor,
-            [nameof(ITextStyle.TextColor)] = MapTextColor,
-            [nameof(ITextStyle.Font)] = MapFont,
-            [nameof(ITextStyle.CharacterSpacing)] = MapCharacterSpacing,
+            [nameof(IView.Semantics)] = MapSemantics,
+            [nameof(ITextAlignment.HorizontalTextAlignment)] = MapHorizontalTextAlignment,
+            [nameof(ITextAlignment.VerticalTextAlignment)] = MapVerticalTextAlignment,
+            [nameof(IPicker.Items)] = MapItems,
+            [nameof(IPicker.IsOpen)] = MapIsOpen,
             [nameof(IView.IsEnabled)] = MapIsEnabled,
-            ["IsEnabled"] = MapIsEnabled,
-            [nameof(VisualElement.WidthRequest)] = MapSizeRequestsAndLayoutAlignment,
-            [nameof(VisualElement.HeightRequest)] = MapSizeRequestsAndLayoutAlignment,
-            [nameof(VisualElement.MinimumWidthRequest)] = MapSizeRequests,
-            [nameof(VisualElement.MinimumHeightRequest)] = MapSizeRequests,
-            [nameof(VisualElement.MaximumWidthRequest)] = MapSizeRequests,
-            [nameof(VisualElement.MaximumHeightRequest)] = MapSizeRequests
+            ["IsEnabled"] = MapIsEnabled
+        };
+
+    public static CommandMapper<IPicker, MiragePickerHandler> CommandMapper =
+        new(MirageViewMapper.CommonViewCommandMapper)
+        {
+            [nameof(IPicker.Focus)] = MapFocus,
+            [nameof(IPicker.Unfocus)] = MapUnfocus
         };
 
     private readonly List<MiragePlatformView> _optionNodes = [];
+    private bool _isApplyingRuntimeIsOpen;
+    private bool _isMappingIsOpen;
+    private bool _isOpenRetryScheduled;
+    private int _remainingOpenRetryAttempts;
+    private long _openAttemptVersion;
 
     public MiragePickerHandler()
-        : base(ComponentKind.Picker, Mapper)
+        : base(ComponentKind.Picker, Mapper, CommandMapper)
     {
-        DefaultDisplayStyle = "block";
+        DefaultDisplayStyle = "inline-block";
+    }
+
+    public override Size GetDesiredSize(double widthConstraint, double heightConstraint)
+    {
+        return ResolveMeasuredSizeWithConstraints(VirtualView, widthConstraint, heightConstraint, DefaultWidth, DefaultHeight);
     }
 
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
-        platformView.SetStyle("display", "block");
-        platformView.SetStyle("width", "100%");
-        platformView.SetStyle("minHeight", "36px");
+        platformView.SetStyle("display", DefaultDisplayStyle);
         platformView.SetStyle("boxSizing", "border-box");
+        platformView.SetStyle("minHeight", "36px");
         platformView.SetEvent("change", enabled: true);
+        platformView.SetEvent("focus", enabled: true);
+        platformView.SetEvent("blur", enabled: true);
+
+        var changed = RebuildOptions(VirtualView);
+        changed |= ApplyPickerProjectionCore(VirtualView);
 
         base.ConnectHandler(platformView);
-
-        var changed = false;
-        changed |= RebuildOptions(VirtualView);
-        changed |= UpdateTitleProjection(VirtualView);
-        changed |= UpdateEnabledProjection(VirtualView);
-        changed |= UpdateDisplayedTextColor(VirtualView);
 
         if (changed)
         {
@@ -62,35 +119,31 @@ internal sealed class MiragePickerHandler : MirageViewHandler<IPicker>, IMirageR
 
     protected override void DisconnectHandler(MiragePlatformView platformView)
     {
+        InvalidateOpenAttemptVersion();
+        ResetOpenRetryState();
         ClearOptions();
         base.DisconnectHandler(platformView);
     }
 
     public void OnRuntimeEvent(string eventName, string? payload)
     {
-        if (!string.Equals(eventName, "change", StringComparison.Ordinal) || !VirtualView.IsEnabled)
+        if (string.Equals(eventName, "change", StringComparison.Ordinal))
         {
+            OnRuntimeSelectionChanged(payload);
             return;
         }
 
-        var selectedIndex = ParseSelectedIndex(VirtualView, payload);
-        if (VirtualView.SelectedIndex == selectedIndex)
+        if (string.Equals(eventName, "blur", StringComparison.Ordinal))
         {
-            return;
+            OnRuntimeIsOpenChanged(isOpen: false);
         }
-
-        VirtualView.SelectedIndex = selectedIndex;
     }
 
-    public static void MapItems(MiragePickerHandler handler, IPicker picker)
-    {
-        if (!handler.RebuildOptions(picker))
-        {
-            return;
-        }
+    public static void MapBackground(MiragePickerHandler handler, IPicker picker) => handler.MapPicker(picker);
 
-        handler.RequestRender();
-    }
+    public static void MapCharacterSpacing(MiragePickerHandler handler, IPicker picker) => handler.MapPicker(picker);
+
+    public static void MapFont(MiragePickerHandler handler, IPicker picker) => handler.MapPicker(picker);
 
     public static void MapSelectedIndex(MiragePickerHandler handler, IPicker picker)
     {
@@ -98,6 +151,16 @@ internal sealed class MiragePickerHandler : MirageViewHandler<IPicker>, IMirageR
         changed |= handler.UpdateSelectedOptionProjection(picker);
         changed |= handler.UpdateDisplayedTextColor(picker);
         if (!changed)
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapTextColor(MiragePickerHandler handler, IPicker picker)
+    {
+        if (!handler.UpdateDisplayedTextColor(picker))
         {
             return;
         }
@@ -127,9 +190,11 @@ internal sealed class MiragePickerHandler : MirageViewHandler<IPicker>, IMirageR
         handler.RequestRender();
     }
 
-    public static void MapTextColor(MiragePickerHandler handler, IPicker picker)
+    public static void MapSemantics(MiragePickerHandler handler, IPicker picker)
     {
-        if (!handler.UpdateDisplayedTextColor(picker))
+        var changed = MirageCommonViewProjection.MapSemantics(handler, picker);
+        changed |= handler.UpdateTitleProjection(picker);
+        if (!changed)
         {
             return;
         }
@@ -137,9 +202,9 @@ internal sealed class MiragePickerHandler : MirageViewHandler<IPicker>, IMirageR
         handler.RequestRender();
     }
 
-    public static void MapFont(MiragePickerHandler handler, IPicker picker)
+    public static void MapHorizontalTextAlignment(MiragePickerHandler handler, IPicker picker)
     {
-        if (!MirageCommonViewProjection.MapFont(handler, picker))
+        if (!handler.UpdateHorizontalTextAlignmentProjection(picker))
         {
             return;
         }
@@ -147,14 +212,51 @@ internal sealed class MiragePickerHandler : MirageViewHandler<IPicker>, IMirageR
         handler.RequestRender();
     }
 
-    public static void MapCharacterSpacing(MiragePickerHandler handler, IPicker picker)
+    public static void MapVerticalTextAlignment(MiragePickerHandler handler, IPicker picker)
     {
-        if (!MirageCommonViewProjection.MapCharacterSpacing(handler, picker))
+        if (!handler.UpdateVerticalTextAlignmentProjection(picker))
         {
             return;
         }
 
         handler.RequestRender();
+    }
+
+    public static void MapItems(MiragePickerHandler handler, IPicker picker)
+    {
+        if (!handler.RebuildOptions(picker))
+        {
+            return;
+        }
+
+        handler.RequestRender();
+    }
+
+    public static void MapIsOpen(MiragePickerHandler handler, IPicker picker)
+    {
+        if (handler._isApplyingRuntimeIsOpen
+            || handler._isMappingIsOpen
+            || handler.Coordinator is null
+            || string.IsNullOrWhiteSpace(handler.PlatformView.NodeId))
+        {
+            return;
+        }
+
+        handler._isMappingIsOpen = true;
+        try
+        {
+            if (picker.IsOpen)
+            {
+                handler.BeginProgrammaticOpen(picker);
+                return;
+            }
+
+            handler.BeginProgrammaticClose();
+        }
+        finally
+        {
+            handler._isMappingIsOpen = false;
+        }
     }
 
     public static void MapIsEnabled(MiragePickerHandler handler, IPicker picker)
@@ -167,26 +269,98 @@ internal sealed class MiragePickerHandler : MirageViewHandler<IPicker>, IMirageR
         handler.RequestRender();
     }
 
-    public static void MapSizeRequests(MiragePickerHandler handler, IPicker picker)
+    public static void MapFocus(MiragePickerHandler handler, IPicker picker, object? args)
     {
-        if (!MirageCommonViewProjection.MapSizeRequests(handler, picker))
+        var focusRequest = args as FocusRequest;
+
+        if (!picker.IsEnabled
+            || handler.Coordinator is not { } coordinator
+            || string.IsNullOrWhiteSpace(handler.PlatformView.NodeId))
         {
+            focusRequest?.TrySetResult(false);
             return;
         }
 
-        handler.RequestRender();
+        var focused = coordinator.TrySetNodeFocus(handler.PlatformView.NodeId, isFocused: true);
+        if (!focused)
+        {
+            focusRequest?.TrySetResult(false);
+            return;
+        }
+
+        if (picker.IsOpen)
+        {
+            handler.ReissueProgrammaticOpen(picker);
+        }
+        else
+        {
+            picker.IsOpen = true;
+        }
+
+        focusRequest?.TrySetResult(focused);
     }
 
-    public static void MapSizeRequestsAndLayoutAlignment(MiragePickerHandler handler, IPicker picker)
+    public static void MapUnfocus(MiragePickerHandler handler, IPicker picker, object? args)
     {
-        var changed = MirageCommonViewProjection.MapSizeRequests(handler, picker);
-        changed |= MirageCommonViewProjection.MapLayoutAlignment(handler, picker);
-        if (!changed)
+        _ = picker;
+        _ = args;
+
+        if (handler.Coordinator is null
+            || string.IsNullOrWhiteSpace(handler.PlatformView.NodeId))
         {
             return;
         }
 
-        handler.RequestRender();
+        handler.BeginProgrammaticClose();
+        handler.OnRuntimeIsOpenChanged(isOpen: false);
+    }
+
+    private void MapPicker(IPicker picker)
+    {
+        if (!ApplyPickerProjectionCore(picker))
+        {
+            return;
+        }
+
+        RequestRender();
+    }
+
+    private bool ApplyPickerProjectionCore(IPicker picker)
+    {
+        using var _ = BeginRenderBatch();
+
+        var changed = UpdateBackgroundProjection(picker);
+        changed |= UpdateCharacterSpacingProjection(picker);
+        changed |= UpdateFontProjection(picker);
+        changed |= UpdateTitleProjection(picker);
+        changed |= UpdateSelectedValueProjection(picker);
+        changed |= UpdateSelectedOptionProjection(picker);
+        changed |= UpdateDisplayedTextColor(picker);
+        changed |= UpdateHorizontalTextAlignmentProjection(picker);
+        changed |= UpdateVerticalTextAlignmentProjection(picker);
+        changed |= UpdateEnabledProjection(picker);
+        return changed;
+    }
+
+    private void ReissueProgrammaticOpen(IPicker picker)
+    {
+        if (_isApplyingRuntimeIsOpen
+            || _isMappingIsOpen
+            || Coordinator is not { }
+            || string.IsNullOrWhiteSpace(PlatformView.NodeId))
+        {
+            return;
+        }
+
+        _isMappingIsOpen = true;
+        try
+        {
+            BeginProgrammaticOpen(picker);
+        }
+        finally
+        {
+            _isMappingIsOpen = false;
+        }
     }
 
     private bool RebuildOptions(IPicker picker)
@@ -215,7 +389,6 @@ internal sealed class MiragePickerHandler : MirageViewHandler<IPicker>, IMirageR
         changed |= UpdateSelectedValueProjection(picker);
         changed |= UpdateSelectedOptionProjection(picker);
         changed |= UpdateDisplayedTextColor(picker);
-
         return changed;
     }
 
@@ -266,9 +439,27 @@ internal sealed class MiragePickerHandler : MirageViewHandler<IPicker>, IMirageR
         return changed;
     }
 
+    private bool UpdateBackgroundProjection(IPicker picker)
+    {
+        return MirageCommonViewProjection.MapBackground(this, picker);
+    }
+
+    private bool UpdateCharacterSpacingProjection(IPicker picker)
+    {
+        return MirageCommonViewProjection.MapCharacterSpacing(this, picker);
+    }
+
+    private bool UpdateFontProjection(IPicker picker)
+    {
+        return MirageCommonViewProjection.MapFont(this, picker);
+    }
+
     private bool UpdateTitleProjection(IPicker picker)
     {
-        var title = string.IsNullOrWhiteSpace(picker.Title) ? null : picker.Title;
+        var semanticLabel = picker.Semantics?.Description;
+        var title = string.IsNullOrWhiteSpace(semanticLabel) && !string.IsNullOrWhiteSpace(picker.Title)
+            ? picker.Title
+            : null;
         return SetPropertyIfChanged("Title", title);
     }
 
@@ -331,13 +522,217 @@ internal sealed class MiragePickerHandler : MirageViewHandler<IPicker>, IMirageR
         return SetStyleIfChanged("color", cssColor);
     }
 
+    private bool UpdateHorizontalTextAlignmentProjection(IPicker picker)
+    {
+        var alignment = picker.HorizontalTextAlignment switch
+        {
+            TextAlignment.Center => "center",
+            TextAlignment.End => "end",
+            _ => "start"
+        };
+
+        return SetStyleIfChanged("textAlign", alignment);
+    }
+
+    private bool UpdateVerticalTextAlignmentProjection(IPicker picker)
+    {
+        string paddingTop;
+        string paddingBottom;
+
+        switch (picker.VerticalTextAlignment)
+        {
+            case TextAlignment.Start:
+                paddingTop = "0px";
+                paddingBottom = EdgeVerticalInset;
+                break;
+            case TextAlignment.End:
+                paddingTop = EdgeVerticalInset;
+                paddingBottom = "0px";
+                break;
+            default:
+                paddingTop = CenterVerticalInset;
+                paddingBottom = CenterVerticalInset;
+                break;
+        }
+
+        var changed = SetStyleIfChanged("paddingTop", paddingTop);
+        changed |= SetStyleIfChanged("paddingBottom", paddingBottom);
+        return changed;
+    }
+
     private bool UpdateEnabledProjection(IPicker picker)
     {
         var isEnabled = picker.IsEnabled;
         var changed = SetPropertyIfChanged("Disabled", isEnabled ? null : "disabled");
-        changed |= SetStyleIfChanged("cursor", isEnabled ? "default" : "not-allowed");
-        changed |= SetStyleIfChanged("pointerEvents", isEnabled ? "auto" : "none");
+        changed |= SetStyleIfChanged("cursor", isEnabled ? "pointer" : "default");
         return changed;
+    }
+
+    private void OnRuntimeSelectionChanged(string? payload)
+    {
+        if (!VirtualView.IsEnabled)
+        {
+            return;
+        }
+
+        var selectedIndex = ParseSelectedIndex(VirtualView, payload);
+        if (VirtualView.SelectedIndex != selectedIndex)
+        {
+            VirtualView.SelectedIndex = selectedIndex;
+        }
+
+        OnRuntimeIsOpenChanged(isOpen: false);
+    }
+
+    private void OnRuntimeIsOpenChanged(bool isOpen)
+    {
+        if (VirtualView.IsOpen == isOpen)
+        {
+            return;
+        }
+
+        if (!isOpen)
+        {
+            InvalidateOpenAttemptVersion();
+            ResetOpenRetryState();
+        }
+
+        _isApplyingRuntimeIsOpen = true;
+        try
+        {
+            VirtualView.IsOpen = isOpen;
+        }
+        finally
+        {
+            _isApplyingRuntimeIsOpen = false;
+        }
+    }
+
+    private void BeginProgrammaticOpen(IPicker picker)
+    {
+        ResetOpenRetryState();
+        var attemptVersion = BeginOpenAttemptVersion();
+
+        if (!picker.IsEnabled)
+        {
+            OnRuntimeIsOpenChanged(isOpen: false);
+            return;
+        }
+
+        if (Coordinator is not { } coordinator || string.IsNullOrWhiteSpace(PlatformView.NodeId))
+        {
+            OnRuntimeIsOpenChanged(isOpen: false);
+            return;
+        }
+
+        if (coordinator.TryRequestNodePickerOpen(PlatformView.NodeId))
+        {
+            ResetOpenRetryState();
+            return;
+        }
+
+        _remainingOpenRetryAttempts = MaxOpenRetryAttempts;
+        ScheduleOpenRetryOrRollback(attemptVersion);
+    }
+
+    private void BeginProgrammaticClose()
+    {
+        InvalidateOpenAttemptVersion();
+
+        if (Coordinator is { } coordinator && !string.IsNullOrWhiteSpace(PlatformView.NodeId))
+        {
+            _ = coordinator.TrySetNodeFocus(PlatformView.NodeId, isFocused: false);
+        }
+
+        ResetOpenRetryState();
+    }
+
+    private void ScheduleOpenRetryOrRollback(long attemptVersion)
+    {
+        if (_isOpenRetryScheduled || Coordinator is not { } coordinator)
+        {
+            return;
+        }
+
+        _isOpenRetryScheduled = true;
+        if (coordinator.DispatchDelayed(OpenRetryDelay, () => RetryOpenAfterDelay(attemptVersion)))
+        {
+            return;
+        }
+
+        _isOpenRetryScheduled = false;
+        _remainingOpenRetryAttempts = 0;
+        if (IsCurrentAttemptVersion(attemptVersion))
+        {
+            OnRuntimeIsOpenChanged(isOpen: false);
+        }
+    }
+
+    private void RetryOpenAfterDelay(long attemptVersion)
+    {
+        if (!IsCurrentAttemptVersion(attemptVersion))
+        {
+            return;
+        }
+
+        _isOpenRetryScheduled = false;
+
+        if (!VirtualView.IsOpen)
+        {
+            ResetOpenRetryState();
+            return;
+        }
+
+        if (!VirtualView.IsEnabled)
+        {
+            ResetOpenRetryState();
+            OnRuntimeIsOpenChanged(isOpen: false);
+            return;
+        }
+
+        if (Coordinator is not { } coordinator || string.IsNullOrWhiteSpace(PlatformView.NodeId))
+        {
+            ResetOpenRetryState();
+            OnRuntimeIsOpenChanged(isOpen: false);
+            return;
+        }
+
+        if (coordinator.TryRequestNodePickerOpen(PlatformView.NodeId))
+        {
+            ResetOpenRetryState();
+            return;
+        }
+
+        if (_remainingOpenRetryAttempts > 1)
+        {
+            _remainingOpenRetryAttempts--;
+            ScheduleOpenRetryOrRollback(attemptVersion);
+            return;
+        }
+
+        ResetOpenRetryState();
+        OnRuntimeIsOpenChanged(isOpen: false);
+    }
+
+    private void ResetOpenRetryState()
+    {
+        _isOpenRetryScheduled = false;
+        _remainingOpenRetryAttempts = 0;
+    }
+
+    private long BeginOpenAttemptVersion()
+    {
+        return Interlocked.Increment(ref _openAttemptVersion);
+    }
+
+    private void InvalidateOpenAttemptVersion()
+    {
+        _ = Interlocked.Increment(ref _openAttemptVersion);
+    }
+
+    private bool IsCurrentAttemptVersion(long attemptVersion)
+    {
+        return Interlocked.Read(ref _openAttemptVersion) == attemptVersion;
     }
 
     private bool SetPropertyIfChanged(string propertyName, string? value)
@@ -364,12 +759,9 @@ internal sealed class MiragePickerHandler : MirageViewHandler<IPicker>, IMirageR
 
     private static string? ResolvePickerTextColor(IPicker picker)
     {
-        if (picker is not ITextStyle textStyle)
-        {
-            return null;
-        }
-
-        return MirageCommonViewProjection.ToCssColor(textStyle.TextColor);
+        return picker is ITextStyle textStyle
+            ? MirageCommonViewProjection.ToCssColor(textStyle.TextColor)
+            : null;
     }
 
     private static int NormalizeSelectedIndex(IPicker picker, int selectedIndex)
@@ -394,5 +786,80 @@ internal sealed class MiragePickerHandler : MirageViewHandler<IPicker>, IMirageR
     private static bool HasPlaceholder(IPicker picker)
     {
         return !string.IsNullOrWhiteSpace(picker.Title);
+    }
+
+    private static Size ResolveMeasuredSizeWithConstraints(
+        IPicker picker,
+        double widthConstraint,
+        double heightConstraint,
+        double measuredWidth,
+        double measuredHeight)
+    {
+        var clampedWidth = ResolveDesiredDimension(widthConstraint, measuredWidth);
+        var clampedHeight = ResolveDesiredDimension(heightConstraint, measuredHeight);
+        var (requestedWidth, requestedMinimumWidth, requestedMaximumWidth) = ResolveRequestedDimensionRequests(picker, isWidth: true);
+        var (requestedHeight, requestedMinimumHeight, requestedMaximumHeight) = ResolveRequestedDimensionRequests(picker, isWidth: false);
+        return new Size(
+            ResolveConstraints(clampedWidth, requestedWidth, requestedMinimumWidth, requestedMaximumWidth),
+            ResolveConstraints(clampedHeight, requestedHeight, requestedMinimumHeight, requestedMaximumHeight));
+    }
+
+    private static double ResolveDesiredDimension(double constraint, double fallback)
+    {
+        if (double.IsNaN(constraint) || double.IsInfinity(constraint))
+        {
+            return Math.Max(0, fallback);
+        }
+
+        return Math.Max(0, Math.Min(constraint, fallback));
+    }
+
+    private static double ResolveConstraints(double measured, double exact, double min, double max)
+    {
+        var resolved = measured;
+        var resolvedMin = ResolveMinimum(min);
+
+        if (IsExplicitLengthSet(exact))
+        {
+            resolved = exact;
+        }
+
+        if (IsExplicitLengthSet(max) && resolved > max)
+        {
+            resolved = max;
+        }
+
+        if (resolved < resolvedMin)
+        {
+            resolved = resolvedMin;
+        }
+
+        return resolved;
+    }
+
+    private static double ResolveMinimum(double value)
+    {
+        return IsExplicitLengthSet(value)
+            ? value
+            : 0;
+    }
+
+    private static bool IsExplicitLengthSet(double value)
+    {
+        return double.IsFinite(value) && value >= 0;
+    }
+
+    private static (double Exact, double Minimum, double Maximum) ResolveRequestedDimensionRequests(IPicker picker, bool isWidth)
+    {
+        if (picker is VisualElement visualElement)
+        {
+            return isWidth
+                ? (visualElement.WidthRequest, visualElement.MinimumWidthRequest, visualElement.MaximumWidthRequest)
+                : (visualElement.HeightRequest, visualElement.MinimumHeightRequest, visualElement.MaximumHeightRequest);
+        }
+
+        return isWidth
+            ? (double.NaN, picker.MinimumWidth, picker.MaximumWidth)
+            : (double.NaN, picker.MinimumHeight, picker.MaximumHeight);
     }
 }

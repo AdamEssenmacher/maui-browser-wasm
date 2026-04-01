@@ -277,6 +277,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(RadioButtonParityProbePage),
             description: "Mirage parity probe: exercises RadioButton named/parent-scope group selection, SelectedValue roundtrip, content/style updates, and enabled-state interaction gating."),
         new(
+            id: "pickerparitypage",
+            title: "PickerParityProbePage",
+            upstreamPath: "App/PickerParityProbePage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(PickerParityProbePage),
+            description: "Mirage parity probe: exercises Picker placeholder/title-color behavior, ItemsSource + SelectedItem + ItemDisplayBinding refresh, open-state requests, and enabled/style projection."),
+        new(
             id: "datepickerparitypage",
             title: "DatePickerParityProbePage",
             upstreamPath: "App/DatePickerParityProbePage.cs",
@@ -378,6 +385,7 @@ public static class ControlsSampleCatalog
             ["shapesparitypage"] = ControlsSampleCategory.ParityProbes,
             ["editorparitypage"] = ControlsSampleCategory.ParityProbes,
             ["radiobuttonparitypage"] = ControlsSampleCategory.ParityProbes,
+            ["pickerparitypage"] = ControlsSampleCategory.ParityProbes,
             ["datepickerparitypage"] = ControlsSampleCategory.ParityProbes,
             ["timepickerparitypage"] = ControlsSampleCategory.ParityProbes,
 

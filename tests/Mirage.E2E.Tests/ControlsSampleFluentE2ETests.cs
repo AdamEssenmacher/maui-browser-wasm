@@ -148,6 +148,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ["shapesparitypage"] = "parityprobes",
             ["editorparitypage"] = "parityprobes",
             ["radiobuttonparitypage"] = "parityprobes",
+            ["pickerparitypage"] = "parityprobes",
             ["timepickerparitypage"] = "parityprobes",
             ["datepickerparitypage"] = "parityprobes",
 
@@ -381,7 +382,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ("layouts", ["gridpage", "scrollviewpage"], ["buttonpage", "indicatorviewparitypage"]),
             ("controls", ["buttonpage", "mapsgallery"], ["gridpage", "borderpage"]),
             ("core", ["brushespage", "borderpage"], ["sliderpage", "editorparitypage"]),
-            ("parityprobes", ["editorparitypage", "timepickerparitypage", "carouselviewparitypage", "datepickerparitypage"], ["gridpage", "boxviewpage"]),
+            ("parityprobes", ["editorparitypage", "pickerparitypage", "timepickerparitypage", "carouselviewparitypage", "datepickerparitypage"], ["gridpage", "boxviewpage"]),
             ("compatibility", ["tabbedpagegallerymainpage"], ["gridpage", "shapesparitypage"])
         };
 
@@ -859,6 +860,200 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await WaitForLabelTextContainsAsync(page, styleLabel, "enabled=True");
         await page.Locator($"{namedVenusHost} input.mirage-radiobutton-input").ClickAsync();
         await WaitForLabelTextContainsAsync(page, selectedValueLabel, "namedSelected=venus");
+    }
+
+    [Fact]
+    public async Task PickerParityProbe_ProjectsSelectionPlaceholderItemsSourceAndOpenState()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1160, height: 860);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "pickerparitypage");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-pickerparitypage']");
+            });
+
+        const string hostSelector = "[data-automation-id='controls-sample-picker-parity-host']";
+        const string itemsHostSelector = "[data-automation-id='controls-sample-picker-parity-items-host']";
+        const string selectionStateSelector = "[data-automation-id='controls-sample-picker-parity-selection-state']";
+        const string openStateSelector = "[data-automation-id='controls-sample-picker-parity-open-state']";
+        const string styleStateSelector = "[data-automation-id='controls-sample-picker-parity-style-state']";
+        const string itemsStateSelector = "[data-automation-id='controls-sample-picker-parity-items-state']";
+
+        await page.WaitForSelectorAsync(hostSelector);
+        Assert.Equal("Picker", await page.GetAttributeAsync(hostSelector, "data-mirage-kind"));
+        Assert.Equal("Picker", await page.GetAttributeAsync(itemsHostSelector, "data-mirage-kind"));
+        Assert.Equal("Choose planet", await page.GetAttributeAsync(hostSelector, "aria-label"));
+
+        var initialPrimaryOptions = await page.EvaluateAsync<string[]>(
+            """
+            (selector) => {
+                const select = document.querySelector(selector);
+                if (!(select instanceof HTMLSelectElement)) {
+                    return [];
+                }
+
+                return Array.from(select.options)
+                    .map(option => `${option.text}|${option.value}|${option.disabled}|${option.selected}`);
+            }
+            """,
+            hostSelector);
+        Assert.Equal("Choose planet||true|true", initialPrimaryOptions[0]);
+        Assert.Equal("Mercury|0|false|false", initialPrimaryOptions[1]);
+        Assert.Equal("Venus|1|false|false", initialPrimaryOptions[2]);
+        Assert.Equal("Earth|2|false|false", initialPrimaryOptions[3]);
+
+        var initialPrimaryColor = await page.EvaluateAsync<string>(
+            "selector => getComputedStyle(document.querySelector(selector)).color",
+            hostSelector);
+        Assert.Contains("192", initialPrimaryColor, StringComparison.Ordinal);
+
+        await page.Locator("[data-automation-id='controls-sample-picker-parity-select-earth']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, selectionStateSelector, "selectedIndex=2 selectedItem=Earth");
+        await WaitForInputValueContainsAsync(page, hostSelector, "2");
+
+        var selectedPrimaryColor = await page.EvaluateAsync<string>(
+            "selector => getComputedStyle(document.querySelector(selector)).color",
+            hostSelector);
+        Assert.Contains("17", selectedPrimaryColor, StringComparison.Ordinal);
+
+        await page.Locator("[data-automation-id='controls-sample-picker-parity-open']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "isOpen=True");
+
+        await page.Locator("[data-automation-id='controls-sample-picker-parity-close']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "isOpen=False");
+
+        await page.Locator("[data-automation-id='controls-sample-picker-parity-toggle-enabled']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "enabled=False");
+        Assert.Equal("disabled", await page.GetAttributeAsync(hostSelector, "disabled"));
+
+        await page.EvaluateAsync(
+            """
+            (selector) => {
+                const select = document.querySelector(selector);
+                if (!(select instanceof HTMLSelectElement)) {
+                    return;
+                }
+
+                select.value = "1";
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            """,
+            hostSelector);
+        await WaitForLabelTextContainsAsync(page, selectionStateSelector, "selectedIndex=2 selectedItem=Earth");
+
+        await page.Locator("[data-automation-id='controls-sample-picker-parity-toggle-enabled']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "enabled=True");
+        await page.EvaluateAsync(
+            """
+            (selector) => {
+                const select = document.querySelector(selector);
+                if (!(select instanceof HTMLSelectElement)) {
+                    return;
+                }
+
+                select.value = "1";
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            """,
+            hostSelector);
+        await WaitForLabelTextContainsAsync(page, selectionStateSelector, "selectedIndex=1 selectedItem=Venus");
+        await WaitForInputValueContainsAsync(page, hostSelector, "1");
+
+        await page.Locator("[data-automation-id='controls-sample-picker-parity-toggle-style']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, styleStateSelector, "style=alt");
+        await WaitForLabelTextContainsAsync(page, styleStateSelector, "hAlign=End");
+        await WaitForLabelTextContainsAsync(page, styleStateSelector, "vAlign=End");
+
+        var styledTextAlign = await page.EvaluateAsync<string>(
+            "selector => document.querySelector(selector)?.style.textAlign ?? ''",
+            hostSelector);
+        Assert.Equal("end", styledTextAlign);
+        var styledBackground = await page.EvaluateAsync<string>(
+            "selector => getComputedStyle(document.querySelector(selector)).backgroundColor",
+            hostSelector);
+        Assert.Contains("219", styledBackground, StringComparison.Ordinal);
+
+        var initialItemsOptions = await page.EvaluateAsync<string[]>(
+            """
+            (selector) => {
+                const select = document.querySelector(selector);
+                if (!(select instanceof HTMLSelectElement)) {
+                    return [];
+                }
+
+                return Array.from(select.options).map(option => option.text);
+            }
+            """,
+            itemsHostSelector);
+        Assert.Equal("Choose object planet", initialItemsOptions[0]);
+        Assert.Equal("Planet Mercury", initialItemsOptions[1]);
+        Assert.Equal("Planet Venus", initialItemsOptions[2]);
+        Assert.Equal("Planet Earth", initialItemsOptions[3]);
+        await WaitForLabelTextContainsAsync(page, itemsStateSelector, "binding=Display");
+        await WaitForLabelTextContainsAsync(page, itemsStateSelector, "selectedItem=Venus");
+
+        await page.Locator("[data-automation-id='controls-sample-picker-parity-toggle-binding']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, itemsStateSelector, "binding=Name");
+
+        var reboundOptions = await page.EvaluateAsync<string[]>(
+            """
+            (selector) => {
+                const select = document.querySelector(selector);
+                if (!(select instanceof HTMLSelectElement)) {
+                    return [];
+                }
+
+                return Array.from(select.options).map(option => option.text);
+            }
+            """,
+            itemsHostSelector);
+        Assert.Equal("Mercury", reboundOptions[1]);
+        Assert.Equal("Venus", reboundOptions[2]);
+        Assert.Equal("Earth", reboundOptions[3]);
+
+        await page.EvaluateAsync(
+            """
+            (selector) => {
+                const select = document.querySelector(selector);
+                if (!(select instanceof HTMLSelectElement)) {
+                    return;
+                }
+
+                select.value = "2";
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+            """,
+            itemsHostSelector);
+        await WaitForLabelTextContainsAsync(page, itemsStateSelector, "selectedItem=Earth");
+
+        await page.Locator("[data-automation-id='controls-sample-picker-parity-replace-source']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, itemsStateSelector, "source=alt");
+        await WaitForLabelTextContainsAsync(page, itemsStateSelector, "selectedItem=Jupiter");
+
+        var replacedOptions = await page.EvaluateAsync<string[]>(
+            """
+            (selector) => {
+                const select = document.querySelector(selector);
+                if (!(select instanceof HTMLSelectElement)) {
+                    return [];
+                }
+
+                return Array.from(select.options).map(option => option.text);
+            }
+            """,
+            itemsHostSelector);
+        Assert.Equal("Mars", replacedOptions[1]);
+        Assert.Equal("Jupiter", replacedOptions[2]);
+        Assert.Equal("Saturn", replacedOptions[3]);
+
+        await page.Locator("[data-automation-id='controls-sample-picker-parity-select-last-item']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, itemsStateSelector, "selectedItem=Saturn");
+        await WaitForInputValueContainsAsync(page, itemsHostSelector, "2");
     }
 
     [Fact]

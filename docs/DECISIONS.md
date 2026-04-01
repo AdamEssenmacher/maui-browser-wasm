@@ -2,6 +2,13 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-04-01 (Picker parity wave: MAUI-shaped handler + native select host)
+- Refactored `MiragePickerHandler` to mirror MAUI `PickerHandler` shape with explicit property/command parity keys, a real `CommandMapper` (`Focus` / `Unfocus`), and legacy browser sizing fallback (`180x36`) resolved through explicit/min/max request constraints.
+- Picker realization stays on the built-in `ControlNode` path (`ComponentKind.Picker`) with a native browser `<select>` host, deterministic placeholder-option rebuild semantics for `Title`, and two-way `SelectedIndex` synchronization from runtime `change`.
+- `IsOpen` now reuses the generic runtime picker-open request seam plus normal blur/focus-off close behavior; successful open requests are the strongest browser signal available, while raw browser focus alone does not claim open-state ownership.
+- Controls remap coverage remains MAUI-authored rather than Mirage-specific: `ItemsSource`, `ItemDisplayBinding`, and `SelectedItem` flow through the existing MAUI `Picker` control logic and the handler simply rebuilds the `Items` surface when MAUI tells it to.
+- Added parity governance artifacts, dedicated integration coverage, and a ControlsSample parity probe page (`PickerParityProbePage`) so Picker now has the same contract/probe discipline as DatePicker and TimePicker.
+
 ## 2026-03-31 (CarouselView parity wave: MAUI-shaped ItemsView handler + snap carousel runtime)
 - Added `MirageCarouselViewHandler : MirageItemsViewHandler<CarouselView>` and registered `CarouselView` in `UseMirageBrowserPlatform`, keeping the handler aligned to MAUI's direct `ItemsViewHandler<CarouselView>` shape instead of routing through the `CollectionView` chain.
 - Browser realization now uses a stable scroll host + items track with CSS scroll-snap, two-way `Position`/`CurrentItem` synchronization, `PeekAreaInsets` sizing, `IsSwipeEnabled` gating, `IsBounceEnabled` overscroll approximation, and linked `IndicatorView` behavior through MAUI's existing binding-based linkage.
