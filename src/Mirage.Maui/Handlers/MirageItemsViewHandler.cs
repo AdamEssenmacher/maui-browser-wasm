@@ -49,6 +49,12 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
     private int? _preferredSingleSelectionIndexHint;
     private List<int?>? _preferredMultipleSelectionIndexHints;
 
+    protected IReadOnlyList<object?> ItemsSnapshot => _itemsSnapshot;
+
+    protected IReadOnlyList<CollectionItemRealization> ItemRealizations => _itemRealizations;
+
+    protected MiragePlatformView? ItemsHost => _itemsHost;
+
     internal static readonly string[] ParityPropertyKeys =
     {
         nameof(ItemsView.ItemsSource),
@@ -155,6 +161,25 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
     {
     }
 
+    protected virtual void OnRuntimeScrollPositionChanged(double left, double top)
+    {
+        VirtualView.SendScrolled(new ItemsViewScrolledEventArgs
+        {
+            HorizontalOffset = left,
+            VerticalOffset = top
+        });
+    }
+
+    protected virtual void OnItemsRealizationsChanged(bool applyMutationScrollMode)
+    {
+        _ = applyMutationScrollMode;
+    }
+
+    protected virtual LinearItemsLayout? ResolveLinearItemsLayout()
+    {
+        return GetStructuredItemsView()?.ItemsLayout as LinearItemsLayout;
+    }
+
     public void OnRuntimeEvent(string eventName, string? payload)
     {
         _ = payload;
@@ -178,11 +203,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
             return;
         }
 
-        VirtualView.SendScrolled(new ItemsViewScrolledEventArgs
-        {
-            HorizontalOffset = left,
-            VerticalOffset = top
-        });
+        OnRuntimeScrollPositionChanged(left, top);
     }
 
     public static void MapItemsSource(MirageItemsViewHandler<TItemsView> handler, TItemsView itemsView)
@@ -303,7 +324,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         _footerRealization = RealizeHostedView(_footerHost, footerView, "footer");
     }
 
-    protected void ApplyItemsLayout()
+    protected virtual void ApplyItemsLayout()
     {
         if (_itemsHost is null)
         {
@@ -311,7 +332,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         }
 
         var structuredItemsView = GetStructuredItemsView();
-        var layout = structuredItemsView?.ItemsLayout;
+        var layout = ResolveLinearItemsLayout();
 
         _itemsHost.SetStyle("display", "flex");
         _itemsHost.SetStyle("flexDirection", "column");
@@ -319,10 +340,10 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         _itemsHost.SetStyle("rowGap", null);
         _itemsHost.SetStyle("columnGap", null);
 
-        if (layout is LinearItemsLayout linearLayout)
+        if (layout is not null)
         {
-            var spacing = ResolveItemSpacing(linearLayout.ItemSpacing);
-            var isHorizontal = linearLayout.Orientation == ItemsLayoutOrientation.Horizontal;
+            var spacing = ResolveItemSpacing(layout.ItemSpacing);
+            var isHorizontal = layout.Orientation == ItemsLayoutOrientation.Horizontal;
             _itemsHost.SetStyle("flexDirection", isHorizontal ? "row" : "column");
             if (isHorizontal)
             {
@@ -336,9 +357,9 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
             return;
         }
 
-        if (layout is not null)
+        if (structuredItemsView?.ItemsLayout is not null)
         {
-            ReportUnsupported(nameof(StructuredItemsView.ItemsLayout), layout, "fallback=LinearItemsLayout(vertical)");
+            ReportUnsupported(nameof(StructuredItemsView.ItemsLayout), structuredItemsView.ItemsLayout, "fallback=LinearItemsLayout(vertical)");
         }
     }
 
@@ -540,6 +561,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
             NormalizeSelectionForCurrentItems();
             ApplySelectionInteractivity();
             ApplySelectionFromVirtualView();
+            OnItemsRealizationsChanged(applyMutationScrollMode);
         }
 
         RequestRender();
@@ -759,6 +781,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         NormalizeSelectionForCurrentItems();
         ApplySelectionInteractivity();
         ApplySelectionFromVirtualView();
+        OnItemsRealizationsChanged(applyMutationScrollMode: true);
         RequestRender();
         ScheduleItemsUpdatingScrollModeAfterMutation();
     }
@@ -784,7 +807,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         ApplyScrollToRequest(e);
     }
 
-    private void ApplyScrollToRequest(ScrollToRequestEventArgs request)
+    protected virtual void ApplyScrollToRequest(ScrollToRequestEventArgs request)
     {
         if (Coordinator is null || _itemRealizations.Count == 0 || string.IsNullOrWhiteSpace(PlatformView.NodeId))
         {
@@ -825,7 +848,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         SendProgrammaticScrolled(actualLeft, actualTop);
     }
 
-    private int ResolveScrollToTargetIndex(ScrollToRequestEventArgs request)
+    protected virtual int ResolveScrollToTargetIndex(ScrollToRequestEventArgs request)
     {
         if (GetGroupableItemsView()?.IsGrouped == true && (request.Group is not null || request.GroupIndex >= 0))
         {
@@ -909,16 +932,12 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         SendProgrammaticScrolled(actualLeft, actualTop);
     }
 
-    private void SendProgrammaticScrolled(double horizontalOffset, double verticalOffset)
+    protected virtual void SendProgrammaticScrolled(double horizontalOffset, double verticalOffset)
     {
         _suppressNextRuntimeScrollEvent = true;
         _suppressedRuntimeScrollLeft = horizontalOffset;
         _suppressedRuntimeScrollTop = verticalOffset;
-        VirtualView.SendScrolled(new ItemsViewScrolledEventArgs
-        {
-            HorizontalOffset = horizontalOffset,
-            VerticalOffset = verticalOffset
-        });
+        OnRuntimeScrollPositionChanged(horizontalOffset, verticalOffset);
     }
 
     private bool TryConsumeSuppressedRuntimeScrollEvent(double left, double top)
@@ -954,7 +973,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         return realizations;
     }
 
-    private CollectionItemRealization? CreateItemRealization(object? item)
+    protected CollectionItemRealization? CreateItemRealization(object? item)
     {
         var itemView = CreateItemView(item);
         if (itemView is BindableObject bindableView)
@@ -1175,7 +1194,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         PlatformView.SetStyle("direction", direction);
     }
 
-    protected void ApplyScrollStyles()
+    protected virtual void ApplyScrollStyles()
     {
         var orientation = ResolveItemsLayoutOrientation();
         var horizontalOverflow = ResolveScrollOverflowStyle(VirtualView.HorizontalScrollBarVisibility);
@@ -1185,7 +1204,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         PlatformView.SetStyle("overflowY", orientation == ItemsLayoutOrientation.Horizontal ? "hidden" : verticalOverflow);
     }
 
-    private static string ResolveScrollOverflowStyle(ScrollBarVisibility visibility)
+    protected static string ResolveScrollOverflowStyle(ScrollBarVisibility visibility)
     {
         return visibility switch
         {
@@ -1195,9 +1214,9 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         };
     }
 
-    private ItemsLayoutOrientation ResolveItemsLayoutOrientation()
+    protected virtual ItemsLayoutOrientation ResolveItemsLayoutOrientation()
     {
-        if (GetStructuredItemsView()?.ItemsLayout is LinearItemsLayout linearLayout)
+        if (ResolveLinearItemsLayout() is { } linearLayout)
         {
             return linearLayout.Orientation;
         }
@@ -1205,7 +1224,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         return ItemsLayoutOrientation.Vertical;
     }
 
-    private static double ResolveItemSpacing(double spacing)
+    protected static double ResolveItemSpacing(double spacing)
     {
         if (!double.IsFinite(spacing))
         {
@@ -1422,7 +1441,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         return selectedIndexes;
     }
 
-    private int FindFirstIndexForItem(object? selectedItem)
+    protected int FindFirstIndexForItem(object? selectedItem)
     {
         for (var i = 0; i < _itemsSnapshot.Count; i++)
         {
@@ -2042,7 +2061,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
         _itemsHost?.ClearChildren();
     }
 
-    private void DisconnectItem(CollectionItemRealization realization, bool removeFromDom)
+    protected void DisconnectItem(CollectionItemRealization realization, bool removeFromDom)
     {
         if (removeFromDom && _itemsHost is not null)
         {
@@ -2183,7 +2202,7 @@ internal abstract class MirageItemsViewHandler<TItemsView> : MirageViewHandler<T
 #pragma warning restore CS0618
     }
 
-    private sealed record CollectionItemRealization(
+    protected sealed record CollectionItemRealization(
         object? Item,
         View View,
         IElementHandler? Handler,

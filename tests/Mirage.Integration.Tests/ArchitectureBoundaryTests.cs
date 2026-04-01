@@ -414,6 +414,17 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void BrowserPlatform_RegistersCarouselViewHandler()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var text = File.ReadAllText(hostingPath);
+        Assert.Contains("typeof(CarouselView)", text, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageCarouselViewHandler)", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BrowserPlatform_RegistersSearchBarHandlerAsBuiltInControlNode()
     {
         var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
@@ -595,6 +606,22 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("TryScrollNodeChildIntoView(", runtimeText, StringComparison.Ordinal);
         Assert.DoesNotContain("TryCollectionViewScrollTo", coordinatorText, StringComparison.Ordinal);
         Assert.DoesNotContain("TryCollectionViewScrollTo", runtimeText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void CarouselViewHandler_UsesDirectItemsViewHierarchy_WithoutCollectionSpecificLayers()
+    {
+        var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");
+        Assert.True(Directory.Exists(handlersPath), $"Handlers path was not found: {handlersPath}");
+
+        var itemsText = File.ReadAllText(Path.Combine(handlersPath, "MirageItemsViewHandler.cs"));
+        var carouselText = File.ReadAllText(Path.Combine(handlersPath, "MirageCarouselViewHandler.cs"));
+
+        Assert.Contains("protected virtual LinearItemsLayout? ResolveLinearItemsLayout()", itemsText, StringComparison.Ordinal);
+        Assert.Contains(": MirageItemsViewHandler<CarouselView>", carouselText, StringComparison.Ordinal);
+        Assert.DoesNotContain("MirageStructuredItemsViewHandler", carouselText, StringComparison.Ordinal);
+        Assert.DoesNotContain("MirageSelectableItemsViewHandler", carouselText, StringComparison.Ordinal);
+        Assert.DoesNotContain("CreateWeb(", carouselText, StringComparison.Ordinal);
     }
 
     [Fact]

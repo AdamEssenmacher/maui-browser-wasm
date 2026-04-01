@@ -1438,6 +1438,19 @@ export function scrollChildIntoView(containerHandle, childHandle, scrollToPositi
   const childWidth = Number.isFinite(childRect.width) ? childRect.width : 0;
   const childHeight = Number.isFinite(childRect.height) ? childRect.height : 0;
   const viewportHeight = Number.isFinite(container.clientHeight) ? container.clientHeight : 0;
+  const computedStyle = typeof window.getComputedStyle === "function"
+    ? window.getComputedStyle(container)
+    : null;
+  const scrollPaddingLeft = parseScrollPaddingValue(computedStyle?.scrollPaddingLeft);
+  const scrollPaddingRight = parseScrollPaddingValue(computedStyle?.scrollPaddingRight);
+  const scrollPaddingTop = parseScrollPaddingValue(computedStyle?.scrollPaddingTop);
+  const scrollPaddingBottom = parseScrollPaddingValue(computedStyle?.scrollPaddingBottom);
+  const viewportLogicalLeft = currentLeft + scrollPaddingLeft;
+  const viewportLogicalRight = currentLeft + viewportWidth - scrollPaddingRight;
+  const viewportLogicalTop = currentTop + scrollPaddingTop;
+  const viewportLogicalBottom = currentTop + viewportHeight - scrollPaddingBottom;
+  const snapportWidth = Math.max(0, viewportWidth - scrollPaddingLeft - scrollPaddingRight);
+  const snapportHeight = Math.max(0, viewportHeight - scrollPaddingTop - scrollPaddingBottom);
 
   let targetLeft = currentLeft;
   let targetTop = currentTop;
@@ -1448,40 +1461,40 @@ export function scrollChildIntoView(containerHandle, childHandle, scrollToPositi
     // ScrollToPosition.Start
     case 1:
       if (horizontal) {
-        targetLeft = relativeLeft;
+        targetLeft = relativeLeft - scrollPaddingLeft;
       } else {
-        targetTop = relativeTop;
+        targetTop = relativeTop - scrollPaddingTop;
       }
       break;
     // ScrollToPosition.Center
     case 2:
       if (horizontal) {
-        targetLeft = relativeLeft - ((viewportWidth - childWidth) / 2);
+        targetLeft = relativeLeft + (childWidth / 2) - (scrollPaddingLeft + (snapportWidth / 2));
       } else {
-        targetTop = relativeTop - ((viewportHeight - childHeight) / 2);
+        targetTop = relativeTop + (childHeight / 2) - (scrollPaddingTop + (snapportHeight / 2));
       }
       break;
     // ScrollToPosition.End
     case 3:
       if (horizontal) {
-        targetLeft = relativeRight - viewportWidth;
+        targetLeft = relativeRight + scrollPaddingRight - viewportWidth;
       } else {
-        targetTop = relativeBottom - viewportHeight;
+        targetTop = relativeBottom + scrollPaddingBottom - viewportHeight;
       }
       break;
     // ScrollToPosition.MakeVisible
     case 0:
     default:
       if (horizontal) {
-        if (relativeLeft < currentLeft) {
-          targetLeft = relativeLeft;
-        } else if (relativeRight > currentLeft + viewportWidth) {
-          targetLeft = relativeRight - viewportWidth;
+        if (relativeLeft < viewportLogicalLeft) {
+          targetLeft = relativeLeft - scrollPaddingLeft;
+        } else if (relativeRight > viewportLogicalRight) {
+          targetLeft = relativeRight + scrollPaddingRight - viewportWidth;
         }
-      } else if (relativeTop < currentTop) {
-        targetTop = relativeTop;
-      } else if (relativeBottom > currentTop + viewportHeight) {
-        targetTop = relativeBottom - viewportHeight;
+      } else if (relativeTop < viewportLogicalTop) {
+        targetTop = relativeTop - scrollPaddingTop;
+      } else if (relativeBottom > viewportLogicalBottom) {
+        targetTop = relativeBottom + scrollPaddingBottom - viewportHeight;
       }
 
       break;
@@ -1505,6 +1518,11 @@ export function scrollChildIntoView(containerHandle, childHandle, scrollToPositi
   const actualLeft = readLogicalScrollLeft(container, maxLeft);
   const actualTop = Number.isFinite(container.scrollTop) ? container.scrollTop : normalizedTop;
   return [actualLeft, actualTop];
+}
+
+function parseScrollPaddingValue(value) {
+  const parsed = typeof value === "string" ? Number.parseFloat(value) : NaN;
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
 let cachedRtlScrollType;

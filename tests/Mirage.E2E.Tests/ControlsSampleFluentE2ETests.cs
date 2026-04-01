@@ -493,6 +493,150 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
+    public async Task CarouselViewParityProbe_ProjectsSnapStateIndicatorAndLayoutUpdates()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1240, height: 900);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await page.Locator("[data-automation-id='controls-sample-open-carouselviewparitypage']").ClickAsync();
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-carouselviewparitypage']");
+            });
+
+        const string hostSelector = "[data-automation-id='controls-sample-carouselview-parity-host']";
+        const string indicatorSelector = "[data-automation-id='controls-sample-carouselview-parity-indicator']";
+        const string positionSelector = "[data-automation-id='controls-sample-carouselview-parity-position']";
+        const string modeSelector = "[data-automation-id='controls-sample-carouselview-parity-mode']";
+
+        await page.WaitForSelectorAsync(hostSelector);
+        Assert.Equal("ContentContainer", await page.GetAttributeAsync(hostSelector, "data-mirage-kind"));
+        await WaitForLabelTextContainsAsync(page, positionSelector, "position=0 current=Alpha");
+        await WaitForIndicatorDotCountAsync(page, indicatorSelector, expectedCount: 4);
+
+        await page.Locator("[data-automation-id='controls-sample-carouselview-parity-toggle-peek']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, modeSelector, "peek=12,0,36,0");
+        Assert.Equal(
+            "12px",
+            await page.EvaluateAsync<string>(
+                """
+                (selector) => getComputedStyle(document.querySelector(selector)).scrollPaddingLeft
+                """,
+                hostSelector));
+        Assert.Equal(
+            "36px",
+            await page.EvaluateAsync<string>(
+                """
+                (selector) => getComputedStyle(document.querySelector(selector)).scrollPaddingRight
+                """,
+                hostSelector));
+
+        await page.Locator("[data-automation-id='controls-sample-carouselview-parity-animate-gamma']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, positionSelector, "position=2 current=Gamma");
+        await page.WaitForFunctionAsync(
+            """
+            (args) => {
+                const host = document.querySelector(args.selector);
+                if (!(host instanceof HTMLElement)) {
+                    return false;
+                }
+
+                const items = Array.from(host.querySelectorAll("*"))
+                    .filter((child) => child instanceof HTMLElement && getComputedStyle(child).scrollSnapAlign === "center")
+                    .map((child) => child);
+                const target = items[args.targetIndex];
+                if (!(target instanceof HTMLElement)) {
+                    return false;
+                }
+
+                const hostRect = host.getBoundingClientRect();
+                const targetRect = target.getBoundingClientRect();
+                const leftPadding = Number.parseFloat(getComputedStyle(host).scrollPaddingLeft || "0") || 0;
+                const rightPadding = Number.parseFloat(getComputedStyle(host).scrollPaddingRight || "0") || 0;
+                const leadingInset = targetRect.left - hostRect.left;
+                const trailingInset = hostRect.right - targetRect.right;
+                return Math.abs(leadingInset - leftPadding) <= 2
+                    && Math.abs(trailingInset - rightPadding) <= 2;
+            }
+            """,
+            new { selector = hostSelector, targetIndex = 2 });
+        var animatedGammaInsets = await page.EvaluateAsync<double[]>(
+            """
+            (args) => {
+                const host = document.querySelector(args.selector);
+                if (!(host instanceof HTMLElement)) {
+                    return [-1, -1, -1, -1];
+                }
+
+                const items = Array.from(host.querySelectorAll("*"))
+                    .filter((child) => child instanceof HTMLElement && getComputedStyle(child).scrollSnapAlign === "center")
+                    .map((child) => child);
+                const target = items[args.targetIndex];
+                if (!(target instanceof HTMLElement)) {
+                    return [-1, -1, -1, -1];
+                }
+
+                const hostRect = host.getBoundingClientRect();
+                const targetRect = target.getBoundingClientRect();
+                const leftPadding = Number.parseFloat(getComputedStyle(host).scrollPaddingLeft || "0") || 0;
+                const rightPadding = Number.parseFloat(getComputedStyle(host).scrollPaddingRight || "0") || 0;
+                const leadingInset = targetRect.left - hostRect.left;
+                const trailingInset = hostRect.right - targetRect.right;
+                return [leadingInset, trailingInset, leftPadding, rightPadding];
+            }
+            """,
+            new { selector = hostSelector, targetIndex = 2 });
+        Assert.InRange(animatedGammaInsets[0], animatedGammaInsets[2] - 2, animatedGammaInsets[2] + 2);
+        Assert.InRange(animatedGammaInsets[1], animatedGammaInsets[3] - 2, animatedGammaInsets[3] + 2);
+
+        await page.Locator($"{indicatorSelector} .mirage-indicator-dot").Nth(1).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, positionSelector, "position=1 current=Beta");
+
+        await page.Locator("[data-automation-id='controls-sample-carouselview-parity-toggle-swipe']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, modeSelector, "swipe=False");
+        await page.Locator("[data-automation-id='controls-sample-carouselview-parity-next-position']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, positionSelector, "position=2 current=Gamma");
+
+        await page.Locator("[data-automation-id='controls-sample-carouselview-parity-toggle-swipe']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, modeSelector, "swipe=True");
+        await page.Locator("[data-automation-id='controls-sample-carouselview-parity-toggle-orientation']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, modeSelector, "orientation=Vertical");
+        await page.Locator("[data-automation-id='controls-sample-carouselview-parity-reset-alpha']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, positionSelector, "position=0 current=Alpha");
+        var verticalScrollHeight = await page.EvaluateAsync<int>(
+            """
+            (selector) => {
+                const host = document.querySelector(selector);
+                if (!(host instanceof HTMLElement)) {
+                    return 0;
+                }
+
+                return host.scrollHeight - host.clientHeight;
+            }
+            """,
+            hostSelector);
+        Assert.True(verticalScrollHeight > 0);
+
+        await page.EvaluateAsync(
+            """
+            (selector) => {
+                const host = document.querySelector(selector);
+                if (!(host instanceof HTMLElement)) {
+                    return;
+                }
+
+                host.scrollTop = host.clientHeight;
+                host.dispatchEvent(new Event("scroll"));
+            }
+            """,
+            hostSelector);
+        await WaitForLabelTextContainsAsync(page, positionSelector, "position=1 current=Beta");
+    }
+
+    [Fact]
     public async Task ShapesParityProbe_ProjectsGeometryPaintAndAspectUpdates()
     {
         await using var context = await _fixture.NewContextAsync(width: 1260, height: 900);

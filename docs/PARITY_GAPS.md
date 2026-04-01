@@ -112,6 +112,12 @@ Upstream MAUI shared-code risks for unofficial/browser targets are tracked separ
 - Current behavior: detached/off-screen page handlers do not claim title ownership, and navigation-stack children defer to `MirageNavigationPageHandler` as document-title authority.
 - Deferred: MAUI iOS-only PageHandler semantics (`IsHomeIndicatorAutoHidden`, `PrefersStatusBarHiddenMode`, controller background updates) remain non-applicable on browser DOM hosts.
 
+24. CarouselView parity depth
+- Current behavior: `CarouselView` now maps through `MirageCarouselViewHandler : MirageItemsViewHandler<CarouselView>` on the built-in ControlNode path, with browser-native snap scrolling, two-way `Position`/`CurrentItem` synchronization, programmatic `ScrollTo`, horizontal/vertical `LinearItemsLayout` support, `PeekAreaInsets` sizing, and `IsSwipeEnabled` interaction gating.
+- Current behavior: Mirage now maintains handler-owned loop clones plus settled wraparound, updates `IsDragging` and `VisibleViews` from runtime scroll activity, and applies `CurrentItem` / `NextItem` / `PreviousItem` / `DefaultItem` visual states to realized item views without item-handler churn.
+- Current behavior: linked `IndicatorView` parity stays on the MAUI path; Mirage does not add a Carousel-only side channel and instead proves the existing MAUI binding linkage through the dedicated probe page.
+- Deferred: `IsBounceEnabled` remains a browser `overscroll-behavior` approximation rather than native platform bounce physics, and inherited `ItemsUpdatingScrollMode` parity limits from the current Mirage `ItemsView` substrate still apply.
+
 ## Gap lifecycle policy
 
 1. Any new gap requires:

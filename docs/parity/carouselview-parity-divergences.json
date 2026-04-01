@@ -1,0 +1,19 @@
+{
+  "entries": [
+    {
+      "id": "carouselview-extension-isenabled-gates-user-swipe-interaction",
+      "summary": "Mirage maps IsEnabled explicitly on CarouselView so disabled hosts block runtime swipe-state mutation while still allowing programmatic position/current-item updates.",
+      "upstreamReference": "src/Controls/src/Core/Handlers/Items/CarouselViewHandler.Android.cs",
+      "testReference": "CarouselViewHandler_DisabledState_GatesRuntimeScrollButKeepsProgrammaticPositionUpdates",
+      "extensionKeys": [
+        "IsEnabled"
+      ]
+    },
+    {
+      "id": "carouselview-bounce-uses-browser-overscroll-approximation",
+      "summary": "IsBounceEnabled is projected through browser overscroll-behavior styles rather than native platform bounce physics.",
+      "upstreamReference": "src/Controls/src/Core/Handlers/Items/CarouselViewHandler.iOS.cs",
+      "testReference": "CarouselViewHandler_PeekInsetsAndSwipeStyles_ReprojectWithoutNodeChurn"
+    }
+  ]
+}
