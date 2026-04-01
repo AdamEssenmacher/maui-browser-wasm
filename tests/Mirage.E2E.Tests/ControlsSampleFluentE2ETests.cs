@@ -149,6 +149,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ["editorparitypage"] = "parityprobes",
             ["radiobuttonparitypage"] = "parityprobes",
             ["pickerparitypage"] = "parityprobes",
+            ["progressbarparitypage"] = "parityprobes",
             ["timepickerparitypage"] = "parityprobes",
             ["datepickerparitypage"] = "parityprobes",
 
@@ -382,7 +383,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ("layouts", ["gridpage", "scrollviewpage"], ["buttonpage", "indicatorviewparitypage"]),
             ("controls", ["buttonpage", "mapsgallery"], ["gridpage", "borderpage"]),
             ("core", ["brushespage", "borderpage"], ["sliderpage", "editorparitypage"]),
-            ("parityprobes", ["editorparitypage", "pickerparitypage", "timepickerparitypage", "carouselviewparitypage", "datepickerparitypage"], ["gridpage", "boxviewpage"]),
+            ("parityprobes", ["editorparitypage", "pickerparitypage", "progressbarparitypage", "timepickerparitypage", "carouselviewparitypage", "datepickerparitypage"], ["gridpage", "boxviewpage"]),
             ("compatibility", ["tabbedpagegallerymainpage"], ["gridpage", "shapesparitypage"])
         };
 
@@ -1216,6 +1217,79 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             hostSelector);
         await WaitForLabelTextContainsAsync(page, dateStateSelector, "date=2026-04-18");
         await WaitForLabelTextContainsAsync(page, openStateSelector, "isOpen=False");
+    }
+
+    [Fact]
+    public async Task ProgressBarParityProbe_ProjectsClampedValueAndStyleUpdates()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1160, height: 860);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "progressbarparitypage");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-progressbarparitypage']");
+            });
+
+        const string hostSelector = "[data-automation-id='controls-sample-progressbar-parity-host']";
+        const string progressStateSelector = "[data-automation-id='controls-sample-progressbar-parity-progress-state']";
+        const string styleStateSelector = "[data-automation-id='controls-sample-progressbar-parity-style-state']";
+
+        await page.WaitForSelectorAsync(hostSelector);
+        Assert.Equal("ProgressBar", await page.GetAttributeAsync(hostSelector, "data-mirage-kind"));
+
+        await WaitForLabelTextContainsAsync(page, progressStateSelector, "progress=0.25");
+        var initialProgressValue = await page.EvaluateAsync<double>(
+            """
+            (selector) => {
+                const progress = document.querySelector(selector);
+                return progress instanceof HTMLProgressElement ? progress.value : -1;
+            }
+            """,
+            hostSelector);
+        Assert.Equal(0.25, initialProgressValue, 3);
+
+        await page.Locator("[data-automation-id='controls-sample-progressbar-parity-increment']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, progressStateSelector, "progress=0.45");
+        var incrementedProgressValue = await page.EvaluateAsync<double>(
+            """
+            (selector) => {
+                const progress = document.querySelector(selector);
+                return progress instanceof HTMLProgressElement ? progress.value : -1;
+            }
+            """,
+            hostSelector);
+        Assert.Equal(0.45, incrementedProgressValue, 3);
+
+        await page.Locator("[data-automation-id='controls-sample-progressbar-parity-overshoot']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, progressStateSelector, "progress=1");
+        var clampedProgressValue = await page.EvaluateAsync<double>(
+            """
+            (selector) => {
+                const progress = document.querySelector(selector);
+                return progress instanceof HTMLProgressElement ? progress.value : -1;
+            }
+            """,
+            hostSelector);
+        Assert.Equal(1, clampedProgressValue, 3);
+
+        var baselineAccentColor = await page.EvaluateAsync<string>(
+            "selector => document.querySelector(selector)?.style.accentColor ?? ''",
+            hostSelector);
+
+        await page.Locator("[data-automation-id='controls-sample-progressbar-parity-toggle-style']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, styleStateSelector, "style=alt");
+
+        var alternateAccentColor = await page.EvaluateAsync<string>(
+            "selector => document.querySelector(selector)?.style.accentColor ?? ''",
+            hostSelector);
+        Assert.NotEqual(baselineAccentColor, alternateAccentColor);
+
+        await page.Locator("[data-automation-id='controls-sample-progressbar-parity-reset']").ClickAsync();
+        await WaitForLabelTextContainsAsync(page, progressStateSelector, "progress=0.25");
     }
 
     [Fact]

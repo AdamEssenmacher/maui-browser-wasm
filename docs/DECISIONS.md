@@ -2,6 +2,12 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-04-01 (ProgressBar parity wave: MAUI-shaped handler + native progress host)
+- Added `MirageProgressBarHandler` and registered `ProgressBar` in `UseMirageBrowserPlatform`, keeping the Mirage path aligned to MAUI's simple `ProgressBarHandler` surface (`Progress`, `ProgressColor`, empty command mapper) instead of leaving the row on the legacy browser handler only.
+- ProgressBar realization now uses a built-in `ControlNode` host (`ComponentKind.ProgressBar`) backed by a native browser `<progress>` element with deterministic `[0,1]` value clamping, invariant value serialization, `ProgressColor` accent projection, and legacy browser sizing fallback (`220x18`) resolved through explicit/min/max request constraints.
+- We intentionally kept the host native rather than introducing a Mirage-owned custom track/fill widget, so exact track/background styling parity remains an explicit browser-limited divergence instead of a silent approximation claim.
+- Added parity governance artifacts, focused integration tests, and a dedicated ControlsSample proof surface (`ProgressBarParityProbePage`) so ProgressBar now follows the same contract/probe discipline as the recent Picker and Date/Time parity waves.
+
 ## 2026-04-01 (Picker parity wave: MAUI-shaped handler + native select host)
 - Refactored `MiragePickerHandler` to mirror MAUI `PickerHandler` shape with explicit property/command parity keys, a real `CommandMapper` (`Focus` / `Unfocus`), and legacy browser sizing fallback (`180x36`) resolved through explicit/min/max request constraints.
 - Picker realization stays on the built-in `ControlNode` path (`ComponentKind.Picker`) with a native browser `<select>` host, deterministic placeholder-option rebuild semantics for `Title`, and two-way `SelectedIndex` synchronization from runtime `change`.
