@@ -202,6 +202,9 @@ internal static partial class DomApi
     [JSImport("getPreferredColorScheme", Module)]
     internal static partial string GetPreferredColorScheme();
 
+    [JSImport("getViewportSize", Module)]
+    internal static partial double[] GetViewportSize();
+
     [JSImport("subscribePreferredColorSchemeChanged", Module)]
     internal static partial int SubscribePreferredColorSchemeChanged([JSMarshalAs<JSType.Function>] Action callback);
 

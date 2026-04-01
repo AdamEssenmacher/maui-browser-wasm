@@ -17,6 +17,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - We intentionally kept the host native rather than introducing a Mirage-owned custom track/fill widget, so exact track/background styling parity remains an explicit browser-limited divergence instead of a silent approximation claim.
 - Added parity governance artifacts, focused integration tests, and a dedicated ControlsSample proof surface (`ProgressBarParityProbePage`) so ProgressBar now follows the same contract/probe discipline as the recent Picker and Date/Time parity waves.
 
+## 2026-04-01 (DevicePage + browser DeviceInfo foundation)
+- Added a browser `IDeviceInfo` implementation and registered it in `UseMirageBrowserPlatform()`, with `MirageEssentialsStaticPatcher` now patching `DeviceInfo.currentImplementation` alongside `Preferences` and `AppInfo`.
+- Browser hosts report `DevicePlatform.Create("Browser")`, deterministic browser-generic identity strings, and a startup-snapshot idiom derived from the viewport shortest edge (`Phone < 600`, `Tablet < 900`, otherwise `Desktop`).
+- This deliberately improves shared MAUI/XAML behavior without inventing a Mirage-specific `Browser=` branch: upstream `OnPlatform` still falls through to `Default`, while `OnIdiom` can now resolve against a real browser-backed idiom value.
+
 ## 2026-04-01 (Picker parity wave: MAUI-shaped handler + native select host)
 - Refactored `MiragePickerHandler` to mirror MAUI `PickerHandler` shape with explicit property/command parity keys, a real `CommandMapper` (`Focus` / `Unfocus`), and legacy browser sizing fallback (`180x36`) resolved through explicit/min/max request constraints.
 - Picker realization stays on the built-in `ControlNode` path (`ComponentKind.Picker`) with a native browser `<select>` host, deterministic placeholder-option rebuild semantics for `Title`, and two-way `SelectedIndex` synchronization from runtime `change`.
