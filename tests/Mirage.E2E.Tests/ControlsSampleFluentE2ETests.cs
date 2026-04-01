@@ -153,6 +153,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ["pickerparitypage"] = "parityprobes",
             ["progressbarparitypage"] = "parityprobes",
             ["graphicsviewparitypage"] = "parityprobes",
+            ["refreshviewparitypage"] = "parityprobes",
             ["timepickerparitypage"] = "parityprobes",
             ["datepickerparitypage"] = "parityprobes",
 
@@ -386,7 +387,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ("layouts", ["gridpage", "scrollviewpage"], ["buttonpage", "indicatorviewparitypage"]),
             ("controls", ["buttonpage", "mapsgallery"], ["gridpage", "borderpage"]),
             ("core", ["brushespage", "devicepage", "borderpage"], ["sliderpage", "editorparitypage"]),
-            ("parityprobes", ["editorparitypage", "pickerparitypage", "progressbarparitypage", "graphicsviewparitypage", "timepickerparitypage", "carouselviewparitypage", "datepickerparitypage"], ["gridpage", "boxviewpage"]),
+            ("parityprobes", ["editorparitypage", "pickerparitypage", "progressbarparitypage", "graphicsviewparitypage", "refreshviewparitypage", "timepickerparitypage", "carouselviewparitypage", "datepickerparitypage"], ["gridpage", "boxviewpage"]),
             ("compatibility", ["tabbedpagegallerymainpage"], ["gridpage", "shapesparitypage"])
         };
 
@@ -1650,6 +1651,259 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             });
         await WaitForLabelTextContainsAsync(page, interactionStateSelector, "interaction=cancel");
         await page.Mouse.UpAsync();
+    }
+
+    [Fact]
+    public async Task RefreshViewParityProbe_ProjectsTriggerAndPullRefreshAcrossContentModes()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1180, height: 900);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "refreshviewparitypage");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-refreshviewparitypage']");
+            });
+
+        const string refreshSelector = "[data-automation-id='controls-sample-refreshview-parity-host']";
+        const string triggerSelector = "[data-automation-id='controls-sample-refreshview-parity-host'] [data-maui-rv-trigger='true']";
+        const string spinnerSelector = "[data-automation-id='controls-sample-refreshview-parity-host'] [data-maui-rv-spinner='true']";
+        const string collectionScrollHostSelector = "[data-automation-id='controls-sample-refreshview-parity-host'] [data-maui-cv-host-role='scroll']";
+        const string plainScrollHostSelector = "[data-automation-id='controls-sample-refreshview-parity-host'] [data-maui-rv-content-host='true']";
+        const string refreshStateSelector = "[data-automation-id='controls-sample-refreshview-parity-refresh-state']";
+        const string enabledStateSelector = "[data-automation-id='controls-sample-refreshview-parity-enabled-state']";
+        const string modeStateSelector = "[data-automation-id='controls-sample-refreshview-parity-mode-state']";
+        const string styleStateSelector = "[data-automation-id='controls-sample-refreshview-parity-style-state']";
+        const string completeRefreshSelector = "[data-automation-id='controls-sample-refreshview-parity-complete-refresh']";
+        const string toggleEnabledSelector = "[data-automation-id='controls-sample-refreshview-parity-toggle-enabled']";
+        const string toggleRefreshEnabledSelector = "[data-automation-id='controls-sample-refreshview-parity-toggle-refresh-enabled']";
+        const string toggleModeSelector = "[data-automation-id='controls-sample-refreshview-parity-toggle-mode']";
+        const string toggleColorSelector = "[data-automation-id='controls-sample-refreshview-parity-toggle-color']";
+
+        async Task DispatchClickAsync(string selector)
+        {
+            await page.EvaluateAsync(
+                """
+                (selector) => {
+                    const element = document.querySelector(selector);
+                    if (!element) {
+                        return;
+                    }
+
+                    element.dispatchEvent(new Event("click", { bubbles: true }));
+                }
+                """,
+                selector);
+        }
+
+        async Task<string?> ReadAttributeValueAsync(string selector, string attributeName)
+        {
+            return await page.GetAttributeAsync(selector, attributeName);
+        }
+
+        async Task<string> ReadComputedStyleAsync(string selector, string propertyName)
+        {
+            return await page.EvaluateAsync<string>(
+                """
+                (args) => {
+                    const element = document.querySelector(args.selector);
+                    if (!(element instanceof HTMLElement)) {
+                        return "";
+                    }
+
+                    return getComputedStyle(element)[args.propertyName] ?? "";
+                }
+                """,
+                new
+                {
+                    selector,
+                    propertyName
+                });
+        }
+
+        async Task PullDownRefreshAsync(string selector, double distance, bool resetScrollTop = true)
+        {
+            var bounds = await page.EvaluateAsync<double[]>(
+                """
+                (args) => {
+                    const host = document.querySelector(args.selector);
+                    if (!(host instanceof HTMLElement)) {
+                        return [Number.NaN, Number.NaN, Number.NaN, Number.NaN];
+                    }
+
+                    if (args.resetScrollTop) {
+                        host.scrollTop = 0;
+                    }
+
+                    const rect = host.getBoundingClientRect();
+                    return [rect.x, rect.y, rect.width, rect.height];
+                }
+                """,
+                new
+                {
+                    selector,
+                    resetScrollTop
+                });
+
+            Assert.Equal(4, bounds.Length);
+            Assert.True(
+                !double.IsNaN(bounds[0]) &&
+                !double.IsNaN(bounds[1]) &&
+                !double.IsNaN(bounds[2]) &&
+                !double.IsNaN(bounds[3]) &&
+                bounds[2] > 0 &&
+                bounds[3] > 0,
+                $"Expected valid pull host bounds for selector {selector}.");
+
+            var startX = (float)(bounds[0] + (bounds[2] / 2));
+            var startY = (float)(bounds[1] + Math.Min(36, Math.Max(18, bounds[3] * 0.2)));
+            await page.Mouse.MoveAsync(startX, startY);
+            await page.Mouse.DownAsync();
+            await page.Mouse.MoveAsync(
+                startX,
+                (float)(startY + Math.Max(20, distance)),
+                new MouseMoveOptions { Steps = 14 });
+        }
+
+        async Task AssertCanScrollVerticallyAsync(string selector, string reason)
+        {
+            var metrics = await page.EvaluateAsync<double[]>(
+                """
+                (selector) => {
+                    const host = document.querySelector(selector);
+                    if (!(host instanceof HTMLElement)) {
+                        return [Number.NaN, Number.NaN, Number.NaN];
+                    }
+
+                    host.scrollTop = 0;
+                    const before = host.scrollTop;
+                    host.scrollTop = 64;
+                    const after = host.scrollTop;
+                    return [host.clientHeight, host.scrollHeight, after - before];
+                }
+                """,
+                selector);
+
+            Assert.Equal(3, metrics.Length);
+            Assert.True(
+                !double.IsNaN(metrics[0]) &&
+                !double.IsNaN(metrics[1]) &&
+                !double.IsNaN(metrics[2]) &&
+                metrics[1] > metrics[0] &&
+                metrics[2] > 0,
+                $"Expected vertical scrolling for {reason}. clientHeight={metrics[0]}, scrollHeight={metrics[1]}, delta={metrics[2]}");
+        }
+
+        async Task AssertRefreshInFlowAsync(string reason)
+        {
+            var metrics = await page.EvaluateAsync<double[]>(
+                """
+                () => {
+                    const refresh = document.querySelector("[data-automation-id='controls-sample-refreshview-parity-host']");
+                    const below = document.querySelector("[data-automation-id='controls-sample-refreshview-parity-refresh-state']");
+                    if (!(refresh instanceof HTMLElement) || !(below instanceof HTMLElement)) {
+                        return [Number.NaN, Number.NaN];
+                    }
+
+                    const refreshRect = refresh.getBoundingClientRect();
+                    const belowRect = below.getBoundingClientRect();
+                    return [refreshRect.bottom, belowRect.top];
+                }
+                """);
+
+            Assert.Equal(2, metrics.Length);
+            Assert.True(
+                !double.IsNaN(metrics[0]) && !double.IsNaN(metrics[1]) && metrics[1] + 1 >= metrics[0],
+                $"RefreshView should remain in normal flow ({reason}). refreshBottom={metrics[0]}, nextTop={metrics[1]}");
+        }
+
+        await page.WaitForSelectorAsync(refreshSelector);
+        await page.Locator(refreshSelector).ScrollIntoViewIfNeededAsync();
+
+        Assert.Equal("RefreshView", await page.GetAttributeAsync(refreshSelector, "data-mirage-kind"));
+        await WaitForLabelTextContainsAsync(page, refreshStateSelector, "isRefreshing=False commands=0");
+        await WaitForLabelTextContainsAsync(page, enabledStateSelector, "enabled=True refreshEnabled=True");
+        await WaitForLabelTextContainsAsync(page, modeStateSelector, "mode=collection");
+        Assert.Equal("false", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-refreshing"));
+        Assert.Equal("true", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-enabled"));
+        Assert.Equal("false", await ReadAttributeValueAsync(spinnerSelector, "data-maui-rv-spinner-active"));
+        await AssertRefreshInFlowAsync("initial");
+
+        var initialTriggerColor = await ReadComputedStyleAsync(triggerSelector, "color");
+
+        await DispatchClickAsync(triggerSelector);
+        await WaitForLabelTextContainsAsync(page, refreshStateSelector, "isRefreshing=True commands=1 lastParameter=collection");
+        Assert.Equal("true", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-refreshing"));
+        Assert.Equal("true", await ReadAttributeValueAsync(spinnerSelector, "data-maui-rv-spinner-active"));
+        Assert.Equal("running", await ReadComputedStyleAsync(spinnerSelector, "animationPlayState"));
+
+        await DispatchClickAsync(triggerSelector);
+        var blockedWhileRefreshing = (await page.Locator(refreshStateSelector).TextContentAsync())?.Trim() ?? string.Empty;
+        Assert.Contains("commands=1", blockedWhileRefreshing, StringComparison.Ordinal);
+
+        await page.Locator(completeRefreshSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, refreshStateSelector, "isRefreshing=False commands=1");
+        Assert.Equal("false", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-refreshing"));
+        Assert.Equal("paused", await ReadComputedStyleAsync(spinnerSelector, "animationPlayState"));
+
+        await PullDownRefreshAsync(collectionScrollHostSelector, 132);
+        Assert.Equal("true", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-pull-active"));
+        Assert.Equal("true", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-pull-armed"));
+        Assert.NotEqual("0", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-pull-distance"));
+        await page.Mouse.UpAsync();
+        await WaitForLabelTextContainsAsync(page, refreshStateSelector, "isRefreshing=True commands=2 lastParameter=collection");
+        await page.Locator(completeRefreshSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, refreshStateSelector, "isRefreshing=False commands=2");
+
+        await page.Locator(toggleModeSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, modeStateSelector, "mode=plain");
+        await AssertCanScrollVerticallyAsync(plainScrollHostSelector, "plain RefreshView content viewport");
+        await PullDownRefreshAsync(plainScrollHostSelector, 132);
+        Assert.Equal("true", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-pull-active"));
+        Assert.Equal("true", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-pull-armed"));
+        await page.Mouse.UpAsync();
+        await WaitForLabelTextContainsAsync(page, refreshStateSelector, "isRefreshing=True commands=3 lastParameter=plain");
+        await page.Locator(completeRefreshSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, refreshStateSelector, "isRefreshing=False commands=3");
+
+        await page.Locator(toggleEnabledSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, enabledStateSelector, "enabled=False refreshEnabled=True");
+        Assert.Equal("false", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-enabled"));
+        await DispatchClickAsync(triggerSelector);
+        await PullDownRefreshAsync(plainScrollHostSelector, 132);
+        Assert.Equal("false", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-pull-active"));
+        Assert.Equal("false", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-pull-armed"));
+        Assert.Equal("0", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-pull-distance"));
+        await page.Mouse.UpAsync();
+        var disabledState = (await page.Locator(refreshStateSelector).TextContentAsync())?.Trim() ?? string.Empty;
+        Assert.Contains("commands=3", disabledState, StringComparison.Ordinal);
+
+        await page.Locator(toggleEnabledSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, enabledStateSelector, "enabled=True refreshEnabled=True");
+
+        await page.Locator(toggleRefreshEnabledSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, enabledStateSelector, "enabled=True refreshEnabled=False");
+        Assert.Equal("false", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-enabled"));
+        await DispatchClickAsync(triggerSelector);
+        await PullDownRefreshAsync(plainScrollHostSelector, 132);
+        Assert.Equal("false", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-pull-active"));
+        Assert.Equal("false", await ReadAttributeValueAsync(refreshSelector, "data-maui-rv-pull-armed"));
+        await page.Mouse.UpAsync();
+        var refreshDisabledState = (await page.Locator(refreshStateSelector).TextContentAsync())?.Trim() ?? string.Empty;
+        Assert.Contains("commands=3", refreshDisabledState, StringComparison.Ordinal);
+
+        await page.Locator(toggleRefreshEnabledSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, enabledStateSelector, "enabled=True refreshEnabled=True");
+
+        await page.Locator(toggleColorSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, styleStateSelector, "color=alt");
+        var alternateTriggerColor = await ReadComputedStyleAsync(triggerSelector, "color");
+        Assert.NotEqual(initialTriggerColor, alternateTriggerColor);
+
+        await AssertRefreshInFlowAsync("final");
     }
 
     [Fact]

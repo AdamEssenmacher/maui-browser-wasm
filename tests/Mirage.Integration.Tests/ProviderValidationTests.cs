@@ -317,6 +317,42 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentRefreshViewDescriptor_MapsDiagnosticsProjectionChannels()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.RefreshView);
+
+        Assert.Equal("div", descriptor.ElementTagName);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["RefreshingState"].Target);
+        Assert.Equal("data-maui-rv-refreshing", descriptor.PropertyMappings["RefreshingState"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["EnabledState"].Target);
+        Assert.Equal("data-maui-rv-enabled", descriptor.PropertyMappings["EnabledState"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["PullActiveState"].Target);
+        Assert.Equal("data-maui-rv-pull-active", descriptor.PropertyMappings["PullActiveState"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["PullArmedState"].Target);
+        Assert.Equal("data-maui-rv-pull-armed", descriptor.PropertyMappings["PullArmedState"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["PullDistanceState"].Target);
+        Assert.Equal("data-maui-rv-pull-distance", descriptor.PropertyMappings["PullDistanceState"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["BusyState"].Target);
+        Assert.Equal("aria-busy", descriptor.PropertyMappings["BusyState"].Name);
+        Assert.Empty(descriptor.EventMappings);
+    }
+
+    [Fact]
+    public void FluentContentContainerDescriptor_MapsCollectionViewRoleDiagnostics()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.ContentContainer);
+
+        Assert.Equal("div", descriptor.ElementTagName);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["CollectionViewHostRole"].Target);
+        Assert.Equal("data-maui-cv-host-role", descriptor.PropertyMappings["CollectionViewHostRole"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["CollectionViewHostedRole"].Target);
+        Assert.Equal("data-maui-cv-hosted-role", descriptor.PropertyMappings["CollectionViewHostedRole"].Name);
+        Assert.True(descriptor.EventMappings.ContainsKey("scroll"));
+    }
+
+    [Fact]
     public void FluentGraphicsViewDescriptor_MapsCanvasPointerProjectionChannels()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();

@@ -14,6 +14,7 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\IMiragePlatformHandler.cs" Link="Handlers\IMiragePlatformHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\IMirageRuntimeEventTarget.cs" Link="Handlers\IMirageRuntimeEventTarget.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\IMirageRenderCoordinator.cs" Link="Handlers\IMirageRenderCoordinator.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\IMirageScrollSourceProvider.cs" Link="Handlers\IMirageScrollSourceProvider.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\IMiragePageTitleProjectionHost.cs" Link="Handlers\IMiragePageTitleProjectionHost.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageCommonViewProjection.cs" Link="Handlers\MirageCommonViewProjection.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MiragePlatformView.cs" Link="Handlers\MiragePlatformView.cs" />
@@ -58,6 +59,7 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageDatePickerHandler.cs" Link="Handlers\MirageDatePickerHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageTimePickerHandler.cs" Link="Handlers\MirageTimePickerHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageStepperHandler.cs" Link="Handlers\MirageStepperHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageRefreshViewHandler.cs" Link="Handlers\MirageRefreshViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageProgressBarHandler.cs" Link="Handlers\MirageProgressBarHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageGraphicsViewHandler.cs" Link="Handlers\MirageGraphicsViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageIndicatorViewHandler.cs" Link="Handlers\MirageIndicatorViewHandler.cs" />

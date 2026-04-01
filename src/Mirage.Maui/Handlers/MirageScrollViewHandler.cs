@@ -6,7 +6,7 @@ using Microsoft.Maui.Platform;
 
 namespace Mirage.Maui.Handlers;
 
-internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<IScrollView>, IScrollViewHandler, IMirageRuntimeEventTarget
+internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<IScrollView>, IScrollViewHandler, IMirageRuntimeEventTarget, IMirageScrollSourceProvider
 {
     private const int AnimatedScrollCompletionTimeoutMs = 1200;
     private const double ScrollCompletionEpsilon = 0.01;
@@ -293,6 +293,12 @@ internal sealed class MirageScrollViewHandler : MirageSingleContentHostHandler<I
         }
 
         return Math.Max(0, value);
+    }
+
+    public bool TryGetScrollSourceNodeId(out string nodeId)
+    {
+        nodeId = PlatformView.NodeId;
+        return !string.IsNullOrWhiteSpace(nodeId);
     }
 
     private static double ResolveDesiredDimension(double constraint, double contentDimension)

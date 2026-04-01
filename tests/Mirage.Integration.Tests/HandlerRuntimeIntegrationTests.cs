@@ -4485,6 +4485,23 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void RenderCoordinator_RefreshViewPullBridge_RoutesToRuntimeDeterministically()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var configured = coordinator.TryConfigureNodePullToRefresh("refresh-owner", "refresh-source", enabled: true, threshold: 72);
+
+        Assert.True(configured);
+        Assert.Equal(1, runtime.ConfigurePullToRefreshCallCount);
+        Assert.Equal("refresh-owner", runtime.LastConfiguredPullOwnerNodeId);
+        Assert.Equal("refresh-source", runtime.LastConfiguredPullSourceNodeId);
+        Assert.True(runtime.LastConfigurePullEnabled);
+        Assert.Equal(72, runtime.LastConfigurePullThreshold, 3);
+    }
+
+    [Fact]
     public void BasePage_InstrumentPage_AssignsScrollViewOrientationAutomationIds()
     {
         var page = Assert.IsType<ScrollViewOrientationPage>(
@@ -6348,6 +6365,16 @@ public sealed class HandlerRuntimeIntegrationTests
 
         public string LastCanvasJson { get; private set; } = string.Empty;
 
+        public int ConfigurePullToRefreshCallCount { get; private set; }
+
+        public string? LastConfiguredPullOwnerNodeId { get; private set; }
+
+        public string? LastConfiguredPullSourceNodeId { get; private set; }
+
+        public bool LastConfigurePullEnabled { get; private set; }
+
+        public double LastConfigurePullThreshold { get; private set; }
+
         public void SetEventSink(IMirageEventSink? eventSink)
         {
             Sink = eventSink;
@@ -6450,6 +6477,16 @@ public sealed class HandlerRuntimeIntegrationTests
         {
             _ = nodeId;
             return false;
+        }
+
+        public bool TryConfigureNodePullToRefresh(string ownerNodeId, string sourceNodeId, bool enabled, double threshold)
+        {
+            ConfigurePullToRefreshCallCount++;
+            LastConfiguredPullOwnerNodeId = ownerNodeId;
+            LastConfiguredPullSourceNodeId = sourceNodeId;
+            LastConfigurePullEnabled = enabled;
+            LastConfigurePullThreshold = threshold;
+            return true;
         }
 
         public bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)

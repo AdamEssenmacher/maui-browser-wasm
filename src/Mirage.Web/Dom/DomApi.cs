@@ -119,6 +119,20 @@ internal static partial class DomApi
     [JSImport("setInputSelection", Module)]
     internal static partial bool SetInputSelection(nint element, int selectionStart, int selectionEnd);
 
+    [JSImport("configurePullToRefresh", Module)]
+    internal static partial int ConfigurePullToRefresh(
+        nint ownerElement,
+        nint sourceElement,
+        double threshold,
+        [JSMarshalAs<JSType.Function>] Action stateChangedCallback,
+        [JSMarshalAs<JSType.Function>] Action triggerCallback);
+
+    [JSImport("consumePullToRefreshStateJson", Module)]
+    internal static partial string? ConsumePullToRefreshStateJson(nint ownerElement);
+
+    [JSImport("unsubscribePullToRefresh", Module)]
+    internal static partial void UnsubscribePullToRefresh(int subscriptionId);
+
     [JSImport("focusElement", Module)]
     internal static partial bool FocusElement(nint element);
 

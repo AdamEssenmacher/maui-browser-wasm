@@ -653,6 +653,37 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void BrowserPlatform_RegistersRefreshViewHandlerAsBuiltInControlNode_WithPullRuntimeSeam()
+    {
+        var repositoryRoot = GetRepositoryRoot();
+        var hostingPath = Path.Combine(repositoryRoot, "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var refreshHandlerPath = Path.Combine(repositoryRoot, "src", "Mirage.Maui", "Handlers", "MirageRefreshViewHandler.cs");
+        var coordinatorPath = Path.Combine(repositoryRoot, "src", "Mirage.Maui", "Handlers", "MirageRenderCoordinator.cs");
+        var runtimePath = Path.Combine(repositoryRoot, "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        var providerPath = Path.Combine(repositoryRoot, "src", "Mirage.Provider.Fluent", "FluentMirageComponentProvider.cs");
+        Assert.True(File.Exists(refreshHandlerPath), $"Expected RefreshView handler file not found: {refreshHandlerPath}");
+        Assert.True(File.Exists(coordinatorPath), $"Expected render coordinator file not found: {coordinatorPath}");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+        Assert.True(File.Exists(providerPath), $"Expected provider file not found: {providerPath}");
+
+        var hostingText = File.ReadAllText(hostingPath);
+        var refreshHandlerText = File.ReadAllText(refreshHandlerPath);
+        var coordinatorText = File.ReadAllText(coordinatorPath);
+        var runtimeText = File.ReadAllText(runtimePath);
+        var providerText = File.ReadAllText(providerPath);
+
+        Assert.Contains("typeof(RefreshView)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageRefreshViewHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.RefreshView", refreshHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryConfigureNodePullToRefresh(", refreshHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryConfigureNodePullToRefresh(", coordinatorText, StringComparison.Ordinal);
+        Assert.Contains("TryConfigureNodePullToRefresh(", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.RefreshView", providerText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BrowserPlatform_RegistersGraphicsViewHandlerAsBuiltInCanvasControlNode()
     {
         var repositoryRoot = GetRepositoryRoot();

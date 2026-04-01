@@ -136,6 +136,18 @@ public sealed class DomElement
         return DomApi.SetInputSelection(Handle, selectionStart, selectionEnd);
     }
 
+    public int ConfigurePullToRefresh(DomElement sourceElement, double threshold, Action stateChangedCallback, Action triggerCallback)
+    {
+        ArgumentNullException.ThrowIfNull(sourceElement);
+        ArgumentNullException.ThrowIfNull(stateChangedCallback);
+        ArgumentNullException.ThrowIfNull(triggerCallback);
+        return DomApi.ConfigurePullToRefresh(Handle, sourceElement.Handle, threshold, stateChangedCallback, triggerCallback);
+    }
+
+    public string? ConsumePullToRefreshStateJson() => DomApi.ConsumePullToRefreshStateJson(Handle);
+
+    public static void UnsubscribePullToRefresh(int subscriptionId) => DomApi.UnsubscribePullToRefresh(subscriptionId);
+
     public bool Focus() => DomApi.FocusElement(Handle);
 
     public void Blur() => DomApi.BlurElement(Handle);

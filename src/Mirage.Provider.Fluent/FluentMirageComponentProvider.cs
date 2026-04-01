@@ -30,7 +30,11 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
             [ComponentKind.ContentContainer] = new(
                 ComponentKind.ContentContainer,
                 "div",
-                propertyMappings: CommonProperties,
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["CollectionViewHostRole"] = new(PropertyTarget.Attribute, "data-maui-cv-host-role"),
+                    ["CollectionViewHostedRole"] = new(PropertyTarget.Attribute, "data-maui-cv-hosted-role")
+                }),
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
                     ["click"] = new("click"),
@@ -335,6 +339,18 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 valueElementTagName: "button",
                 secondaryElementTagName: "button",
                 stretchValueElementWidth: false),
+            [ComponentKind.RefreshView] = new(
+                ComponentKind.RefreshView,
+                "div",
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["RefreshingState"] = new(PropertyTarget.Attribute, "data-maui-rv-refreshing"),
+                    ["EnabledState"] = new(PropertyTarget.Attribute, "data-maui-rv-enabled"),
+                    ["PullActiveState"] = new(PropertyTarget.Attribute, "data-maui-rv-pull-active"),
+                    ["PullArmedState"] = new(PropertyTarget.Attribute, "data-maui-rv-pull-armed"),
+                    ["PullDistanceState"] = new(PropertyTarget.Attribute, "data-maui-rv-pull-distance"),
+                    ["BusyState"] = new(PropertyTarget.Attribute, "aria-busy")
+                })),
             [ComponentKind.ProgressBar] = new(
                 ComponentKind.ProgressBar,
                 "progress",
