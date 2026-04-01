@@ -294,7 +294,11 @@ internal sealed class MirageBrowserDialogService : IMirageBrowserDialogService, 
 
         private void BuildDialog(DialogRequest request)
         {
-            _coordinator.TryGetActiveNodeId(out _restoreFocusNodeId);
+            if (string.IsNullOrWhiteSpace(_restoreFocusNodeId))
+            {
+                _coordinator.TryGetActiveNodeId(out _restoreFocusNodeId);
+            }
+
             _promptInputNodeId = null;
             ClearActiveNodes();
             ConfigureHost();
@@ -378,18 +382,19 @@ internal sealed class MirageBrowserDialogService : IMirageBrowserDialogService, 
 
         private void ResetVisualState()
         {
+            var shouldRestoreFocus = _pending.Count == 0;
             ClearActiveNodes();
             _host.ClearChildren();
             _host.SetAttribute("aria-hidden", "true");
             _coordinator.RequestRender();
 
-            if (!string.IsNullOrWhiteSpace(_restoreFocusNodeId))
+            if (shouldRestoreFocus && !string.IsNullOrWhiteSpace(_restoreFocusNodeId))
             {
                 var focusNodeId = _restoreFocusNodeId;
                 _coordinator.DispatchDelayed(FocusDispatchDelay, () => _coordinator.TrySetNodeFocus(focusNodeId, isFocused: true));
+                _restoreFocusNodeId = null;
             }
 
-            _restoreFocusNodeId = null;
             _promptInputNodeId = null;
             _activeRequest = null;
         }

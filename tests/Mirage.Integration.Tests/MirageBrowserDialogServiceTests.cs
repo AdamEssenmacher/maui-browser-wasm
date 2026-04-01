@@ -143,6 +143,39 @@ public sealed class MirageBrowserDialogServiceTests
     }
 
     [Fact]
+    public async Task DisplayAlertAsync_QueuedDialogs_RestoreOriginalFocusAfterQueueDrains()
+    {
+        using var harness = new DialogHarness();
+        var focusSeed = new Button
+        {
+            AutomationId = "focus-seed",
+            Text = "Seed"
+        };
+        var page = new ContentPage
+        {
+            Content = focusSeed
+        };
+        harness.Attach(page);
+        await harness.WaitForAutomationIdAsync("focus-seed");
+        harness.FocusByAutomationId("focus-seed");
+
+        var firstTask = page.DisplayAlertAsync("First", "First body", "OK");
+        var secondTask = page.DisplayAlertAsync("Second", "Second body", "Close");
+
+        await harness.WaitForDialogTitleAsync("First");
+        harness.ClickByAutomationId("mirage-dialog-accept");
+        await firstTask;
+
+        await harness.WaitForDialogTitleAsync("Second");
+        harness.ClickByAutomationId("mirage-dialog-accept");
+        await secondTask;
+
+        await harness.WaitForNoDialogAsync();
+        await harness.WaitForFocusTargetAsync("focus-seed");
+        Assert.Equal(harness.GetNodeIdByAutomationId("focus-seed"), harness.LastFocusedNodeId);
+    }
+
+    [Fact]
     public async Task CancelDialogs_ResolvesPendingDialogsPredictably()
     {
         using var harness = new DialogHarness();
@@ -296,6 +329,12 @@ public sealed class MirageBrowserDialogServiceTests
 
         public string? LastFocusedNodeId => _runtime.LastFocusedNodeId;
 
+        public void FocusByAutomationId(string automationId)
+        {
+            var nodeId = GetNodeIdByAutomationId(automationId);
+            Assert.True(_coordinator.TrySetNodeFocus(nodeId, isFocused: true));
+        }
+
         public void Dispose()
         {
             if (_windowHandler is not null)
@@ -325,6 +364,11 @@ public sealed class MirageBrowserDialogServiceTests
         {
             var expectedNodeId = GetNodeIdByAutomationId(automationId);
             return WaitUntilAsync(() => string.Equals(_runtime.LastFocusedNodeId, expectedNodeId, StringComparison.Ordinal));
+        }
+
+        public Task WaitForAutomationIdAsync(string automationId)
+        {
+            return WaitUntilAsync(() => FindByAutomationId(automationId) is not null);
         }
 
         private static NodeBase? FindByAutomationId(NodeBase root, string automationId)
