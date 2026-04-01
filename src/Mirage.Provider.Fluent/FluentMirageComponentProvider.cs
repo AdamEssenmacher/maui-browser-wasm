@@ -335,6 +335,17 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 valueElementTagName: "button",
                 secondaryElementTagName: "button",
                 stretchValueElementWidth: false),
+            [ComponentKind.ProgressBar] = new(
+                ComponentKind.ProgressBar,
+                "progress",
+                defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["max"] = "1"
+                },
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["Value"] = new(PropertyTarget.Property, "value")
+                })),
             [ComponentKind.IndicatorView] = new(
                 ComponentKind.IndicatorView,
                 "div",

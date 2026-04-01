@@ -59,8 +59,9 @@ Upstream MAUI shared-code risks for unofficial/browser targets are tracked separ
 - Deferred: full custom MAUI format token breadth across browser locales remains incomplete for date/time controls in this slice.
 
 12. Numeric/status control parity depth
-- Current behavior: `Stepper`, `ProgressBar`, and `ActivityIndicator` handlers are implemented with deterministic browser projections and two-way state updates.
-- Deferred: native long-press stepper repeat behavior and activity-indicator visual parity are best-effort in this slice.
+- Current behavior: `Stepper` and `ActivityIndicator` handlers are implemented with deterministic browser projections and two-way state updates.
+- Current behavior: `ProgressBar` now maps through `MirageProgressBarHandler` to a built-in browser-native `progress` host with deterministic `[0,1]` clamping and `ProgressColor` accent projection.
+- Deferred: exact native progress-track/background styling parity, native long-press stepper repeat behavior, and activity-indicator visual parity remain browser-limited in this slice.
 
 13. Media source parity depth (`Image` / `ImageButton`)
 - Current behavior: `Image` and `ImageButton` use a resolver-first async source pipeline with cancellation/version guards, deterministic source-kind + load-state attributes, stale load/error filtering, GIF playback projection, and managed object-url cleanup.

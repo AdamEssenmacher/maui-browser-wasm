@@ -243,6 +243,13 @@ public static class ControlsSampleCatalog
             description: "Runnable in Mirage today: exercises Stepper range/increment/value scenarios with enabled-state and value-changed flows.",
             pageFactory: CreateStepperPage),
         new(
+            id: "progressbarparitypage",
+            title: "ProgressBarParityProbePage",
+            upstreamPath: "App/ProgressBarParityProbePage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(ProgressBarParityProbePage),
+            description: "Mirage parity probe: exercises ProgressBar determinate value clamping, native progress-host color projection, and browser-limited style updates."),
+        new(
             id: "tabbedpagegallerymainpage",
             title: "TabbedPageGalleryMainPage",
             upstreamPath: "Pages/Compatibility/TabbedPageGalleryMainPage.xaml",
@@ -395,6 +402,7 @@ public static class ControlsSampleCatalog
             ["editorparitypage"] = ControlsSampleCategory.ParityProbes,
             ["radiobuttonparitypage"] = ControlsSampleCategory.ParityProbes,
             ["pickerparitypage"] = ControlsSampleCategory.ParityProbes,
+            ["progressbarparitypage"] = ControlsSampleCategory.ParityProbes,
             ["datepickerparitypage"] = ControlsSampleCategory.ParityProbes,
             ["timepickerparitypage"] = ControlsSampleCategory.ParityProbes,
 

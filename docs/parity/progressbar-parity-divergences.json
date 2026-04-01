@@ -1,0 +1,10 @@
+{
+  "entries": [
+    {
+      "id": "progressbar-native-track-styling-limited",
+      "summary": "Mirage uses the native browser progress host and projects determinate value plus accent color deterministically, but exact Android/iOS track/background styling remains browser-limited and is intentionally not replaced with a custom widget in this wave.",
+      "upstreamReference": "src/Core/src/Handlers/ProgressBar/ProgressBarHandler.iOS.cs",
+      "testReference": "ProgressBarHandler_MapsProgressAndColor_Deterministically"
+    }
+  ]
+}

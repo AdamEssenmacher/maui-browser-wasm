@@ -48,6 +48,7 @@ public sealed class ArchitectureBoundaryTests
             "MirageButtonHandler.cs",
             "MirageImageButtonHandler.cs",
             "MirageImageHandler.cs",
+            "MirageProgressBarHandler.cs",
             "MirageMapHandler.cs",
             "MirageLabelHandler.cs",
             "MirageBoxViewHandler.cs",
@@ -630,6 +631,24 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("TrySetNodeFocus(", pickerHandlerText, StringComparison.Ordinal);
         Assert.Contains("TryRequestNodePickerOpen(", coordinatorText, StringComparison.Ordinal);
         Assert.Contains("TryRequestNodePickerOpen(", runtimeText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BrowserPlatform_RegistersProgressBarHandlerAsBuiltInControlNode()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var progressBarHandlerPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers", "MirageProgressBarHandler.cs");
+        Assert.True(File.Exists(progressBarHandlerPath), $"Expected ProgressBar handler file not found: {progressBarHandlerPath}");
+
+        var hostingText = File.ReadAllText(hostingPath);
+        var progressBarHandlerText = File.ReadAllText(progressBarHandlerPath);
+
+        Assert.Contains("typeof(ProgressBar)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageProgressBarHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.ProgressBar", progressBarHandlerText, StringComparison.Ordinal);
+        Assert.DoesNotContain("CreateWeb(", progressBarHandlerText, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -304,6 +304,19 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentProgressBarDescriptor_MapsNativeProgressProjectionChannels()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.ProgressBar);
+
+        Assert.Equal("progress", descriptor.ElementTagName);
+        Assert.Equal("1", descriptor.DefaultAttributes["max"]);
+        Assert.Equal(PropertyTarget.Property, descriptor.PropertyMappings["Value"].Target);
+        Assert.Equal("value", descriptor.PropertyMappings["Value"].Name);
+        Assert.True(descriptor.PropertyMappings.ContainsKey("AutomationId"));
+    }
+
+    [Fact]
     public void FluentMapDescriptor_MapsToMirageOwnedMapHost()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();
