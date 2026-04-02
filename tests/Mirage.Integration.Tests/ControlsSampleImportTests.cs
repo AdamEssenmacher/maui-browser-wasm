@@ -75,6 +75,67 @@ public sealed class ControlsSampleImportTests
     }
 
     [Fact]
+    public void AppThemeBindingPage_CatalogEntry_IsRunnableCore()
+    {
+        var entry = Assert.Single(ControlsSampleCatalog.All, candidate => candidate.Id == "appthemebindingpage");
+
+        Assert.Equal("Pages/Core/AppThemeBindingPage.xaml", entry.UpstreamPath);
+        Assert.Equal(ControlsSampleStatus.Runnable, entry.Status);
+        Assert.Equal(ControlsSampleCategory.Core, entry.Category);
+        Assert.Equal(typeof(AppThemeBindingPage), entry.PageType);
+        Assert.NotNull(entry.PageFactory);
+    }
+
+    [Fact]
+    public void AppThemeBindingPage_PageFactory_AssignsExpectedAutomationIds()
+    {
+        var originalSynchronizationContext = SynchronizationContext.Current;
+        var originalDispatcherProvider = DispatcherProvider.Current;
+        Exception? exception = null;
+        Page? createdPage = null;
+
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(new ImmediateSynchronizationContext());
+            DispatcherProvider.SetCurrent(new BrowserDispatcherProvider());
+
+            var dispatcher = Dispatcher.GetForCurrentThread();
+            Assert.NotNull(dispatcher);
+
+            var dispatchSucceeded = dispatcher!.Dispatch(() =>
+            {
+                _ = new ControlsSampleApp();
+#pragma warning disable CS0612 // IFontNamedSizeService is required for upstream sample compatibility controls.
+                DependencyService.Register<IFontNamedSizeService, TestFontNamedSizeService>();
+#pragma warning restore CS0612
+
+                var entry = Assert.Single(ControlsSampleCatalog.All, candidate => candidate.Id == "appthemebindingpage");
+                exception = Record.Exception(() => createdPage = entry.CreatePage(NullServiceProvider.Instance));
+            });
+
+            Assert.True(dispatchSucceeded);
+        }
+        finally
+        {
+            DispatcherProvider.SetCurrent(originalDispatcherProvider);
+            SynchronizationContext.SetSynchronizationContext(originalSynchronizationContext);
+        }
+
+        Assert.Null(exception);
+        Assert.NotNull(createdPage);
+
+        var labels = FindDescendants<Label>(createdPage!).ToArray();
+
+        var inlineLabel = Assert.Single(labels, label => label.AutomationId == "controls-sample-appthemebindingpage-inline-label");
+        Assert.Equal("This text is green in light mode, and red in dark mode.", inlineLabel.Text);
+
+        var resourceLabel = Assert.Single(labels, label => label.AutomationId == "controls-sample-appthemebindingpage-resource-label");
+        Assert.Equal(
+            "This text use LightSecondaryColor Resource (Orange Color) in light mode, and DarkSecondaryColor Resource (Teal Color) in dark mode.",
+            resourceLabel.Text);
+    }
+
+    [Fact]
     public void SyncScript_DryRun_Path_IsOperational()
     {
         var repoRoot = FindRepoRoot();
@@ -153,6 +214,31 @@ public sealed class ControlsSampleImportTests
         throw new DirectoryNotFoundException("Unable to locate repository root containing Mirage.sln.");
     }
 
+    private static IEnumerable<TElement> FindDescendants<TElement>(Element root)
+        where TElement : Element
+    {
+        if (root is TElement typedRoot)
+        {
+            yield return typedRoot;
+        }
+
+        if (root is IElementController controller)
+        {
+            foreach (var child in controller.LogicalChildren)
+            {
+                if (child is not Element elementChild)
+                {
+                    continue;
+                }
+
+                foreach (var descendant in FindDescendants<TElement>(elementChild))
+                {
+                    yield return descendant;
+                }
+            }
+        }
+    }
+
 #pragma warning disable CS0612
     private sealed class TestFontNamedSizeService : IFontNamedSizeService
     {
@@ -182,6 +268,17 @@ public sealed class ControlsSampleImportTests
         public override void Send(SendOrPostCallback d, object? state)
         {
             d(state);
+        }
+    }
+
+    private sealed class NullServiceProvider : IServiceProvider
+    {
+        public static NullServiceProvider Instance { get; } = new();
+
+        public object? GetService(Type serviceType)
+        {
+            _ = serviceType;
+            return null;
         }
     }
 }
