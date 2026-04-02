@@ -1,4 +1,6 @@
 using Mirage.Core.Semantics;
+using Mirage.Maui.TextInput;
+using Mirage.Web.Runtime;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Internals;
@@ -11,13 +13,21 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
 {
     private const string InputNodeClass = "mirage-editor-input";
     private const string ControlMinHeightExpression = "calc(var(--base-height-multiplier, 11) * 8px)";
+    private const double ControlMinHeight = 88;
+    private const double DefaultWidth = 240;
+    private const double DefaultHeight = 96;
+    private const double AutoSizeMeasurementEpsilon = 0.5;
     private static readonly TimeSpan InitialSelectionRetryDelay = TimeSpan.FromMilliseconds(2);
+    private static readonly TimeSpan AutoSizeRefreshDelay = TimeSpan.FromMilliseconds(16);
     private const int MaxInitialSelectionRetryCount = 6;
+    // Web font and layout settle can lag the first measurement pass, so keep a small bounded retry window.
+    private const int MaxAutoSizeRefreshRetryCount = 4;
     private static int s_childNodeIdCounter;
 
     internal static readonly string[] ParityPropertyKeys =
     [
         nameof(IEditor.Background),
+        nameof(Editor.AutoSize),
         nameof(IEditor.CharacterSpacing),
         nameof(IEditor.Font),
         nameof(IEditor.IsReadOnly),
@@ -60,6 +70,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         new PropertyMapper<IEditor, MirageEditorHandler>(MirageViewMapper.CommonViewMapper)
         {
             [nameof(IEditor.Background)] = MapBackground,
+            [nameof(Editor.AutoSize)] = MapAutoSize,
             [nameof(IEditor.CharacterSpacing)] = MapCharacterSpacing,
             [nameof(IEditor.Font)] = MapFont,
             ["FontFamily"] = MapFont,
@@ -98,11 +109,32 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
     private bool _isConnected;
     private bool _initialSelectionRetryScheduled;
     private int _initialSelectionRetryCount;
+    private bool _autoSizeRefreshScheduled;
+    private int _remainingAutoSizeRefreshAttempts;
+    private double? _autoSizeMeasuredHeight;
+    private double _lastArrangedWidth = double.NaN;
+    private double _lastArrangedHeight = double.NaN;
 
     public MirageEditorHandler()
         : base(ComponentKind.Editor, Mapper, CommandMapper)
     {
         DefaultDisplayStyle = "flex";
+    }
+
+    public override Size GetDesiredSize(double widthConstraint, double heightConstraint)
+    {
+        var baseSize = base.GetDesiredSize(widthConstraint, heightConstraint);
+        var fallbackWidth = baseSize.Width > 0 ? baseSize.Width : DefaultWidth;
+        var fallbackHeight = baseSize.Height > 0 ? baseSize.Height : DefaultHeight;
+
+        if (!IsAutoSizeActive(VirtualView))
+        {
+            return ResolveMeasuredSizeWithConstraints(VirtualView, widthConstraint, heightConstraint, fallbackWidth, fallbackHeight);
+        }
+
+        var autoSizeHeight = _autoSizeMeasuredHeight.GetValueOrDefault(fallbackHeight);
+        autoSizeHeight = Math.Max(autoSizeHeight, ResolveEditorHostMinimumHeight(VirtualView));
+        return ResolveMeasuredSizeWithConstraints(VirtualView, widthConstraint, heightConstraint, fallbackWidth, autoSizeHeight);
     }
 
     protected override void ConnectHandler(MiragePlatformView platformView)
@@ -120,6 +152,8 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         }
 
         EnsureInitialSelectionProjectionAfterConnect();
+        RefreshAutoSizeBehavior(VirtualView, invalidateMeasure: false);
+        ScheduleAutoSizeRefresh(resetRetryBudget: true);
     }
 
     protected override void DisconnectHandler(MiragePlatformView platformView)
@@ -127,8 +161,43 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         _isConnected = false;
         _initialSelectionRetryScheduled = false;
         _initialSelectionRetryCount = 0;
+        _autoSizeRefreshScheduled = false;
+        _remainingAutoSizeRefreshAttempts = 0;
+        _autoSizeMeasuredHeight = null;
+        _lastArrangedWidth = double.NaN;
+        _lastArrangedHeight = double.NaN;
         DisconnectStructure();
         base.DisconnectHandler(platformView);
+    }
+
+    public override void PlatformArrange(Rect frame)
+    {
+        var widthChanged = !double.IsFinite(_lastArrangedWidth)
+            || Math.Abs(_lastArrangedWidth - frame.Width) > AutoSizeMeasurementEpsilon;
+        var heightChanged = !double.IsFinite(_lastArrangedHeight)
+            || Math.Abs(_lastArrangedHeight - frame.Height) > AutoSizeMeasurementEpsilon;
+        _lastArrangedWidth = frame.Width;
+        _lastArrangedHeight = frame.Height;
+
+        base.PlatformArrange(frame);
+
+        if (!IsAutoSizeActive(VirtualView))
+        {
+            ClearAutoSizeMeasurement(VirtualView, invalidateMeasure: false);
+            return;
+        }
+
+        if (widthChanged)
+        {
+            RefreshAutoSizeBehavior(VirtualView, invalidateMeasure: true);
+            ScheduleAutoSizeRefresh(resetRetryBudget: true);
+            return;
+        }
+
+        if (heightChanged && UpdateAutoSizeProjection(VirtualView))
+        {
+            RequestRender();
+        }
     }
 
     public void OnRuntimeEvent(string eventName, string? payload)
@@ -137,6 +206,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
     }
 
     public static void MapBackground(MirageEditorHandler handler, IEditor editor) => handler.MapEditor(editor);
+    public static void MapAutoSize(MirageEditorHandler handler, IEditor editor) => handler.MapEditor(editor);
     public static void MapCharacterSpacing(MirageEditorHandler handler, IEditor editor) => handler.MapEditor(editor);
     public static void MapFont(MirageEditorHandler handler, IEditor editor) => handler.MapEditor(editor);
     public static void MapIsReadOnly(MirageEditorHandler handler, IEditor editor) => handler.MapEditor(editor);
@@ -183,26 +253,32 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
     public static void MapUnfocus(MirageEditorHandler handler, IEditor editor, object? args)
     {
         _ = editor;
-        _ = args;
+        var hideRequest = args as MirageSoftInputHideRequest;
 
         if (handler.Coordinator is not { } coordinator
             || handler._inputNode is null
             || string.IsNullOrWhiteSpace(handler._inputNode.NodeId))
         {
+            hideRequest?.TrySetResult(false);
             return;
         }
 
-        _ = coordinator.TrySetNodeFocus(handler._inputNode.NodeId, isFocused: false);
+        var unfocused = coordinator.TrySetNodeFocus(handler._inputNode.NodeId, isFocused: false);
+        hideRequest?.TrySetResult(unfocused);
     }
 
     private void MapEditor(IEditor editor)
     {
         if (!ApplyEditorProjectionCore(editor))
         {
+            RefreshAutoSizeBehavior(editor, invalidateMeasure: false);
+            ScheduleAutoSizeRefresh(resetRetryBudget: true);
             return;
         }
 
         RequestRender();
+        RefreshAutoSizeBehavior(editor, invalidateMeasure: false);
+        ScheduleAutoSizeRefresh(resetRetryBudget: true);
     }
 
     private bool ApplyEditorProjectionCore(IEditor editor)
@@ -228,6 +304,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         changed |= UpdateVerticalTextAlignmentProjection(editor);
         changed |= UpdateEnabledProjection(editor);
         changed |= UpdateFocusProjection(editor);
+        changed |= UpdateAutoSizeProjection(editor);
 
         ApplySelectionFromVirtualView(editor);
         return changed;
@@ -269,13 +346,14 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         _inputNode = null;
         _isApplyingRuntimeInput = false;
         _isApplyingRuntimeSelection = false;
+        _autoSizeRefreshScheduled = false;
     }
 
     private bool ApplyContainerStyles()
     {
         var changed = SetStyleIfChanged(PlatformView, "alignItems", "stretch");
         changed |= SetStyleIfChanged(PlatformView, "boxSizing", "border-box");
-        changed |= SetStyleIfChanged(PlatformView, "minHeight", ControlMinHeightExpression);
+        changed |= SetStyleIfChanged(PlatformView, "minHeight", ResolveEditorHostMinHeightStyle(VirtualView));
         changed |= SetStyleIfChanged(PlatformView, "cursor", VirtualView.IsEnabled ? "text" : "not-allowed");
 
         if (_inputNode is not null)
@@ -429,6 +507,36 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         return SetAttributeIfChanged(_inputNode, "data-maui-editor-focused", editor.IsFocused ? "true" : "false");
     }
 
+    private bool UpdateAutoSizeProjection(IEditor editor)
+    {
+        var isAutoSize = IsAutoSizeActive(editor);
+        var changed = false;
+
+        if (!isAutoSize || _autoSizeMeasuredHeight is not double measuredHeight || measuredHeight <= 0)
+        {
+            changed |= SetStyleIfChanged(_inputNode, "overflowY", null);
+            changed |= SetStyleIfChanged(_inputNode, "height", "100%");
+            return changed;
+        }
+
+        var desiredHeight = Math.Max(measuredHeight, ResolveEditorHostMinimumHeight(editor));
+        var projectedHeight = desiredHeight;
+        var overflowY = "hidden";
+        if (double.IsFinite(_lastArrangedHeight) && _lastArrangedHeight >= 0)
+        {
+            projectedHeight = Math.Min(projectedHeight, _lastArrangedHeight);
+            if (projectedHeight + AutoSizeMeasurementEpsilon < desiredHeight)
+            {
+                overflowY = "auto";
+            }
+        }
+
+        changed |= SetStyleIfChanged(_inputNode, "overflowY", overflowY);
+        var cssHeight = $"{Math.Ceiling(projectedHeight):0}px";
+        changed |= SetStyleIfChanged(_inputNode, "height", cssHeight);
+        return changed;
+    }
+
     private void ApplySelectionFromVirtualView(IEditor editor)
     {
         _ = TryApplySelectionFromVirtualView(editor);
@@ -550,6 +658,9 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
     {
         switch (eventName)
         {
+            case MirageRuntimeEventNames.SuppressedFocusStateSync:
+                SyncSuppressedFocusState(isFocused: true);
+                return;
             case "input":
             case "change":
                 if (!VirtualView.IsEnabled || VirtualView.IsReadOnly)
@@ -617,6 +728,118 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
             _isApplyingRuntimeSelection = false;
             _isApplyingRuntimeInput = false;
         }
+
+        RefreshAutoSizeBehavior(VirtualView, invalidateMeasure: true);
+    }
+
+    private void SyncSuppressedFocusState(bool isFocused)
+    {
+        if (VirtualView is not VisualElement visualElement
+            || !MirageFocusStateSynchronizer.TrySetFocusedStateSilently(visualElement, isFocused))
+        {
+            return;
+        }
+
+        if (UpdateFocusProjection(VirtualView))
+        {
+            RequestRender();
+        }
+    }
+
+    private void RefreshAutoSizeBehavior(IEditor editor, bool invalidateMeasure)
+    {
+        if (!IsAutoSizeActive(editor))
+        {
+            ClearAutoSizeMeasurement(editor, invalidateMeasure);
+            return;
+        }
+
+        if (_inputNode is null
+            || Coordinator is not { } coordinator
+            || string.IsNullOrWhiteSpace(_inputNode.NodeId))
+        {
+            return;
+        }
+
+        if (!coordinator.TryGetNodeTextContentHeight(_inputNode.NodeId, out var measuredHeight)
+            || !double.IsFinite(measuredHeight)
+            || measuredHeight <= 0)
+        {
+            return;
+        }
+
+        measuredHeight = Math.Ceiling(measuredHeight);
+        if (_autoSizeMeasuredHeight is double currentHeight
+            && Math.Abs(currentHeight - measuredHeight) <= AutoSizeMeasurementEpsilon)
+        {
+            return;
+        }
+
+        _autoSizeMeasuredHeight = measuredHeight;
+        if (UpdateAutoSizeProjection(editor))
+        {
+            RequestRender();
+        }
+
+        if (invalidateMeasure && editor is VisualElement visualElement)
+        {
+            visualElement.InvalidateMeasure();
+        }
+    }
+
+    private void ClearAutoSizeMeasurement(IEditor editor, bool invalidateMeasure)
+    {
+        var hadMeasurement = _autoSizeMeasuredHeight is not null;
+        _autoSizeMeasuredHeight = null;
+        _autoSizeRefreshScheduled = false;
+        _remainingAutoSizeRefreshAttempts = 0;
+
+        if (UpdateAutoSizeProjection(editor))
+        {
+            RequestRender();
+        }
+
+        if (invalidateMeasure && hadMeasurement && editor is VisualElement visualElement)
+        {
+            visualElement.InvalidateMeasure();
+        }
+    }
+
+    private void ScheduleAutoSizeRefresh(bool resetRetryBudget)
+    {
+        if (resetRetryBudget)
+        {
+            _remainingAutoSizeRefreshAttempts = MaxAutoSizeRefreshRetryCount;
+        }
+
+        if (!_isConnected
+            || _autoSizeRefreshScheduled
+            || _remainingAutoSizeRefreshAttempts <= 0
+            || !IsAutoSizeActive(VirtualView)
+            || Coordinator is not { } coordinator)
+        {
+            return;
+        }
+
+        _autoSizeRefreshScheduled = true;
+        _remainingAutoSizeRefreshAttempts--;
+        if (!coordinator.DispatchDelayed(AutoSizeRefreshDelay, RunScheduledAutoSizeRefresh))
+        {
+            _autoSizeRefreshScheduled = false;
+            RunScheduledAutoSizeRefresh();
+        }
+    }
+
+    private void RunScheduledAutoSizeRefresh()
+    {
+        _autoSizeRefreshScheduled = false;
+        if (!_isConnected)
+        {
+            return;
+        }
+
+        RefreshAutoSizeBehavior(VirtualView, invalidateMeasure: true);
+        ScheduleAutoSizeRefresh(resetRetryBudget: false);
     }
 
     private (int SelectionStart, int SelectionEnd)? CaptureRuntimeSelectionSnapshot(int rawValueLength)
@@ -728,6 +951,137 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         }
 
         return "text";
+    }
+
+    private static EditorAutoSizeOption GetAutoSize(IEditor editor)
+    {
+        return editor is Editor concreteEditor
+            ? concreteEditor.AutoSize
+            : EditorAutoSizeOption.Disabled;
+    }
+
+    private static bool IsAutoSizeActive(IEditor editor)
+    {
+        return GetAutoSize(editor) == EditorAutoSizeOption.TextChanges
+            && !HasExplicitHeightRequest(editor);
+    }
+
+    private static bool HasExplicitHeightRequest(IEditor editor)
+    {
+        return editor is VisualElement visualElement
+            && double.IsFinite(visualElement.HeightRequest)
+            && visualElement.HeightRequest >= 0;
+    }
+
+    private static string? ResolveEditorHostMinHeightStyle(IEditor editor)
+    {
+        if (editor is not VisualElement visualElement)
+        {
+            return ControlMinHeightExpression;
+        }
+
+        if (double.IsFinite(visualElement.MinimumHeightRequest) && visualElement.MinimumHeightRequest >= 0)
+        {
+            return MirageViewMapper.ToPx(visualElement.MinimumHeightRequest);
+        }
+
+        if (double.IsFinite(visualElement.HeightRequest) && visualElement.HeightRequest >= 0)
+        {
+            return null;
+        }
+
+        return ControlMinHeightExpression;
+    }
+
+    private static double ResolveEditorHostMinimumHeight(IEditor editor)
+    {
+        if (editor is not VisualElement visualElement)
+        {
+            return ControlMinHeight;
+        }
+
+        if (double.IsFinite(visualElement.MinimumHeightRequest) && visualElement.MinimumHeightRequest >= 0)
+        {
+            return visualElement.MinimumHeightRequest;
+        }
+
+        if (double.IsFinite(visualElement.HeightRequest) && visualElement.HeightRequest >= 0)
+        {
+            return 0;
+        }
+
+        return ControlMinHeight;
+    }
+
+    private static Size ResolveMeasuredSizeWithConstraints(
+        IEditor editor,
+        double widthConstraint,
+        double heightConstraint,
+        double measuredWidth,
+        double measuredHeight)
+    {
+        var clampedWidth = ResolveDesiredDimension(widthConstraint, measuredWidth);
+        var clampedHeight = ResolveDesiredDimension(heightConstraint, measuredHeight);
+        var (requestedWidth, requestedMinimumWidth, requestedMaximumWidth) = ResolveRequestedDimensionRequests(editor as VisualElement, isWidth: true);
+        var (requestedHeight, requestedMinimumHeight, requestedMaximumHeight) = ResolveRequestedDimensionRequests(editor as VisualElement, isWidth: false);
+        return new Size(
+            ResolveConstraints(clampedWidth, requestedWidth, requestedMinimumWidth, requestedMaximumWidth),
+            ResolveConstraints(clampedHeight, requestedHeight, requestedMinimumHeight, requestedMaximumHeight));
+    }
+
+    private static double ResolveDesiredDimension(double constraint, double fallback)
+    {
+        if (double.IsNaN(constraint) || double.IsInfinity(constraint))
+        {
+            return Math.Max(0, fallback);
+        }
+
+        return Math.Max(0, Math.Min(constraint, fallback));
+    }
+
+    private static double ResolveConstraints(double measured, double exact, double min, double max)
+    {
+        var resolved = measured;
+        var resolvedMin = ResolveMinimum(min);
+
+        if (IsExplicitLengthSet(exact))
+        {
+            resolved = exact;
+        }
+
+        if (IsExplicitLengthSet(max) && resolved > max)
+        {
+            resolved = max;
+        }
+
+        if (resolved < resolvedMin)
+        {
+            resolved = resolvedMin;
+        }
+
+        return resolved;
+    }
+
+    private static double ResolveMinimum(double value)
+    {
+        return IsExplicitLengthSet(value) ? Math.Max(0, value) : 0;
+    }
+
+    private static bool IsExplicitLengthSet(double value)
+    {
+        return double.IsFinite(value) && value >= 0;
+    }
+
+    private static (double Exact, double Min, double Max) ResolveRequestedDimensionRequests(VisualElement? visualElement, bool isWidth)
+    {
+        if (visualElement is null)
+        {
+            return (-1, -1, -1);
+        }
+
+        return isWidth
+            ? (visualElement.WidthRequest, visualElement.MinimumWidthRequest, visualElement.MaximumWidthRequest)
+            : (visualElement.HeightRequest, visualElement.MinimumHeightRequest, visualElement.MaximumHeightRequest);
     }
 
     private static string GetTransformedText(IEditor editor, string? sourceText)

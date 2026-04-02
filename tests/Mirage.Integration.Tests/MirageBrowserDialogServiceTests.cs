@@ -16,6 +16,7 @@ using Xunit;
 
 namespace Mirage.Integration.Tests;
 
+[Collection("Mirage NonParallel")]
 public sealed class MirageBrowserDialogServiceTests
 {
     [Fact]
@@ -176,6 +177,88 @@ public sealed class MirageBrowserDialogServiceTests
     }
 
     [Fact]
+    public async Task DisplayAlertAsync_RestoredEntryFocus_SynchronizesLogicalStateWithoutReopeningDialog()
+    {
+        using var harness = new DialogHarness();
+        var focusedCount = 0;
+        var entry = new Entry
+        {
+            AutomationId = "focus-entry"
+        };
+        var page = new ContentPage
+        {
+            Content = entry
+        };
+
+        entry.Focused += async (_, _) =>
+        {
+            focusedCount++;
+            if (focusedCount == 1)
+            {
+                await page.DisplayAlertAsync("Focused", "Entry focused", "OK");
+            }
+        };
+
+        harness.Attach(page);
+        await harness.WaitForAutomationIdAsync("focus-entry");
+
+        Assert.True(entry.Focus());
+        harness.SendActiveFocusEvent();
+        await harness.WaitForDialogTitleAsync("Focused");
+
+        Assert.True(entry.IsFocused);
+        Assert.Equal(1, focusedCount);
+
+        harness.ClickByAutomationId("mirage-dialog-accept");
+        await harness.WaitForNoDialogAsync();
+        await harness.WaitForAsync(() => entry.IsFocused);
+
+        Assert.True(entry.IsFocused);
+        Assert.Equal(1, focusedCount);
+    }
+
+    [Fact]
+    public async Task DisplayAlertAsync_RestoredSearchBarFocus_SynchronizesLogicalStateWithoutReopeningDialog()
+    {
+        using var harness = new DialogHarness();
+        var focusedCount = 0;
+        var searchBar = new SearchBar
+        {
+            AutomationId = "focus-searchbar"
+        };
+        var page = new ContentPage
+        {
+            Content = searchBar
+        };
+
+        searchBar.Focused += async (_, _) =>
+        {
+            focusedCount++;
+            if (focusedCount == 1)
+            {
+                await page.DisplayAlertAsync("Focused", "SearchBar focused", "OK");
+            }
+        };
+
+        harness.Attach(page);
+        await harness.WaitForAutomationIdAsync("focus-searchbar");
+
+        Assert.True(searchBar.Focus());
+        harness.SendActiveFocusEvent();
+        await harness.WaitForDialogTitleAsync("Focused");
+
+        Assert.True(searchBar.IsFocused);
+        Assert.Equal(1, focusedCount);
+
+        harness.ClickByAutomationId("mirage-dialog-accept");
+        await harness.WaitForNoDialogAsync();
+        await harness.WaitForAsync(() => searchBar.IsFocused);
+
+        Assert.True(searchBar.IsFocused);
+        Assert.Equal(1, focusedCount);
+    }
+
+    [Fact]
     public async Task CancelDialogs_ResolvesPendingDialogsPredictably()
     {
         using var harness = new DialogHarness();
@@ -245,6 +328,9 @@ public sealed class MirageBrowserDialogServiceTests
                 handlers.AddHandler(typeof(Button), typeof(MirageButtonHandler));
                 handlers.AddHandler(typeof(Switch), typeof(MirageSwitchHandler));
                 handlers.AddHandler(typeof(BoxView), typeof(MirageBoxViewHandler));
+                handlers.AddHandler(typeof(Entry), typeof(MirageEntryHandler));
+                handlers.AddHandler(typeof(Editor), typeof(MirageEditorHandler));
+                handlers.AddHandler(typeof(SearchBar), typeof(MirageSearchBarHandler));
             });
 
             builder.Services.AddSingleton<IMirageRenderCoordinator>(_coordinator);
@@ -335,6 +421,12 @@ public sealed class MirageBrowserDialogServiceTests
             Assert.True(_coordinator.TrySetNodeFocus(nodeId, isFocused: true));
         }
 
+        public void SendActiveFocusEvent()
+        {
+            Assert.False(string.IsNullOrWhiteSpace(_runtime.ActiveNodeId));
+            _coordinator.OnEvent(_runtime.ActiveNodeId!, "focus", payload: null);
+        }
+
         public void Dispose()
         {
             if (_windowHandler is not null)
@@ -369,6 +461,11 @@ public sealed class MirageBrowserDialogServiceTests
         public Task WaitForAutomationIdAsync(string automationId)
         {
             return WaitUntilAsync(() => FindByAutomationId(automationId) is not null);
+        }
+
+        public Task WaitForAsync(Func<bool> predicate, int timeoutMs = 2000)
+        {
+            return WaitUntilAsync(predicate, timeoutMs);
         }
 
         private static NodeBase? FindByAutomationId(NodeBase root, string automationId)
@@ -477,6 +574,24 @@ public sealed class MirageBrowserDialogServiceTests
         {
             LastFocusedNodeId = nodeId;
             ActiveNodeId = isFocused ? nodeId : null;
+            return true;
+        }
+
+        public bool TrySetNodeFocus(string nodeId, bool isFocused, bool suppressNextFocusEvent)
+        {
+            if (!suppressNextFocusEvent)
+            {
+                return TrySetNodeFocus(nodeId, isFocused);
+            }
+
+            LastFocusedNodeId = nodeId;
+            ActiveNodeId = isFocused ? nodeId : null;
+            if (isFocused)
+            {
+                EventSink?.OnEvent(nodeId, MirageRuntimeEventNames.SuppressedFocusStateSync, "true");
+                return true;
+            }
+
             return true;
         }
 

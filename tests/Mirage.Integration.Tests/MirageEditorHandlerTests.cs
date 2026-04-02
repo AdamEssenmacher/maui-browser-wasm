@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 using Xunit;
@@ -358,6 +359,250 @@ public sealed class MirageEditorHandlerTests
     }
 
     [Fact]
+    public void EditorHandler_AutoSizeTextChanges_GrowsAndShrinksWithRuntimeInput()
+    {
+        var editor = new Editor
+        {
+            AutoSize = EditorAutoSizeOption.TextChanges,
+            Text = "line one"
+        };
+
+        var (handler, _, coordinator, runtime) = CreateAttachedHandler(editor);
+        var inputNode = GetInputNode(handler);
+
+        runtime.SetContentHeight(inputNode.NodeId, 124);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(Editor.AutoSize));
+
+        Assert.Equal("124px", inputNode.GetStyleValue("height"));
+        Assert.Null(handler.PlatformView.GetStyleValue("height"));
+        Assert.Equal("calc(var(--base-height-multiplier, 11) * 8px)", handler.PlatformView.GetStyleValue("minHeight"));
+
+        runtime.SetContentHeight(inputNode.NodeId, 52);
+        coordinator.OnEvent(inputNode.NodeId, "input", "short");
+
+        Assert.Equal("88px", inputNode.GetStyleValue("height"));
+        Assert.Null(handler.PlatformView.GetStyleValue("height"));
+        Assert.Equal("calc(var(--base-height-multiplier, 11) * 8px)", handler.PlatformView.GetStyleValue("minHeight"));
+    }
+
+    [Fact]
+    public void EditorHandler_AutoSizeDisabled_ClearsProjectedAutoHeight()
+    {
+        var editor = new Editor
+        {
+            AutoSize = EditorAutoSizeOption.TextChanges,
+            Text = "line one"
+        };
+
+        var (handler, _, _, runtime) = CreateAttachedHandler(editor);
+        var inputNode = GetInputNode(handler);
+
+        runtime.SetContentHeight(inputNode.NodeId, 144);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(Editor.AutoSize));
+        Assert.Equal("144px", inputNode.GetStyleValue("height"));
+
+        editor.AutoSize = EditorAutoSizeOption.Disabled;
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(Editor.AutoSize));
+
+        Assert.Equal("100%", inputNode.GetStyleValue("height"));
+        Assert.Equal("calc(var(--base-height-multiplier, 11) * 8px)", handler.PlatformView.GetStyleValue("minHeight"));
+        Assert.Null(inputNode.GetStyleValue("overflowY"));
+        Assert.Null(handler.PlatformView.GetStyleValue("height"));
+    }
+
+    [Fact]
+    public void EditorHandler_AutoSize_RecomputesWhenArrangeWidthChanges()
+    {
+        var editor = new Editor
+        {
+            AutoSize = EditorAutoSizeOption.TextChanges,
+            Text = "wrapped content"
+        };
+
+        var (handler, _, _, runtime) = CreateAttachedHandler(editor);
+        var inputNode = GetInputNode(handler);
+
+        runtime.SetContentHeight(inputNode.NodeId, 96);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(Editor.AutoSize));
+        Assert.Equal("96px", inputNode.GetStyleValue("height"));
+
+        runtime.SetContentHeight(inputNode.NodeId, 156);
+        handler.PlatformArrange(new Rect(0, 0, 180, 200));
+
+        Assert.Equal("156px", inputNode.GetStyleValue("height"));
+        Assert.Equal("calc(var(--base-height-multiplier, 11) * 8px)", handler.PlatformView.GetStyleValue("minHeight"));
+    }
+
+    [Fact]
+    public void EditorHandler_AutoSize_DoesNotOverrideExplicitHeightOrMinimumHeightRequests()
+    {
+        var editor = new Editor
+        {
+            AutoSize = EditorAutoSizeOption.TextChanges,
+            Text = "line one",
+            HeightRequest = 200,
+            MinimumHeightRequest = 160
+        };
+
+        var (handler, _, _, runtime) = CreateAttachedHandler(editor);
+        var inputNode = GetInputNode(handler);
+
+        runtime.SetContentHeight(inputNode.NodeId, 124);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(Editor.AutoSize));
+
+        Assert.Equal("100%", inputNode.GetStyleValue("height"));
+        Assert.Equal("200px", handler.PlatformView.GetStyleValue("height"));
+        Assert.Equal("160px", handler.PlatformView.GetStyleValue("minHeight"));
+    }
+
+    [Fact]
+    public void EditorHandler_AutoSize_GetDesiredSize_ClampsToHostMinimumHeightFloor()
+    {
+        var editor = new Editor
+        {
+            AutoSize = EditorAutoSizeOption.TextChanges,
+            Text = "short"
+        };
+
+        var (handler, _, _, runtime) = CreateAttachedHandler(editor);
+        var inputNode = GetInputNode(handler);
+
+        runtime.SetContentHeight(inputNode.NodeId, 40);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(Editor.AutoSize));
+
+        var desired = handler.GetDesiredSize(double.PositiveInfinity, double.PositiveInfinity);
+
+        Assert.Equal(88, desired.Height);
+    }
+
+    [Fact]
+    public void EditorHandler_AutoSize_ClampsProjectedHeightToHostMinimumHeightFloor()
+    {
+        var editor = new Editor
+        {
+            AutoSize = EditorAutoSizeOption.TextChanges,
+            Text = "short"
+        };
+
+        var (handler, _, _, runtime) = CreateAttachedHandler(editor);
+        var inputNode = GetInputNode(handler);
+
+        runtime.SetContentHeight(inputNode.NodeId, 40);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(Editor.AutoSize));
+
+        Assert.Equal("88px", inputNode.GetStyleValue("height"));
+        Assert.Equal("hidden", inputNode.GetStyleValue("overflowY"));
+        Assert.Equal("calc(var(--base-height-multiplier, 11) * 8px)", handler.PlatformView.GetStyleValue("minHeight"));
+    }
+
+    [Fact]
+    public void EditorHandler_AutoSize_BecomingInactive_ClearsProjectedAutoHeightDuringArrange()
+    {
+        var editor = new Editor
+        {
+            AutoSize = EditorAutoSizeOption.TextChanges,
+            Text = "line one"
+        };
+
+        var (handler, _, _, runtime) = CreateAttachedHandler(editor);
+        var inputNode = GetInputNode(handler);
+
+        runtime.SetContentHeight(inputNode.NodeId, 144);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(Editor.AutoSize));
+        Assert.Equal("144px", inputNode.GetStyleValue("height"));
+
+        editor.HeightRequest = 200;
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+
+        Assert.Equal("100%", inputNode.GetStyleValue("height"));
+        Assert.Null(inputNode.GetStyleValue("overflowY"));
+    }
+
+    [Fact]
+    public void EditorHandler_AutoSize_ClampsProjectedHeightToArrangedHostBounds()
+    {
+        var editor = new Editor
+        {
+            AutoSize = EditorAutoSizeOption.TextChanges,
+            Text = "line one"
+        };
+
+        var (handler, _, _, runtime) = CreateAttachedHandler(editor);
+        var inputNode = GetInputNode(handler);
+
+        runtime.SetContentHeight(inputNode.NodeId, 144);
+        handler.PlatformArrange(new Rect(0, 0, 320, 120));
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(Editor.AutoSize));
+
+        Assert.Equal("120px", inputNode.GetStyleValue("height"));
+        Assert.Equal("auto", inputNode.GetStyleValue("overflowY"));
+        Assert.Null(handler.PlatformView.GetStyleValue("height"));
+    }
+
+    [Fact]
+    public void EditorHandler_AutoSize_RecomputesProjectionWhenArrangeHeightChanges()
+    {
+        var editor = new Editor
+        {
+            AutoSize = EditorAutoSizeOption.TextChanges,
+            Text = "line one"
+        };
+
+        var (handler, _, _, runtime) = CreateAttachedHandler(editor);
+        var inputNode = GetInputNode(handler);
+
+        runtime.SetContentHeight(inputNode.NodeId, 144);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(Editor.AutoSize));
+
+        Assert.Equal("144px", inputNode.GetStyleValue("height"));
+        Assert.Equal("hidden", inputNode.GetStyleValue("overflowY"));
+
+        handler.PlatformArrange(new Rect(0, 0, 320, 120));
+
+        Assert.Equal("120px", inputNode.GetStyleValue("height"));
+        Assert.Equal("auto", inputNode.GetStyleValue("overflowY"));
+
+        handler.PlatformArrange(new Rect(0, 0, 320, 180));
+
+        Assert.Equal("144px", inputNode.GetStyleValue("height"));
+        Assert.Equal("hidden", inputNode.GetStyleValue("overflowY"));
+    }
+
+    [Fact]
+    public void EditorHandler_AutoSize_RetriesMeasurementUntilLayoutSettles()
+    {
+        var editor = new Editor
+        {
+            AutoSize = EditorAutoSizeOption.TextChanges,
+            Text = "wrapped content"
+        };
+
+        var (handler, _, _, runtime, dispatcher) = CreateAttachedHandlerWithQueuedDispatcher(editor);
+        var inputNode = GetInputNode(handler);
+
+        dispatcher.FlushAll();
+        runtime.SetContentHeightSequence(inputNode.NodeId, 96, 96, 144, 144);
+
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(Editor.AutoSize));
+
+        Assert.Equal("96px", inputNode.GetStyleValue("height"));
+
+        dispatcher.FlushAll();
+
+        Assert.Equal("144px", inputNode.GetStyleValue("height"));
+        Assert.Equal("hidden", inputNode.GetStyleValue("overflowY"));
+    }
+
+    [Fact]
     public void EditorHandler_FocusCommand_TargetsTextAreaNode()
     {
         var editor = new Editor
@@ -433,6 +678,24 @@ public sealed class MirageEditorHandlerTests
         return (handler, editor, coordinator, runtime);
     }
 
+    private static (MirageEditorHandler Handler, Editor Editor, MirageRenderCoordinator Coordinator, EditorRuntimeProbe Runtime, QueuedDispatcher Dispatcher) CreateAttachedHandlerWithQueuedDispatcher(Editor editor)
+    {
+        var dispatcher = new QueuedDispatcher();
+        var coordinator = new MirageRenderCoordinator(dispatcher);
+        var runtime = new EditorRuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageEditorHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        ((IElementHandler)handler).SetVirtualView(editor);
+        return (handler, editor, coordinator, runtime, dispatcher);
+    }
+
     private static MiragePlatformView GetInputNode(MirageEditorHandler handler)
     {
         return handler.PlatformView.Children
@@ -444,6 +707,8 @@ public sealed class MirageEditorHandlerTests
     private sealed class EditorRuntimeProbe : IMirageRuntime
     {
         private readonly Dictionary<string, (int Start, int End)> _selectionByNodeId = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, double> _contentHeightByNodeId = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, Queue<double>> _contentHeightSequencesByNodeId = new(StringComparer.Ordinal);
 
         public string? LastFocusedNodeId { get; private set; }
 
@@ -550,6 +815,17 @@ public sealed class MirageEditorHandlerTests
             return true;
         }
 
+        public bool TryGetNodeTextContentHeight(string nodeId, out double height)
+        {
+            if (_contentHeightSequencesByNodeId.TryGetValue(nodeId, out var sequence) && sequence.Count > 0)
+            {
+                height = sequence.Dequeue();
+                return true;
+            }
+
+            return _contentHeightByNodeId.TryGetValue(nodeId, out height);
+        }
+
         public void Dispose()
         {
         }
@@ -571,6 +847,57 @@ public sealed class MirageEditorHandlerTests
         public void SetSelection(string nodeId, int start, int end)
         {
             _selectionByNodeId[nodeId] = (start, end);
+        }
+
+        public void SetContentHeight(string nodeId, double height)
+        {
+            _contentHeightByNodeId[nodeId] = height;
+        }
+
+        public void SetContentHeightSequence(string nodeId, params double[] heights)
+        {
+            _contentHeightSequencesByNodeId[nodeId] = new Queue<double>(heights);
+
+            if (heights.Length > 0)
+            {
+                _contentHeightByNodeId[nodeId] = heights[^1];
+            }
+        }
+    }
+
+    private sealed class QueuedDispatcher : IDispatcher
+    {
+        private readonly Queue<Action> _pending = new();
+
+        public bool IsDispatchRequired => false;
+
+        public int PendingCount => _pending.Count;
+
+        public bool Dispatch(Action action)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            _pending.Enqueue(action);
+            return true;
+        }
+
+        public bool DispatchDelayed(TimeSpan delay, Action action)
+        {
+            _ = delay;
+            return Dispatch(action);
+        }
+
+        public IDispatcherTimer CreateTimer()
+        {
+            throw new NotSupportedException("QueuedDispatcher does not provide timers.");
+        }
+
+        public void FlushAll()
+        {
+            while (_pending.Count > 0)
+            {
+                var action = _pending.Dequeue();
+                action();
+            }
         }
     }
 

@@ -148,6 +148,11 @@ public sealed class DomElement
 
     public static void UnsubscribePullToRefresh(int subscriptionId) => DomApi.UnsubscribePullToRefresh(subscriptionId);
 
+    public bool TryGetTextInputContentHeight(out double height)
+    {
+        height = DomApi.GetTextInputContentHeight(Handle);
+        return double.IsFinite(height) && height > 0;
+    }
     public bool Focus() => DomApi.FocusElement(Handle);
 
     public void Blur() => DomApi.BlurElement(Handle);
