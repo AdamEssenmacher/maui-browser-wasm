@@ -1819,6 +1819,7 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
     side: "",
     startOffset: 0,
     dragDistance: 0,
+    startEmitted: false,
     currentOffset: 0,
     openSide: "",
     captured: false
@@ -2123,6 +2124,7 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
     state.captured = false;
     state.pointerId = -1;
     state.dragDistance = 0;
+    state.startEmitted = false;
 
     if (!resolvedSide || extent <= 0) {
       completeClosedState(resolvedSide, true, true);
@@ -2187,6 +2189,7 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
     state.side = state.openSide || "";
     state.startOffset = state.currentOffset;
     state.dragDistance = 0;
+    state.startEmitted = false;
   };
 
   const pointerMoveListener = (event) => {
@@ -2227,6 +2230,14 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
         }
       }
 
+    }
+
+    const axisDistance = state.axis === "horizontal" ? absDx : absDy;
+    if (!state.startEmitted) {
+      if (axisDistance < 10) {
+        return;
+      }
+
       emitSwipeStart(state.side);
       if (typeof owner.setPointerCapture === "function") {
         try {
@@ -2236,6 +2247,8 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
           state.captured = false;
         }
       }
+
+      state.startEmitted = true;
     }
 
     const extent = getSideExtent(state.side);

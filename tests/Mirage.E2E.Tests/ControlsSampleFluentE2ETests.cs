@@ -2340,6 +2340,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             Assert.Equal(68, root.GetProperty("currentOffset").GetDouble(), 3);
         }
         await WaitForOpenStateAsync("false", "none");
+        await WaitForLabelTextContainsAsync(page, eventStateSelector, "events start=2");
 
         await DispatchTouchSwipeAsync(hostSelector, 132, 0);
         await WaitForOpenStateAsync("true", "left");

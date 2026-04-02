@@ -273,6 +273,29 @@ public sealed class MirageSwipeViewHandlerTests
         Assert.False(payload.RootElement.GetProperty("enabled").GetBoolean());
     }
 
+    [Fact]
+    public void SwipeViewHandler_ClearsManagedOpenState_WhenRuntimeReopenAfterReconfigureIsRejected()
+    {
+        var swipeView = CreateSwipeView();
+        swipeView.LeftItems = CreateSwipeItems(CreateMenuItem("Archive", "#0F766E"));
+
+        var coordinator = new QueuedSwipeCoordinator();
+        coordinator.EnqueueOpenResult(false);
+
+        var handler = CreateAttachedHandler(swipeView, coordinator);
+        handler.OnRuntimeEvent("swipeend", """{"direction":"right","isOpen":true}""");
+
+        swipeView.LeftItems = new SwipeItems();
+        MirageSwipeViewHandler.MapLeftItems(handler, swipeView);
+
+        Assert.Equal(1, coordinator.OpenSwipeViewCallCount);
+        Assert.False(((Microsoft.Maui.ISwipeView)swipeView).IsOpen);
+        Assert.Equal("false", handler.PlatformView.GetPropertyString("OpenState"));
+        Assert.Equal("none", handler.PlatformView.GetPropertyString("OpenSideState"));
+        using var payload = JsonDocument.Parse(coordinator.LastConfigurationJson);
+        Assert.Equal(0, payload.RootElement.GetProperty("left").GetProperty("extent").GetDouble(), 3);
+    }
+
     private static (MirageSwipeViewHandler Handler, SwipeView SwipeView, MirageRenderCoordinator Coordinator, SwipeRuntimeProbe Runtime) CreateAttachedHandler(
         SwipeView swipeView,
         MirageRenderCoordinator? coordinator = null,

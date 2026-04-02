@@ -995,7 +995,10 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
 
         if (_openSide != SwipeSide.None)
         {
-            _ = Coordinator.TryRequestNodeSwipeViewOpen(PlatformView.NodeId, ToSideToken(_openSide), animated: false);
+            if (!Coordinator.TryRequestNodeSwipeViewOpen(PlatformView.NodeId, ToSideToken(_openSide), animated: false))
+            {
+                SynchronizeManagedClosedState();
+            }
         }
     }
 
@@ -1092,8 +1095,28 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
         }
 
         _pendingRuntimeCommand = PendingRuntimeCommand.None;
-        _openSide = SwipeSide.None;
-        VirtualView.IsOpen = false;
+        SynchronizeManagedClosedState();
+    }
+
+    private void SynchronizeManagedClosedState()
+    {
+        var changed = false;
+        if (_openSide != SwipeSide.None)
+        {
+            _openSide = SwipeSide.None;
+            changed = true;
+        }
+
+        if (VirtualView.IsOpen)
+        {
+            VirtualView.IsOpen = false;
+            changed = true;
+        }
+
+        if (ApplyDiagnostics() || changed)
+        {
+            RequestRender();
+        }
     }
 
     private void ScheduleRuntimeConfigurationRetry()
