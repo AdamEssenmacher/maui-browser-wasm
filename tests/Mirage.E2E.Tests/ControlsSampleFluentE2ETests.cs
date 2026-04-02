@@ -2181,6 +2181,30 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 selector);
         }
 
+        async Task<string> ReadSwipeActionHostStateAsync(string selector, string side)
+        {
+            return await page.EvaluateAsync<string>(
+                """
+                (args) => {
+                    const host = document.querySelector(`${args.selector} [data-maui-sv-action-host='${args.side}']`);
+                    if (!(host instanceof HTMLElement)) {
+                        return JSON.stringify({ missing: true });
+                    }
+
+                    return JSON.stringify({
+                        visibility: host.style.visibility || "",
+                        pointerEvents: host.style.pointerEvents || "",
+                        transform: host.style.transform || ""
+                    });
+                }
+                """,
+                new
+                {
+                    selector,
+                    side
+                });
+        }
+
         async Task EnsureModeLabelContainsAsync(string value)
         {
             await WaitForLabelTextContainsAsync(page, modeStateSelector, value);
@@ -2304,6 +2328,12 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await DispatchTouchTapAsync($"{hostSelector} [data-maui-sv-action-wrapper='true'][data-maui-sv-action-side='left']");
         await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=1 lastParameter=left-menu lastKind=menu");
         await WaitForOpenStateAsync("false", "none");
+        using (var leftClosedHostDocument = JsonDocument.Parse(await ReadSwipeActionHostStateAsync(hostSelector, "left")))
+        {
+            var root = leftClosedHostDocument.RootElement;
+            Assert.Equal("hidden", root.GetProperty("visibility").GetString());
+            Assert.Equal("none", root.GetProperty("pointerEvents").GetString());
+        }
 
         await SetBehaviorAsync("RemainOpen");
         await DispatchTouchSwipeAsync(hostSelector, 132, 0);
@@ -2347,6 +2377,12 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await WaitForOpenStateAsync("true", "right");
         await DispatchClickAsync(closeButtonSelector);
         await WaitForOpenStateAsync("false", "none");
+        using (var rightClosedHostDocument = JsonDocument.Parse(await ReadSwipeActionHostStateAsync(hostSelector, "right")))
+        {
+            var root = rightClosedHostDocument.RootElement;
+            Assert.Equal("hidden", root.GetProperty("visibility").GetString());
+            Assert.Equal("none", root.GetProperty("pointerEvents").GetString());
+        }
 
         await SetModeAsync("Reveal");
         await SetDirectionAsync("top");

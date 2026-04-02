@@ -2073,8 +2073,8 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
 
   const completeClosedState = (side, animated, emitEndEvent) => {
     const resolvedSide = side || state.openSide || state.side;
-    applyOffset(0, animated);
     state.openSide = "";
+    applyOffset(0, animated);
     if (emitEndEvent && resolvedSide) {
       emitSwipeEnd(resolvedSide, false);
     }

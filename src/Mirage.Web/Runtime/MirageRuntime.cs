@@ -705,6 +705,7 @@ public sealed class MirageRuntime : IMirageRuntime
 
         RemoveEventSubscriptionsForNode(operation.NodeId);
         RemovePullToRefreshSubscriptionsForNode(operation.NodeId);
+        RemoveSwipeViewSubscriptionsForNode(operation.NodeId);
         _mapProviderInitializationRetries.Remove(operation.NodeId);
         node.DisposeMapAdapter();
         InvokeInterop(() => node.Element.Release());
@@ -737,6 +738,16 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         DomElement.UnsubscribePullToRefresh(subscription.SubscriptionId);
+    }
+
+    private void RemoveSwipeViewSubscriptionsForNode(string nodeId)
+    {
+        if (_swipeViewSubscriptions.Count == 0)
+        {
+            return;
+        }
+
+        RemoveSwipeViewSubscription(nodeId);
     }
 
     private void ApplySetProperty(SetPropertyOperation operation)

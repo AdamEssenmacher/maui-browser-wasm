@@ -745,6 +745,7 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("TryConfigureNodeSwipeView(", runtimeText, StringComparison.Ordinal);
         Assert.Contains("TryRequestNodeSwipeViewOpen(", runtimeText, StringComparison.Ordinal);
         Assert.Contains("TryRequestNodeSwipeViewClose(", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("RemoveSwipeViewSubscriptionsForNode(operation.NodeId);", runtimeText, StringComparison.Ordinal);
         Assert.Contains("ComponentKind.SwipeView", providerText, StringComparison.Ordinal);
     }
 
