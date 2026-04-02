@@ -296,6 +296,30 @@ public sealed class MirageSwipeViewHandlerTests
         Assert.Equal(0, payload.RootElement.GetProperty("left").GetProperty("extent").GetDouble(), 3);
     }
 
+    [Fact]
+    public void SwipeViewHandler_DoesNotRetryImpossiblePendingOpen_OrReplayItAfterLaterItemChanges()
+    {
+        var swipeView = CreateSwipeView();
+
+        var coordinator = new QueuedSwipeCoordinator();
+        coordinator.EnqueueOpenResult(false);
+
+        var handler = CreateAttachedHandler(swipeView, coordinator);
+
+        MirageSwipeViewHandler.MapRequestOpen(handler, swipeView, CreateSwipeViewOpenRequest(OpenSwipeItem.LeftItems, animated: true));
+
+        Assert.Equal(1, coordinator.OpenSwipeViewCallCount);
+        Assert.Equal(0, coordinator.PendingDelayedCount);
+        Assert.False(((Microsoft.Maui.ISwipeView)swipeView).IsOpen);
+        Assert.Equal("false", handler.PlatformView.GetPropertyString("OpenState"));
+        Assert.Equal("none", handler.PlatformView.GetPropertyString("OpenSideState"));
+
+        swipeView.LeftItems = CreateSwipeItems(CreateMenuItem("Archive", "#0F766E"));
+        MirageSwipeViewHandler.MapLeftItems(handler, swipeView);
+
+        Assert.Equal(1, coordinator.OpenSwipeViewCallCount);
+    }
+
     private static (MirageSwipeViewHandler Handler, SwipeView SwipeView, MirageRenderCoordinator Coordinator, SwipeRuntimeProbe Runtime) CreateAttachedHandler(
         SwipeView swipeView,
         MirageRenderCoordinator? coordinator = null,

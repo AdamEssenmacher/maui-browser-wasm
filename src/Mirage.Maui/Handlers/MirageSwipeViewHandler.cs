@@ -1068,6 +1068,15 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
             return false;
         }
 
+        if (_pendingRuntimeCommand.Kind == PendingRuntimeCommandKind.Open
+            && _pendingRuntimeCommand.Side != SwipeSide.None
+            && !CanRuntimeOpenSide(_pendingRuntimeCommand.Side))
+        {
+            _pendingRuntimeCommand = PendingRuntimeCommand.None;
+            SynchronizeManagedClosedState();
+            return true;
+        }
+
         var accepted = _pendingRuntimeCommand.Kind switch
         {
             PendingRuntimeCommandKind.Open when _pendingRuntimeCommand.Side != SwipeSide.None
@@ -1085,6 +1094,16 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
 
         ScheduleRuntimeConfigurationRetry();
         return true;
+    }
+
+    private bool CanRuntimeOpenSide(SwipeSide side)
+    {
+        if (side == SwipeSide.None)
+        {
+            return false;
+        }
+
+        return ResolveExtentForSide(side, ResolveRealizations(side)) > 0;
     }
 
     private void ResetOpenStateIfDisabled()
