@@ -2,6 +2,12 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-04-02 (SwipeView stabilization sweep: explicit handler/runtime ownership + transition hardening)
+- Kept the current SwipeView architecture but tightened the ownership boundary explicitly: `MirageSwipeViewHandler` owns MAUI-facing open state, pending programmatic commands, disabled gating, and diagnostics, while the browser swipe runtime owns live gesture progress, active axis/side capture, offsets, and DOM visibility.
+- Handler-side open-state, pending-command, and configure-retry mutations now flow through dedicated helpers rather than ad hoc field writes, so disabled state, impossible-open rejection, and rejected post-config reopens all converge on the same closed-state invariant.
+- The browser swipe runtime now funnels gesture/open-state mutations through a smaller set of transition helpers (`begin tracking`, `resolve side`, `start gesture`, `complete open`, `complete close`, `stop tracking`) instead of mutating gesture fields opportunistically inside each event listener.
+- We also widened the proof surface instead of just adding more isolated regressions: the parity probe now covers a reattach-and-open path for programmatic commands during reconfiguration and uses touch for the CollectionView-row action path, so end-to-end coverage better matches the touch-first contract of this wave.
+
 ## 2026-04-01 (SwipeView family parity wave: MAUI-shaped handler family + dedicated swipe runtime seam)
 - Added `MirageSwipeViewHandler`, `MirageSwipeItemViewHandler`, and the internal `MirageSwipeItemMenuItemHandler`, then registered `SwipeView` and `SwipeItemView` in `UseMirageBrowserPlatform` so the SwipeView family now runs on a real Mirage handler path instead of remaining a missing row.
 - SwipeView realization now uses a built-in `ControlNode` root plus handler-owned internal chrome (action-strip hosts, clip host, moving track, content host) and a dedicated runtime swipe seam for configuration, four-direction touch/pen tracking, and programmatic open/close requests.

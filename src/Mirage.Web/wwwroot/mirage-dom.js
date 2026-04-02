@@ -2064,9 +2064,108 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
     return null;
   };
 
+  // The runtime owns gesture progress, active axis/side selection, offsets, and DOM visibility.
+  // Keep those mutations funneled through these helpers so closed/open invariants stay explicit.
+  const clearGestureTarget = () => {
+    state.side = "";
+    state.axis = "";
+  };
+
+  const setGestureTarget = (side) => {
+    state.side = typeof side === "string" ? side : "";
+    state.axis = state.side ? getSwipeAxisForSide(state.side) : "";
+  };
+
+  const releaseCapturedPointer = () => {
+    if (!state.captured || typeof owner.releasePointerCapture !== "function" || state.pointerId < 0) {
+      state.captured = false;
+      return;
+    }
+
+    try {
+      owner.releasePointerCapture(state.pointerId);
+    } catch {
+      // best effort
+    }
+
+    state.captured = false;
+  };
+
+  const stopTracking = () => {
+    state.tracking = false;
+    releaseCapturedPointer();
+    state.pointerId = -1;
+    state.dragDistance = 0;
+    state.startEmitted = false;
+  };
+
+  const abortTracking = () => {
+    state.tracking = false;
+    state.pointerId = -1;
+    state.captured = false;
+    state.dragDistance = 0;
+    state.startEmitted = false;
+  };
+
+  const beginTracking = (event) => {
+    state.tracking = true;
+    state.pointerId = event.pointerId;
+    state.startX = event.clientX;
+    state.startY = event.clientY;
+    setGestureTarget(state.openSide);
+    state.startOffset = state.currentOffset;
+    state.dragDistance = 0;
+    state.startEmitted = false;
+  };
+
+  const tryResolveTrackingSide = (dx, dy, absDx, absDy) => {
+    if (state.axis) {
+      return true;
+    }
+
+    if (absDx < 10 && absDy < 10) {
+      return false;
+    }
+
+    const preferHorizontal = absDx >= absDy;
+    const nextSide = preferHorizontal
+      ? (dx >= 0 ? "left" : "right")
+      : (dy >= 0 ? "top" : "bottom");
+    if (!(getSideExtent(nextSide) > 0)) {
+      abortTracking();
+      return false;
+    }
+
+    setGestureTarget(nextSide);
+    return true;
+  };
+
+  const ensureGestureStarted = (event, axisDistance) => {
+    if (state.startEmitted) {
+      return true;
+    }
+
+    if (axisDistance < 10) {
+      return false;
+    }
+
+    emitSwipeStart(state.side);
+    if (typeof owner.setPointerCapture === "function") {
+      try {
+        owner.setPointerCapture(event.pointerId);
+        state.captured = true;
+      } catch {
+        state.captured = false;
+      }
+    }
+
+    state.startEmitted = true;
+    return true;
+  };
+
   const completeOpenState = (side, animated, emitEndEvent) => {
     state.openSide = side;
-    state.axis = side ? getSwipeAxisForSide(side) : state.axis || "horizontal";
+    setGestureTarget(side || state.openSide || "");
     applyOffset(getOpenOffsetForSide(side), animated);
     if (emitEndEvent && side) {
       emitSwipeEnd(side, true);
@@ -2076,8 +2175,7 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
   const completeClosedState = (side, animated, emitEndEvent) => {
     const resolvedSide = side || state.openSide || state.side;
     state.openSide = "";
-    state.side = "";
-    state.axis = "";
+    clearGestureTarget();
     applyOffset(0, animated);
     if (emitEndEvent && resolvedSide) {
       emitSwipeEnd(resolvedSide, false);
@@ -2112,19 +2210,7 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
     const absOffset = Math.abs(state.currentOffset);
     const dragDistance = state.dragDistance;
 
-    state.tracking = false;
-    if (state.captured && typeof owner.releasePointerCapture === "function" && state.pointerId >= 0) {
-      try {
-        owner.releasePointerCapture(state.pointerId);
-      } catch {
-        // best effort
-      }
-    }
-
-    state.captured = false;
-    state.pointerId = -1;
-    state.dragDistance = 0;
-    state.startEmitted = false;
+    stopTracking();
 
     if (!resolvedSide || extent <= 0) {
       completeClosedState(resolvedSide, true, true);
@@ -2156,8 +2242,7 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
       return false;
     }
 
-    state.side = side;
-    state.axis = getSwipeAxisForSide(side);
+    setGestureTarget(side);
     completeOpenState(side, animated, true);
     return true;
   };
@@ -2181,20 +2266,12 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
       return;
     }
 
-    state.tracking = true;
-    state.pointerId = event.pointerId;
-    state.startX = event.clientX;
-    state.startY = event.clientY;
-    state.axis = state.openSide ? getSwipeAxisForSide(state.openSide) : "";
-    state.side = state.openSide || "";
-    state.startOffset = state.currentOffset;
-    state.dragDistance = 0;
-    state.startEmitted = false;
+    beginTracking(event);
   };
 
   const pointerMoveListener = (event) => {
     if (!(event instanceof PointerEvent) || !state.tracking || event.pointerId !== state.pointerId || !isEnabled()) {
-      return;
+        return;
     }
 
     const dx = event.clientX - state.startX;
@@ -2202,58 +2279,20 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
     const absDx = Math.abs(dx);
     const absDy = Math.abs(dy);
 
-    if (!state.axis) {
-      if (absDx < 10 && absDy < 10) {
+    if (!tryResolveTrackingSide(dx, dy, absDx, absDy)) {
+      if (!state.tracking) {
         return;
       }
-
-      const preferHorizontal = absDx >= absDy;
-      if (preferHorizontal) {
-        const nextSide = dx >= 0 ? "left" : "right";
-        if (getSideExtent(nextSide) > 0) {
-          state.axis = "horizontal";
-          state.side = nextSide;
-        } else {
-          state.tracking = false;
-          state.pointerId = -1;
-          return;
-        }
-      } else {
-        const nextSide = dy >= 0 ? "top" : "bottom";
-        if (getSideExtent(nextSide) > 0) {
-          state.axis = "vertical";
-          state.side = nextSide;
-        } else {
-          state.tracking = false;
-          state.pointerId = -1;
-          return;
-        }
-      }
-
     }
 
     const axisDistance = state.axis === "horizontal" ? absDx : absDy;
-    if (!state.startEmitted) {
-      if (axisDistance < 10) {
-        return;
-      }
-
-      emitSwipeStart(state.side);
-      if (typeof owner.setPointerCapture === "function") {
-        try {
-          owner.setPointerCapture(event.pointerId);
-          state.captured = true;
-        } catch {
-          state.captured = false;
-        }
-      }
-
-      state.startEmitted = true;
+    if (!ensureGestureStarted(event, axisDistance)) {
+      return;
     }
 
     const extent = getSideExtent(state.side);
     if (extent <= 0) {
-      return;
+        return;
     }
 
     const rawOffset = state.startOffset + (state.axis === "horizontal" ? dx : dy);

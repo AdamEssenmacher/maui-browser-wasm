@@ -1944,6 +1944,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         const string toggleThresholdSelector = "[data-automation-id='controls-sample-swipeview-parity-toggle-threshold']";
         const string toggleTransitionSelector = "[data-automation-id='controls-sample-swipeview-parity-toggle-transition']";
         const string toggleEnabledSelector = "[data-automation-id='controls-sample-swipeview-parity-toggle-enabled']";
+        const string reattachOpenSelector = "[data-automation-id='controls-sample-swipeview-parity-reattach-open']";
         const string rowSelector = "[data-automation-id='controls-sample-swipeview-parity-row-swipe']";
         const string rowActionSelector = "[data-automation-id='controls-sample-swipeview-parity-row-swipe'] [data-maui-sv-action-wrapper='true'][data-maui-sv-action-side='right']";
         const string actionViewLabelSelector = "[data-automation-id='controls-sample-swipeview-parity-action-view-label']";
@@ -2327,6 +2328,12 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await WaitForLabelTextContainsAsync(page, openStateSelector, "open=True openSide=left");
         await WaitForLabelTextContainsAsync(page, eventStateSelector, "events start=1");
 
+        await DispatchClickAsync(reattachOpenSelector);
+        await WaitForSwipeRuntimeAttachmentAsync(hostSelector);
+        await WaitForOpenStateAsync("true", "left");
+        await DispatchClickAsync(closeButtonSelector);
+        await WaitForOpenStateAsync("false", "none");
+
         await DispatchClickAsync(openButtonSelector);
         await WaitForOpenStateAsync("true", "left");
         var partialDragSnapshot = await ReadSwipeRuntimeDuringPartialTouchMoveAsync(hostSelector, -20, 0);
@@ -2501,8 +2508,6 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await WaitForLabelTextContainsAsync(page, openStateSelector, "enabled=True");
 
         var rowLocator = page.Locator(rowSelector).First;
-        var rowActionLocator = page.Locator(rowActionSelector).First;
-
         await rowLocator.ScrollIntoViewIfNeededAsync();
         Assert.Equal("SwipeView", await rowLocator.GetAttributeAsync("data-mirage-kind"));
         await DispatchTouchSwipeAsync(rowSelector, -132, 0);
@@ -2515,7 +2520,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             }
             """,
             rowSelector);
-        await rowActionLocator.ClickAsync();
+        await DispatchTouchTapAsync(rowActionSelector);
         await WaitForLabelTextContainsAsync(page, collectionStateSelector, "collectionInvokes=1");
     }
 

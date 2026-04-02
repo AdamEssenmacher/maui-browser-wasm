@@ -8,7 +8,8 @@ namespace ControlsSample.Shared.App;
 
 public sealed class SwipeViewParityProbePage : ContentPage
 {
-    private readonly SwipeView _standaloneSwipeView;
+    private SwipeView _standaloneSwipeView = null!;
+    private readonly VerticalStackLayout _standaloneHostSlot;
     private readonly CollectionView _collectionView;
     private readonly ObservableCollection<string> _collectionItems =
     [
@@ -46,23 +47,11 @@ public sealed class SwipeViewParityProbePage : ContentPage
         Title = "SwipeView Parity Probe";
         AutomationId = "controls-sample-page-swipeviewparitypage";
 
-        _standaloneSwipeView = new SwipeView
+        _standaloneHostSlot = new VerticalStackLayout
         {
-            AutomationId = "controls-sample-swipeview-parity-host",
-            WidthRequest = 280,
-            HeightRequest = 76,
-            Threshold = 72,
-            LeftItems = new SwipeItems(),
-            RightItems = new SwipeItems(),
-            TopItems = new SwipeItems(),
-            BottomItems = new SwipeItems(),
-            Content = BuildStandaloneContent(),
-            IsEnabled = true
+            Spacing = 0
         };
-        ApplySwipeTransitionMode(_standaloneSwipeView, SwipeTransitionMode.Reveal);
-        _standaloneSwipeView.SwipeStarted += OnSwipeStarted;
-        _standaloneSwipeView.SwipeChanging += OnSwipeChanging;
-        _standaloneSwipeView.SwipeEnded += OnSwipeEnded;
+        AttachStandaloneSwipeView(CreateStandaloneSwipeView());
 
         _openStateLabel = new Label
         {
@@ -108,7 +97,7 @@ public sealed class SwipeViewParityProbePage : ContentPage
                         AutomationId = "controls-sample-swipeview-parity-description",
                         Text = "SwipeView parity probe for four-direction touch swipes, reveal/execute modes, SwipeBehaviorOnInvoked, SwipeItemView action content, programmatic open/close, and CollectionView row embedding."
                     },
-                    _standaloneSwipeView,
+                    _standaloneHostSlot,
                     _openStateLabel,
                     _eventStateLabel,
                     _invokeStateLabel,
@@ -176,7 +165,8 @@ public sealed class SwipeViewParityProbePage : ContentPage
                     {
                         CreateButton("Open", "controls-sample-swipeview-parity-open", OpenCurrentSide),
                         CreateButton("Close", "controls-sample-swipeview-parity-close", CloseCurrentSide),
-                        CreateButton("Toggle Enabled", "controls-sample-swipeview-parity-toggle-enabled", ToggleEnabled)
+                        CreateButton("Toggle Enabled", "controls-sample-swipeview-parity-toggle-enabled", ToggleEnabled),
+                        CreateButton("Reattach + Open", "controls-sample-swipeview-parity-reattach-open", ReattachAndOpenCurrentSide)
                     }
                 }
             }
@@ -191,6 +181,43 @@ public sealed class SwipeViewParityProbePage : ContentPage
             AutomationId = automationId,
             Command = new Command(action)
         };
+    }
+
+    private SwipeView CreateStandaloneSwipeView()
+    {
+        var swipeView = new SwipeView
+        {
+            AutomationId = "controls-sample-swipeview-parity-host",
+            WidthRequest = 280,
+            HeightRequest = 76,
+            Threshold = _standaloneSwipeView?.Threshold > 0 ? _standaloneSwipeView.Threshold : 72,
+            LeftItems = new SwipeItems(),
+            RightItems = new SwipeItems(),
+            TopItems = new SwipeItems(),
+            BottomItems = new SwipeItems(),
+            Content = BuildStandaloneContent(),
+            IsEnabled = _standaloneSwipeView?.IsEnabled ?? true
+        };
+
+        ApplySwipeTransitionMode(swipeView, _currentTransitionMode);
+        return swipeView;
+    }
+
+    private void AttachStandaloneSwipeView(SwipeView swipeView)
+    {
+        if (_standaloneSwipeView is not null)
+        {
+            _standaloneSwipeView.SwipeStarted -= OnSwipeStarted;
+            _standaloneSwipeView.SwipeChanging -= OnSwipeChanging;
+            _standaloneSwipeView.SwipeEnded -= OnSwipeEnded;
+        }
+
+        _standaloneSwipeView = swipeView;
+        _standaloneSwipeView.SwipeStarted += OnSwipeStarted;
+        _standaloneSwipeView.SwipeChanging += OnSwipeChanging;
+        _standaloneSwipeView.SwipeEnded += OnSwipeEnded;
+        _standaloneHostSlot.Clear();
+        _standaloneHostSlot.Add(_standaloneSwipeView);
     }
 
     private View BuildStandaloneContent()
@@ -328,39 +355,59 @@ public sealed class SwipeViewParityProbePage : ContentPage
         UpdateStateLabels();
     }
 
+    private void ReattachAndOpenCurrentSide()
+    {
+        ResetStandaloneActionState();
+        var replacement = CreateStandaloneSwipeView();
+        AttachStandaloneSwipeView(replacement);
+        ConfigureStandaloneSwipeView(_standaloneSwipeView);
+        _standaloneSwipeView.Open(MapSideToOpenSwipeItem(_activeSide), animated: true);
+        UpdateStateLabels();
+    }
+
     private void ApplyStandaloneConfiguration()
     {
         _standaloneSwipeView.Close(animated: false);
+        ResetStandaloneActionState();
+        ConfigureStandaloneSwipeView(_standaloneSwipeView);
+        UpdateStateLabels();
+    }
+
+    private void ResetStandaloneActionState()
+    {
         _isOpen = false;
         _openSideState = "none";
         _lastCommandParameter = "<none>";
         _lastInvokedKind = "<none>";
         _actionViewInteractionCount = 0;
+    }
 
-        _standaloneSwipeView.LeftItems = CreateSideItemsContainer();
-        _standaloneSwipeView.RightItems = CreateSideItemsContainer();
-        _standaloneSwipeView.TopItems = CreateSideItemsContainer();
-        _standaloneSwipeView.BottomItems = CreateSideItemsContainer();
-        ApplySwipeTransitionMode(_standaloneSwipeView, _currentTransitionMode);
+    private void ConfigureStandaloneSwipeView(SwipeView swipeView)
+    {
+        swipeView.LeftItems = CreateSideItemsContainer();
+        swipeView.RightItems = CreateSideItemsContainer();
+        swipeView.TopItems = CreateSideItemsContainer();
+        swipeView.BottomItems = CreateSideItemsContainer();
+        swipeView.Threshold = _standaloneSwipeView.Threshold;
+        swipeView.IsEnabled = _standaloneSwipeView.IsEnabled;
+        ApplySwipeTransitionMode(swipeView, _currentTransitionMode);
 
         var sideItems = CreateCurrentSideItems();
         switch (_activeSide)
         {
             case ProbeSwipeSide.Left:
-                _standaloneSwipeView.LeftItems = sideItems;
+                swipeView.LeftItems = sideItems;
                 break;
             case ProbeSwipeSide.Right:
-                _standaloneSwipeView.RightItems = sideItems;
+                swipeView.RightItems = sideItems;
                 break;
             case ProbeSwipeSide.Top:
-                _standaloneSwipeView.TopItems = sideItems;
+                swipeView.TopItems = sideItems;
                 break;
             case ProbeSwipeSide.Bottom:
-                _standaloneSwipeView.BottomItems = sideItems;
+                swipeView.BottomItems = sideItems;
                 break;
         }
-
-        UpdateStateLabels();
     }
 
     private SwipeItems CreateCurrentSideItems()

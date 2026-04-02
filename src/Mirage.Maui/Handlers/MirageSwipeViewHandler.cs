@@ -106,6 +106,8 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
     private EventHandler<OpenRequestedEventArgs>? _openRequestedHandler;
     private EventHandler<CloseRequestedEventArgs>? _closeRequestedHandler;
 
+    // The handler owns MAUI-facing open state and pending programmatic commands.
+    // Gesture progress, offsets, and DOM visibility are owned by the browser runtime.
     private SwipeSide _openSide;
     private Rect _lastArrangedFrame;
     private IMirageImageSourceResolver? _imageSourceResolver;
@@ -161,9 +163,8 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
     protected override void DisconnectHandler(MiragePlatformView platformView)
     {
         _isConnected = false;
-        _runtimeConfigureRetryQueued = false;
-        _consecutiveRuntimeConfigureFailures = 0;
-        _pendingRuntimeCommand = PendingRuntimeCommand.None;
+        ResetRuntimeConfigureRetryState();
+        ClearPendingRuntimeCommand();
         DisableRuntimeSwipe();
         UnsubscribeFromSwipeViewEvents();
         UnbindSideCollections();
@@ -980,26 +981,14 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
             return;
         }
 
-        _consecutiveRuntimeConfigureFailures = 0;
-        _runtimeConfigureRetryQueued = false;
+        ResetRuntimeConfigureRetryState();
 
         if (ReplayPendingRuntimeCommand())
         {
             return;
         }
 
-        if (!VirtualView.IsEnabled)
-        {
-            return;
-        }
-
-        if (_openSide != SwipeSide.None)
-        {
-            if (!Coordinator.TryRequestNodeSwipeViewOpen(PlatformView.NodeId, ToSideToken(_openSide), animated: false))
-            {
-                SynchronizeManagedClosedState();
-            }
-        }
+        ReplayManagedOpenStateAfterConfiguration();
     }
 
     private void DisableRuntimeSwipe()
@@ -1019,15 +1008,15 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
             return false;
         }
 
-        var accepted = Coordinator.TryRequestNodeSwipeViewOpen(PlatformView.NodeId, ToSideToken(side), animated);
+        var accepted = TryRequestRuntimeOpen(side, animated);
         if (!accepted)
         {
-            _pendingRuntimeCommand = PendingRuntimeCommand.Open(side, animated);
+            SetPendingRuntimeCommand(PendingRuntimeCommand.Open(side, animated));
             ConfigureRuntime();
             return false;
         }
 
-        _pendingRuntimeCommand = PendingRuntimeCommand.None;
+        ClearPendingRuntimeCommand();
         return true;
     }
 
@@ -1038,15 +1027,15 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
             return false;
         }
 
-        var accepted = Coordinator.TryRequestNodeSwipeViewClose(PlatformView.NodeId, animated);
+        var accepted = TryRequestRuntimeClose(animated);
         if (!accepted)
         {
-            _pendingRuntimeCommand = PendingRuntimeCommand.Close(animated);
+            SetPendingRuntimeCommand(PendingRuntimeCommand.Close(animated));
             ConfigureRuntime();
             return false;
         }
 
-        _pendingRuntimeCommand = PendingRuntimeCommand.None;
+        ClearPendingRuntimeCommand();
         return true;
     }
 
@@ -1064,15 +1053,16 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
 
         if (_pendingRuntimeCommand.Kind == PendingRuntimeCommandKind.Open && !VirtualView.IsEnabled)
         {
-            _pendingRuntimeCommand = PendingRuntimeCommand.None;
-            return false;
+            ClearPendingRuntimeCommand();
+            SynchronizeManagedClosedState();
+            return true;
         }
 
         if (_pendingRuntimeCommand.Kind == PendingRuntimeCommandKind.Open
             && _pendingRuntimeCommand.Side != SwipeSide.None
             && !CanRuntimeOpenSide(_pendingRuntimeCommand.Side))
         {
-            _pendingRuntimeCommand = PendingRuntimeCommand.None;
+            ClearPendingRuntimeCommand();
             SynchronizeManagedClosedState();
             return true;
         }
@@ -1080,15 +1070,15 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
         var accepted = _pendingRuntimeCommand.Kind switch
         {
             PendingRuntimeCommandKind.Open when _pendingRuntimeCommand.Side != SwipeSide.None
-                => Coordinator.TryRequestNodeSwipeViewOpen(PlatformView.NodeId, ToSideToken(_pendingRuntimeCommand.Side), _pendingRuntimeCommand.Animated),
+                => TryRequestRuntimeOpen(_pendingRuntimeCommand.Side, _pendingRuntimeCommand.Animated),
             PendingRuntimeCommandKind.Close
-                => Coordinator.TryRequestNodeSwipeViewClose(PlatformView.NodeId, _pendingRuntimeCommand.Animated),
+                => TryRequestRuntimeClose(_pendingRuntimeCommand.Animated),
             _ => true
         };
 
         if (accepted)
         {
-            _pendingRuntimeCommand = PendingRuntimeCommand.None;
+            ClearPendingRuntimeCommand();
             return true;
         }
 
@@ -1113,28 +1103,76 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
             return;
         }
 
-        _pendingRuntimeCommand = PendingRuntimeCommand.None;
+        ClearPendingRuntimeCommand();
         SynchronizeManagedClosedState();
     }
 
-    private void SynchronizeManagedClosedState()
+    private void SynchronizeManagedOpenState(SwipeSide nextOpenSide, bool isOpen)
     {
+        var normalizedOpenSide = isOpen ? nextOpenSide : SwipeSide.None;
         var changed = false;
-        if (_openSide != SwipeSide.None)
+        if (_openSide != normalizedOpenSide)
         {
-            _openSide = SwipeSide.None;
+            _openSide = normalizedOpenSide;
             changed = true;
         }
 
-        if (VirtualView.IsOpen)
+        if (VirtualView.IsOpen != isOpen)
         {
-            VirtualView.IsOpen = false;
+            VirtualView.IsOpen = isOpen;
             changed = true;
         }
 
         if (ApplyDiagnostics() || changed)
         {
             RequestRender();
+        }
+    }
+
+    private void SynchronizeManagedClosedState()
+    {
+        SynchronizeManagedOpenState(SwipeSide.None, isOpen: false);
+    }
+
+    private void ResetRuntimeConfigureRetryState()
+    {
+        _runtimeConfigureRetryQueued = false;
+        _consecutiveRuntimeConfigureFailures = 0;
+    }
+
+    private void SetPendingRuntimeCommand(PendingRuntimeCommand command)
+    {
+        _pendingRuntimeCommand = command;
+    }
+
+    private void ClearPendingRuntimeCommand()
+    {
+        _pendingRuntimeCommand = PendingRuntimeCommand.None;
+    }
+
+    private bool TryRequestRuntimeOpen(SwipeSide side, bool animated)
+    {
+        return Coordinator is not null
+            && side != SwipeSide.None
+            && Coordinator.TryRequestNodeSwipeViewOpen(PlatformView.NodeId, ToSideToken(side), animated);
+    }
+
+    private bool TryRequestRuntimeClose(bool animated)
+    {
+        return Coordinator is not null
+            && Coordinator.TryRequestNodeSwipeViewClose(PlatformView.NodeId, animated);
+    }
+
+    private void ReplayManagedOpenStateAfterConfiguration()
+    {
+        if (!VirtualView.IsEnabled || _openSide == SwipeSide.None)
+        {
+            return;
+        }
+
+        if (!CanRuntimeOpenSide(_openSide) || !TryRequestRuntimeOpen(_openSide, animated: false))
+        {
+            SynchronizeManagedClosedState();
         }
     }
 
@@ -1220,15 +1258,7 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
             return;
         }
 
-        var nextOpenSide = next.IsOpen ? MapDirectionToSide(direction) : SwipeSide.None;
-        if (_openSide != nextOpenSide)
-        {
-            _openSide = nextOpenSide;
-            _ = ApplyDiagnostics();
-            RequestRender();
-        }
-
-        VirtualView.IsOpen = next.IsOpen;
+        SynchronizeManagedOpenState(next.IsOpen ? MapDirectionToSide(direction) : SwipeSide.None, next.IsOpen);
         VirtualView.SwipeEnded(new SwipeViewSwipeEnded(direction, next.IsOpen));
     }
 

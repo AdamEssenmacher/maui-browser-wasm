@@ -130,9 +130,7 @@ public sealed class MirageSwipeViewHandlerTests
         Assert.Equal(1, started);
         Assert.Equal(1, changing);
         Assert.Equal(1, ended);
-        Assert.True(((Microsoft.Maui.ISwipeView)swipeView).IsOpen);
-        Assert.Equal("true", handler.PlatformView.GetPropertyString("OpenState"));
-        Assert.Equal("left", handler.PlatformView.GetPropertyString("OpenSideState"));
+        AssertManagedOpenState(handler, swipeView, "left");
 
         swipeView.Close(animated: false);
         Assert.False(runtime.LastCloseAnimated);
@@ -140,9 +138,7 @@ public sealed class MirageSwipeViewHandlerTests
         coordinator.OnEvent(handler.PlatformView.NodeId, "swipeend", """{"direction":"right","isOpen":false}""");
 
         Assert.Equal(2, ended);
-        Assert.False(((Microsoft.Maui.ISwipeView)swipeView).IsOpen);
-        Assert.Equal("false", handler.PlatformView.GetPropertyString("OpenState"));
-        Assert.Equal("none", handler.PlatformView.GetPropertyString("OpenSideState"));
+        AssertManagedClosedState(handler, swipeView);
     }
 
     [Fact]
@@ -265,9 +261,7 @@ public sealed class MirageSwipeViewHandlerTests
         MirageSwipeViewHandler.Mapper.UpdateProperty(handler, swipeView, nameof(IView.IsEnabled));
 
         Assert.Equal(0, coordinator.OpenSwipeViewCallCount);
-        Assert.False(((Microsoft.Maui.ISwipeView)swipeView).IsOpen);
-        Assert.Equal("false", handler.PlatformView.GetPropertyString("OpenState"));
-        Assert.Equal("none", handler.PlatformView.GetPropertyString("OpenSideState"));
+        AssertManagedClosedState(handler, swipeView);
         Assert.Equal("false", handler.PlatformView.GetPropertyString("EnabledState"));
         using var payload = JsonDocument.Parse(coordinator.LastConfigurationJson);
         Assert.False(payload.RootElement.GetProperty("enabled").GetBoolean());
@@ -288,10 +282,8 @@ public sealed class MirageSwipeViewHandlerTests
         swipeView.LeftItems = new SwipeItems();
         MirageSwipeViewHandler.MapLeftItems(handler, swipeView);
 
-        Assert.Equal(1, coordinator.OpenSwipeViewCallCount);
-        Assert.False(((Microsoft.Maui.ISwipeView)swipeView).IsOpen);
-        Assert.Equal("false", handler.PlatformView.GetPropertyString("OpenState"));
-        Assert.Equal("none", handler.PlatformView.GetPropertyString("OpenSideState"));
+        Assert.Equal(0, coordinator.OpenSwipeViewCallCount);
+        AssertManagedClosedState(handler, swipeView);
         using var payload = JsonDocument.Parse(coordinator.LastConfigurationJson);
         Assert.Equal(0, payload.RootElement.GetProperty("left").GetProperty("extent").GetDouble(), 3);
     }
@@ -310,9 +302,7 @@ public sealed class MirageSwipeViewHandlerTests
 
         Assert.Equal(1, coordinator.OpenSwipeViewCallCount);
         Assert.Equal(0, coordinator.PendingDelayedCount);
-        Assert.False(((Microsoft.Maui.ISwipeView)swipeView).IsOpen);
-        Assert.Equal("false", handler.PlatformView.GetPropertyString("OpenState"));
-        Assert.Equal("none", handler.PlatformView.GetPropertyString("OpenSideState"));
+        AssertManagedClosedState(handler, swipeView);
 
         swipeView.LeftItems = CreateSwipeItems(CreateMenuItem("Archive", "#0F766E"));
         MirageSwipeViewHandler.MapLeftItems(handler, swipeView);
@@ -376,6 +366,20 @@ public sealed class MirageSwipeViewHandlerTests
         ((IElementHandler)handler).SetVirtualView(swipeView);
         handler.PlatformArrange(new Rect(0, 0, 240, 72));
         return handler;
+    }
+
+    private static void AssertManagedOpenState(MirageSwipeViewHandler handler, SwipeView swipeView, string openSide)
+    {
+        Assert.True(((Microsoft.Maui.ISwipeView)swipeView).IsOpen);
+        Assert.Equal("true", handler.PlatformView.GetPropertyString("OpenState"));
+        Assert.Equal(openSide, handler.PlatformView.GetPropertyString("OpenSideState"));
+    }
+
+    private static void AssertManagedClosedState(MirageSwipeViewHandler handler, SwipeView swipeView)
+    {
+        Assert.False(((Microsoft.Maui.ISwipeView)swipeView).IsOpen);
+        Assert.Equal("false", handler.PlatformView.GetPropertyString("OpenState"));
+        Assert.Equal("none", handler.PlatformView.GetPropertyString("OpenSideState"));
     }
 
     private static SwipeView CreateSwipeView()
