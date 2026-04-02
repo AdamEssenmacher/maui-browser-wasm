@@ -139,6 +139,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
 
             ["clippage"] = "core",
             ["alertspage"] = "core",
+            ["appthemebindingpage"] = "core",
             ["brushespage"] = "core",
             ["devicepage"] = "core",
             ["contentpagegallery"] = "core",
@@ -3577,6 +3578,46 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
+    public async Task AppThemeBindingPage_IsRunnable_AndTracksBrowserColorSchemeChanges()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var (page, diagnostics) = await OpenAsync(context);
+
+        const string inlineSelector = "[data-automation-id='controls-sample-appthemebindingpage-inline-label']";
+        const string resourceSelector = "[data-automation-id='controls-sample-appthemebindingpage-resource-label']";
+        const string propertyName = "color";
+
+        await page.EmulateMediaAsync(new() { ColorScheme = ColorScheme.Light });
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "appthemebindingpage");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-appthemebindingpage']");
+                await page.WaitForSelectorAsync(inlineSelector);
+                await page.WaitForSelectorAsync(resourceSelector);
+            });
+
+        var lightInlineColor = await WaitForCssPropertyToEqualAsync(page, inlineSelector, propertyName, "rgb(0, 128, 0)");
+        var lightResourceColor = await WaitForCssPropertyToEqualAsync(page, resourceSelector, propertyName, "rgb(255, 165, 0)");
+
+        await page.EmulateMediaAsync(new() { ColorScheme = ColorScheme.Dark });
+        var darkInlineColor = await WaitForCssPropertyToEqualAsync(page, inlineSelector, propertyName, "rgb(255, 0, 0)");
+        var darkResourceColor = await WaitForCssPropertyToEqualAsync(page, resourceSelector, propertyName, "rgb(0, 128, 128)");
+
+        await page.EmulateMediaAsync(new() { ColorScheme = ColorScheme.Light });
+        var lightInlineColorAfter = await WaitForCssPropertyToEqualAsync(page, inlineSelector, propertyName, lightInlineColor);
+        var lightResourceColorAfter = await WaitForCssPropertyToEqualAsync(page, resourceSelector, propertyName, lightResourceColor);
+
+        Assert.NotEqual(lightInlineColor, darkInlineColor);
+        Assert.NotEqual(lightResourceColor, darkResourceColor);
+        Assert.Equal(lightInlineColor, lightInlineColorAfter);
+        Assert.Equal(lightResourceColor, lightResourceColorAfter);
+    }
+
+    [Fact]
     public async Task ImagePage_IsRunnable_AndExercisesResolverBackedSourcesStreamAndGifPlayback()
     {
         await using var context = await _fixture.NewContextAsync(width: 1200, height: 1400);
@@ -6090,6 +6131,37 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         }
 
         Assert.Equal(message, (await page.Locator("[data-automation-id='mirage-dialog-message']").TextContentAsync()) ?? string.Empty);
+    }
+
+    private static async Task<string> ReadCssPropertyAsync(IPage page, string selector, string propertyName)
+    {
+        return await page.EvaluateAsync<string>(
+            @"({ selector, propertyName }) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return '';
+                }
+
+                return window.getComputedStyle(element).getPropertyValue(propertyName).trim();
+            }",
+            new { selector, propertyName });
+    }
+
+    private static async Task<string> WaitForCssPropertyToEqualAsync(IPage page, string selector, string propertyName, string expectedValue)
+    {
+        await page.WaitForFunctionAsync(
+            @"({ selector, propertyName, expectedValue }) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                    return false;
+                }
+
+                const value = window.getComputedStyle(element).getPropertyValue(propertyName).trim();
+                return value.length > 0 && value === expectedValue;
+            }",
+            new { selector, propertyName, expectedValue });
+
+        return await ReadCssPropertyAsync(page, selector, propertyName);
     }
 
     private static async Task ClickCollectionNavButtonAsync(IPage page, string locatorSelector, string domSelector)

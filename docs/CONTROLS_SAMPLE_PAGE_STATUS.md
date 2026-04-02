@@ -40,7 +40,7 @@ Visual legend:
 | `ZIndexPage.xaml` | `Pages/Layouts/ZIndexPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `LayoutsPage.xaml` | `Pages/LayoutsPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `AlertsPage.xaml` | `Pages/Core/AlertsPage.xaml` | `[x]` | `[x]` | `[ ]` |
-| `AppThemeBindingPage.xaml` | `Pages/Core/AppThemeBindingPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `AppThemeBindingPage.xaml` | `Pages/Core/AppThemeBindingPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `ApplicationControlPage.xaml` | `Pages/Core/ApplicationControlPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `BorderAlignment.xaml` | `Pages/Core/BorderGalleries/BorderAlignment.xaml` | `[x]` | `[x]` | `[ ]` |
 | `BorderClipPlayground.xaml` | `Pages/Core/BorderGalleries/BorderClipPlayground.xaml` | `[x]` | `[x]` | `[ ]` |

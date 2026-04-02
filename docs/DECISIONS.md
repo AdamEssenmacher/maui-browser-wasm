@@ -723,6 +723,11 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Centered Mirage `NavigationPage` title projection within the nav title slot (`MirageNavigationPageHandler`) so wrapper pages align closer to native page-header expectations.
 - Seeded upstream `AppResources` color keys in `ControlsSampleApp` (`LightBackgroundColor`/`DarkBackgroundColor` plus baseline foreground keys) so imported upstream pages like `BasePage`-derived layouts can resolve theme-driven page backgrounds in browser/native wrapper hosts.
 - Applied explicit app-theme binding to wrapper `NavigationPage` chrome (`BarBackgroundColor`/`BarTextColor`) to remove light-only fallback behavior and keep dark-mode parity for ControlsSample runs.
+
+## 2026-04-02 (ControlsSample AppThemeBindingPage as Theme Probe)
+- Promoted upstream `AppThemeBindingPage.xaml` to a runnable ControlsSample `Core` entry with stable automation IDs for the inline and `ResourceDictionary`-backed theme-bound labels.
+- Reused the existing browser theme bridge in `MirageBrowserAppHost` and `Application.UserAppTheme` flow; no Mirage-specific `AppThemeBinding` shim was introduced for this slice.
+- ControlsSample E2E now flips browser color scheme `light -> dark -> light` against `AppThemeBindingPage`, making it the concrete validation surface for browser-driven `AppThemeBinding` updates.
 - Updated nav-bar shell column sizing to symmetric left/right tracks so the title is centered relative to the full page width (not shifted by back-button-only chrome).
 - Moved unstyled-text parity into Mirage platform defaults: `MirageLabelHandler` now projects system-like fallbacks (`CanvasText` + `system-ui`) when MAUI does not set `TextColor`/`FontFamily`, and synthetic nav-title chrome in `MirageNavigationPageHandler` uses the same fallback family/color path for consistency. `MirageWindowHandler` opts into `colorScheme: light dark` so those defaults track browser/system theme without sample-specific style enforcement.
 

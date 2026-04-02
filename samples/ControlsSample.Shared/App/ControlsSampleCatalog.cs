@@ -122,6 +122,14 @@ public static class ControlsSampleCatalog
             description: "Runnable in Mirage today: exercises DisplayAlertAsync, DisplayActionSheetAsync, and DisplayPromptAsync through the shared Mirage browser dialog foundation.",
             pageFactory: CreateAlertsPage),
         new(
+            id: "appthemebindingpage",
+            title: "AppThemeBindingPage",
+            upstreamPath: "Pages/Core/AppThemeBindingPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(AppThemeBindingPage),
+            description: "Runnable in Mirage today: exercises inline and ResourceDictionary-backed AppThemeBinding color resolution across browser light/dark theme changes.",
+            pageFactory: CreateAppThemeBindingPage),
+        new(
             id: "brushespage",
             title: "BrushesPage",
             upstreamPath: "Pages/Core/BrushesPage.xaml",
@@ -428,6 +436,7 @@ public static class ControlsSampleCatalog
 
             ["clippage"] = ControlsSampleCategory.Core,
             ["alertspage"] = ControlsSampleCategory.Core,
+            ["appthemebindingpage"] = ControlsSampleCategory.Core,
             ["brushespage"] = ControlsSampleCategory.Core,
             ["devicepage"] = ControlsSampleCategory.Core,
             ["contentpagegallery"] = ControlsSampleCategory.Core,
@@ -576,6 +585,23 @@ public static class ControlsSampleCatalog
         SetButtonAutomationIdByText(page, "Question 2", "controls-sample-alertspage-question-2");
         SetNamedElementAutomationId(page, "question1ResultLabel", "controls-sample-alertspage-question1-result");
         SetNamedElementAutomationId(page, "question2ResultLabel", "controls-sample-alertspage-question2-result");
+
+        return page;
+    }
+
+    private static Page CreateAppThemeBindingPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new AppThemeBindingPage();
+
+        SetLabelAutomationIdByTextCandidates(
+            page,
+            "controls-sample-appthemebindingpage-inline-label",
+            "This text is green in light mode, and red in dark mode.");
+        SetLabelAutomationIdByTextCandidates(
+            page,
+            "controls-sample-appthemebindingpage-resource-label",
+            "This text use LightSecondaryColor Resource (Orange Color) in light mode, and DarkSecondaryColor Resource (Teal Color) in dark mode.");
 
         return page;
     }
