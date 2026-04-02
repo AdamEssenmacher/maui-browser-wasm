@@ -519,12 +519,13 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
             return changed;
         }
 
-        var projectedHeight = measuredHeight;
+        var desiredHeight = Math.Max(measuredHeight, ResolveEditorHostMinimumHeight(editor));
+        var projectedHeight = desiredHeight;
         var overflowY = "hidden";
         if (double.IsFinite(_lastArrangedHeight) && _lastArrangedHeight >= 0)
         {
             projectedHeight = Math.Min(projectedHeight, _lastArrangedHeight);
-            if (projectedHeight + AutoSizeMeasurementEpsilon < measuredHeight)
+            if (projectedHeight + AutoSizeMeasurementEpsilon < desiredHeight)
             {
                 overflowY = "auto";
             }

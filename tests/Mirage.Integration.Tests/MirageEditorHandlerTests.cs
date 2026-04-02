@@ -381,7 +381,7 @@ public sealed class MirageEditorHandlerTests
         runtime.SetContentHeight(inputNode.NodeId, 52);
         coordinator.OnEvent(inputNode.NodeId, "input", "short");
 
-        Assert.Equal("52px", inputNode.GetStyleValue("height"));
+        Assert.Equal("88px", inputNode.GetStyleValue("height"));
         Assert.Null(handler.PlatformView.GetStyleValue("height"));
         Assert.Equal("calc(var(--base-height-multiplier, 11) * 8px)", handler.PlatformView.GetStyleValue("minHeight"));
     }
@@ -478,6 +478,27 @@ public sealed class MirageEditorHandlerTests
         var desired = handler.GetDesiredSize(double.PositiveInfinity, double.PositiveInfinity);
 
         Assert.Equal(88, desired.Height);
+    }
+
+    [Fact]
+    public void EditorHandler_AutoSize_ClampsProjectedHeightToHostMinimumHeightFloor()
+    {
+        var editor = new Editor
+        {
+            AutoSize = EditorAutoSizeOption.TextChanges,
+            Text = "short"
+        };
+
+        var (handler, _, _, runtime) = CreateAttachedHandler(editor);
+        var inputNode = GetInputNode(handler);
+
+        runtime.SetContentHeight(inputNode.NodeId, 40);
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(Editor.AutoSize));
+
+        Assert.Equal("88px", inputNode.GetStyleValue("height"));
+        Assert.Equal("hidden", inputNode.GetStyleValue("overflowY"));
+        Assert.Equal("calc(var(--base-height-multiplier, 11) * 8px)", handler.PlatformView.GetStyleValue("minHeight"));
     }
 
     [Fact]
