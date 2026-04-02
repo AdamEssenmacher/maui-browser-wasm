@@ -42,6 +42,12 @@ public interface IMirageRuntime : IDisposable
 
     bool TryConfigureNodePullToRefresh(string ownerNodeId, string sourceNodeId, bool enabled, double threshold) => false;
 
+    bool TryConfigureNodeSwipeView(string ownerNodeId, bool enabled, string configurationJson) => false;
+
+    bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated) => false;
+
+    bool TryRequestNodeSwipeViewClose(string ownerNodeId, bool animated) => false;
+
     bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)
     {
         displayScale = 1;

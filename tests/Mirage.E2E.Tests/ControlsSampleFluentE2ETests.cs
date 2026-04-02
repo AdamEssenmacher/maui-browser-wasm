@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using Microsoft.Playwright;
 using Xunit;
+using Xunit.Sdk;
 
 namespace Mirage.E2E.Tests;
 
@@ -154,6 +155,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ["progressbarparitypage"] = "parityprobes",
             ["graphicsviewparitypage"] = "parityprobes",
             ["refreshviewparitypage"] = "parityprobes",
+            ["swipeviewparitypage"] = "parityprobes",
             ["timepickerparitypage"] = "parityprobes",
             ["datepickerparitypage"] = "parityprobes",
 
@@ -387,7 +389,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ("layouts", ["gridpage", "scrollviewpage"], ["buttonpage", "indicatorviewparitypage"]),
             ("controls", ["buttonpage", "mapsgallery"], ["gridpage", "borderpage"]),
             ("core", ["brushespage", "devicepage", "borderpage"], ["sliderpage", "editorparitypage"]),
-            ("parityprobes", ["editorparitypage", "pickerparitypage", "progressbarparitypage", "graphicsviewparitypage", "refreshviewparitypage", "timepickerparitypage", "carouselviewparitypage", "datepickerparitypage"], ["gridpage", "boxviewpage"]),
+            ("parityprobes", ["editorparitypage", "pickerparitypage", "progressbarparitypage", "graphicsviewparitypage", "refreshviewparitypage", "swipeviewparitypage", "timepickerparitypage", "carouselviewparitypage", "datepickerparitypage"], ["gridpage", "boxviewpage"]),
             ("compatibility", ["tabbedpagegallerymainpage"], ["gridpage", "shapesparitypage"])
         };
 
@@ -1688,12 +1690,15 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             await page.EvaluateAsync(
                 """
                 (selector) => {
-                    const element = document.querySelector(selector);
-                    if (!element) {
+                    const root = document.querySelector(selector);
+                    if (!root) {
                         return;
                     }
 
-                    element.dispatchEvent(new Event("click", { bubbles: true }));
+                    const target = root.matches("button,[role='button']")
+                        ? root
+                        : (root.querySelector("button,[role='button']") ?? root);
+                    target.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, composed: true }));
                 }
                 """,
                 selector);
@@ -1904,6 +1909,397 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.NotEqual(initialTriggerColor, alternateTriggerColor);
 
         await AssertRefreshInFlowAsync("final");
+    }
+
+    [Fact]
+    public async Task SwipeViewParityProbe_ProjectsDirectionsModesInvocationAndCollectionRows()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1220, height: 940, hasTouch: true);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "swipeviewparitypage");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-swipeviewparitypage']");
+            });
+
+        const string hostSelector = "[data-automation-id='controls-sample-swipeview-parity-host']";
+        const string openStateSelector = "[data-automation-id='controls-sample-swipeview-parity-open-state']";
+        const string eventStateSelector = "[data-automation-id='controls-sample-swipeview-parity-event-state']";
+        const string invokeStateSelector = "[data-automation-id='controls-sample-swipeview-parity-invoke-state']";
+        const string modeStateSelector = "[data-automation-id='controls-sample-swipeview-parity-mode-state']";
+        const string collectionStateSelector = "[data-automation-id='controls-sample-swipeview-parity-collection-state']";
+        const string openButtonSelector = "[data-automation-id='controls-sample-swipeview-parity-open']";
+        const string closeButtonSelector = "[data-automation-id='controls-sample-swipeview-parity-close']";
+        const string toggleDirectionSelector = "[data-automation-id='controls-sample-swipeview-parity-toggle-direction']";
+        const string toggleModeSelector = "[data-automation-id='controls-sample-swipeview-parity-toggle-mode']";
+        const string toggleBehaviorSelector = "[data-automation-id='controls-sample-swipeview-parity-toggle-behavior']";
+        const string toggleItemKindSelector = "[data-automation-id='controls-sample-swipeview-parity-toggle-item-kind']";
+        const string toggleThresholdSelector = "[data-automation-id='controls-sample-swipeview-parity-toggle-threshold']";
+        const string toggleTransitionSelector = "[data-automation-id='controls-sample-swipeview-parity-toggle-transition']";
+        const string toggleEnabledSelector = "[data-automation-id='controls-sample-swipeview-parity-toggle-enabled']";
+        const string rowSelector = "[data-automation-id='controls-sample-swipeview-parity-row-swipe']";
+        const string rowActionSelector = "[data-automation-id='controls-sample-swipeview-parity-row-swipe'] [data-maui-sv-action-wrapper='true'][data-maui-sv-action-side='right']";
+        const string actionViewLabelSelector = "[data-automation-id='controls-sample-swipeview-parity-action-view-label']";
+        const string actionViewButtonSelector = "[data-automation-id='controls-sample-swipeview-parity-action-view-button']";
+
+        async Task DispatchTouchSwipeAsync(string selector, double deltaX, double deltaY)
+        {
+            await page.EvaluateAsync(
+                """
+                async (args) => {
+                    const element = document.querySelector(args.selector);
+                    if (!(element instanceof HTMLElement)) {
+                        return;
+                    }
+
+                    const rect = element.getBoundingClientRect();
+                    const startX = rect.left + (rect.width * 0.5);
+                    const startY = rect.top + (rect.height * 0.5);
+                    const pointerId = 41;
+
+                    const createEvent = (type, clientX, clientY) => new PointerEvent(type, {
+                        bubbles: true,
+                        cancelable: true,
+                        composed: true,
+                        pointerId,
+                        isPrimary: true,
+                        pointerType: "touch",
+                        clientX,
+                        clientY,
+                        buttons: type === "pointerup" ? 0 : 1,
+                        button: 0
+                    });
+
+                    element.dispatchEvent(createEvent("pointerdown", startX, startY));
+
+                    for (let step = 1; step <= args.steps; step++) {
+                        const nextX = startX + ((args.deltaX * step) / args.steps);
+                        const nextY = startY + ((args.deltaY * step) / args.steps);
+                        element.dispatchEvent(createEvent("pointermove", nextX, nextY));
+                        await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+                    }
+
+                    element.dispatchEvent(createEvent("pointerup", startX + args.deltaX, startY + args.deltaY));
+                }
+                """,
+                new
+                {
+                    selector,
+                    deltaX,
+                    deltaY,
+                    steps = 14
+                });
+        }
+
+        async Task DispatchClickAsync(string selector)
+        {
+            await page.EvaluateAsync(
+                """
+                (selector) => {
+                    const element = document.querySelector(selector);
+                    if (!element) {
+                        return;
+                    }
+
+                    element.dispatchEvent(new Event("click", { bubbles: true }));
+                }
+                """,
+                selector);
+        }
+
+        async Task WaitForOpenStateAsync(string expectedOpen, string expectedSide)
+        {
+            await page.WaitForFunctionAsync(
+                """
+                (args) => {
+                    const host = document.querySelector(args.selector);
+                    return host?.getAttribute("data-maui-sv-open") === args.open
+                        && host?.getAttribute("data-maui-sv-open-side") === args.side;
+                }
+                """,
+                new
+                {
+                    selector = hostSelector,
+                    open = expectedOpen,
+                    side = expectedSide
+                });
+        }
+
+        async Task WaitForSwipeRuntimeAttachmentAsync(string selector)
+        {
+            await page.WaitForFunctionAsync(
+                """
+                (selector) => {
+                    const host = document.querySelector(selector);
+                    return host instanceof HTMLElement && host.__mirageSwipeViewState != null;
+                }
+                """,
+                selector);
+        }
+
+        async Task<string> ReadSwipeRuntimeSnapshotAsync(string selector)
+        {
+            return await page.EvaluateAsync<string>(
+                """
+                (selector) => {
+                    const host = document.querySelector(selector);
+                    if (!(host instanceof HTMLElement)) {
+                        return "host=<missing>";
+                    }
+
+                    const state = host.__mirageSwipeViewState;
+                    return JSON.stringify({
+                        openAttr: host.getAttribute("data-maui-sv-open"),
+                        openSideAttr: host.getAttribute("data-maui-sv-open-side"),
+                        transform: host.querySelector("[data-maui-sv-track='true']") instanceof HTMLElement
+                            ? host.querySelector("[data-maui-sv-track='true']").style.transform
+                            : null,
+                        runtime: state ? {
+                            tracking: state.tracking,
+                            axis: state.axis,
+                            side: state.side,
+                            openSide: state.openSide,
+                            currentOffset: state.currentOffset,
+                            startOffset: state.startOffset,
+                            threshold: state.config?.threshold ?? null,
+                            leftExtent: state.config?.left?.extent ?? null,
+                            rightExtent: state.config?.right?.extent ?? null,
+                            topExtent: state.config?.top?.extent ?? null,
+                            bottomExtent: state.config?.bottom?.extent ?? null
+                        } : null
+                    });
+                }
+                """,
+                selector);
+        }
+
+        async Task EnsureModeLabelContainsAsync(string value)
+        {
+            await WaitForLabelTextContainsAsync(page, modeStateSelector, value);
+        }
+
+        async Task SetDirectionAsync(string side)
+        {
+            for (var attempt = 0; attempt < 4; attempt++)
+            {
+                var currentText = (await page.Locator(modeStateSelector).TextContentAsync())?.Trim() ?? string.Empty;
+                if (currentText.Contains($"side={side}", StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                await DispatchClickAsync(toggleDirectionSelector);
+            }
+
+            throw new InvalidOperationException($"Unable to set SwipeView direction to '{side}'.");
+        }
+
+        async Task SetModeAsync(string mode)
+        {
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                var currentText = (await page.Locator(modeStateSelector).TextContentAsync())?.Trim() ?? string.Empty;
+                if (currentText.Contains($"mode={mode}", StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                await DispatchClickAsync(toggleModeSelector);
+            }
+
+            throw new InvalidOperationException($"Unable to set SwipeView mode to '{mode}'.");
+        }
+
+        async Task SetBehaviorAsync(string behavior)
+        {
+            for (var attempt = 0; attempt < 4; attempt++)
+            {
+                var currentText = (await page.Locator(modeStateSelector).TextContentAsync())?.Trim() ?? string.Empty;
+                if (currentText.Contains($"behavior={behavior}", StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                await DispatchClickAsync(toggleBehaviorSelector);
+            }
+
+            var finalText = (await page.Locator(modeStateSelector).TextContentAsync())?.Trim() ?? string.Empty;
+            throw new InvalidOperationException($"Unable to set SwipeView behavior to '{behavior}'. Final mode label: '{finalText}'.");
+        }
+
+        async Task SetItemKindAsync(string kind)
+        {
+            for (var attempt = 0; attempt < 2; attempt++)
+            {
+                var currentText = (await page.Locator(modeStateSelector).TextContentAsync())?.Trim() ?? string.Empty;
+                if (currentText.Contains($"itemKind={kind}", StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                await DispatchClickAsync(toggleItemKindSelector);
+            }
+
+            throw new InvalidOperationException($"Unable to set SwipeView item kind to '{kind}'.");
+        }
+
+        await page.WaitForSelectorAsync(hostSelector);
+        await page.Locator(hostSelector).ScrollIntoViewIfNeededAsync();
+        await WaitForSwipeRuntimeAttachmentAsync(hostSelector);
+
+        Assert.Equal("SwipeView", await page.GetAttributeAsync(hostSelector, "data-mirage-kind"));
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "open=False openSide=none enabled=True");
+        await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=0");
+        await EnsureModeLabelContainsAsync("side=left");
+        Assert.Equal("reveal", await page.GetAttributeAsync(hostSelector, "data-maui-sv-transition"));
+        Assert.Equal("72", await page.GetAttributeAsync(hostSelector, "data-maui-sv-threshold"));
+
+        await DispatchTouchSwipeAsync(hostSelector, 132, 0);
+        var initialSwipeSnapshot = await ReadSwipeRuntimeSnapshotAsync(hostSelector);
+        Assert.NotEqual(
+            "{\"openAttr\":\"false\",\"openSideAttr\":\"none\",\"transform\":\"translate3d(0, 0, 0)\",\"runtime\":{\"tracking\":false,\"axis\":\"\",\"side\":\"\",\"openSide\":\"\",\"currentOffset\":0,\"startOffset\":0,\"threshold\":72,\"leftExtent\":88,\"rightExtent\":0,\"topExtent\":0,\"bottomExtent\":0}}",
+            initialSwipeSnapshot);
+        try
+        {
+            await WaitForOpenStateAsync("true", "left");
+        }
+        catch (TimeoutException ex)
+        {
+            var failedSwipeSnapshot = await ReadSwipeRuntimeSnapshotAsync(hostSelector);
+            var openStateText = (await page.Locator(openStateSelector).TextContentAsync())?.Trim() ?? "<missing>";
+            var eventStateText = (await page.Locator(eventStateSelector).TextContentAsync())?.Trim() ?? "<missing>";
+            throw new XunitException(
+                $"Swipe runtime snapshot after initial drag: {failedSwipeSnapshot}{Environment.NewLine}" +
+                $"Open state label: {openStateText}{Environment.NewLine}" +
+                $"Event state label: {eventStateText}",
+                ex);
+        }
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "open=True openSide=left");
+        await WaitForLabelTextContainsAsync(page, eventStateSelector, "events start=1");
+
+        await page.Locator($"{hostSelector} [data-maui-sv-action-wrapper='true'][data-maui-sv-action-side='left']").TapAsync();
+        await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=1 lastParameter=left-menu lastKind=menu");
+        await WaitForOpenStateAsync("false", "none");
+
+        await SetBehaviorAsync("RemainOpen");
+        await DispatchTouchSwipeAsync(hostSelector, 132, 0);
+        await WaitForOpenStateAsync("true", "left");
+        await page.Locator($"{hostSelector} [data-maui-sv-action-wrapper='true'][data-maui-sv-action-side='left']").TapAsync();
+        await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=2 lastParameter=left-menu lastKind=menu");
+        await WaitForOpenStateAsync("true", "left");
+        await DispatchClickAsync(closeButtonSelector);
+        await WaitForOpenStateAsync("false", "none");
+
+        await SetItemKindAsync("view");
+        await SetBehaviorAsync("RemainOpen");
+        await DispatchClickAsync(openButtonSelector);
+        await WaitForOpenStateAsync("true", "left");
+        Assert.Equal(1, await page.Locator(actionViewLabelSelector).CountAsync());
+        Assert.Equal(1, await page.Locator(actionViewButtonSelector).CountAsync());
+        await page.Locator(actionViewButtonSelector).TapAsync();
+        await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=2");
+        await WaitForLabelTextContainsAsync(page, invokeStateSelector, "innerTaps=1");
+        await WaitForOpenStateAsync("true", "left");
+        await page.Locator(actionViewLabelSelector).TapAsync();
+        await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=3 lastParameter=left-view lastKind=view");
+        await WaitForLabelTextContainsAsync(page, invokeStateSelector, "innerTaps=1");
+
+        await SetItemKindAsync("menu");
+        await SetBehaviorAsync("Auto");
+        await SetModeAsync("Execute");
+        await DispatchClickAsync(toggleThresholdSelector);
+        await EnsureModeLabelContainsAsync("threshold=104");
+        Assert.Equal("104", await page.GetAttributeAsync(hostSelector, "data-maui-sv-threshold"));
+        await DispatchClickAsync(toggleTransitionSelector);
+        await EnsureModeLabelContainsAsync("transition=Drag");
+        Assert.Equal("drag", await page.GetAttributeAsync(hostSelector, "data-maui-sv-transition"));
+
+        await DispatchTouchSwipeAsync(hostSelector, 148, 0);
+        await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=4 lastParameter=left-menu lastKind=menu");
+        await WaitForOpenStateAsync("false", "none");
+
+        await SetDirectionAsync("right");
+        await DispatchClickAsync(openButtonSelector);
+        await WaitForOpenStateAsync("true", "right");
+        await DispatchClickAsync(closeButtonSelector);
+        await WaitForOpenStateAsync("false", "none");
+
+        await SetModeAsync("Reveal");
+        await SetDirectionAsync("top");
+        await DispatchTouchSwipeAsync(hostSelector, 0, 132);
+        try
+        {
+            await WaitForOpenStateAsync("true", "top");
+        }
+        catch (TimeoutException ex)
+        {
+            var failedSwipeSnapshot = await ReadSwipeRuntimeSnapshotAsync(hostSelector);
+            var openStateText = (await page.Locator(openStateSelector).TextContentAsync())?.Trim() ?? "<missing>";
+            var eventStateText = (await page.Locator(eventStateSelector).TextContentAsync())?.Trim() ?? "<missing>";
+            var modeStateText = (await page.Locator(modeStateSelector).TextContentAsync())?.Trim() ?? "<missing>";
+            throw new XunitException(
+                $"Swipe runtime snapshot after top drag: {failedSwipeSnapshot}{Environment.NewLine}" +
+                $"Open state label: {openStateText}{Environment.NewLine}" +
+                $"Event state label: {eventStateText}{Environment.NewLine}" +
+                $"Mode state label: {modeStateText}",
+                ex);
+        }
+        await DispatchClickAsync(closeButtonSelector);
+        await WaitForOpenStateAsync("false", "none");
+
+        await SetDirectionAsync("bottom");
+        await DispatchTouchSwipeAsync(hostSelector, 0, -132);
+        try
+        {
+            await WaitForOpenStateAsync("true", "bottom");
+        }
+        catch (TimeoutException ex)
+        {
+            var failedSwipeSnapshot = await ReadSwipeRuntimeSnapshotAsync(hostSelector);
+            var openStateText = (await page.Locator(openStateSelector).TextContentAsync())?.Trim() ?? "<missing>";
+            var eventStateText = (await page.Locator(eventStateSelector).TextContentAsync())?.Trim() ?? "<missing>";
+            var modeStateText = (await page.Locator(modeStateSelector).TextContentAsync())?.Trim() ?? "<missing>";
+            throw new XunitException(
+                $"Swipe runtime snapshot after bottom drag: {failedSwipeSnapshot}{Environment.NewLine}" +
+                $"Open state label: {openStateText}{Environment.NewLine}" +
+                $"Event state label: {eventStateText}{Environment.NewLine}" +
+                $"Mode state label: {modeStateText}",
+                ex);
+        }
+        await DispatchClickAsync(closeButtonSelector);
+        await WaitForOpenStateAsync("false", "none");
+
+        await DispatchClickAsync(toggleEnabledSelector);
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "enabled=False");
+        var disabledInvokeState = (await page.Locator(invokeStateSelector).TextContentAsync())?.Trim() ?? string.Empty;
+        await DispatchTouchSwipeAsync(hostSelector, 148, 0);
+        await WaitForOpenStateAsync("false", "none");
+        Assert.Equal(disabledInvokeState, (await page.Locator(invokeStateSelector).TextContentAsync())?.Trim());
+
+        await DispatchClickAsync(toggleEnabledSelector);
+        await WaitForLabelTextContainsAsync(page, openStateSelector, "enabled=True");
+
+        var rowLocator = page.Locator(rowSelector).First;
+        var rowActionLocator = page.Locator(rowActionSelector).First;
+
+        await rowLocator.ScrollIntoViewIfNeededAsync();
+        Assert.Equal("SwipeView", await rowLocator.GetAttributeAsync("data-mirage-kind"));
+        await DispatchTouchSwipeAsync(rowSelector, -132, 0);
+        await page.WaitForFunctionAsync(
+            """
+            (selector) => {
+                const host = document.querySelector(selector);
+                return host?.getAttribute("data-maui-sv-open") === "true"
+                    && host?.getAttribute("data-maui-sv-open-side") === "right";
+            }
+            """,
+            rowSelector);
+        await rowActionLocator.ClickAsync();
+        await WaitForLabelTextContainsAsync(page, collectionStateSelector, "collectionInvokes=1");
     }
 
     [Fact]

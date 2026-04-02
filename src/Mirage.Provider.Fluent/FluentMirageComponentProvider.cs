@@ -362,6 +362,17 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 {
                     ["Value"] = new(PropertyTarget.Property, "value")
                 })),
+            [ComponentKind.SwipeView] = new(
+                ComponentKind.SwipeView,
+                "div",
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["OpenState"] = new(PropertyTarget.Attribute, "data-maui-sv-open"),
+                    ["OpenSideState"] = new(PropertyTarget.Attribute, "data-maui-sv-open-side"),
+                    ["EnabledState"] = new(PropertyTarget.Attribute, "data-maui-sv-enabled"),
+                    ["TransitionModeState"] = new(PropertyTarget.Attribute, "data-maui-sv-transition"),
+                    ["ThresholdState"] = new(PropertyTarget.Attribute, "data-maui-sv-threshold")
+                })),
             [ComponentKind.GraphicsView] = new(
                 ComponentKind.GraphicsView,
                 "canvas",

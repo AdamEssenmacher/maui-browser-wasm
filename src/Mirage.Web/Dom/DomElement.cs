@@ -148,6 +148,43 @@ public sealed class DomElement
 
     public static void UnsubscribePullToRefresh(int subscriptionId) => DomApi.UnsubscribePullToRefresh(subscriptionId);
 
+    public int ConfigureSwipeView(
+        string configurationJson,
+        Action swipeStartCallback,
+        Action swipeChangeCallback,
+        Action swipeEndCallback,
+        Action swipeInvokeCallback)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(configurationJson);
+        ArgumentNullException.ThrowIfNull(swipeStartCallback);
+        ArgumentNullException.ThrowIfNull(swipeChangeCallback);
+        ArgumentNullException.ThrowIfNull(swipeEndCallback);
+        ArgumentNullException.ThrowIfNull(swipeInvokeCallback);
+        return DomApi.ConfigureSwipeView(
+            Handle,
+            configurationJson,
+            swipeStartCallback,
+            swipeChangeCallback,
+            swipeEndCallback,
+            swipeInvokeCallback);
+    }
+
+    public string? ConsumeSwipeViewEventPayload(string eventName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
+        return DomApi.ConsumeSwipeViewEventPayload(Handle, eventName);
+    }
+
+    public static void UnsubscribeSwipeView(int subscriptionId) => DomApi.UnsubscribeSwipeView(subscriptionId);
+
+    public bool RequestSwipeViewOpen(string side, bool animated)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(side);
+        return DomApi.RequestSwipeViewOpen(Handle, side, animated);
+    }
+
+    public bool RequestSwipeViewClose(bool animated) => DomApi.RequestSwipeViewClose(Handle, animated);
+
     public bool Focus() => DomApi.FocusElement(Handle);
 
     public void Blur() => DomApi.BlurElement(Handle);

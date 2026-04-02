@@ -133,6 +133,12 @@ Upstream MAUI shared-code risks for unofficial/browser targets are tracked separ
 - Current behavior: linked `IndicatorView` parity stays on the MAUI path; Mirage does not add a Carousel-only side channel and instead proves the existing MAUI binding linkage through the dedicated probe page.
 - Deferred: `IsBounceEnabled` remains a browser `overscroll-behavior` approximation rather than native platform bounce physics, and inherited `ItemsUpdatingScrollMode` parity limits from the current Mirage `ItemsView` substrate still apply.
 
+26. SwipeView family parity depth
+- Current behavior: `SwipeView` now maps through `MirageSwipeViewHandler` on the built-in `ControlNode` path with a handler-owned host tree (root, action-strip hosts, clip host, moving track, content host) and a dedicated swipe runtime seam for configuration plus programmatic open/close.
+- Current behavior: Wave 1 supports touch/pen swipes in all four directions, `Reveal` and `Execute` modes, `SwipeBehaviorOnInvoked`, `Threshold`, swipe lifecycle event routing, `SwipeItem` command/icon/text/background projection, `SwipeItemView` hosted-content projection, and CollectionView-row embedding proof through the dedicated parity probe.
+- Current behavior: runtime configuration now retries through initial host materialization, so browser-side swipe state attaches deterministically even when the first configure attempt happens before the root node is realized.
+- Deferred: mouse-drag parity, exact native transition/animation fidelity, and the broader upstream SwipeView gallery set remain explicit follow-up work rather than claimed Wave 1 behavior.
+
 ## Gap lifecycle policy
 
 1. Any new gap requires:

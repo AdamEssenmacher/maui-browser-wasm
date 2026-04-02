@@ -339,6 +339,26 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentSwipeViewDescriptor_MapsDiagnosticsProjectionChannels()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.SwipeView);
+
+        Assert.Equal("div", descriptor.ElementTagName);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["OpenState"].Target);
+        Assert.Equal("data-maui-sv-open", descriptor.PropertyMappings["OpenState"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["OpenSideState"].Target);
+        Assert.Equal("data-maui-sv-open-side", descriptor.PropertyMappings["OpenSideState"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["EnabledState"].Target);
+        Assert.Equal("data-maui-sv-enabled", descriptor.PropertyMappings["EnabledState"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["TransitionModeState"].Target);
+        Assert.Equal("data-maui-sv-transition", descriptor.PropertyMappings["TransitionModeState"].Name);
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["ThresholdState"].Target);
+        Assert.Equal("data-maui-sv-threshold", descriptor.PropertyMappings["ThresholdState"].Name);
+        Assert.Empty(descriptor.EventMappings);
+    }
+
+    [Fact]
     public void FluentContentContainerDescriptor_MapsCollectionViewRoleDiagnostics()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();

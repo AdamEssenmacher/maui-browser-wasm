@@ -24,9 +24,9 @@ internal abstract class MirageContentViewHandlerBase<TVirtualView> : MirageSingl
 
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
+        base.ConnectHandler(platformView);
         ApplyBaseStyles();
         SetPresentedContent(ResolvePresentedContent());
-        base.ConnectHandler(platformView);
     }
 
     protected override void DisconnectHandler(MiragePlatformView platformView)

@@ -286,7 +286,7 @@ shape_grade_for_type() {
     fi
 
     case "$key" in
-        CollectionView|CarouselView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|IndicatorView|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|Page|ImageButton|ProgressBar|GraphicsView|RefreshView)
+        CollectionView|CarouselView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|IndicatorView|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|Page|ImageButton|ProgressBar|GraphicsView|RefreshView|SwipeView)
             echo "A"
             ;;
         ContentView|Button|Window|NavigationPage|Image|Border|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame)
@@ -315,7 +315,7 @@ implementation_grade_for_type() {
 
     case "$key" in
         CollectionView) echo "C" ;;
-        CarouselView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|ImageButton|ProgressBar|RefreshView) echo "B" ;;
+        CarouselView|Label|ScrollView|SearchBar|Layout|Maps.Map|Maps.MapElement|Maps.Pin|Shapes.Ellipse|Shapes.Line|Shapes.Path|Shapes.Polygon|Shapes.Polyline|Shapes.Rectangle|Shapes.RoundRectangle|RadioButton|ImageButton|ProgressBar|RefreshView|SwipeView) echo "B" ;;
         GraphicsView) echo "C" ;;
         ContentView|Button|Window|NavigationPage|Image|Border|Slider|Stepper|Switch|BoxView|ActivityIndicator|Frame|IndicatorView|Page) echo "C" ;;
         Entry|Editor|DatePicker|TimePicker|Picker) echo "B" ;;
@@ -342,6 +342,9 @@ notes_for_type() {
             ;;
         RefreshView)
             echo "Mirage-owned RefreshView now mirrors the MAUI handler surface with handler-owned chrome, child scroll-source rebinding, deterministic trigger/pull diagnostics, and a dedicated runtime pull seam; native overscroll physics and exact affordance visuals remain browser-limited."
+            ;;
+        SwipeView)
+            echo "Mirage-owned SwipeView now mirrors the MAUI handler family on the ControlNode path with handler-owned swipe chrome, four-direction touch/pen gestures, Reveal/Execute behavior, programmatic open/close, and SwipeItem/SwipeItemView action projection; mouse drag and full native transition fidelity remain deferred."
             ;;
         Label)
             echo "Core mapper + text-source parity implemented; HTML breadth and span hit-region parity remain partial. See \`docs/PARITY_GAPS.md\`."

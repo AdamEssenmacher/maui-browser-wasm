@@ -1,0 +1,22 @@
+{
+  "entries": [
+    {
+      "id": "swipeview-wave1-touch-pen-first",
+      "summary": "Wave 1 guarantees touch and pen drag interaction on the browser host. Mouse drag is left as an explicit follow-up instead of being overclaimed in the first SwipeView parity slice.",
+      "upstreamReference": "src/Core/src/Handlers/SwipeView/SwipeViewHandler.Android.cs",
+      "testReference": "SwipeViewParityProbe_ProjectsDirectionsModesInvocationAndCollectionRows"
+    },
+    {
+      "id": "swipeview-browser-transition-approximation",
+      "summary": "Mirage maps SwipeTransitionMode to deterministic browser Reveal and Drag approximations on the DOM host, but exact native platform transition visuals and physics remain browser-limited in Wave 1.",
+      "upstreamReference": "src/Core/src/Handlers/SwipeView/SwipeViewHandler.iOS.cs",
+      "testReference": "SwipeViewParityProbe_ProjectsDirectionsModesInvocationAndCollectionRows"
+    },
+    {
+      "id": "swipeview-gallery-depth-deferred",
+      "summary": "Wave 1 proves generic single-content SwipeView plus CollectionView-row embedding through a dedicated parity probe instead of claiming the full upstream SwipeView gallery set is unblocked already.",
+      "upstreamReference": "src/Core/src/Handlers/SwipeView/SwipeViewHandler.Android.cs",
+      "testReference": "SwipeViewParityProbe_ProjectsDirectionsModesInvocationAndCollectionRows"
+    }
+  ]
+}

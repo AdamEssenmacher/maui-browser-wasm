@@ -1,10 +1,17 @@
 using System.Diagnostics;
 using ControlsSample.Shared.App;
 using Maui.Controls.Sample.Pages;
+using Mirage.Core.Providers;
+using Mirage.Maui.Handlers;
 using Mirage.Maui.Hosting;
+using Mirage.Provider.Fluent;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Internals;
 using Microsoft.Maui.Dispatching;
+using Microsoft.Maui.Hosting;
+using Microsoft.Maui.Platform;
 using Xunit;
 
 namespace Mirage.Integration.Tests;
@@ -134,6 +141,121 @@ public sealed class ControlsSampleImportTests
         }
 
         Assert.Null(exception);
+    }
+
+    [Fact]
+    public void SwipeViewParityProbePage_VisualTreeContainsNoNullChildren()
+    {
+        var originalSynchronizationContext = SynchronizationContext.Current;
+        var originalDispatcherProvider = DispatcherProvider.Current;
+        SwipeViewParityProbePage? page = null;
+
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(new ImmediateSynchronizationContext());
+            DispatcherProvider.SetCurrent(new BrowserDispatcherProvider());
+
+            var dispatcher = Dispatcher.GetForCurrentThread();
+            Assert.NotNull(dispatcher);
+
+            var dispatchSucceeded = dispatcher!.Dispatch(() =>
+            {
+                _ = new ControlsSampleApp();
+#pragma warning disable CS0612 // IFontNamedSizeService is required for upstream sample compatibility controls.
+                DependencyService.Register<IFontNamedSizeService, TestFontNamedSizeService>();
+#pragma warning restore CS0612
+                page = new SwipeViewParityProbePage();
+            });
+
+            Assert.True(dispatchSucceeded);
+        }
+        finally
+        {
+            DispatcherProvider.SetCurrent(originalDispatcherProvider);
+            SynchronizationContext.SetSynchronizationContext(originalSynchronizationContext);
+        }
+
+        Assert.NotNull(page);
+        var failures = new List<string>();
+        CollectNullVisualChildren(page!, page!.GetType().Name, failures);
+        Assert.True(failures.Count == 0, string.Join(Environment.NewLine, failures));
+    }
+
+    [Fact]
+    public void SwipeViewParityProbePage_CanBeRealizedByMirageHandlers()
+    {
+        var originalSynchronizationContext = SynchronizationContext.Current;
+        var originalDispatcherProvider = DispatcherProvider.Current;
+        Exception? exception = null;
+
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(new ImmediateSynchronizationContext());
+            DispatcherProvider.SetCurrent(new BrowserDispatcherProvider());
+
+            var dispatcher = Dispatcher.GetForCurrentThread();
+            Assert.NotNull(dispatcher);
+
+            var dispatchSucceeded = dispatcher!.Dispatch(() =>
+            {
+                var builder = MauiApp.CreateBuilder();
+                builder.UseMauiApp<ControlsSampleApp>();
+                builder.Services.AddSingleton<IControlsSampleVisibilityPolicy, MirageControlsSampleVisibilityPolicy>();
+                builder.Services.AddSingleton<IMirageRenderCoordinator>(new MirageRenderCoordinator(new BrowserDispatcher()));
+                builder.Services.AddSingleton<IMirageComponentProvider, FluentMirageComponentProvider>();
+                builder.ConfigureMauiHandlers(handlers =>
+                {
+                    handlers.AddHandler(typeof(Page), typeof(MiragePageHandler));
+                    handlers.AddHandler(typeof(ContentPage), typeof(MirageContentPageHandler));
+                    handlers.AddHandler(typeof(ScrollView), typeof(MirageScrollViewHandler));
+                    handlers.AddHandler(typeof(CollectionView), typeof(MirageCollectionViewHandler));
+                    handlers.AddHandler(typeof(SwipeView), typeof(MirageSwipeViewHandler));
+                    handlers.AddHandler(typeof(SwipeItemView), typeof(MirageSwipeItemViewHandler));
+                    handlers.AddHandler(typeof(VerticalStackLayout), typeof(MirageLayoutHandler));
+                    handlers.AddHandler(typeof(HorizontalStackLayout), typeof(MirageLayoutHandler));
+                    handlers.AddHandler(typeof(Label), typeof(MirageLabelHandler));
+                    handlers.AddHandler(typeof(Button), typeof(MirageButtonHandler));
+                    handlers.AddHandler(typeof(Border), typeof(MirageBorderHandler));
+                });
+
+                var app = builder.Build();
+                ControlsSampleApp.BootstrapServices = app.Services;
+
+#pragma warning disable CS0612 // IFontNamedSizeService is required for upstream sample compatibility controls.
+                DependencyService.Register<IFontNamedSizeService, TestFontNamedSizeService>();
+#pragma warning restore CS0612
+
+                var mauiContext = new MauiContext(app.Services);
+                var page = new SwipeViewParityProbePage();
+                exception = Record.Exception(() => _ = page.ToHandler(mauiContext));
+            });
+
+            Assert.True(dispatchSucceeded);
+        }
+        finally
+        {
+            DispatcherProvider.SetCurrent(originalDispatcherProvider);
+            SynchronizationContext.SetSynchronizationContext(originalSynchronizationContext);
+        }
+
+        Assert.Null(exception);
+    }
+
+    private static void CollectNullVisualChildren(IVisualTreeElement element, string path, ICollection<string> failures)
+    {
+        var children = element.GetVisualChildren();
+        for (var index = 0; index < children.Count; index++)
+        {
+            var child = children[index];
+            if (child is null)
+            {
+                failures.Add($"{path} -> child[{index}] is null");
+                continue;
+            }
+
+            var childPath = $"{path}/{child.GetType().Name}[{index}]";
+            CollectNullVisualChildren(child, childPath, failures);
+        }
     }
 
     private static string FindRepoRoot()
