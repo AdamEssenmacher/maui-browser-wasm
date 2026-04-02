@@ -4,6 +4,7 @@ using Mirage.Maui.Essentials;
 using Mirage.Maui.Handlers;
 using Mirage.Maui.Images;
 using Mirage.Maui.Navigation;
+using Mirage.Maui.TextInput;
 using Mirage.Web.Runtime;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
@@ -104,6 +105,7 @@ public static class MirageHostingExtensions
         builder.Services.TryAddSingleton<IMirageObjectUrlFactory, DomMirageObjectUrlFactory>();
         builder.Services.TryAddSingleton<IMirageImageSourceResolver, MirageManifestImageSourceResolver>();
         builder.Services.TryAddSingleton<IMirageBrowserDialogService, MirageBrowserDialogService>();
+        builder.Services.TryAddSingleton<IMirageTextInputSoftInputBridge, MirageTextInputSoftInputBridge>();
         EnsureNavigationServices(builder.Services);
 
         return builder;

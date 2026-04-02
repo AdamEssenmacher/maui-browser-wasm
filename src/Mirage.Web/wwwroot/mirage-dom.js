@@ -2385,6 +2385,37 @@ export function setInputSelection(elementHandle, selectionStart, selectionEnd) {
   }
 }
 
+export function getTextInputContentHeight(elementHandle) {
+  const element = fromHandle(elementHandle);
+  if (!(element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement)) {
+    return -1;
+  }
+
+  const previousInlineHeight = element.style.height;
+  const previousInlineFlex = element.style.flex;
+  const previousInlineAlignSelf = element.style.alignSelf;
+  try {
+    const computedStyle = window.getComputedStyle(element);
+    const borderTop = Number.parseFloat(computedStyle.borderTopWidth ?? "0") || 0;
+    const borderBottom = Number.parseFloat(computedStyle.borderBottomWidth ?? "0") || 0;
+    element.style.flex = "0 0 auto";
+    element.style.alignSelf = "flex-start";
+    element.style.height = "auto";
+    const scrollHeight = element.scrollHeight;
+    if (!Number.isFinite(scrollHeight) || scrollHeight <= 0) {
+      return -1;
+    }
+
+    return Math.ceil(scrollHeight + borderTop + borderBottom);
+  } catch {
+    return -1;
+  } finally {
+    element.style.flex = previousInlineFlex;
+    element.style.alignSelf = previousInlineAlignSelf;
+    element.style.height = previousInlineHeight;
+  }
+}
+
 export function focusElement(elementHandle) {
   const element = fromHandle(elementHandle);
   if (!element || typeof element.focus !== "function") {

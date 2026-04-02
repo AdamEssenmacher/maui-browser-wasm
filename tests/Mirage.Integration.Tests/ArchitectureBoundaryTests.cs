@@ -516,6 +516,29 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void MirageRuntime_SkipsSuppressionForAlreadyFocusedNodes()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var runtimeText = File.ReadAllText(runtimePath);
+        var activeCheck = "var alreadyActive = string.Equals(DomElement.GetActiveMirageNodeId(), nodeId, StringComparison.Ordinal);";
+        var earlyReturn = "if (alreadyActive)";
+        var focusSubscriptionCheck = "var shouldSuppressForwardedFocus = suppressNextFocusEvent && _eventSubscriptions.ContainsKey((nodeId, \"focus\"));";
+        var increment = "IncrementSuppressedFocusEventCount(nodeId);";
+
+        var activeCheckIndex = runtimeText.IndexOf(activeCheck, StringComparison.Ordinal);
+        var earlyReturnIndex = runtimeText.IndexOf(earlyReturn, StringComparison.Ordinal);
+        var focusSubscriptionCheckIndex = runtimeText.IndexOf(focusSubscriptionCheck, StringComparison.Ordinal);
+        var incrementIndex = runtimeText.IndexOf(increment, StringComparison.Ordinal);
+
+        Assert.True(activeCheckIndex >= 0, "Expected MirageRuntime to detect already-focused nodes before arming focus suppression.");
+        Assert.True(earlyReturnIndex > activeCheckIndex, "Expected MirageRuntime to short-circuit no-op focus requests after checking active focus state.");
+        Assert.True(focusSubscriptionCheckIndex > earlyReturnIndex, "Expected MirageRuntime to gate suppressed focus arming behind a real forwarded focus subscription.");
+        Assert.True(incrementIndex > focusSubscriptionCheckIndex, "Expected focus suppression to arm only after the focus-subscription guard.");
+    }
+
+    [Fact]
     public void BrowserPlatform_RegistersRadioButtonHandlerAsBuiltInControlNode()
     {
         var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");

@@ -1,5 +1,6 @@
 using Mirage.Core.Diagnostics;
 using Mirage.Core.Semantics;
+using Mirage.Web.Runtime;
 using System.Diagnostics;
 using System.Globalization;
 using Microsoft.Maui;
@@ -512,6 +513,9 @@ internal sealed class MirageSearchBarHandler : MirageViewHandler<ISearchBar>
     {
         switch (eventName)
         {
+            case MirageRuntimeEventNames.SuppressedFocusStateSync:
+                SyncSuppressedFocusState(isFocused: true);
+                return;
             case "input":
             {
                 var runtimeValue = payload ?? string.Empty;
@@ -572,6 +576,14 @@ internal sealed class MirageSearchBarHandler : MirageViewHandler<ISearchBar>
                 }
 
                 return;
+        }
+    }
+
+    private void SyncSuppressedFocusState(bool isFocused)
+    {
+        if (VirtualView is VisualElement visualElement)
+        {
+            _ = MirageFocusStateSynchronizer.TrySetFocusedStateSilently(visualElement, isFocused);
         }
     }
 

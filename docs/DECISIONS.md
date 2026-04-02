@@ -915,3 +915,9 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added a Mirage-owned browser dialog foundation that subscribes to MAUI page-dialog messages (`DisplayAlertAsync`, `DisplayActionSheetAsync`, and `DisplayPromptAsync`) through the shared MAUI dialog seam instead of patching individual sample pages.
 - Dialog presentation is DOM-owned and window-scoped: one active dialog per window, FIFO queueing for later requests, deterministic cancel semantics on disconnect/navigation cleanup, and focus restoration after dismissal.
 - Prompt dialogs map browser input hints through `inputmode` rather than hard validation, and action sheets only allow backdrop/Escape dismissal when a cancel option exists.
+
+## 2026-04-01 (ControlsSample EntryPage + EditorPage Text-Input Sample Wave)
+- Promoted upstream `EntryPage` and `EditorPage` to runnable ControlsSample entries so Mirage text-input parity is now validated against real upstream sample pages instead of only dedicated parity probes.
+- Added a small browser soft-input bridge for Mirage hosts that maps `ShowSoftInputAsync` / `HideSoftInputAsync` to best-effort focus / unfocus behavior on the underlying text input node. This is intentionally browser-scoped focus semantics, not virtual-keyboard visibility tracking.
+- `EntryPage` keeps the upstream sample implementation unchanged; the wrapper only reroutes the two soft-input buttons through the bridge when the Mirage bridge service is present, so native hosts continue using the existing MAUI sample handlers without wrapper-specific behavior.
+- Extended `MirageEditorHandler` with `Editor.AutoSize` mapping and implemented `AutoSize="TextChanges"` via browser-native textarea content measurement (`scrollHeight` through the runtime seam) rather than speculative .NET text measurement, keeping layout ownership MAUI-first while allowing the realized editor height to grow and shrink with wrapped content.

@@ -36,6 +36,11 @@ public interface IMirageRuntime : IDisposable
 
     bool TrySetNodeFocus(string nodeId, bool isFocused);
 
+    bool TrySetNodeFocus(string nodeId, bool isFocused, bool suppressNextFocusEvent)
+    {
+        return TrySetNodeFocus(nodeId, isFocused);
+    }
+
     bool TryGetNodeTextSelection(string nodeId, out int selectionStart, out int selectionEnd);
 
     bool TrySetNodeTextSelection(string nodeId, int selectionStart, int selectionEnd);
@@ -55,4 +60,10 @@ public interface IMirageRuntime : IDisposable
     }
 
     bool TryRenderNodeCanvas(string nodeId, string commandsJson) => false;
+
+    bool TryGetNodeTextContentHeight(string nodeId, out double height)
+    {
+        height = 0;
+        return false;
+    }
 }

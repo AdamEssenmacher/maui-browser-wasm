@@ -130,6 +130,8 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ["boxviewpage"] = "controls",
             ["buttonpage"] = "controls",
             ["checkboxpage"] = "controls",
+            ["editorpage"] = "controls",
+            ["entrypage"] = "controls",
             ["imagepage"] = "controls",
             ["sliderpage"] = "controls",
             ["stepperpage"] = "controls",
@@ -3413,6 +3415,208 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
+    public async Task EntryPage_IsRunnable_AndExercisesTextInputInteractionsAndDialogs()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1000, height: 1600);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "entrypage");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-entrypage']");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-entrypage-placeholder-entry']");
+            });
+
+        const string placeholderEntrySelector = "[data-automation-id='controls-sample-entrypage-placeholder-entry']";
+        const string showSoftInputSelector = "[data-automation-id='controls-sample-entrypage-show-soft-input']";
+        const string hideSoftInputSelector = "[data-automation-id='controls-sample-entrypage-hide-soft-input']";
+
+        await page.Locator(showSoftInputSelector).ClickAsync();
+        await WaitForResolvedTextInputFocusAsync(page, placeholderEntrySelector, expectedFocused: true);
+
+        await page.Locator(hideSoftInputSelector).ClickAsync();
+        await WaitForResolvedTextInputFocusAsync(page, placeholderEntrySelector, expectedFocused: false);
+
+        const string passwordEntrySelector = "[data-automation-id='controls-sample-entrypage-password-entry']";
+        Assert.Equal("password", await ReadResolvedTextInputAttributeAsync(page, passwordEntrySelector, "type"));
+
+        await page.Locator("[data-automation-id='controls-sample-entrypage-password-checkbox']").ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+        Assert.Equal("text", await ReadResolvedTextInputAttributeAsync(page, passwordEntrySelector, "type"));
+
+        const string clearButtonEntrySelector = "[data-automation-id='controls-sample-entrypage-clear-button-entry']";
+        await FocusResolvedTextInputAsync(page, clearButtonEntrySelector);
+        Assert.True(await ClickNestedElementAsync(page, clearButtonEntrySelector, ".mirage-entry-clear"));
+        await WaitForInputValueEqualsAsync(page, clearButtonEntrySelector, string.Empty);
+        await WaitForResolvedTextInputFocusAsync(page, clearButtonEntrySelector, expectedFocused: true);
+
+        const string backgroundColorEntrySelector = "[data-automation-id='controls-sample-entrypage-background-color-entry']";
+        var backgroundColorBeforeClear = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundColor",
+            backgroundColorEntrySelector);
+        Assert.False(IsTransparent(backgroundColorBeforeClear), $"Expected Entry background color to be initialized, but found '{backgroundColorBeforeClear}'.");
+
+        await page.Locator("[data-automation-id='controls-sample-entrypage-clear-background-color']").ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+        var backgroundColorAfterClear = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundColor",
+            backgroundColorEntrySelector);
+        Assert.True(IsTransparent(backgroundColorAfterClear), $"Expected Entry background color to clear, but found '{backgroundColorAfterClear}'.");
+
+        await page.Locator("[data-automation-id='controls-sample-entrypage-update-background-color']").ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+        var backgroundColorAfterUpdate = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundColor",
+            backgroundColorEntrySelector);
+        Assert.False(IsTransparent(backgroundColorAfterUpdate), $"Expected Entry background color update to project a visible color, but found '{backgroundColorAfterUpdate}'.");
+
+        const string backgroundBrushEntrySelector = "[data-automation-id='controls-sample-entrypage-background-entry']";
+        var backgroundImageBeforeClear = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundImage",
+            backgroundBrushEntrySelector);
+        Assert.True(
+            !string.IsNullOrWhiteSpace(backgroundImageBeforeClear)
+            && !string.Equals(backgroundImageBeforeClear, "none", StringComparison.OrdinalIgnoreCase),
+            "Expected Entry background brush to be initialized.");
+
+        await page.Locator("[data-automation-id='controls-sample-entrypage-clear-background']").ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+        var backgroundImageAfterClear = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundImage",
+            backgroundBrushEntrySelector);
+        Assert.True(
+            string.IsNullOrWhiteSpace(backgroundImageAfterClear)
+            || string.Equals(backgroundImageAfterClear, "none", StringComparison.OrdinalIgnoreCase),
+            $"Expected Entry background brush to clear, but found '{backgroundImageAfterClear}'.");
+
+        await page.Locator("[data-automation-id='controls-sample-entrypage-update-background']").ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+        var backgroundImageAfterUpdate = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundImage",
+            backgroundBrushEntrySelector);
+        Assert.True(
+            !string.IsNullOrWhiteSpace(backgroundImageAfterUpdate)
+            && !string.Equals(backgroundImageAfterUpdate, "none", StringComparison.OrdinalIgnoreCase),
+            "Expected Entry background brush update to project a gradient.");
+
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-entrypage-cursor-slider']", 3);
+        await page.WaitForTimeoutAsync(80);
+        var cursorSelection = await ReadSelectionRangeAsync(page, "[data-automation-id='controls-sample-entrypage-cursor-entry']");
+        Assert.Equal(3, cursorSelection.start);
+        Assert.Equal(3, cursorSelection.end);
+
+        await SetInputValueAsync(page, "[data-automation-id='controls-sample-entrypage-selection-slider']", 2);
+        await page.WaitForTimeoutAsync(80);
+        var selectionRange = await ReadSelectionRangeAsync(page, "[data-automation-id='controls-sample-entrypage-selection-entry']");
+        Assert.Equal(2, selectionRange.start);
+        Assert.Equal(4, selectionRange.end);
+
+        await FocusResolvedTextInputAsync(page, "[data-automation-id='controls-sample-entrypage-focus-entry']");
+        await ExpectDialogAsync(page, "Focused", string.Empty, "modal");
+        await page.Locator("[data-automation-id='mirage-dialog-accept']").ClickAsync();
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']", new() { State = WaitForSelectorState.Detached });
+
+        await FocusResolvedTextInputAsync(page, "[data-automation-id='controls-sample-entrypage-unfocus-entry']");
+        await FocusResolvedTextInputAsync(page, placeholderEntrySelector);
+        await ExpectDialogAsync(page, "Unfocused", string.Empty, "modal");
+        await page.Locator("[data-automation-id='mirage-dialog-accept']").ClickAsync();
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']", new() { State = WaitForSelectorState.Detached });
+
+        const string completedEntrySelector = "[data-automation-id='controls-sample-entrypage-completed-entry']";
+        await SetInputTextAsync(page, completedEntrySelector, "Done");
+        await FocusResolvedTextInputAsync(page, completedEntrySelector);
+        await page.Locator($"{completedEntrySelector} input").PressAsync("Enter");
+        await ExpectDialogAsync(page, "Completed", "Done", "modal");
+        await page.Locator("[data-automation-id='mirage-dialog-accept']").ClickAsync();
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']", new() { State = WaitForSelectorState.Detached });
+    }
+
+    [Fact]
+    public async Task EditorPage_IsRunnable_AndProjectsBackgroundKeyboardCursorDialogsAndAutoSize()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1000, height: 1600);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "editorpage");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-editorpage']");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-editorpage-background-editor']");
+            });
+
+        const string numericEditorSelector = "[data-automation-id='controls-sample-editorpage-numeric-editor']";
+        Assert.Equal("decimal", await ReadResolvedTextInputAttributeAsync(page, numericEditorSelector, "inputmode"));
+
+        const string backgroundEditorSelector = "[data-automation-id='controls-sample-editorpage-background-editor']";
+        var backgroundImageBeforeClear = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundImage",
+            backgroundEditorSelector);
+        Assert.True(
+            !string.IsNullOrWhiteSpace(backgroundImageBeforeClear)
+            && !string.Equals(backgroundImageBeforeClear, "none", StringComparison.OrdinalIgnoreCase),
+            "Expected Editor background brush to be initialized.");
+
+        await page.Locator("[data-automation-id='controls-sample-editorpage-clear-background']").ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+        var backgroundImageAfterClear = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundImage",
+            backgroundEditorSelector);
+        Assert.True(
+            string.IsNullOrWhiteSpace(backgroundImageAfterClear)
+            || string.Equals(backgroundImageAfterClear, "none", StringComparison.OrdinalIgnoreCase),
+            $"Expected Editor background brush to clear, but found '{backgroundImageAfterClear}'.");
+
+        await page.Locator("[data-automation-id='controls-sample-editorpage-update-background']").ClickAsync();
+        await page.WaitForTimeoutAsync(80);
+        var backgroundImageAfterUpdate = await page.EvaluateAsync<string>(
+            "(selector) => getComputedStyle(document.querySelector(selector)).backgroundImage",
+            backgroundEditorSelector);
+        Assert.True(
+            !string.IsNullOrWhiteSpace(backgroundImageAfterUpdate)
+            && !string.Equals(backgroundImageAfterUpdate, "none", StringComparison.OrdinalIgnoreCase),
+            "Expected Editor background brush update to project a gradient.");
+
+        var cursorSelection = await ReadSelectionRangeAsync(page, "[data-automation-id='controls-sample-editorpage-cursor-editor']");
+        Assert.Equal(2, cursorSelection.start);
+        Assert.Equal(2, cursorSelection.end);
+
+        await FocusResolvedTextInputAsync(page, "[data-automation-id='controls-sample-editorpage-focus-editor']");
+        await ExpectDialogAsync(page, "Focused", string.Empty, "modal");
+        await page.Locator("[data-automation-id='mirage-dialog-accept']").ClickAsync();
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']", new() { State = WaitForSelectorState.Detached });
+
+        await FocusResolvedTextInputAsync(page, "[data-automation-id='controls-sample-editorpage-unfocus-editor']");
+        await FocusResolvedTextInputAsync(page, numericEditorSelector);
+        await ExpectDialogAsync(page, "Unfocused", string.Empty, "modal");
+        await page.Locator("[data-automation-id='mirage-dialog-accept']").ClickAsync();
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']", new() { State = WaitForSelectorState.Detached });
+
+        const string completedEditorSelector = "[data-automation-id='controls-sample-editorpage-completed-editor']";
+        await SetInputTextAsync(page, completedEditorSelector, "Editor done");
+        await FocusResolvedTextInputAsync(page, completedEditorSelector);
+        await FocusResolvedTextInputAsync(page, numericEditorSelector);
+        await ExpectDialogAsync(page, "Completed", "Editor done", "modal");
+        await page.Locator("[data-automation-id='mirage-dialog-accept']").ClickAsync();
+        await page.WaitForSelectorAsync("[data-automation-id='mirage-dialog-overlay']", new() { State = WaitForSelectorState.Detached });
+
+        const string autoSizeEditorSelector = "[data-automation-id='controls-sample-editorpage-autosize-editor']";
+        var baselineRect = await ReadBoundingClientRectAsync(page, autoSizeEditorSelector);
+        await SetInputTextAsync(page, autoSizeEditorSelector, string.Join('\n', Enumerable.Range(1, 12).Select(static line => $"Line {line}")));
+        var grownRect = await WaitForBoundingClientRectChangeAsync(page, autoSizeEditorSelector, baselineRect);
+        Assert.True(grownRect[3] > baselineRect[3] + 10d, $"Expected autosize editor to grow. Before={baselineRect[3]:0.###}, after={grownRect[3]:0.###}.");
+
+        await SetInputTextAsync(page, autoSizeEditorSelector, "Short");
+        var shrunkRect = await WaitForBoundingClientRectChangeAsync(page, autoSizeEditorSelector, grownRect);
+        Assert.True(shrunkRect[3] < grownRect[3] - 10d, $"Expected autosize editor to shrink. Before={grownRect[3]:0.###}, after={shrunkRect[3]:0.###}.");
+    }
+
+    [Fact]
     public async Task TransformationsPage_IsRunnable_AndAppliesSliderAndStepperTransforms()
     {
         await using var context = await _fixture.NewContextAsync(width: 1000, height: 1200);
@@ -5274,12 +5478,44 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.Contains(expectedSubstring, finalValue, StringComparison.Ordinal);
     }
 
+    private static async Task WaitForInputValueEqualsAsync(
+        IPage page,
+        string selector,
+        string expectedValue,
+        int timeoutMs = 3000,
+        int pollMs = 50)
+    {
+        var elapsedMs = 0;
+        while (elapsedMs < timeoutMs)
+        {
+            var value = await ReadResolvedTextInputValueAsync(page, selector);
+            if (string.Equals(value, expectedValue, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            await page.WaitForTimeoutAsync(pollMs);
+            elapsedMs += pollMs;
+        }
+
+        var finalValue = await ReadResolvedTextInputValueAsync(page, selector);
+        Assert.Equal(expectedValue, finalValue);
+    }
+
     private static async Task<(int start, int end)> ReadSelectionRangeAsync(IPage page, string selector)
     {
         var values = await page.EvaluateAsync<int[]>(
             """
             (targetSelector) => {
-                const element = document.querySelector(targetSelector);
+                const root = document.querySelector(targetSelector);
+                if (!(root instanceof Element)) {
+                    return [-1, -1];
+                }
+
+                const element =
+                    root instanceof HTMLTextAreaElement || root instanceof HTMLInputElement
+                        ? root
+                        : root.querySelector("input, textarea");
                 if (!(element instanceof HTMLTextAreaElement || element instanceof HTMLInputElement)) {
                     return [-1, -1];
                 }
@@ -5294,6 +5530,186 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
 
         Assert.Equal(2, values.Length);
         return (values[0], values[1]);
+    }
+
+    private static async Task<string?> ReadResolvedTextInputAttributeAsync(IPage page, string selector, string attributeName)
+    {
+        return await page.EvaluateAsync<string?>(
+            """
+            (payload) => {
+                const root = document.querySelector(payload.selector);
+                if (!(root instanceof Element)) {
+                    return "__missing__";
+                }
+
+                const control =
+                    root instanceof HTMLInputElement || root instanceof HTMLTextAreaElement
+                        ? root
+                        : root.querySelector("input, textarea");
+                if (!(control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement)) {
+                    return "__missing__";
+                }
+
+                return control.getAttribute(payload.attributeName);
+            }
+            """,
+            new
+            {
+                selector,
+                attributeName
+            });
+    }
+
+    private static async Task<string> ReadResolvedTextInputValueAsync(IPage page, string selector)
+    {
+        var value = await page.EvaluateAsync<string>(
+            """
+            (targetSelector) => {
+                const root = document.querySelector(targetSelector);
+                if (!(root instanceof Element)) {
+                    return "__missing__";
+                }
+
+                const control =
+                    root instanceof HTMLInputElement || root instanceof HTMLTextAreaElement
+                        ? root
+                        : root.querySelector("input, textarea");
+                if (!(control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement)) {
+                    return "__missing__";
+                }
+
+                return control.value ?? "";
+            }
+            """,
+            selector);
+
+        Assert.NotEqual("__missing__", value);
+        return value;
+    }
+
+    private static async Task FocusResolvedTextInputAsync(IPage page, string selector)
+    {
+        var focused = await page.EvaluateAsync<bool>(
+            """
+            (targetSelector) => {
+                const root = document.querySelector(targetSelector);
+                if (!(root instanceof Element)) {
+                    return false;
+                }
+
+                const control =
+                    root instanceof HTMLInputElement || root instanceof HTMLTextAreaElement
+                        ? root
+                        : root.querySelector("input, textarea");
+                if (!(control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement)) {
+                    return false;
+                }
+
+                control.focus();
+                return document.activeElement === control;
+            }
+            """,
+            selector);
+
+        Assert.True(focused, $"Expected to focus resolved text input for selector '{selector}'.");
+    }
+
+    private static async Task WaitForResolvedTextInputFocusAsync(
+        IPage page,
+        string selector,
+        bool expectedFocused,
+        int timeoutMs = 3000,
+        int pollMs = 50)
+    {
+        var elapsedMs = 0;
+        while (elapsedMs < timeoutMs)
+        {
+            var focused = await page.EvaluateAsync<bool>(
+                """
+                (targetSelector) => {
+                    const root = document.querySelector(targetSelector);
+                    if (!(root instanceof Element)) {
+                        return false;
+                    }
+
+                    const control =
+                        root instanceof HTMLInputElement || root instanceof HTMLTextAreaElement
+                            ? root
+                            : root.querySelector("input, textarea");
+                    if (!(control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement)) {
+                        return false;
+                    }
+
+                    return document.activeElement === control;
+                }
+                """,
+                selector);
+
+            if (focused == expectedFocused)
+            {
+                return;
+            }
+
+            await page.WaitForTimeoutAsync(pollMs);
+            elapsedMs += pollMs;
+        }
+
+        var finalFocused = await page.EvaluateAsync<bool>(
+            """
+            (targetSelector) => {
+                const root = document.querySelector(targetSelector);
+                if (!(root instanceof Element)) {
+                    return false;
+                }
+
+                const control =
+                    root instanceof HTMLInputElement || root instanceof HTMLTextAreaElement
+                        ? root
+                        : root.querySelector("input, textarea");
+                if (!(control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement)) {
+                    return false;
+                }
+
+                return document.activeElement === control;
+            }
+            """,
+            selector);
+
+        Assert.Equal(expectedFocused, finalFocused);
+    }
+
+    private static async Task<bool> ClickNestedElementAsync(IPage page, string selector, string nestedSelector)
+    {
+        return await page.EvaluateAsync<bool>(
+            """
+            (payload) => {
+                const root = document.querySelector(payload.selector);
+                if (!(root instanceof Element)) {
+                    return false;
+                }
+
+                const target = root.querySelector(payload.nestedSelector);
+                if (!(target instanceof HTMLElement)) {
+                    return false;
+                }
+
+                target.click();
+                return true;
+            }
+            """,
+            new
+            {
+                selector,
+                nestedSelector
+            });
+    }
+
+    private static bool IsTransparent(string cssColor)
+    {
+        return string.IsNullOrWhiteSpace(cssColor)
+            || string.Equals(cssColor, "transparent", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(cssColor, "rgba(0, 0, 0, 0)", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(cssColor, "rgba(0,0,0,0)", StringComparison.OrdinalIgnoreCase);
     }
 
     private static async Task NavigateToShapeKindAsync(IPage page, string expectedShapeKind, int maxToggles = 12)
@@ -6057,13 +6473,19 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             await page.Locator("[data-automation-id='mirage-dialog-surface']").GetAttributeAsync("data-mirage-dialog-presentation"));
         Assert.Equal(title, await page.Locator("[data-automation-id='mirage-dialog-title']").InnerTextAsync());
 
-        if (message is null)
+        if (string.IsNullOrEmpty(message))
         {
-            Assert.Equal(0, await page.Locator("[data-automation-id='mirage-dialog-message']").CountAsync());
+            var messageCount = await page.Locator("[data-automation-id='mirage-dialog-message']").CountAsync();
+            if (messageCount == 0)
+            {
+                return;
+            }
+
+            Assert.Equal(string.Empty, (await page.Locator("[data-automation-id='mirage-dialog-message']").TextContentAsync()) ?? string.Empty);
             return;
         }
 
-        Assert.Equal(message, await page.Locator("[data-automation-id='mirage-dialog-message']").InnerTextAsync());
+        Assert.Equal(message, (await page.Locator("[data-automation-id='mirage-dialog-message']").TextContentAsync()) ?? string.Empty);
     }
 
     private static async Task ClickCollectionNavButtonAsync(IPage page, string locatorSelector, string domSelector)

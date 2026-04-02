@@ -24,6 +24,7 @@ public sealed class MirageRuntime : IMirageRuntime
     private readonly Dictionary<string, int> _mapProviderInitializationRetries = new(StringComparer.Ordinal);
     private readonly Dictionary<string, PullToRefreshSubscription> _pullToRefreshSubscriptions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, SwipeViewSubscription> _swipeViewSubscriptions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, int> _suppressedFocusEvents = new(StringComparer.Ordinal);
 
     private NodeBase? _currentRoot;
     private IMirageEventSink? _eventSink;
@@ -196,6 +197,11 @@ public sealed class MirageRuntime : IMirageRuntime
 
     public bool TrySetNodeFocus(string nodeId, bool isFocused)
     {
+        return TrySetNodeFocus(nodeId, isFocused, suppressNextFocusEvent: false);
+    }
+
+    public bool TrySetNodeFocus(string nodeId, bool isFocused, bool suppressNextFocusEvent)
+    {
         if (!_nodes.TryGetValue(nodeId, out var node))
         {
             return false;
@@ -203,11 +209,41 @@ public sealed class MirageRuntime : IMirageRuntime
 
         if (isFocused)
         {
-            return node.Element.Focus();
+            var alreadyActive = string.Equals(DomElement.GetActiveMirageNodeId(), nodeId, StringComparison.Ordinal);
+            if (alreadyActive)
+            {
+                return true;
+            }
+
+            var shouldSuppressForwardedFocus = suppressNextFocusEvent && _eventSubscriptions.ContainsKey((nodeId, "focus"));
+            if (shouldSuppressForwardedFocus)
+            {
+                IncrementSuppressedFocusEventCount(nodeId);
+            }
+
+            var focused = node.Element.Focus();
+            if (!focused && shouldSuppressForwardedFocus)
+            {
+                DecrementSuppressedFocusEventCount(nodeId);
+            }
+            else if (focused && shouldSuppressForwardedFocus)
+            {
+                // Keep MAUI logical focus in sync without replaying user-facing Focused handlers.
+                _eventSink?.OnEvent(nodeId, MirageRuntimeEventNames.SuppressedFocusStateSync, "true");
+            }
+
+            return focused;
         }
 
+        var wasActive = string.Equals(DomElement.GetActiveMirageNodeId(), nodeId, StringComparison.Ordinal);
         node.Element.Blur();
-        return true;
+
+        if (!wasActive)
+        {
+            return false;
+        }
+
+        return !string.Equals(DomElement.GetActiveMirageNodeId(), nodeId, StringComparison.Ordinal);
     }
 
     public bool TryGetNodeTextSelection(string nodeId, out int selectionStart, out int selectionEnd)
@@ -336,7 +372,7 @@ public sealed class MirageRuntime : IMirageRuntime
     public bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)
     {
         displayScale = 1;
-
+ 
         if (!_nodes.TryGetValue(nodeId, out var node))
         {
             return false;
@@ -355,6 +391,18 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         return node.Element.RenderCanvasCommands(commandsJson);
+    }
+
+    public bool TryGetNodeTextContentHeight(string nodeId, out double height)
+    {
+        height = 0;
+
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        return node.GetValueElement().TryGetTextInputContentHeight(out height);
     }
 
     public void Dispose()
@@ -378,6 +426,7 @@ public sealed class MirageRuntime : IMirageRuntime
 
         _swipeViewSubscriptions.Clear();
         _mapProviderInitializationRetries.Clear();
+        _suppressedFocusEvents.Clear();
 
         foreach (var node in _nodes.Values.ToArray())
         {
@@ -1266,11 +1315,61 @@ public sealed class MirageRuntime : IMirageRuntime
         {
             subscriptionId = InvokeInterop(() => targetElement.On(eventDescriptor.DomEventName, () =>
             {
+                if (ShouldSuppressEventForwarding(nodeId, eventName))
+                {
+                    return;
+                }
+
                 _eventSink?.OnEvent(nodeId, eventName, null);
             }));
         }
 
         _eventSubscriptions[(nodeId, eventName)] = subscriptionId;
+    }
+
+    private bool ShouldSuppressEventForwarding(string nodeId, string eventName)
+    {
+        if (!string.Equals(eventName, "focus", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!_suppressedFocusEvents.TryGetValue(nodeId, out var count) || count <= 0)
+        {
+            return false;
+        }
+
+        DecrementSuppressedFocusEventCount(nodeId);
+
+        return true;
+    }
+
+    private void IncrementSuppressedFocusEventCount(string nodeId)
+    {
+        if (_suppressedFocusEvents.TryGetValue(nodeId, out var count))
+        {
+            _suppressedFocusEvents[nodeId] = count + 1;
+        }
+        else
+        {
+            _suppressedFocusEvents[nodeId] = 1;
+        }
+    }
+
+    private void DecrementSuppressedFocusEventCount(string nodeId)
+    {
+        if (!_suppressedFocusEvents.TryGetValue(nodeId, out var count) || count <= 0)
+        {
+            return;
+        }
+
+        if (count == 1)
+        {
+            _suppressedFocusEvents.Remove(nodeId);
+            return;
+        }
+
+        _suppressedFocusEvents[nodeId] = count - 1;
     }
 
     private void ConfigureMapNode(string nodeId, RealizedNode node)

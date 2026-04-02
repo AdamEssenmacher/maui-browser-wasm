@@ -46,6 +46,8 @@
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml" Link="Vendor\Pages\Controls\ButtonPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\BoxViewPage.xaml" Link="Vendor\Pages\Controls\BoxViewPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\CheckBoxPage.xaml" Link="Vendor\Pages\Controls\CheckBoxPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\EditorPage.xaml" Link="Vendor\Pages\Controls\EditorPage.xaml" />
+    <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\EntryPage.xaml" Link="Vendor\Pages\Controls\EntryPage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\ImagePage.xaml" Link="Vendor\Pages\Controls\ImagePage.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\BasicMapGallery.xaml" Link="Vendor\Pages\Controls\MapsGalleries\BasicMapGallery.xaml" />
     <MauiXaml Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\MapTypeGallery.xaml" Link="Vendor\Pages\Controls\MapsGalleries\MapTypeGallery.xaml" />
@@ -104,6 +106,8 @@
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\ButtonPage.xaml.cs" Link="Vendor\Pages\Controls\ButtonPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\BoxViewPage.xaml.cs" Link="Vendor\Pages\Controls\BoxViewPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\CheckBoxPage.xaml.cs" Link="Vendor\Pages\Controls\CheckBoxPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\EditorPage.xaml.cs" Link="Vendor\Pages\Controls\EditorPage.xaml.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\EntryPage.xaml.cs" Link="Vendor\Pages\Controls\EntryPage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\ImagePage.xaml.cs" Link="Vendor\Pages\Controls\ImagePage.xaml.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\MapsGallery.cs" Link="Vendor\Pages\Controls\MapsGalleries\MapsGallery.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)Pages\Controls\MapsGalleries\BasicMapGallery.xaml.cs" Link="Vendor\Pages\Controls\MapsGalleries\BasicMapGallery.xaml.cs" />
@@ -129,6 +133,7 @@
     <Compile Include="$(ControlsSampleVendorRoot)Models\SectionModel.cs" Link="Vendor\Models\SectionModel.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)ViewModels\Base\BaseViewModel.cs" Link="Vendor\ViewModels\Base\BaseViewModel.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)ViewModels\Base\BaseGalleryViewModel.cs" Link="Vendor\ViewModels\Base\BaseGalleryViewModel.cs" />
+    <Compile Include="$(ControlsSampleVendorRoot)ViewModels\EntryViewModel.cs" Link="Vendor\ViewModels\EntryViewModel.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)ViewModels\LayoutsViewModel.cs" Link="Vendor\ViewModels\LayoutsViewModel.cs" />
     <Compile Include="$(ControlsSampleVendorRoot)ViewModels\ScrollViewOptionsModel.cs" Link="Vendor\ViewModels\ScrollViewOptionsModel.cs" />
   </ItemGroup>

@@ -148,6 +148,12 @@ public sealed class DomElement
 
     public static void UnsubscribePullToRefresh(int subscriptionId) => DomApi.UnsubscribePullToRefresh(subscriptionId);
 
+    public bool TryGetTextInputContentHeight(out double height)
+    {
+        height = DomApi.GetTextInputContentHeight(Handle);
+        return double.IsFinite(height) && height > 0;
+    }
+
     public int ConfigureSwipeView(
         string configurationJson,
         Action swipeStartCallback,
@@ -184,7 +190,6 @@ public sealed class DomElement
     }
 
     public bool RequestSwipeViewClose(bool animated) => DomApi.RequestSwipeViewClose(Handle, animated);
-
     public bool Focus() => DomApi.FocusElement(Handle);
 
     public void Blur() => DomApi.BlurElement(Handle);

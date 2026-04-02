@@ -1,5 +1,7 @@
 using Mirage.Core.Diagnostics;
 using Mirage.Core.Semantics;
+using Mirage.Maui.TextInput;
+using Mirage.Web.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
@@ -207,16 +209,23 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
     public static void MapUnfocus(MirageEntryHandler handler, IEntry entry, object? args)
     {
         _ = entry;
-        _ = args;
+        var hideRequest = args as MirageSoftInputHideRequest;
 
         if (handler.Coordinator is not { } coordinator
             || handler._inputNode is null
             || string.IsNullOrWhiteSpace(handler._inputNode.NodeId))
         {
+            hideRequest?.TrySetResult(false);
             return;
         }
 
-        _ = coordinator.TrySetNodeFocus(handler._inputNode.NodeId, isFocused: false);
+        var unfocused = coordinator.TrySetNodeFocus(handler._inputNode.NodeId, isFocused: false);
+        hideRequest?.TrySetResult(unfocused);
+        if (!unfocused)
+        {
+            return;
+        }
+
         handler._isFocused = false;
         if (handler.UpdateClearButtonProjection(handler.VirtualView))
         {
@@ -613,6 +622,9 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
     {
         switch (eventName)
         {
+            case MirageRuntimeEventNames.SuppressedFocusStateSync:
+                SyncSuppressedFocusState(isFocused: true);
+                return;
             case "input":
                 OnRuntimeInputValue(payload ?? string.Empty);
                 SyncSelectionFromRuntime();
@@ -666,6 +678,20 @@ internal sealed class MirageEntryHandler : MirageViewHandler<IEntry>, IMirageRun
                 _isComposingText = false;
                 SyncSelectionFromRuntime();
                 return;
+        }
+    }
+
+    private void SyncSuppressedFocusState(bool isFocused)
+    {
+        _isFocused = isFocused;
+        if (VirtualView is VisualElement visualElement)
+        {
+            _ = MirageFocusStateSynchronizer.TrySetFocusedStateSilently(visualElement, isFocused);
+        }
+
+        if (UpdateClearButtonProjection(VirtualView))
+        {
+            RequestRender();
         }
     }
 

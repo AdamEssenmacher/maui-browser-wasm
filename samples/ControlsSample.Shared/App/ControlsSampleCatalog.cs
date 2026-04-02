@@ -2,6 +2,7 @@ using Maui.Controls.Sample.Pages;
 using Maui.Controls.Sample.Pages.CollectionViewGalleries;
 using Maui.Controls.Sample.Pages.MapsGalleries;
 using ControlsSample.Shared.App.VendorCompat;
+using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Internals;
 using System.Reflection;
@@ -220,6 +221,22 @@ public static class ControlsSampleCatalog
             description: "Runnable in Mirage today: exercises CheckBox checked state, accent color aliases, and disabled variants.",
             pageFactory: CreateCheckBoxPage),
         new(
+            id: "editorpage",
+            title: "EditorPage",
+            upstreamPath: "Pages/Controls/EditorPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(EditorPage),
+            description: "Runnable in Mirage today: exercises Editor text input, background updates, dialogs, cursor state, and auto-size text-change behavior.",
+            pageFactory: CreateEditorPage),
+        new(
+            id: "entrypage",
+            title: "EntryPage",
+            upstreamPath: "Pages/Controls/EntryPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(EntryPage),
+            description: "Runnable in Mirage today: exercises Entry text input, password/clear-button state, selection, background updates, and dialog-driven focus/completed behavior.",
+            pageFactory: CreateEntryPage),
+        new(
             id: "imagepage",
             title: "ImagePage",
             upstreamPath: "Pages/Controls/ImagePage.xaml",
@@ -408,6 +425,8 @@ public static class ControlsSampleCatalog
             ["boxviewpage"] = ControlsSampleCategory.Controls,
             ["buttonpage"] = ControlsSampleCategory.Controls,
             ["checkboxpage"] = ControlsSampleCategory.Controls,
+            ["editorpage"] = ControlsSampleCategory.Controls,
+            ["entrypage"] = ControlsSampleCategory.Controls,
             ["imagepage"] = ControlsSampleCategory.Controls,
             ["sliderpage"] = ControlsSampleCategory.Controls,
             ["stepperpage"] = ControlsSampleCategory.Controls,
@@ -719,6 +738,70 @@ public static class ControlsSampleCatalog
         return page;
     }
 
+    private static Page CreateEditorPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new EditorPage();
+
+        SetNamedElementAutomationId(page, "BackgroundEditor", "controls-sample-editorpage-background-editor");
+        SetNamedElementAutomationId(page, "UpdateBackgroundButton", "controls-sample-editorpage-update-background");
+        SetNamedElementAutomationId(page, "ClearBackgroundButton", "controls-sample-editorpage-clear-background");
+        SetViewAutomationIdAfterLabel<Editor>(page, "Keyboard Numeric", "controls-sample-editorpage-numeric-editor");
+        SetViewAutomationIdAfterLabel<Editor>(page, "Cursor position", "controls-sample-editorpage-cursor-editor");
+        SetViewAutomationIdAfterLabel<Editor>(page, "Focus", "controls-sample-editorpage-focus-editor");
+        SetViewAutomationIdAfterLabel<Editor>(page, "Unfocus", "controls-sample-editorpage-unfocus-editor");
+        SetViewAutomationIdAfterLabel<Editor>(page, "Completed", "controls-sample-editorpage-completed-editor");
+        SetViewAutomationIdAfterLabel<Editor>(page, "Auto Size with Text Changes", "controls-sample-editorpage-autosize-editor");
+
+        return page;
+    }
+
+    private static Page CreateEntryPage(IServiceProvider services)
+    {
+        var page = new EntryPage();
+
+        SetNamedElementAutomationId(page, "ShowSoftInputAsyncButton", "controls-sample-entrypage-show-soft-input");
+        SetNamedElementAutomationId(page, "HideSoftInputAsyncButton", "controls-sample-entrypage-hide-soft-input");
+        SetNamedElementAutomationId(page, "PlaceholderEntryItem", "controls-sample-entrypage-placeholder-entry");
+        SetNamedElementAutomationId(page, "chkIsPassword", "controls-sample-entrypage-password-checkbox");
+        SetNamedElementAutomationId(page, "pwdPassword", "controls-sample-entrypage-password-entry");
+        SetNamedElementAutomationId(page, "ReturnTypeEntry", "controls-sample-entrypage-returntype-entry");
+        SetNamedElementAutomationId(page, "BackgroundColorEntry", "controls-sample-entrypage-background-color-entry");
+        SetNamedElementAutomationId(page, "UpdateBackgroundColorButton", "controls-sample-entrypage-update-background-color");
+        SetNamedElementAutomationId(page, "ClearBackgroundColorButton", "controls-sample-entrypage-clear-background-color");
+        SetNamedElementAutomationId(page, "BackgroundEntry", "controls-sample-entrypage-background-entry");
+        SetNamedElementAutomationId(page, "UpdateBackgroundButton", "controls-sample-entrypage-update-background");
+        SetNamedElementAutomationId(page, "ClearBackgroundButton", "controls-sample-entrypage-clear-background");
+        SetNamedElementAutomationId(page, "sldCursorPosition", "controls-sample-entrypage-cursor-slider");
+        SetNamedElementAutomationId(page, "entryCursor", "controls-sample-entrypage-cursor-entry");
+        SetNamedElementAutomationId(page, "sldSelection", "controls-sample-entrypage-selection-slider");
+        SetNamedElementAutomationId(page, "entrySelection", "controls-sample-entrypage-selection-entry");
+        SetViewAutomationIdAfterLabel<Entry>(page, "ClearButtonVisibility = WhileEditing", "controls-sample-entrypage-clear-button-entry");
+        SetViewAutomationIdAfterLabel<Entry>(page, "Focus", "controls-sample-entrypage-focus-entry");
+        SetViewAutomationIdAfterLabel<Entry>(page, "Unfocus", "controls-sample-entrypage-unfocus-entry");
+        SetViewAutomationIdAfterLabel<Entry>(page, "Completed", "controls-sample-entrypage-completed-entry");
+
+        if (TryResolveMirageTextInputSoftInputBridge(services) is { } bridge)
+        {
+            var placeholderEntry = GetNamedElement<Entry>(page, "PlaceholderEntryItem");
+            if (placeholderEntry is not null)
+            {
+                TryReplaceButtonClickedHandler(
+                    page,
+                    buttonFieldName: "ShowSoftInputAsyncButton",
+                    originalHandlerMethodName: "ShowSoftInputAsyncButton_Clicked",
+                    replacement: async (_, _) => await InvokeMirageSoftInputBridgeAsync(bridge, "ShowSoftInputAsync", placeholderEntry));
+                TryReplaceButtonClickedHandler(
+                    page,
+                    buttonFieldName: "HideSoftInputAsyncButton",
+                    originalHandlerMethodName: "HideSoftInputAsyncButton_Clicked",
+                    replacement: async (_, _) => await InvokeMirageSoftInputBridgeAsync(bridge, "HideSoftInputAsync", placeholderEntry));
+            }
+        }
+
+        return page;
+    }
+
     private static Page CreateSliderPage(IServiceProvider services)
     {
         _ = services;
@@ -1005,6 +1088,119 @@ public static class ControlsSampleCatalog
         }
 
         label.AutomationId = automationId;
+    }
+
+    private static void SetViewAutomationIdAfterLabel<TView>(Page page, string labelText, string automationId, int occurrence = 0)
+        where TView : VisualElement
+    {
+        var labels = FindDescendants<Label>(page)
+            .Where(candidate => string.Equals(candidate.Text, labelText, StringComparison.Ordinal))
+            .ToArray();
+        if (occurrence < 0 || occurrence >= labels.Length)
+        {
+            return;
+        }
+
+        var target = FindNextSiblingDescendant<TView>(labels[occurrence]);
+        if (target is null || !string.IsNullOrWhiteSpace(target.AutomationId))
+        {
+            return;
+        }
+
+        target.AutomationId = automationId;
+    }
+
+    private static TView? GetNamedElement<TView>(Page page, string fieldName)
+        where TView : VisualElement
+    {
+        var field = page.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        return field?.GetValue(page) as TView;
+    }
+
+    private static bool TryReplaceButtonClickedHandler(Page page, string buttonFieldName, string originalHandlerMethodName, EventHandler replacement)
+    {
+        var button = GetNamedElement<Button>(page, buttonFieldName);
+        if (button is null)
+        {
+            return false;
+        }
+
+        var originalMethod = page.GetType().GetMethod(
+            originalHandlerMethodName,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        if (originalMethod is not null
+            && Delegate.CreateDelegate(typeof(EventHandler), page, originalMethod, throwOnBindFailure: false) is EventHandler originalHandler)
+        {
+            button.Clicked -= originalHandler;
+        }
+
+        button.Clicked += replacement;
+        return true;
+    }
+
+    private static object? TryResolveMirageTextInputSoftInputBridge(IServiceProvider services)
+    {
+        var bridgeType = Type.GetType("Mirage.Maui.TextInput.IMirageTextInputSoftInputBridge, Mirage.Maui", throwOnError: false);
+        return bridgeType is null ? null : services.GetService(bridgeType);
+    }
+
+    private static async Task InvokeMirageSoftInputBridgeAsync(object bridge, string methodName, ITextInput textInput)
+    {
+        var bridgeMethod = bridge.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public);
+        if (bridgeMethod?.Invoke(bridge, [textInput, CancellationToken.None]) is Task<bool> pendingTask)
+        {
+            await pendingTask;
+            return;
+        }
+
+        if (textInput is not VisualElement visualElement)
+        {
+            return;
+        }
+
+        if (string.Equals(methodName, "ShowSoftInputAsync", StringComparison.Ordinal))
+        {
+            _ = visualElement.Focus();
+        }
+        else
+        {
+            visualElement.Unfocus();
+        }
+    }
+
+    private static TView? FindNextSiblingDescendant<TView>(Element anchor)
+        where TView : VisualElement
+    {
+        if (anchor.Parent is not IElementController parentController)
+        {
+            return null;
+        }
+
+        var logicalChildren = parentController.LogicalChildren;
+        var anchorIndex = -1;
+        for (var i = 0; i < logicalChildren.Count; i++)
+        {
+            if (ReferenceEquals(logicalChildren[i], anchor))
+            {
+                anchorIndex = i;
+                break;
+            }
+        }
+
+        if (anchorIndex < 0)
+        {
+            return null;
+        }
+
+        for (var i = anchorIndex + 1; i < logicalChildren.Count; i++)
+        {
+            foreach (var match in FindDescendants<TView>(logicalChildren[i]))
+            {
+                return match;
+            }
+        }
+
+        return null;
     }
 
     private static IEnumerable<TView> FindDescendants<TView>(Element root)
