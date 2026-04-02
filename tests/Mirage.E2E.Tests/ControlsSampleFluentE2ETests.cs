@@ -2205,6 +2205,24 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 });
         }
 
+        async Task<int> ReadSwipeEndCountAsync()
+        {
+            var text = (await page.Locator(eventStateSelector).TextContentAsync())?.Trim() ?? string.Empty;
+            var marker = "end=";
+            var index = text.IndexOf(marker, StringComparison.Ordinal);
+            if (index < 0)
+            {
+                return -1;
+            }
+
+            index += marker.Length;
+            var endIndex = text.IndexOf(' ', index);
+            var token = endIndex >= 0 ? text[index..endIndex] : text[index..];
+            return int.TryParse(token, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value)
+                ? value
+                : -1;
+        }
+
         async Task EnsureModeLabelContainsAsync(string value)
         {
             await WaitForLabelTextContainsAsync(page, modeStateSelector, value);
@@ -2370,6 +2388,15 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
 
         await DispatchTouchSwipeAsync(hostSelector, 148, 0);
         await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=4 lastParameter=left-menu lastKind=menu");
+        await WaitForOpenStateAsync("false", "none");
+
+        await SetBehaviorAsync("RemainOpen");
+        var executeRemainOpenEndCount = await ReadSwipeEndCountAsync();
+        await DispatchTouchSwipeAsync(hostSelector, 148, 0);
+        await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=5 lastParameter=left-menu lastKind=menu");
+        await WaitForOpenStateAsync("true", "left");
+        Assert.Equal(executeRemainOpenEndCount + 1, await ReadSwipeEndCountAsync());
+        await DispatchClickAsync(closeButtonSelector);
         await WaitForOpenStateAsync("false", "none");
 
         await SetDirectionAsync("right");

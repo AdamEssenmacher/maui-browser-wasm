@@ -2091,7 +2091,8 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
     const itemKind = wrapper.getAttribute("data-maui-sv-action-kind") ?? "menu";
     emitSwipeInvoke(side, Number.isFinite(itemIndex) ? itemIndex : 0, itemKind);
     if (resolveBehaviorKeepsOpen(side)) {
-      completeOpenState(side, animated, false);
+      const shouldEmitOpenEnd = state.openSide !== side;
+      completeOpenState(side, animated, shouldEmitOpenEnd);
     } else {
       completeClosedState(side, animated, true);
     }

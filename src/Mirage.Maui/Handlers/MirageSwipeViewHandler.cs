@@ -258,6 +258,8 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
 
     public static void MapIsEnabled(MirageSwipeViewHandler handler, ISwipeView swipeView)
     {
+        handler.ResetOpenStateIfDisabled();
+
         if (!handler.ApplyDiagnostics())
         {
             handler.ConfigureRuntime();
@@ -986,6 +988,11 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
             return;
         }
 
+        if (!VirtualView.IsEnabled)
+        {
+            return;
+        }
+
         if (_openSide != SwipeSide.None)
         {
             _ = Coordinator.TryRequestNodeSwipeViewOpen(PlatformView.NodeId, ToSideToken(_openSide), animated: false);
@@ -1075,6 +1082,18 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
 
         ScheduleRuntimeConfigurationRetry();
         return true;
+    }
+
+    private void ResetOpenStateIfDisabled()
+    {
+        if (VirtualView.IsEnabled)
+        {
+            return;
+        }
+
+        _pendingRuntimeCommand = PendingRuntimeCommand.None;
+        _openSide = SwipeSide.None;
+        VirtualView.IsOpen = false;
     }
 
     private void ScheduleRuntimeConfigurationRetry()
