@@ -2386,6 +2386,19 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await EnsureModeLabelContainsAsync("transition=Drag");
         Assert.Equal("drag", await page.GetAttributeAsync(hostSelector, "data-maui-sv-transition"));
 
+        await DispatchClickAsync(openButtonSelector);
+        await WaitForOpenStateAsync("true", "left");
+        var stationaryTapInvokeState = (await page.Locator(invokeStateSelector).TextContentAsync())?.Trim() ?? string.Empty;
+        await DispatchTouchTapAsync(hostSelector);
+        Assert.Equal(stationaryTapInvokeState, (await page.Locator(invokeStateSelector).TextContentAsync())?.Trim());
+        await WaitForOpenStateAsync("true", "left");
+        await DispatchClickAsync(closeButtonSelector);
+        await WaitForOpenStateAsync("false", "none");
+        var idleBlurEndCount = await ReadSwipeEndCountAsync();
+        await page.EvaluateAsync("() => window.dispatchEvent(new Event('blur'))");
+        Assert.Equal(idleBlurEndCount, await ReadSwipeEndCountAsync());
+        await WaitForOpenStateAsync("false", "none");
+
         await DispatchTouchSwipeAsync(hostSelector, 148, 0);
         await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=4 lastParameter=left-menu lastKind=menu");
         await WaitForOpenStateAsync("false", "none");

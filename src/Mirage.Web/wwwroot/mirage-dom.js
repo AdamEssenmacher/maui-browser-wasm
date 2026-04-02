@@ -1818,6 +1818,7 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
     axis: "",
     side: "",
     startOffset: 0,
+    dragDistance: 0,
     currentOffset: 0,
     openSide: "",
     captured: false
@@ -2106,6 +2107,7 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
     const mode = getSideMode(resolvedSide);
     const threshold = Math.min(state.config.threshold, extent > 0 ? extent : state.config.threshold);
     const absOffset = Math.abs(state.currentOffset);
+    const dragDistance = state.dragDistance;
 
     state.tracking = false;
     if (state.captured && typeof owner.releasePointerCapture === "function" && state.pointerId >= 0) {
@@ -2118,13 +2120,14 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
 
     state.captured = false;
     state.pointerId = -1;
+    state.dragDistance = 0;
 
     if (!resolvedSide || extent <= 0) {
       completeClosedState(resolvedSide, true, true);
       return;
     }
 
-    if (releaseWithTrigger && mode === "execute" && absOffset >= threshold) {
+    if (releaseWithTrigger && mode === "execute" && absOffset >= threshold && dragDistance >= 10) {
       const wrapper = getFirstInvokableWrapper(resolvedSide);
       if (invokeWrapper(resolvedSide, wrapper, true)) {
         return;
@@ -2181,6 +2184,7 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
     state.axis = state.openSide ? getSwipeAxisForSide(state.openSide) : "";
     state.side = state.openSide || "";
     state.startOffset = state.currentOffset;
+    state.dragDistance = 0;
   };
 
   const pointerMoveListener = (event) => {
@@ -2239,6 +2243,7 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
 
     const rawOffset = state.startOffset + (state.axis === "horizontal" ? dx : dy);
     const clampedOffset = clampOffsetForSide(state.side, rawOffset);
+    state.dragDistance = Math.max(state.dragDistance, Math.abs(state.axis === "horizontal" ? dx : dy));
 
     applyOffset(clampedOffset, false);
     emitSwipeChange(state.side, clampedOffset);
@@ -2254,6 +2259,10 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
   };
 
   const pointerCancelListener = (event) => {
+    if (!state.tracking) {
+      return;
+    }
+
     if (event instanceof PointerEvent && state.pointerId >= 0 && event.pointerId !== state.pointerId) {
       return;
     }
