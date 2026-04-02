@@ -16,6 +16,7 @@ using Xunit;
 
 namespace Mirage.Integration.Tests;
 
+[Collection("Mirage NonParallel")]
 public sealed class MirageBrowserDialogServiceTests
 {
     [Fact]
