@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Controls.Internals;
+using Microsoft.Maui.Dispatching;
 using Microsoft.Maui.Graphics;
 using Microsoft.Maui.Handlers;
 using Xunit;
@@ -555,6 +556,32 @@ public sealed class MirageEditorHandlerTests
     }
 
     [Fact]
+    public void EditorHandler_AutoSize_RetriesMeasurementUntilLayoutSettles()
+    {
+        var editor = new Editor
+        {
+            AutoSize = EditorAutoSizeOption.TextChanges,
+            Text = "wrapped content"
+        };
+
+        var (handler, _, _, runtime, dispatcher) = CreateAttachedHandlerWithQueuedDispatcher(editor);
+        var inputNode = GetInputNode(handler);
+
+        dispatcher.FlushAll();
+        runtime.SetContentHeightSequence(inputNode.NodeId, 96, 96, 144, 144);
+
+        handler.PlatformArrange(new Rect(0, 0, 320, 200));
+        MirageEditorHandler.Mapper.UpdateProperty(handler, editor, nameof(Editor.AutoSize));
+
+        Assert.Equal("96px", inputNode.GetStyleValue("height"));
+
+        dispatcher.FlushAll();
+
+        Assert.Equal("144px", inputNode.GetStyleValue("height"));
+        Assert.Equal("hidden", inputNode.GetStyleValue("overflowY"));
+    }
+
+    [Fact]
     public void EditorHandler_FocusCommand_TargetsTextAreaNode()
     {
         var editor = new Editor
@@ -630,6 +657,24 @@ public sealed class MirageEditorHandlerTests
         return (handler, editor, coordinator, runtime);
     }
 
+    private static (MirageEditorHandler Handler, Editor Editor, MirageRenderCoordinator Coordinator, EditorRuntimeProbe Runtime, QueuedDispatcher Dispatcher) CreateAttachedHandlerWithQueuedDispatcher(Editor editor)
+    {
+        var dispatcher = new QueuedDispatcher();
+        var coordinator = new MirageRenderCoordinator(dispatcher);
+        var runtime = new EditorRuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var services = new ServiceCollection()
+            .AddSingleton<IMirageRenderCoordinator>(coordinator)
+            .BuildServiceProvider();
+        var mauiContext = new MauiContext(services);
+
+        var handler = new MirageEditorHandler();
+        ((IElementHandler)handler).SetMauiContext(mauiContext);
+        ((IElementHandler)handler).SetVirtualView(editor);
+        return (handler, editor, coordinator, runtime, dispatcher);
+    }
+
     private static MiragePlatformView GetInputNode(MirageEditorHandler handler)
     {
         return handler.PlatformView.Children
@@ -642,6 +687,7 @@ public sealed class MirageEditorHandlerTests
     {
         private readonly Dictionary<string, (int Start, int End)> _selectionByNodeId = new(StringComparer.Ordinal);
         private readonly Dictionary<string, double> _contentHeightByNodeId = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, Queue<double>> _contentHeightSequencesByNodeId = new(StringComparer.Ordinal);
 
         public string? LastFocusedNodeId { get; private set; }
 
@@ -750,6 +796,12 @@ public sealed class MirageEditorHandlerTests
 
         public bool TryGetNodeTextContentHeight(string nodeId, out double height)
         {
+            if (_contentHeightSequencesByNodeId.TryGetValue(nodeId, out var sequence) && sequence.Count > 0)
+            {
+                height = sequence.Dequeue();
+                return true;
+            }
+
             return _contentHeightByNodeId.TryGetValue(nodeId, out height);
         }
 
@@ -779,6 +831,52 @@ public sealed class MirageEditorHandlerTests
         public void SetContentHeight(string nodeId, double height)
         {
             _contentHeightByNodeId[nodeId] = height;
+        }
+
+        public void SetContentHeightSequence(string nodeId, params double[] heights)
+        {
+            _contentHeightSequencesByNodeId[nodeId] = new Queue<double>(heights);
+
+            if (heights.Length > 0)
+            {
+                _contentHeightByNodeId[nodeId] = heights[^1];
+            }
+        }
+    }
+
+    private sealed class QueuedDispatcher : IDispatcher
+    {
+        private readonly Queue<Action> _pending = new();
+
+        public bool IsDispatchRequired => false;
+
+        public int PendingCount => _pending.Count;
+
+        public bool Dispatch(Action action)
+        {
+            ArgumentNullException.ThrowIfNull(action);
+            _pending.Enqueue(action);
+            return true;
+        }
+
+        public bool DispatchDelayed(TimeSpan delay, Action action)
+        {
+            _ = delay;
+            return Dispatch(action);
+        }
+
+        public IDispatcherTimer CreateTimer()
+        {
+            throw new NotSupportedException("QueuedDispatcher does not provide timers.");
+        }
+
+        public void FlushAll()
+        {
+            while (_pending.Count > 0)
+            {
+                var action = _pending.Dequeue();
+                action();
+            }
         }
     }
 

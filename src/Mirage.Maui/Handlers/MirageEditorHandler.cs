@@ -18,8 +18,10 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
     private const double DefaultHeight = 96;
     private const double AutoSizeMeasurementEpsilon = 0.5;
     private static readonly TimeSpan InitialSelectionRetryDelay = TimeSpan.FromMilliseconds(2);
-    private static readonly TimeSpan AutoSizeRefreshDelay = TimeSpan.FromMilliseconds(1);
+    private static readonly TimeSpan AutoSizeRefreshDelay = TimeSpan.FromMilliseconds(16);
     private const int MaxInitialSelectionRetryCount = 6;
+    // Web font and layout settle can lag the first measurement pass, so keep a small bounded retry window.
+    private const int MaxAutoSizeRefreshRetryCount = 4;
     private static int s_childNodeIdCounter;
 
     internal static readonly string[] ParityPropertyKeys =
@@ -108,6 +110,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
     private bool _initialSelectionRetryScheduled;
     private int _initialSelectionRetryCount;
     private bool _autoSizeRefreshScheduled;
+    private int _remainingAutoSizeRefreshAttempts;
     private double? _autoSizeMeasuredHeight;
     private double _lastArrangedWidth = double.NaN;
     private double _lastArrangedHeight = double.NaN;
@@ -150,7 +153,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
 
         EnsureInitialSelectionProjectionAfterConnect();
         RefreshAutoSizeBehavior(VirtualView, invalidateMeasure: false);
-        ScheduleAutoSizeRefresh();
+        ScheduleAutoSizeRefresh(resetRetryBudget: true);
     }
 
     protected override void DisconnectHandler(MiragePlatformView platformView)
@@ -159,6 +162,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         _initialSelectionRetryScheduled = false;
         _initialSelectionRetryCount = 0;
         _autoSizeRefreshScheduled = false;
+        _remainingAutoSizeRefreshAttempts = 0;
         _autoSizeMeasuredHeight = null;
         _lastArrangedWidth = double.NaN;
         _lastArrangedHeight = double.NaN;
@@ -186,7 +190,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         if (widthChanged)
         {
             RefreshAutoSizeBehavior(VirtualView, invalidateMeasure: true);
-            ScheduleAutoSizeRefresh();
+            ScheduleAutoSizeRefresh(resetRetryBudget: true);
             return;
         }
 
@@ -268,13 +272,13 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         if (!ApplyEditorProjectionCore(editor))
         {
             RefreshAutoSizeBehavior(editor, invalidateMeasure: false);
-            ScheduleAutoSizeRefresh();
+            ScheduleAutoSizeRefresh(resetRetryBudget: true);
             return;
         }
 
         RequestRender();
         RefreshAutoSizeBehavior(editor, invalidateMeasure: false);
-        ScheduleAutoSizeRefresh();
+        ScheduleAutoSizeRefresh(resetRetryBudget: true);
     }
 
     private bool ApplyEditorProjectionCore(IEditor editor)
@@ -787,6 +791,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         var hadMeasurement = _autoSizeMeasuredHeight is not null;
         _autoSizeMeasuredHeight = null;
         _autoSizeRefreshScheduled = false;
+        _remainingAutoSizeRefreshAttempts = 0;
 
         if (UpdateAutoSizeProjection(editor))
         {
@@ -799,10 +804,16 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         }
     }
 
-    private void ScheduleAutoSizeRefresh()
+    private void ScheduleAutoSizeRefresh(bool resetRetryBudget)
     {
+        if (resetRetryBudget)
+        {
+            _remainingAutoSizeRefreshAttempts = MaxAutoSizeRefreshRetryCount;
+        }
+
         if (!_isConnected
             || _autoSizeRefreshScheduled
+            || _remainingAutoSizeRefreshAttempts <= 0
             || !IsAutoSizeActive(VirtualView)
             || Coordinator is not { } coordinator)
         {
@@ -810,6 +821,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         }
 
         _autoSizeRefreshScheduled = true;
+        _remainingAutoSizeRefreshAttempts--;
         if (!coordinator.DispatchDelayed(AutoSizeRefreshDelay, RunScheduledAutoSizeRefresh))
         {
             _autoSizeRefreshScheduled = false;
@@ -826,6 +838,7 @@ internal sealed class MirageEditorHandler : MirageViewHandler<IEditor>, IMirageR
         }
 
         RefreshAutoSizeBehavior(VirtualView, invalidateMeasure: true);
+        ScheduleAutoSizeRefresh(resetRetryBudget: false);
     }
 
     private (int SelectionStart, int SelectionEnd)? CaptureRuntimeSelectionSnapshot(int rawValueLength)
