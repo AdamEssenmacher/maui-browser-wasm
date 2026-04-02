@@ -2375,9 +2375,25 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await DispatchTouchTapAsync(actionViewLabelSelector);
         await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=3 lastParameter=left-view lastKind=view");
         await WaitForLabelTextContainsAsync(page, invokeStateSelector, "innerTaps=1");
+        await DispatchClickAsync(closeButtonSelector);
+        await WaitForOpenStateAsync("false", "none");
 
         await SetItemKindAsync("menu");
         await SetBehaviorAsync("Auto");
+        await DispatchClickAsync(toggleThresholdSelector);
+        await EnsureModeLabelContainsAsync("threshold=104");
+        Assert.Equal("104", await page.GetAttributeAsync(hostSelector, "data-maui-sv-threshold"));
+        await DispatchClickAsync(toggleThresholdSelector);
+        await EnsureModeLabelContainsAsync("threshold=6");
+        Assert.Equal("6", await page.GetAttributeAsync(hostSelector, "data-maui-sv-threshold"));
+        await DispatchTouchSwipeAsync(hostSelector, 20, 0);
+        await WaitForOpenStateAsync("true", "left");
+        await DispatchClickAsync(closeButtonSelector);
+        await WaitForOpenStateAsync("false", "none");
+        await DispatchClickAsync(toggleThresholdSelector);
+        await EnsureModeLabelContainsAsync("threshold=72");
+        Assert.Equal("72", await page.GetAttributeAsync(hostSelector, "data-maui-sv-threshold"));
+
         await SetModeAsync("Execute");
         await DispatchClickAsync(toggleThresholdSelector);
         await EnsureModeLabelContainsAsync("threshold=104");
@@ -2410,6 +2426,10 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await WaitForOpenStateAsync("true", "left");
         Assert.Equal(executeRemainOpenEndCount + 1, await ReadSwipeEndCountAsync());
         await DispatchClickAsync(closeButtonSelector);
+        await WaitForOpenStateAsync("false", "none");
+        var redundantCloseEndCount = await ReadSwipeEndCountAsync();
+        await DispatchClickAsync(closeButtonSelector);
+        Assert.Equal(redundantCloseEndCount, await ReadSwipeEndCountAsync());
         await WaitForOpenStateAsync("false", "none");
 
         await SetDirectionAsync("right");

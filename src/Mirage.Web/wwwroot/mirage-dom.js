@@ -1739,7 +1739,7 @@ function normalizeSwipeConfig(configurationJson) {
 
   return {
     enabled: payload?.enabled !== false,
-    threshold: Number.isFinite(payload?.threshold) ? Math.max(12, payload.threshold) : 72,
+    threshold: Number.isFinite(payload?.threshold) ? Math.max(0, payload.threshold) : 72,
     transitionMode: payload?.transitionMode === "drag" ? "drag" : "reveal",
     left: normalizeSide(payload?.left),
     right: normalizeSide(payload?.right),
@@ -2075,6 +2075,8 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
   const completeClosedState = (side, animated, emitEndEvent) => {
     const resolvedSide = side || state.openSide || state.side;
     state.openSide = "";
+    state.side = "";
+    state.axis = "";
     applyOffset(0, animated);
     if (emitEndEvent && resolvedSide) {
       emitSwipeEnd(resolvedSide, false);

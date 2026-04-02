@@ -27,7 +27,7 @@ public sealed class SwipeViewParityProbePage : ContentPage
     private ProbeSwipeSide _activeSide = ProbeSwipeSide.Left;
     private bool _useSwipeItemView;
     private bool _isOpen;
-    private bool _useWideThreshold;
+    private int _thresholdIndex;
     private string _openSideState = "none";
     private string _lastCommandParameter = "<none>";
     private string _lastInvokedKind = "<none>";
@@ -290,8 +290,13 @@ public sealed class SwipeViewParityProbePage : ContentPage
 
     private void ToggleThreshold()
     {
-        _useWideThreshold = !_useWideThreshold;
-        _standaloneSwipeView.Threshold = _useWideThreshold ? 104 : 72;
+        _thresholdIndex = (_thresholdIndex + 1) % 3;
+        _standaloneSwipeView.Threshold = _thresholdIndex switch
+        {
+            1 => 104,
+            2 => 6,
+            _ => 72
+        };
         UpdateStateLabels();
     }
 
