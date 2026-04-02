@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Playwright;
 using Xunit;
 using Xunit.Sdk;
@@ -1997,6 +1998,107 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 });
         }
 
+        async Task<string> ReadSwipeRuntimeDuringPartialTouchMoveAsync(string selector, double deltaX, double deltaY)
+        {
+            return await page.EvaluateAsync<string>(
+                """
+                async (args) => {
+                    const element = document.querySelector(args.selector);
+                    if (!(element instanceof HTMLElement)) {
+                        return JSON.stringify({ missing: true });
+                    }
+
+                    const rect = element.getBoundingClientRect();
+                    const startX = rect.left + (rect.width * 0.5);
+                    const startY = rect.top + (rect.height * 0.5);
+                    const pointerId = 57;
+
+                    const createEvent = (type, clientX, clientY) => new PointerEvent(type, {
+                        bubbles: true,
+                        cancelable: true,
+                        composed: true,
+                        pointerId,
+                        isPrimary: true,
+                        pointerType: "touch",
+                        clientX,
+                        clientY,
+                        buttons: type === "pointerup" || type === "pointercancel" ? 0 : 1,
+                        button: 0
+                    });
+
+                    element.dispatchEvent(createEvent("pointerdown", startX, startY));
+                    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+                    element.dispatchEvent(createEvent("pointermove", startX + args.deltaX, startY + args.deltaY));
+                    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+                    const state = element.__mirageSwipeViewState;
+                    const snapshot = JSON.stringify({
+                        axis: state?.axis ?? "",
+                        side: state?.side ?? "",
+                        openSide: state?.openSide ?? "",
+                        startOffset: state?.startOffset ?? null,
+                        currentOffset: state?.currentOffset ?? null
+                    });
+
+                    element.dispatchEvent(createEvent("pointercancel", startX + args.deltaX, startY + args.deltaY));
+                    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+                    return snapshot;
+                }
+                """,
+                new
+                {
+                    selector,
+                    deltaX,
+                    deltaY
+                });
+        }
+
+        async Task DispatchTouchTapAsync(string selector)
+        {
+            await page.EvaluateAsync(
+                """
+                async (selector) => {
+                    const element = document.querySelector(selector);
+                    if (!(element instanceof HTMLElement)) {
+                        return;
+                    }
+
+                    const rect = element.getBoundingClientRect();
+                    const clientX = rect.left + (rect.width * 0.5);
+                    const clientY = rect.top + (rect.height * 0.5);
+                    const pointerId = 73;
+
+                    const createPointerEvent = (type) => new PointerEvent(type, {
+                        bubbles: true,
+                        cancelable: true,
+                        composed: true,
+                        pointerId,
+                        isPrimary: true,
+                        pointerType: "touch",
+                        clientX,
+                        clientY,
+                        buttons: type === "pointerup" ? 0 : 1,
+                        button: 0
+                    });
+
+                    element.dispatchEvent(createPointerEvent("pointerdown"));
+                    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+                    element.dispatchEvent(createPointerEvent("pointerup"));
+                    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
+                    element.dispatchEvent(new MouseEvent("click", {
+                        bubbles: true,
+                        cancelable: true,
+                        composed: true,
+                        clientX,
+                        clientY,
+                        button: 0
+                    }));
+                }
+                """,
+                selector);
+        }
+
         async Task DispatchClickAsync(string selector)
         {
             await page.EvaluateAsync(
@@ -2183,14 +2285,30 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await WaitForLabelTextContainsAsync(page, openStateSelector, "open=True openSide=left");
         await WaitForLabelTextContainsAsync(page, eventStateSelector, "events start=1");
 
-        await page.Locator($"{hostSelector} [data-maui-sv-action-wrapper='true'][data-maui-sv-action-side='left']").TapAsync();
+        await DispatchClickAsync(openButtonSelector);
+        await WaitForOpenStateAsync("true", "left");
+        var partialDragSnapshot = await ReadSwipeRuntimeDuringPartialTouchMoveAsync(hostSelector, -20, 0);
+        using (var partialDragDocument = JsonDocument.Parse(partialDragSnapshot))
+        {
+            var root = partialDragDocument.RootElement;
+            Assert.Equal("horizontal", root.GetProperty("axis").GetString());
+            Assert.Equal("left", root.GetProperty("side").GetString());
+            Assert.Equal("left", root.GetProperty("openSide").GetString());
+            Assert.Equal(88, root.GetProperty("startOffset").GetDouble(), 3);
+            Assert.Equal(68, root.GetProperty("currentOffset").GetDouble(), 3);
+        }
+        await WaitForOpenStateAsync("false", "none");
+
+        await DispatchTouchSwipeAsync(hostSelector, 132, 0);
+        await WaitForOpenStateAsync("true", "left");
+        await DispatchTouchTapAsync($"{hostSelector} [data-maui-sv-action-wrapper='true'][data-maui-sv-action-side='left']");
         await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=1 lastParameter=left-menu lastKind=menu");
         await WaitForOpenStateAsync("false", "none");
 
         await SetBehaviorAsync("RemainOpen");
         await DispatchTouchSwipeAsync(hostSelector, 132, 0);
         await WaitForOpenStateAsync("true", "left");
-        await page.Locator($"{hostSelector} [data-maui-sv-action-wrapper='true'][data-maui-sv-action-side='left']").TapAsync();
+        await DispatchTouchTapAsync($"{hostSelector} [data-maui-sv-action-wrapper='true'][data-maui-sv-action-side='left']");
         await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=2 lastParameter=left-menu lastKind=menu");
         await WaitForOpenStateAsync("true", "left");
         await DispatchClickAsync(closeButtonSelector);
@@ -2202,11 +2320,11 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await WaitForOpenStateAsync("true", "left");
         Assert.Equal(1, await page.Locator(actionViewLabelSelector).CountAsync());
         Assert.Equal(1, await page.Locator(actionViewButtonSelector).CountAsync());
-        await page.Locator(actionViewButtonSelector).TapAsync();
+        await DispatchTouchTapAsync(actionViewButtonSelector);
         await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=2");
         await WaitForLabelTextContainsAsync(page, invokeStateSelector, "innerTaps=1");
         await WaitForOpenStateAsync("true", "left");
-        await page.Locator(actionViewLabelSelector).TapAsync();
+        await DispatchTouchTapAsync(actionViewLabelSelector);
         await WaitForLabelTextContainsAsync(page, invokeStateSelector, "invokes=3 lastParameter=left-view lastKind=view");
         await WaitForLabelTextContainsAsync(page, invokeStateSelector, "innerTaps=1");
 

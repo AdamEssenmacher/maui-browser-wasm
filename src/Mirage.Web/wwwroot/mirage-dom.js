@@ -1830,6 +1830,23 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
   const getSideExtent = (side) => getSideConfig(side).extent;
   const getSideMode = (side) => getSideConfig(side).mode;
   const getSideBehavior = (side) => getSideConfig(side).behavior;
+  const clampOffsetForSide = (side, offset) => {
+    const extent = getSideExtent(side);
+    const numericOffset = Number.isFinite(offset) ? offset : 0;
+    if (extent <= 0) {
+      return 0;
+    }
+
+    if (side === "left" || side === "top") {
+      return Math.min(extent, Math.max(0, numericOffset));
+    }
+
+    if (side === "right" || side === "bottom") {
+      return Math.max(-extent, Math.min(0, numericOffset));
+    }
+
+    return 0;
+  };
   const setAnimated = (animated) => {
     const transitionValue = animated ? "transform 180ms ease" : "none";
     const track = getTrack();
@@ -2160,8 +2177,8 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
     state.pointerId = event.pointerId;
     state.startX = event.clientX;
     state.startY = event.clientY;
-    state.axis = "";
-    state.side = "";
+    state.axis = state.openSide ? getSwipeAxisForSide(state.openSide) : "";
+    state.side = state.openSide || "";
     state.startOffset = state.currentOffset;
   };
 
@@ -2219,13 +2236,8 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
       return;
     }
 
-    const rawOffset = state.axis === "horizontal"
-      ? (state.side === "left" ? Math.max(0, dx) : Math.min(0, dx))
-      : (state.side === "top" ? Math.max(0, dy) : Math.min(0, dy));
-    const signedExtent = state.side === "left" || state.side === "top" ? extent : -extent;
-    const clampedOffset = state.side === "left" || state.side === "top"
-      ? Math.min(extent, Math.max(0, rawOffset))
-      : Math.max(-extent, Math.min(0, rawOffset));
+    const rawOffset = state.startOffset + (state.axis === "horizontal" ? dx : dy);
+    const clampedOffset = clampOffsetForSide(state.side, rawOffset);
 
     applyOffset(clampedOffset, false);
     emitSwipeChange(state.side, clampedOffset);
