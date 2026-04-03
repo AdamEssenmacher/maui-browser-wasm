@@ -295,7 +295,7 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
     private void HandlePointerUp(MirageGesturePointerPayload payload)
     {
         var resolvedPayload = payload;
-        var skipSwipe = false;
+        var skipSwipe = _activePinchGesture is not null;
         if (_activePointers.TryGetValue(payload.PointerId, out var activePointer))
         {
             activePointer = activePointer with
@@ -312,7 +312,7 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
                 Buttons = payload.Buttons == 0 ? ToBrowserButtons(activePointer.ButtonMask) : payload.Buttons,
                 Button = payload.Button == 0 && activePointer.ButtonMask == ButtonsMask.Secondary ? 2 : payload.Button
             };
-            skipSwipe = activePointer.ParticipatedInPinch;
+            skipSwipe = skipSwipe || activePointer.ParticipatedInPinch;
         }
 
         DispatchPointerRecognizers(static (recognizer, owner, getPosition, args, buttonsMask) =>
@@ -893,6 +893,11 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         }
 
         if (_pendingSecondaryTapCounts.Remove(payload.PointerId, out var clickCount) && clickCount > 0)
+        {
+            return clickCount;
+        }
+
+        if (payload.PointerId == 0 && _pendingSecondaryTapCounts.Remove(1, out clickCount) && clickCount > 0)
         {
             return clickCount;
         }
