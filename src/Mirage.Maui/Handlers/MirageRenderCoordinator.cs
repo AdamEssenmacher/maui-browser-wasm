@@ -300,14 +300,14 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         return _runtime.TryConfigureNodeSwipeView(ownerNodeId, enabled, configurationJson);
     }
 
-    public bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated)
+    public bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated, bool emitEndEvent = true)
     {
         if (_runtime is null)
         {
             return false;
         }
 
-        return _runtime.TryRequestNodeSwipeViewOpen(ownerNodeId, side, animated);
+        return _runtime.TryRequestNodeSwipeViewOpen(ownerNodeId, side, animated, emitEndEvent);
     }
 
     public bool TryRequestNodeSwipeViewClose(string ownerNodeId, bool animated)

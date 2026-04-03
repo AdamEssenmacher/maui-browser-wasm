@@ -1150,11 +1150,11 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
         _pendingRuntimeCommand = PendingRuntimeCommand.None;
     }
 
-    private bool TryRequestRuntimeOpen(SwipeSide side, bool animated)
+    private bool TryRequestRuntimeOpen(SwipeSide side, bool animated, bool emitEndEvent = true)
     {
         return Coordinator is not null
             && side != SwipeSide.None
-            && Coordinator.TryRequestNodeSwipeViewOpen(PlatformView.NodeId, ToSideToken(side), animated);
+            && Coordinator.TryRequestNodeSwipeViewOpen(PlatformView.NodeId, ToSideToken(side), animated, emitEndEvent);
     }
 
     private bool TryRequestRuntimeClose(bool animated)
@@ -1170,7 +1170,7 @@ internal sealed class MirageSwipeViewHandler : MirageViewHandler<ISwipeView>, IS
             return;
         }
 
-        if (!CanRuntimeOpenSide(_openSide) || !TryRequestRuntimeOpen(_openSide, animated: false))
+        if (!CanRuntimeOpenSide(_openSide) || !TryRequestRuntimeOpen(_openSide, animated: false, emitEndEvent: false))
         {
             SynchronizeManagedClosedState();
         }

@@ -2246,7 +2246,7 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
     completeClosedState(resolvedSide, true, true);
   };
 
-  state.requestOpen = (side, animated) => {
+  state.requestOpen = (side, animated, emitEndEvent) => {
     if (typeof side !== "string" || side.length === 0) {
       return false;
     }
@@ -2257,7 +2257,7 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
     }
 
     setGestureTarget(side);
-    completeOpenState(side, animated, true);
+    completeOpenState(side, animated, emitEndEvent !== false);
     return true;
   };
 
@@ -2394,14 +2394,14 @@ export function unsubscribeSwipeView(subscriptionId) {
   removeEventSubscription(subscriptionId);
 }
 
-export function requestSwipeViewOpen(ownerHandle, side, animated) {
+export function requestSwipeViewOpen(ownerHandle, side, animated, emitEndEvent) {
   const owner = fromHandle(ownerHandle);
   const state = owner?.__mirageSwipeViewState;
   if (!(owner instanceof HTMLElement) || !state || typeof state.requestOpen !== "function") {
     return false;
   }
 
-  return state.requestOpen(side, !!animated);
+  return state.requestOpen(side, !!animated, emitEndEvent);
 }
 
 export function requestSwipeViewClose(ownerHandle, animated) {

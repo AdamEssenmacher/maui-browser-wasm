@@ -4525,6 +4525,7 @@ public sealed class HandlerRuntimeIntegrationTests
         Assert.Equal("swipe-owner", runtime.LastSwipeOpenOwnerNodeId);
         Assert.Equal("left", runtime.LastSwipeOpenSide);
         Assert.True(runtime.LastSwipeOpenAnimated);
+        Assert.True(runtime.LastSwipeOpenEmitEndEvent);
         Assert.Equal("swipe-owner", runtime.LastSwipeCloseOwnerNodeId);
         Assert.False(runtime.LastSwipeCloseAnimated);
     }
@@ -6417,6 +6418,8 @@ public sealed class HandlerRuntimeIntegrationTests
 
         public bool LastSwipeOpenAnimated { get; private set; }
 
+        public bool LastSwipeOpenEmitEndEvent { get; private set; }
+
         public string? LastSwipeCloseOwnerNodeId { get; private set; }
 
         public bool LastSwipeCloseAnimated { get; private set; }
@@ -6544,11 +6547,12 @@ public sealed class HandlerRuntimeIntegrationTests
             return true;
         }
 
-        public bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated)
+        public bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated, bool emitEndEvent = true)
         {
             LastSwipeOpenOwnerNodeId = ownerNodeId;
             LastSwipeOpenSide = side;
             LastSwipeOpenAnimated = animated;
+            LastSwipeOpenEmitEndEvent = emitEndEvent;
             return true;
         }
 

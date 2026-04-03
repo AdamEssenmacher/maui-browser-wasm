@@ -2327,6 +2327,19 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         }
         await WaitForLabelTextContainsAsync(page, openStateSelector, "open=True openSide=left");
         await WaitForLabelTextContainsAsync(page, eventStateSelector, "events start=1");
+        var reconfigureWhileOpenEndCount = await ReadSwipeEndCountAsync();
+        await DispatchClickAsync(toggleThresholdSelector);
+        await EnsureModeLabelContainsAsync("threshold=104");
+        await WaitForOpenStateAsync("true", "left");
+        Assert.Equal(reconfigureWhileOpenEndCount, await ReadSwipeEndCountAsync());
+        await DispatchClickAsync(toggleThresholdSelector);
+        await EnsureModeLabelContainsAsync("threshold=6");
+        await WaitForOpenStateAsync("true", "left");
+        Assert.Equal(reconfigureWhileOpenEndCount, await ReadSwipeEndCountAsync());
+        await DispatchClickAsync(toggleThresholdSelector);
+        await EnsureModeLabelContainsAsync("threshold=72");
+        await WaitForOpenStateAsync("true", "left");
+        Assert.Equal(reconfigureWhileOpenEndCount, await ReadSwipeEndCountAsync());
 
         await DispatchClickAsync(reattachOpenSelector);
         await WaitForSwipeRuntimeAttachmentAsync(hostSelector);

@@ -57,7 +57,7 @@ public interface IMirageRenderCoordinator : IMirageEventSink
 
     bool TryConfigureNodeSwipeView(string ownerNodeId, bool enabled, string configurationJson) => false;
 
-    bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated) => false;
+    bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated, bool emitEndEvent = true) => false;
 
     bool TryRequestNodeSwipeViewClose(string ownerNodeId, bool animated) => false;
 

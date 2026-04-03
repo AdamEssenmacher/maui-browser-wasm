@@ -183,10 +183,10 @@ public sealed class DomElement
 
     public static void UnsubscribeSwipeView(int subscriptionId) => DomApi.UnsubscribeSwipeView(subscriptionId);
 
-    public bool RequestSwipeViewOpen(string side, bool animated)
+    public bool RequestSwipeViewOpen(string side, bool animated, bool emitEndEvent = true)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(side);
-        return DomApi.RequestSwipeViewOpen(Handle, side, animated);
+        return DomApi.RequestSwipeViewOpen(Handle, side, animated, emitEndEvent);
     }
 
     public bool RequestSwipeViewClose(bool animated) => DomApi.RequestSwipeViewClose(Handle, animated);

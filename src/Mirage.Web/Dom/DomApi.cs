@@ -152,7 +152,7 @@ internal static partial class DomApi
     internal static partial void UnsubscribeSwipeView(int subscriptionId);
 
     [JSImport("requestSwipeViewOpen", Module)]
-    internal static partial bool RequestSwipeViewOpen(nint ownerElement, string side, bool animated);
+    internal static partial bool RequestSwipeViewOpen(nint ownerElement, string side, bool animated, bool emitEndEvent);
 
     [JSImport("requestSwipeViewClose", Module)]
     internal static partial bool RequestSwipeViewClose(nint ownerElement, bool animated);

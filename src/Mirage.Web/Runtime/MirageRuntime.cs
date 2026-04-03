@@ -349,14 +349,14 @@ public sealed class MirageRuntime : IMirageRuntime
         return true;
     }
 
-    public bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated)
+    public bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated, bool emitEndEvent = true)
     {
         if (!_nodes.TryGetValue(ownerNodeId, out var ownerNode))
         {
             return false;
         }
 
-        return ownerNode.Element.RequestSwipeViewOpen(side, animated);
+        return ownerNode.Element.RequestSwipeViewOpen(side, animated, emitEndEvent);
     }
 
     public bool TryRequestNodeSwipeViewClose(string ownerNodeId, bool animated)

@@ -289,6 +289,25 @@ public sealed class MirageSwipeViewHandlerTests
     }
 
     [Fact]
+    public void SwipeViewHandler_ReconfigureReplayOpen_DoesNotEmitSwipeEndedAgain()
+    {
+        var swipeView = CreateSwipeView();
+        swipeView.LeftItems = CreateSwipeItems(CreateMenuItem("Archive", "#0F766E"));
+
+        var coordinator = new QueuedSwipeCoordinator();
+        var handler = CreateAttachedHandler(swipeView, coordinator);
+        handler.OnRuntimeEvent("swipeend", """{"direction":"right","isOpen":true}""");
+
+        swipeView.Threshold = 104;
+
+        Assert.Equal(1, coordinator.OpenSwipeViewCallCount);
+        Assert.Equal("left", coordinator.LastOpenSide);
+        Assert.False(coordinator.LastOpenAnimated);
+        Assert.False(coordinator.LastOpenEmitEndEvent);
+        AssertManagedOpenState(handler, swipeView, "left");
+    }
+
+    [Fact]
     public void SwipeViewHandler_DoesNotRetryImpossiblePendingOpen_OrReplayItAfterLaterItemChanges()
     {
         var swipeView = CreateSwipeView();
@@ -654,11 +673,14 @@ public sealed class MirageSwipeViewHandlerTests
             return true;
         }
 
-        public bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated)
+        public bool LastOpenEmitEndEvent { get; private set; }
+
+        public bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated, bool emitEndEvent = true)
         {
             LastOpenOwnerNodeId = ownerNodeId;
             LastOpenSide = side;
             LastOpenAnimated = animated;
+            LastOpenEmitEndEvent = emitEndEvent;
             return true;
         }
 
@@ -739,6 +761,8 @@ public sealed class MirageSwipeViewHandlerTests
         public string? LastOpenSide { get; private set; }
 
         public bool LastOpenAnimated { get; private set; }
+
+        public bool LastOpenEmitEndEvent { get; private set; }
 
         public int CloseSwipeViewCallCount { get; private set; }
 
@@ -909,12 +933,13 @@ public sealed class MirageSwipeViewHandlerTests
             return _configureResults.Count > 0 ? _configureResults.Dequeue() : true;
         }
 
-        public bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated)
+        public bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated, bool emitEndEvent = true)
         {
             _ = ownerNodeId;
             OpenSwipeViewCallCount++;
             LastOpenSide = side;
             LastOpenAnimated = animated;
+            LastOpenEmitEndEvent = emitEndEvent;
             return _openResults.Count > 0 ? _openResults.Dequeue() : true;
         }
 
