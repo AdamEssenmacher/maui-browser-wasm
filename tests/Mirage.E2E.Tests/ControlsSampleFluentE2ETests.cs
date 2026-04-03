@@ -2413,11 +2413,26 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await DispatchClickAsync(openButtonSelector);
         await WaitForOpenStateAsync("true", "left");
         var stationaryTapInvokeState = (await page.Locator(invokeStateSelector).TextContentAsync())?.Trim() ?? string.Empty;
+        var stationaryTapEndCount = await ReadSwipeEndCountAsync();
         await DispatchTouchTapAsync(hostSelector);
         Assert.Equal(stationaryTapInvokeState, (await page.Locator(invokeStateSelector).TextContentAsync())?.Trim());
+        Assert.Equal(stationaryTapEndCount, await ReadSwipeEndCountAsync());
         await WaitForOpenStateAsync("true", "left");
         await DispatchClickAsync(closeButtonSelector);
         await WaitForOpenStateAsync("false", "none");
+
+        await DispatchClickAsync(toggleThresholdSelector);
+        await EnsureModeLabelContainsAsync("threshold=6");
+        Assert.Equal("6", await page.GetAttributeAsync(hostSelector, "data-maui-sv-threshold"));
+        await DispatchClickAsync(openButtonSelector);
+        await WaitForOpenStateAsync("true", "left");
+        var reverseDragInvokeState = (await page.Locator(invokeStateSelector).TextContentAsync())?.Trim() ?? string.Empty;
+        await DispatchTouchSwipeAsync(hostSelector, -20, 0);
+        Assert.Equal(reverseDragInvokeState, (await page.Locator(invokeStateSelector).TextContentAsync())?.Trim());
+        await WaitForOpenStateAsync("true", "left");
+        await DispatchClickAsync(closeButtonSelector);
+        await WaitForOpenStateAsync("false", "none");
+
         var idleBlurEndCount = await ReadSwipeEndCountAsync();
         await page.EvaluateAsync("() => window.dispatchEvent(new Event('blur'))");
         Assert.Equal(idleBlurEndCount, await ReadSwipeEndCountAsync());

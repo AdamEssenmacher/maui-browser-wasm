@@ -2208,16 +2208,30 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
     const mode = getSideMode(resolvedSide);
     const threshold = Math.min(state.config.threshold, extent > 0 ? extent : state.config.threshold);
     const absOffset = Math.abs(state.currentOffset);
+    const startOpenProgress = Math.abs(state.startOffset);
     const dragDistance = state.dragDistance;
+    const gestureStarted = state.startEmitted;
+    const openSideBeforeRelease = state.openSide;
+    const movedFurtherIntoOpen = absOffset > (startOpenProgress + 0.5);
 
     stopTracking();
+
+    if (!gestureStarted) {
+      if (openSideBeforeRelease) {
+        setGestureTarget(openSideBeforeRelease);
+      } else {
+        clearGestureTarget();
+      }
+
+      return;
+    }
 
     if (!resolvedSide || extent <= 0) {
       completeClosedState(resolvedSide, true, true);
       return;
     }
 
-    if (releaseWithTrigger && mode === "execute" && absOffset >= threshold && dragDistance >= 10) {
+    if (releaseWithTrigger && mode === "execute" && absOffset >= threshold && dragDistance >= 10 && movedFurtherIntoOpen) {
       const wrapper = getFirstInvokableWrapper(resolvedSide);
       if (invokeWrapper(resolvedSide, wrapper, true)) {
         return;
