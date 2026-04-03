@@ -301,22 +301,8 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
     {
         var resolvedPayload = payload;
         var skipSwipe = _activePinchGesture is not null;
-        if (_activePointers.TryGetValue(payload.PointerId, out var activePointer))
+        if (TryResolveTerminalPointerPayload(payload, out resolvedPayload, out var activePointer))
         {
-            activePointer = activePointer with
-            {
-                LastClientX = payload.ClientX,
-                LastClientY = payload.ClientY,
-                LastX = payload.X,
-                LastY = payload.Y
-            };
-            _activePointers[payload.PointerId] = activePointer;
-
-            resolvedPayload = payload with
-            {
-                Buttons = payload.Buttons == 0 ? ToBrowserButtons(activePointer.ButtonMask) : payload.Buttons,
-                Button = payload.Button == 0 && activePointer.ButtonMask == ButtonsMask.Secondary ? 2 : payload.Button
-            };
             skipSwipe = skipSwipe || activePointer.ParticipatedInPinch;
         }
 
@@ -338,6 +324,13 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
 
     private void HandlePointerCancel(MirageGesturePointerPayload payload)
     {
+        var resolvedPayload = payload;
+        if (TryResolveTerminalPointerPayload(payload, out resolvedPayload, out _))
+        {
+            DispatchPointerRecognizers(static (recognizer, owner, getPosition, args, buttonsMask) =>
+                GestureDispatchBridge.SendPointerReleased(recognizer, owner, getPosition, args, buttonsMask), resolvedPayload);
+        }
+
         CompletePinchIfPointerEnded(payload.PointerId, canceled: true);
         CompletePanGesturesForPointer(payload.PointerId, canceled: true);
 
@@ -373,9 +366,8 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
                 continue;
             }
 
-            var state = new PanGestureState(recognizer, _nextPanGestureId++, pointerIds, CalculateCentroid(pointerIds));
+            var state = new PanGestureState(recognizer, _nextPanGestureId++, pointerIds, CalculateCentroid(pointerIds), HasStarted: false);
             _activePanGestures.Add(state);
-            ((IPanGestureController)recognizer).SendPanStarted(_view, state.GestureId);
         }
     }
 
@@ -386,8 +378,9 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
             return;
         }
 
-        foreach (var state in _activePanGestures.ToArray())
+        for (var i = 0; i < _activePanGestures.Count; i++)
         {
+            var state = _activePanGestures[i];
             if (!TryCalculateCentroid(state.PointerIds, out var centroid))
             {
                 continue;
@@ -395,6 +388,18 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
 
             var deltaX = centroid.X - state.StartCentroid.X;
             var deltaY = centroid.Y - state.StartCentroid.Y;
+            if (!state.HasStarted)
+            {
+                if (Distance(state.StartCentroid.X, state.StartCentroid.Y, centroid.X, centroid.Y) < PanActivationThreshold)
+                {
+                    continue;
+                }
+
+                ((IPanGestureController)state.Recognizer).SendPanStarted(_view, state.GestureId);
+                state = state with { HasStarted = true };
+                _activePanGestures[i] = state;
+            }
+
             ((IPanGestureController)state.Recognizer).SendPan(_view, deltaX, deltaY, state.GestureId);
         }
     }
@@ -410,11 +415,17 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         {
             if (canceled)
             {
-                ((IPanGestureController)state.Recognizer).SendPanCanceled(_view, state.GestureId);
+                if (state.HasStarted)
+                {
+                    ((IPanGestureController)state.Recognizer).SendPanCanceled(_view, state.GestureId);
+                }
             }
             else
             {
-                ((IPanGestureController)state.Recognizer).SendPanCompleted(_view, state.GestureId);
+                if (state.HasStarted)
+                {
+                    ((IPanGestureController)state.Recognizer).SendPanCompleted(_view, state.GestureId);
+                }
             }
 
             _activePanGestures.Remove(state);
@@ -437,7 +448,11 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
 
         foreach (var activePan in _activePanGestures.ToArray())
         {
-            ((IPanGestureController)activePan.Recognizer).SendPanCanceled(_view, activePan.GestureId);
+            if (activePan.HasStarted)
+            {
+                ((IPanGestureController)activePan.Recognizer).SendPanCanceled(_view, activePan.GestureId);
+            }
+
             _activePanGestures.Remove(activePan);
         }
 
@@ -596,7 +611,11 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
     {
         foreach (var activePan in _activePanGestures.Where(state => !nextRecognizers.Contains(state.Recognizer)).ToArray())
         {
-            ((IPanGestureController)activePan.Recognizer).SendPanCanceled(_view, activePan.GestureId);
+            if (activePan.HasStarted)
+            {
+                ((IPanGestureController)activePan.Recognizer).SendPanCanceled(_view, activePan.GestureId);
+            }
+
             _activePanGestures.Remove(activePan);
         }
 
@@ -910,6 +929,35 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         return 1;
     }
 
+    private bool TryResolveTerminalPointerPayload(
+        MirageGesturePointerPayload payload,
+        out MirageGesturePointerPayload resolvedPayload,
+        out ActivePointer activePointer)
+    {
+        resolvedPayload = payload;
+        activePointer = default;
+        if (!_activePointers.TryGetValue(payload.PointerId, out activePointer))
+        {
+            return false;
+        }
+
+        activePointer = activePointer with
+        {
+            LastClientX = payload.ClientX,
+            LastClientY = payload.ClientY,
+            LastX = payload.X,
+            LastY = payload.Y
+        };
+        _activePointers[payload.PointerId] = activePointer;
+
+        resolvedPayload = payload with
+        {
+            Buttons = payload.Buttons == 0 ? ToBrowserButtons(activePointer.ButtonMask) : payload.Buttons,
+            Button = payload.Button == 0 && activePointer.ButtonMask == ButtonsMask.Secondary ? 2 : payload.Button
+        };
+        return true;
+    }
+
     private static int ToBrowserButtons(ButtonsMask buttonsMask)
     {
         var result = 0;
@@ -976,7 +1024,8 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         PanGestureRecognizer Recognizer,
         int GestureId,
         long[] PointerIds,
-        Point StartCentroid);
+        Point StartCentroid,
+        bool HasStarted);
 
     private sealed record PinchGestureState(
         PinchGestureRecognizer Recognizer,

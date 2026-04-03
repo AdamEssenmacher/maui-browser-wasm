@@ -184,6 +184,44 @@ public sealed class MirageGestureRecognizerManagerTests
     }
 
     [Fact]
+    public void GestureRecognizerManager_PointerCancel_DispatchesReleased()
+    {
+        var view = new Label();
+        var eventLog = new List<string>();
+
+        var pointer = new PointerGestureRecognizer();
+        pointer.PointerPressed += (_, _) => eventLog.Add("pressed");
+        pointer.PointerReleased += (_, _) => eventLog.Add("released");
+        view.GestureRecognizers.Add(pointer);
+
+        var platformView = MiragePlatformView.CreateControl(ComponentKind.Label);
+        using var manager = new MirageGestureRecognizerManager(view, platformView);
+
+        manager.OnRuntimeEvent("pointerdown", CreatePointerPayload(pointerId: 7, x: 15, y: 17, clientX: 55, clientY: 77, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+        manager.OnRuntimeEvent("pointercancel", CreatePointerPayload(pointerId: 7, x: 15, y: 17, clientX: 55, clientY: 77, button: 0, buttons: 0, clickCount: 1, isInsideBounds: true));
+
+        Assert.Equal(["pressed", "released"], eventLog);
+    }
+
+    [Fact]
+    public void GestureRecognizerManager_PanRecognizer_DoesNotStartOrCompleteWithoutMovement()
+    {
+        var view = new ContentView();
+        var updates = new List<GestureStatus>();
+        var pan = new PanGestureRecognizer();
+        pan.PanUpdated += (_, args) => updates.Add(args.StatusType);
+        view.GestureRecognizers.Add(pan);
+
+        var platformView = MiragePlatformView.CreateControl(ComponentKind.ContentContainer);
+        using var manager = new MirageGestureRecognizerManager(view, platformView);
+
+        manager.OnRuntimeEvent("pointerdown", CreatePointerPayload(pointerId: 1, x: 10, y: 10, clientX: 10, clientY: 10, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+        manager.OnRuntimeEvent("pointerup", CreatePointerPayload(pointerId: 1, x: 10, y: 10, clientX: 10, clientY: 10, button: 0, buttons: 0, clickCount: 1, isInsideBounds: true));
+
+        Assert.Empty(updates);
+    }
+
+    [Fact]
     public void GestureRecognizerManager_PanRecognizer_TracksTouchPointsAndCumulativeDeltas()
     {
         var view = new ContentView
@@ -229,11 +267,12 @@ public sealed class MirageGestureRecognizerManagerTests
         using var manager = new MirageGestureRecognizerManager(view, platformView);
 
         manager.OnRuntimeEvent("pointerdown", CreatePointerPayload(pointerId: 1, x: 10, y: 10, clientX: 10, clientY: 10, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
-        Assert.Equal([GestureStatus.Started], updates);
+        manager.OnRuntimeEvent("pointermove", CreatePointerPayload(pointerId: 1, x: 25, y: 28, clientX: 25, clientY: 28, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+        Assert.Equal([GestureStatus.Started, GestureStatus.Running], updates);
 
         view.GestureRecognizers.Remove(pan);
 
-        Assert.Equal([GestureStatus.Started, GestureStatus.Canceled], updates);
+        Assert.Equal([GestureStatus.Started, GestureStatus.Running, GestureStatus.Canceled], updates);
     }
 
     [Fact]
@@ -261,13 +300,14 @@ public sealed class MirageGestureRecognizerManagerTests
         using var manager = new MirageGestureRecognizerManager(view, platformView);
 
         manager.OnRuntimeEvent("pointerdown", CreatePointerPayload(pointerId: 1, x: 20, y: 20, clientX: 20, clientY: 20, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+        manager.OnRuntimeEvent("pointermove", CreatePointerPayload(pointerId: 1, x: 34, y: 24, clientX: 34, clientY: 24, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
         manager.OnRuntimeEvent("pointerdown", CreatePointerPayload(pointerId: 2, x: 180, y: 20, clientX: 180, clientY: 20, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
         manager.OnRuntimeEvent("pointermove", CreatePointerPayload(pointerId: 2, x: 200, y: 20, clientX: 200, clientY: 20, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
         manager.OnRuntimeEvent("pointerup", CreatePointerPayload(pointerId: 2, x: 200, y: 20, clientX: 200, clientY: 20, button: 0, buttons: 0, clickCount: 1, isInsideBounds: true));
 
-        Assert.Equal([GestureStatus.Started, GestureStatus.Canceled], panUpdates);
+        Assert.Equal([GestureStatus.Started, GestureStatus.Running, GestureStatus.Canceled], panUpdates);
         Assert.Equal(GestureStatus.Started, pinchUpdates[0].Status);
-        Assert.Equal(new Point(0.5, 0.2), pinchUpdates[0].Origin);
+        Assert.Equal(new Point(0.535, 0.22), pinchUpdates[0].Origin);
         Assert.Contains(pinchUpdates, update => update.Status == GestureStatus.Running && update.Scale > 1.1d && update.Origin.X > 0.54d);
         Assert.Equal(GestureStatus.Completed, pinchUpdates[^1].Status);
     }
