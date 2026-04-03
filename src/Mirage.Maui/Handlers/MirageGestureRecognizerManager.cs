@@ -13,6 +13,8 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
     private const double PanActivationThreshold = 8;
     private const double SwipeThreshold = 48;
     private const double CoordinateEpsilon = 0.01;
+    private const string TouchActionStyleName = "touchAction";
+    private const string TouchActionNone = "none";
 
     private static readonly JsonSerializerOptions PayloadJsonOptions = new()
     {
@@ -37,6 +39,8 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
     private int _nextPanGestureId = 1;
     private bool _suppressNextPrimaryClick;
     private bool _suppressNextSecondaryContextMenu;
+    private bool _touchActionOverridden;
+    private string? _priorTouchAction;
     private bool _disposed;
 
     public MirageGestureRecognizerManager(View view, MiragePlatformView platformView, Action? requestRender = null)
@@ -97,6 +101,7 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         _activePinchGesture = null;
         _suppressNextPrimaryClick = false;
         _suppressNextSecondaryContextMenu = false;
+        RestoreTouchActionIfNeeded();
 
         foreach (var eventName in _gestureOwnedEvents.ToArray())
         {
@@ -631,6 +636,9 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         var requiresClick = EnumerateTapRecognizers().Any(UsesPrimaryButton);
         var requiresContextMenu = EnumerateTapRecognizers().Any(UsesSecondaryButton);
         var requiresPointerHover = EnumeratePointerRecognizers().Any();
+        var requiresExclusiveTouchHandling = EnumeratePanRecognizers().Any()
+            || EnumeratePinchRecognizers().Any()
+            || EnumerateSwipeRecognizers().Any();
         var requiresPointerTracking = requiresPointerHover
             || EnumeratePanRecognizers().Any()
             || EnumeratePinchRecognizers().Any()
@@ -646,6 +654,7 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         changed |= SetGestureEventEnabled("pointercancel", requiresPointerTracking);
         changed |= SetGestureEventEnabled("pointerenter", requiresPointerHover);
         changed |= SetGestureEventEnabled("pointerleave", requiresPointerHover);
+        changed |= ApplyTouchAction(requiresExclusiveTouchHandling);
 
         if (changed)
         {
@@ -678,6 +687,48 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         }
 
         _platformView.SetEvent(eventName, enabled: false);
+        return true;
+    }
+
+    private bool ApplyTouchAction(bool requiresExclusiveTouchHandling)
+    {
+        if (requiresExclusiveTouchHandling)
+        {
+            if (!_touchActionOverridden)
+            {
+                _priorTouchAction = _platformView.GetStyleValue(TouchActionStyleName);
+                _touchActionOverridden = true;
+            }
+
+            if (string.Equals(_platformView.GetStyleValue(TouchActionStyleName), TouchActionNone, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            _platformView.SetStyle(TouchActionStyleName, TouchActionNone);
+            return true;
+        }
+
+        return RestoreTouchActionIfNeeded();
+    }
+
+    private bool RestoreTouchActionIfNeeded()
+    {
+        if (!_touchActionOverridden)
+        {
+            return false;
+        }
+
+        _touchActionOverridden = false;
+        var priorTouchAction = _priorTouchAction;
+        _priorTouchAction = null;
+
+        if (string.Equals(_platformView.GetStyleValue(TouchActionStyleName), priorTouchAction, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        _platformView.SetStyle(TouchActionStyleName, priorTouchAction);
         return true;
     }
 

@@ -23,12 +23,14 @@ public sealed class MirageGestureRecognizerManagerTests
         view.GestureRecognizers.Add(pinch);
 
         Assert.Contains("pointerdown", platformView.Events);
+        Assert.Equal("none", platformView.GetStyleValue("touchAction"));
         Assert.True(requestRenderCount >= 1);
 
         var requestRenderCountAfterAdd = requestRenderCount;
         view.GestureRecognizers.Remove(pinch);
 
         Assert.DoesNotContain("pointerdown", platformView.Events);
+        Assert.Null(platformView.GetStyleValue("touchAction"));
         Assert.True(requestRenderCount > requestRenderCountAfterAdd);
     }
 
@@ -50,6 +52,7 @@ public sealed class MirageGestureRecognizerManagerTests
         Assert.Contains("pointermove", platformView.Events);
         Assert.Contains("pointerup", platformView.Events);
         Assert.Contains("pointercancel", platformView.Events);
+        Assert.Null(platformView.GetStyleValue("touchAction"));
 
         view.GestureRecognizers.Remove(tap);
 
@@ -58,6 +61,26 @@ public sealed class MirageGestureRecognizerManagerTests
         Assert.DoesNotContain("pointermove", platformView.Events);
         Assert.DoesNotContain("pointerup", platformView.Events);
         Assert.DoesNotContain("pointercancel", platformView.Events);
+        Assert.Null(platformView.GetStyleValue("touchAction"));
+    }
+
+    [Fact]
+    public void GestureRecognizerManager_ExclusiveTouchGestures_SetAndRestoreTouchAction()
+    {
+        var view = new ContentView();
+        var platformView = MiragePlatformView.CreateControl(ComponentKind.ContentContainer);
+        platformView.SetStyle("touchAction", "pan-y");
+
+        using var manager = new MirageGestureRecognizerManager(view, platformView);
+
+        var pan = new PanGestureRecognizer();
+        view.GestureRecognizers.Add(pan);
+
+        Assert.Equal("none", platformView.GetStyleValue("touchAction"));
+
+        view.GestureRecognizers.Remove(pan);
+
+        Assert.Equal("pan-y", platformView.GetStyleValue("touchAction"));
     }
 
     [Fact]
