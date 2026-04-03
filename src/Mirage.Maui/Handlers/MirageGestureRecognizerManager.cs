@@ -214,6 +214,11 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
 
     private void HandlePointerDown(MirageGesturePointerPayload payload)
     {
+        if (_activePointers.Count == 0)
+        {
+            ClearTapSuppression();
+        }
+
         var pointerId = payload.PointerId == 0 && _activePointers.Count == 0 ? 1 : payload.PointerId;
         var buttonMask = ResolveButtonMask(payload, defaultToPrimary: true);
 
@@ -677,6 +682,12 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         {
             _suppressNextSecondaryContextMenu = true;
         }
+    }
+
+    private void ClearTapSuppression()
+    {
+        _suppressNextPrimaryClick = false;
+        _suppressNextSecondaryContextMenu = false;
     }
 
     private static Func<IElement, Point?> CreatePositionResolver(View sourceView, MirageGesturePointerPayload payload)
