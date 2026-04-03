@@ -157,6 +157,35 @@ internal static partial class DomApi
     [JSImport("requestSwipeViewClose", Module)]
     internal static partial bool RequestSwipeViewClose(nint ownerElement, bool animated);
 
+    [JSImport("configureWebView", Module)]
+    internal static partial int ConfigureWebView(
+        nint element,
+        string configurationJson,
+        [JSMarshalAs<JSType.Function>] Action navigatedCallback,
+        [JSMarshalAs<JSType.Function>] Action evalResultCallback);
+
+    [JSImport("consumeWebViewEventPayload", Module)]
+    internal static partial string? ConsumeWebViewEventPayload(nint element, string eventName);
+
+    [JSImport("unsubscribeWebView", Module)]
+    internal static partial void UnsubscribeWebView(int subscriptionId);
+
+    [JSImport("requestWebViewGoBack", Module)]
+    internal static partial bool RequestWebViewGoBack(nint element);
+
+    [JSImport("requestWebViewGoForward", Module)]
+    internal static partial bool RequestWebViewGoForward(nint element);
+
+    [JSImport("requestWebViewReload", Module)]
+    internal static partial bool RequestWebViewReload(nint element);
+
+    [JSImport("evaluateWebViewScript", Module)]
+    internal static partial bool EvaluateWebViewScript(
+        nint element,
+        [JSMarshalAs<JSType.Number>] long requestId,
+        string script,
+        bool captureResult);
+
     [JSImport("focusElement", Module)]
     internal static partial bool FocusElement(nint element);
 

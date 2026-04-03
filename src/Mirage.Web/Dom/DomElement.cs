@@ -190,6 +190,38 @@ public sealed class DomElement
     }
 
     public bool RequestSwipeViewClose(bool animated) => DomApi.RequestSwipeViewClose(Handle, animated);
+
+    public int ConfigureWebView(
+        string configurationJson,
+        Action navigatedCallback,
+        Action evalResultCallback)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(configurationJson);
+        ArgumentNullException.ThrowIfNull(navigatedCallback);
+        ArgumentNullException.ThrowIfNull(evalResultCallback);
+        return DomApi.ConfigureWebView(Handle, configurationJson, navigatedCallback, evalResultCallback);
+    }
+
+    public string? ConsumeWebViewEventPayload(string eventName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
+        return DomApi.ConsumeWebViewEventPayload(Handle, eventName);
+    }
+
+    public static void UnsubscribeWebView(int subscriptionId) => DomApi.UnsubscribeWebView(subscriptionId);
+
+    public bool RequestWebViewGoBack() => DomApi.RequestWebViewGoBack(Handle);
+
+    public bool RequestWebViewGoForward() => DomApi.RequestWebViewGoForward(Handle);
+
+    public bool RequestWebViewReload() => DomApi.RequestWebViewReload(Handle);
+
+    public bool EvaluateWebViewScript(long requestId, string script, bool captureResult)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(script);
+        return DomApi.EvaluateWebViewScript(Handle, requestId, script, captureResult);
+    }
+
     public bool Focus() => DomApi.FocusElement(Handle);
 
     public void Blur() => DomApi.BlurElement(Handle);

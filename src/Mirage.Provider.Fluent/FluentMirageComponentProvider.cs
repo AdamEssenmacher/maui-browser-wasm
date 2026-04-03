@@ -373,6 +373,19 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                     ["TransitionModeState"] = new(PropertyTarget.Attribute, "data-maui-sv-transition"),
                     ["ThresholdState"] = new(PropertyTarget.Attribute, "data-maui-sv-threshold")
                 })),
+            [ComponentKind.WebView] = new(
+                ComponentKind.WebView,
+                "iframe",
+                propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
+                {
+                    ["SourceKindState"] = new(PropertyTarget.Attribute, "data-maui-wv-source-kind"),
+                    ["CurrentUrlState"] = new(PropertyTarget.Attribute, "data-maui-wv-url"),
+                    ["CanGoBackState"] = new(PropertyTarget.Attribute, "data-maui-wv-can-go-back"),
+                    ["CanGoForwardState"] = new(PropertyTarget.Attribute, "data-maui-wv-can-go-forward"),
+                    ["EvalCapabilityState"] = new(PropertyTarget.Attribute, "data-maui-wv-eval-capability"),
+                    ["UserAgentState"] = new(PropertyTarget.Attribute, "data-maui-wv-user-agent"),
+                    ["LastNavigationResultState"] = new(PropertyTarget.Attribute, "data-maui-wv-last-nav-result")
+                })),
             [ComponentKind.GraphicsView] = new(
                 ComponentKind.GraphicsView,
                 "canvas",

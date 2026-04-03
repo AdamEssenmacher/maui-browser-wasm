@@ -160,6 +160,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ["graphicsviewparitypage"] = "parityprobes",
             ["refreshviewparitypage"] = "parityprobes",
             ["swipeviewparitypage"] = "parityprobes",
+            ["webviewparitypage"] = "parityprobes",
             ["timepickerparitypage"] = "parityprobes",
             ["datepickerparitypage"] = "parityprobes",
 
@@ -393,7 +394,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ("layouts", ["gridpage", "scrollviewpage"], ["buttonpage", "indicatorviewparitypage"]),
             ("controls", ["buttonpage", "mapsgallery"], ["gridpage", "borderpage"]),
             ("core", ["brushespage", "devicepage", "borderpage"], ["sliderpage", "editorparitypage"]),
-            ("parityprobes", ["editorparitypage", "pickerparitypage", "progressbarparitypage", "graphicsviewparitypage", "refreshviewparitypage", "swipeviewparitypage", "timepickerparitypage", "carouselviewparitypage", "datepickerparitypage"], ["gridpage", "boxviewpage"]),
+            ("parityprobes", ["editorparitypage", "pickerparitypage", "progressbarparitypage", "graphicsviewparitypage", "refreshviewparitypage", "swipeviewparitypage", "webviewparitypage", "timepickerparitypage", "carouselviewparitypage", "datepickerparitypage"], ["gridpage", "boxviewpage"]),
             ("compatibility", ["tabbedpagegallerymainpage"], ["gridpage", "shapesparitypage"])
         };
 
@@ -1913,6 +1914,166 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         Assert.NotEqual(initialTriggerColor, alternateTriggerColor);
 
         await AssertRefreshInFlowAsync("final");
+    }
+
+    [Fact]
+    public async Task WebViewParityProbe_ProjectsIframeNavigationAndEvaluationState()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1220, height: 940);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "webviewparitypage");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-webviewparitypage']");
+            });
+
+        const string hostSelector = "[data-automation-id='controls-sample-webview-parity-host']";
+        const string navigationStateSelector = "[data-automation-id='controls-sample-webview-parity-navigation-state']";
+        const string sourceStateSelector = "[data-automation-id='controls-sample-webview-parity-source-state']";
+        const string evalStateSelector = "[data-automation-id='controls-sample-webview-parity-eval-state']";
+        const string userAgentStateSelector = "[data-automation-id='controls-sample-webview-parity-useragent-state']";
+        const string loadInlineSelector = "[data-automation-id='controls-sample-webview-parity-load-inline']";
+        const string loadPageASelector = "[data-automation-id='controls-sample-webview-parity-load-page-a']";
+        const string loadPageBSelector = "[data-automation-id='controls-sample-webview-parity-load-page-b']";
+        const string loadDataSelector = "[data-automation-id='controls-sample-webview-parity-load-data']";
+        const string backSelector = "[data-automation-id='controls-sample-webview-parity-back']";
+        const string forwardSelector = "[data-automation-id='controls-sample-webview-parity-forward']";
+        const string reloadSelector = "[data-automation-id='controls-sample-webview-parity-reload']";
+        const string toggleUserAgentSelector = "[data-automation-id='controls-sample-webview-parity-toggle-useragent']";
+        const string evalSelector = "[data-automation-id='controls-sample-webview-parity-eval']";
+        const string evalAsyncSelector = "[data-automation-id='controls-sample-webview-parity-eval-async']";
+        const string inlineToPageASelector = "[data-automation-id='controls-sample-webview-probe-link-inline-to-page-a']";
+        const string pageAToPageBSelector = "[data-automation-id='controls-sample-webview-probe-link-page-a-to-page-b']";
+
+        async Task WaitForHostAttributeAsync(string attributeName, string expectedValue)
+        {
+            await page.WaitForFunctionAsync(
+                """
+                (args) => {
+                    const host = document.querySelector(args.selector);
+                    return host?.getAttribute(args.attributeName) === args.expectedValue;
+                }
+                """,
+                new
+                {
+                    selector = hostSelector,
+                    attributeName,
+                    expectedValue
+                });
+        }
+
+        async Task WaitForHostAttributeContainingAsync(string attributeName, string expectedSubstring)
+        {
+            await page.WaitForFunctionAsync(
+                """
+                (args) => {
+                    const host = document.querySelector(args.selector);
+                    const value = host?.getAttribute(args.attributeName) ?? "";
+                    return value.includes(args.expectedSubstring);
+                }
+                """,
+                new
+                {
+                    selector = hostSelector,
+                    attributeName,
+                    expectedSubstring
+                });
+        }
+
+        await page.WaitForSelectorAsync(hostSelector);
+        await page.Locator(hostSelector).ScrollIntoViewIfNeededAsync();
+        var frame = page.FrameLocator(hostSelector);
+
+        Assert.Equal("WebView", await page.GetAttributeAsync(hostSelector, "data-mirage-kind"));
+
+        await WaitForHostAttributeAsync("data-maui-wv-source-kind", "html");
+        await WaitForHostAttributeAsync("data-maui-wv-eval-capability", "same-origin");
+        await WaitForLabelTextContainsAsync(page, sourceStateSelector, "sourceMode=html");
+
+        await page.Locator(evalSelector).ClickAsync();
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=inline:sync");
+
+        await frame.Locator(inlineToPageASelector).ClickAsync();
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-a.html");
+        await WaitForLabelTextContainsAsync(page, navigationStateSelector, "canGoBack=True");
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-a");
+
+        await frame.Locator(pageAToPageBSelector).ClickAsync();
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-b.html");
+        await WaitForLabelTextContainsAsync(page, navigationStateSelector, "canGoBack=True");
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-b");
+
+        await page.Locator(backSelector).ClickAsync();
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-a.html");
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-a");
+
+        await page.Locator(backSelector).ClickAsync();
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "about:srcdoc");
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=inline");
+
+        await page.Locator(loadPageASelector).ClickAsync();
+        await WaitForHostAttributeAsync("data-maui-wv-source-kind", "url");
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-a.html");
+        await WaitForHostAttributeAsync("data-maui-wv-eval-capability", "same-origin");
+        await page.Locator(evalSelector).ClickAsync();
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-a:sync");
+
+        await page.Locator(toggleUserAgentSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, userAgentStateSelector, "userAgent=alt");
+        Assert.Equal("MirageWebViewParityProbe/1.0", await page.GetAttributeAsync(hostSelector, "data-maui-wv-user-agent"));
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-a:sync");
+
+        await page.Locator(loadPageASelector).ClickAsync();
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-a.html");
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-a");
+
+        await page.Locator(loadPageBSelector).ClickAsync();
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-b.html");
+        await WaitForHostAttributeAsync("data-maui-wv-eval-capability", "same-origin");
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-b");
+        await WaitForLabelTextContainsAsync(page, navigationStateSelector, "canGoBack=True");
+
+        await page.Locator(backSelector).ClickAsync();
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-a.html");
+        await WaitForHostAttributeAsync("data-maui-wv-eval-capability", "same-origin");
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-a");
+
+        await page.Locator(forwardSelector).ClickAsync();
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-b.html");
+        await WaitForHostAttributeAsync("data-maui-wv-eval-capability", "same-origin");
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-b");
+
+        await page.Locator(reloadSelector).ClickAsync();
+        await WaitForHostAttributeAsync("data-maui-wv-eval-capability", "same-origin");
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-b");
+
+        await page.Locator(loadDataSelector).ClickAsync();
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "data:text/html");
+        await WaitForHostAttributeAsync("data-maui-wv-eval-capability", "restricted");
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "Cross-origin or opaque-origin");
+
+        await page.Locator(loadInlineSelector).ClickAsync();
+        await WaitForHostAttributeAsync("data-maui-wv-source-kind", "html");
+        await WaitForHostAttributeAsync("data-maui-wv-eval-capability", "same-origin");
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=inline");
     }
 
     [Fact]

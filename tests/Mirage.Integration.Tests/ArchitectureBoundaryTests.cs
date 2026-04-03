@@ -50,6 +50,7 @@ public sealed class ArchitectureBoundaryTests
             "MirageImageHandler.cs",
             "MirageProgressBarHandler.cs",
             "MirageGraphicsViewHandler.cs",
+            "MirageWebViewHandler.cs",
             "MirageMapHandler.cs",
             "MirageLabelHandler.cs",
             "MirageBoxViewHandler.cs",
@@ -146,6 +147,15 @@ public sealed class ArchitectureBoundaryTests
         Assert.Contains("not yet a full arbitrary component-library adapter surface", providerText, StringComparison.Ordinal);
         Assert.Contains("current scope is raw DOM/custom-element hosting", guardrailsText, StringComparison.Ordinal);
         Assert.Contains("explicit special-case subsystems such as the map provider seam", guardrailsText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MirageHostingExtensions_RegistersWebViewHandler()
+    {
+        var path = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        var text = File.ReadAllText(path);
+
+        Assert.Contains("typeof(WebView), typeof(MirageWebViewHandler)", text, StringComparison.Ordinal);
     }
 
     [Fact]

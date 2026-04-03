@@ -53,6 +53,16 @@ public interface IMirageRuntime : IDisposable
 
     bool TryRequestNodeSwipeViewClose(string ownerNodeId, bool animated) => false;
 
+    bool TryConfigureNodeWebView(string nodeId, bool enabled, string configurationJson) => false;
+
+    bool TryRequestNodeWebViewGoBack(string nodeId) => false;
+
+    bool TryRequestNodeWebViewGoForward(string nodeId) => false;
+
+    bool TryRequestNodeWebViewReload(string nodeId) => false;
+
+    bool TryEvaluateNodeWebViewScript(string nodeId, long requestId, string script, bool captureResult) => false;
+
     bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)
     {
         displayScale = 1;

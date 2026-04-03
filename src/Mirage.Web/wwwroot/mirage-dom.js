@@ -945,6 +945,7 @@ const eventSubscriptions = new Map();
 const trackedEventPayloads = new Map();
 const pullToRefreshStatePayloads = new Map();
 const swipeViewEventPayloads = new Map();
+const webViewEventPayloads = new Map();
 let nextEventSubscriptionId = 1;
 
 function releaseElementRecursive(element) {
@@ -977,6 +978,13 @@ function releaseElementRecursive(element) {
   for (const key of Array.from(swipeViewEventPayloads.keys())) {
     if (key.startsWith(swipePayloadPrefix)) {
       swipeViewEventPayloads.delete(key);
+    }
+  }
+
+  const webViewPayloadPrefix = `${handle}:`;
+  for (const key of Array.from(webViewEventPayloads.keys())) {
+    if (key.startsWith(webViewPayloadPrefix)) {
+      webViewEventPayloads.delete(key);
     }
   }
 
@@ -1534,6 +1542,33 @@ export function consumeSwipeViewEventPayload(ownerHandle, eventName) {
 
   const payload = swipeViewEventPayloads.get(key);
   swipeViewEventPayloads.delete(key);
+  return typeof payload === "string" ? payload : null;
+}
+
+function publishWebViewEvent(ownerHandle, eventName, callback, payload) {
+  if (!Number.isInteger(ownerHandle) || typeof eventName !== "string" || eventName.length === 0) {
+    return;
+  }
+
+  const key = `${ownerHandle}:${eventName}`;
+  webViewEventPayloads.set(
+    key,
+    typeof payload === "string" && payload.length > 0 ? payload : null);
+  callback();
+}
+
+export function consumeWebViewEventPayload(ownerHandle, eventName) {
+  if (!Number.isInteger(ownerHandle) || typeof eventName !== "string" || eventName.length === 0) {
+    return null;
+  }
+
+  const key = `${ownerHandle}:${eventName}`;
+  if (!webViewEventPayloads.has(key)) {
+    return null;
+  }
+
+  const payload = webViewEventPayloads.get(key);
+  webViewEventPayloads.delete(key);
   return typeof payload === "string" ? payload : null;
 }
 
@@ -2392,6 +2427,456 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
 
 export function unsubscribeSwipeView(subscriptionId) {
   removeEventSubscription(subscriptionId);
+}
+
+function normalizeWebViewConfig(configurationJson) {
+  if (typeof configurationJson !== "string" || configurationJson.length === 0) {
+    return null;
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(configurationJson);
+  } catch {
+    return null;
+  }
+
+  const rawSourceKind = payload?.sourceKind ?? payload?.SourceKind;
+  const rawUrl = payload?.url ?? payload?.Url;
+  const rawHtml = payload?.html ?? payload?.Html;
+  const rawUserAgent = payload?.userAgent ?? payload?.UserAgent;
+  const rawEnabled = payload?.enabled ?? payload?.Enabled;
+  const rawSourceVersion = payload?.sourceVersion ?? payload?.SourceVersion;
+
+  const sourceKind = rawSourceKind === "html"
+    ? "html"
+    : rawSourceKind === "url"
+      ? "url"
+      : rawSourceKind === "unsupported"
+        ? "unsupported"
+        : "none";
+  const url = typeof rawUrl === "string" && rawUrl.length > 0
+    ? rawUrl
+    : "about:blank";
+  const html = typeof rawHtml === "string"
+    ? rawHtml
+    : "";
+  const userAgent = typeof rawUserAgent === "string"
+    ? rawUserAgent
+    : "";
+
+  return {
+    enabled: rawEnabled !== false,
+    sourceKind,
+    url,
+    html,
+    userAgent,
+    sourceVersion: Number.isFinite(rawSourceVersion) ? Math.trunc(rawSourceVersion) : 0
+  };
+}
+
+function cloneWebViewEntry(entry) {
+  return {
+    sourceKind: entry?.sourceKind === "html" ? "html" : "url",
+    url: typeof entry?.url === "string" && entry.url.length > 0 ? entry.url : "about:blank",
+    html: typeof entry?.html === "string" ? entry.html : ""
+  };
+}
+
+function webViewEntriesEqual(left, right) {
+  const normalizeUrl = (value) => {
+    if (typeof value !== "string" || value.length === 0) {
+      return "";
+    }
+
+    try {
+      return new URL(value, window.location.href).href;
+    } catch {
+      return value;
+    }
+  };
+
+  return (left?.sourceKind ?? "") === (right?.sourceKind ?? "")
+    && normalizeUrl(left?.url ?? "") === normalizeUrl(right?.url ?? "")
+    && (left?.html ?? "") === (right?.html ?? "");
+}
+
+function resolveWebViewEntryFromConfig(config) {
+  if (!config) {
+    return { sourceKind: "url", url: "about:blank", html: "" };
+  }
+
+  if (config.sourceKind === "html") {
+    return { sourceKind: "html", url: "about:srcdoc", html: config.html ?? "" };
+  }
+
+  return { sourceKind: "url", url: config.url ?? "about:blank", html: "" };
+}
+
+function canEvaluateWebViewScript(iframe) {
+  try {
+    return Boolean(iframe?.contentWindow?.document);
+  } catch {
+    return false;
+  }
+}
+
+function resolveWebViewLocation(iframe, state) {
+  try {
+    const href = iframe?.contentWindow?.location?.href;
+    if (typeof href === "string" && href.length > 0) {
+      return href;
+    }
+  } catch {
+    // Cross-origin or not yet ready; fall through to deterministic stored URL.
+  }
+
+  if (typeof state?.pendingDocumentNavigationUrl === "string" && state.pendingDocumentNavigationUrl.length > 0) {
+    return state.pendingDocumentNavigationUrl;
+  }
+
+  return state?.currentEntry?.url ?? state?.config?.url ?? "about:blank";
+}
+
+function resolveWebViewEntryFromDocument(iframe, state) {
+  let href;
+  try {
+    href = iframe?.contentWindow?.location?.href;
+  } catch {
+    return null;
+  }
+
+  if (typeof href !== "string" || href.length === 0) {
+    return null;
+  }
+
+  if (href === "about:srcdoc") {
+    return {
+      sourceKind: "html",
+      url: "about:srcdoc",
+      html: typeof state?.config?.html === "string"
+        ? state.config.html
+        : (typeof state?.currentEntry?.html === "string" ? state.currentEntry.html : "")
+    };
+  }
+
+  return {
+    sourceKind: "url",
+    url: href,
+    html: ""
+  };
+}
+
+function syncWebViewHistoryFromDocument(iframe, state) {
+  const loadedEntry = resolveWebViewEntryFromDocument(iframe, state)
+    ?? (typeof state?.pendingDocumentNavigationUrl === "string" && state.pendingDocumentNavigationUrl.length > 0
+      ? {
+          sourceKind: "url",
+          url: state.pendingDocumentNavigationUrl,
+          html: ""
+        }
+      : null);
+  if (!loadedEntry) {
+    return;
+  }
+
+  const normalizedLoadedEntry = cloneWebViewEntry(loadedEntry);
+  state.currentEntry = normalizedLoadedEntry;
+  state.currentUrl = normalizedLoadedEntry.sourceKind === "html"
+    ? "about:srcdoc"
+    : normalizedLoadedEntry.url;
+
+  if (state.historyIndex < 0) {
+    state.history = [cloneWebViewEntry(normalizedLoadedEntry)];
+    state.historyIndex = 0;
+    return;
+  }
+
+  const currentHistoryEntry = state.history[state.historyIndex];
+  if (webViewEntriesEqual(currentHistoryEntry, normalizedLoadedEntry)) {
+    state.history[state.historyIndex] = cloneWebViewEntry(normalizedLoadedEntry);
+    return;
+  }
+
+  state.history = state.history.slice(0, state.historyIndex + 1);
+  state.history.push(cloneWebViewEntry(normalizedLoadedEntry));
+  state.historyIndex = state.history.length - 1;
+}
+
+function installWebViewDocumentNavigationObserver(iframe, state) {
+  let doc;
+  try {
+    doc = iframe?.contentDocument;
+  } catch {
+    return;
+  }
+
+  if (!(doc instanceof Document) || doc.__mirageWebViewNavigationObserverInstalled) {
+    return;
+  }
+
+  doc.__mirageWebViewNavigationObserverInstalled = true;
+  doc.addEventListener("click", (event) => {
+    const target = event.target instanceof Element
+      ? event.target.closest("a[href]")
+      : null;
+    if (!(target instanceof HTMLAnchorElement)) {
+      return;
+    }
+
+    const rawTarget = (target.getAttribute("target") ?? "").trim();
+    if (rawTarget.length > 0 && rawTarget.toLowerCase() !== "_self") {
+      return;
+    }
+
+    const href = target.getAttribute("href") ?? target.href;
+    if (typeof href !== "string" || href.length === 0) {
+      return;
+    }
+
+    try {
+      state.pendingDocumentNavigationUrl = new URL(href, doc.baseURI).href;
+    } catch {
+      state.pendingDocumentNavigationUrl = href;
+    }
+  }, true);
+}
+
+function serializeWebViewEvalResult(value) {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+export function configureWebView(elementHandle, configurationJson, navigatedCallback, evalResultCallback) {
+  const iframe = fromHandle(elementHandle);
+  if (!(iframe instanceof HTMLIFrameElement)) {
+    return 0;
+  }
+
+  const config = normalizeWebViewConfig(configurationJson);
+  if (!config) {
+    return 0;
+  }
+
+  const existingState = iframe.__mirageWebViewState;
+  if (existingState && typeof existingState.applyEntry === "function") {
+    const priorSourceVersion = Number.isFinite(existingState.config?.sourceVersion)
+      ? Math.trunc(existingState.config.sourceVersion)
+      : 0;
+    existingState.config = config;
+    const nextEntry = resolveWebViewEntryFromConfig(config);
+    if (!webViewEntriesEqual(existingState.currentEntry, nextEntry)
+      || priorSourceVersion !== config.sourceVersion) {
+      existingState.applyEntry(nextEntry, true);
+    }
+    return Number.isInteger(existingState.subscriptionId) ? existingState.subscriptionId : 0;
+  }
+
+  const state = {
+    subscriptionId: 0,
+    config,
+    history: [],
+    historyIndex: -1,
+    currentEntry: null,
+    currentUrl: config.sourceKind === "html" ? "about:srcdoc" : config.url,
+    pendingDocumentNavigationUrl: null,
+    applyEntry(entry, updateHistory) {
+      const normalizedEntry = cloneWebViewEntry(entry);
+      state.currentEntry = normalizedEntry;
+      state.currentUrl = normalizedEntry.sourceKind === "html" ? "about:srcdoc" : normalizedEntry.url;
+      state.pendingDocumentNavigationUrl = null;
+
+      if (updateHistory) {
+        const currentHistoryEntry = state.historyIndex >= 0 ? state.history[state.historyIndex] : null;
+        if (!webViewEntriesEqual(currentHistoryEntry, normalizedEntry)) {
+          state.history = state.history.slice(0, state.historyIndex + 1);
+          state.history.push(cloneWebViewEntry(normalizedEntry));
+          state.historyIndex = state.history.length - 1;
+        }
+      } else if (state.historyIndex >= 0) {
+        state.history[state.historyIndex] = cloneWebViewEntry(normalizedEntry);
+      }
+
+      if (normalizedEntry.sourceKind === "html") {
+        iframe.removeAttribute("src");
+        iframe.srcdoc = normalizedEntry.html ?? "";
+      } else {
+        iframe.removeAttribute("srcdoc");
+        iframe.src = normalizedEntry.url ?? "about:blank";
+      }
+    },
+    requestGoBack() {
+      if (state.historyIndex <= 0) {
+        return false;
+      }
+
+      state.historyIndex -= 1;
+      state.applyEntry(state.history[state.historyIndex], false);
+      return true;
+    },
+    requestGoForward() {
+      if (state.historyIndex >= state.history.length - 1) {
+        return false;
+      }
+
+      state.historyIndex += 1;
+      state.applyEntry(state.history[state.historyIndex], false);
+      return true;
+    },
+    requestReload() {
+      if (state.historyIndex < 0 || state.historyIndex >= state.history.length) {
+        return false;
+      }
+
+      state.applyEntry(state.history[state.historyIndex], false);
+      return true;
+    },
+    evaluate(script, requestId, captureResult) {
+      if (typeof script !== "string" || script.length === 0) {
+        return false;
+      }
+
+      const canEvaluate = canEvaluateWebViewScript(iframe);
+      if (!canEvaluate) {
+        publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+          requestId,
+          success: false,
+          result: null,
+          error: "Cross-origin or opaque-origin content prevented JavaScript evaluation."
+        }));
+        return true;
+      }
+
+      let win;
+      try {
+        win = iframe.contentWindow;
+      } catch {
+        publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+          requestId,
+          success: false,
+          result: null,
+          error: "Cross-origin or opaque-origin content prevented JavaScript evaluation."
+        }));
+        return true;
+      }
+
+      Promise.resolve()
+        .then(() => win.eval(script))
+        .then((result) => {
+          if (!captureResult && requestId <= 0) {
+            return;
+          }
+
+          publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+            requestId,
+            success: true,
+            result: serializeWebViewEvalResult(result),
+            error: null
+          }));
+        })
+        .catch((error) => {
+          publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+            requestId,
+            success: false,
+            result: null,
+            error: error instanceof Error ? (error.message || error.toString()) : String(error ?? "Unknown JavaScript evaluation error.")
+          }));
+        });
+      return true;
+    }
+  };
+
+  const publishNavigated = (result) => {
+    syncWebViewHistoryFromDocument(iframe, state);
+    installWebViewDocumentNavigationObserver(iframe, state);
+    const currentEntry = cloneWebViewEntry(state.currentEntry);
+    publishWebViewEvent(elementHandle, "navigated", navigatedCallback, JSON.stringify({
+      url: resolveWebViewLocation(iframe, state),
+      sourceKind: currentEntry.sourceKind,
+      html: currentEntry.sourceKind === "html" ? currentEntry.html : null,
+      canGoBack: state.historyIndex > 0,
+      canGoForward: state.historyIndex >= 0 && state.historyIndex < state.history.length - 1,
+      canEvaluateJavaScript: canEvaluateWebViewScript(iframe),
+      result: typeof result === "string" && result.length > 0 ? result : "success"
+    }));
+    state.pendingDocumentNavigationUrl = null;
+  };
+
+  const loadListener = () => publishNavigated("success");
+  iframe.addEventListener("load", loadListener);
+
+  const initialEntry = resolveWebViewEntryFromConfig(config);
+  state.history = [cloneWebViewEntry(initialEntry)];
+  state.historyIndex = 0;
+  state.applyEntry(initialEntry, false);
+
+  const subscriptionId = nextEventSubscriptionId++;
+  eventSubscriptions.set(subscriptionId, {
+    element: iframe,
+    dispose: () => {
+      iframe.removeEventListener("load", loadListener);
+      delete iframe.__mirageWebViewState;
+    }
+  });
+
+  state.subscriptionId = subscriptionId;
+  iframe.__mirageWebViewState = state;
+  return subscriptionId;
+}
+
+export function unsubscribeWebView(subscriptionId) {
+  removeEventSubscription(subscriptionId);
+}
+
+export function requestWebViewGoBack(elementHandle) {
+  const iframe = fromHandle(elementHandle);
+  const state = iframe?.__mirageWebViewState;
+  if (!(iframe instanceof HTMLIFrameElement) || !state || typeof state.requestGoBack !== "function") {
+    return false;
+  }
+
+  return state.requestGoBack();
+}
+
+export function requestWebViewGoForward(elementHandle) {
+  const iframe = fromHandle(elementHandle);
+  const state = iframe?.__mirageWebViewState;
+  if (!(iframe instanceof HTMLIFrameElement) || !state || typeof state.requestGoForward !== "function") {
+    return false;
+  }
+
+  return state.requestGoForward();
+}
+
+export function requestWebViewReload(elementHandle) {
+  const iframe = fromHandle(elementHandle);
+  const state = iframe?.__mirageWebViewState;
+  if (!(iframe instanceof HTMLIFrameElement) || !state || typeof state.requestReload !== "function") {
+    return false;
+  }
+
+  return state.requestReload();
+}
+
+export function evaluateWebViewScript(elementHandle, requestId, script, captureResult) {
+  const iframe = fromHandle(elementHandle);
+  const state = iframe?.__mirageWebViewState;
+  if (!(iframe instanceof HTMLIFrameElement) || !state || typeof state.evaluate !== "function") {
+    return false;
+  }
+
+  return state.evaluate(script, Number.isFinite(requestId) ? Math.trunc(requestId) : 0, Boolean(captureResult));
 }
 
 export function requestSwipeViewOpen(ownerHandle, side, animated, emitEndEvent) {

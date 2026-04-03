@@ -304,6 +304,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(SwipeViewParityProbePage),
             description: "Mirage parity probe: exercises SwipeView direction switching, reveal/execute modes, SwipeBehaviorOnInvoked, SwipeItemView action content, programmatic open/close, and CollectionView row embedding."),
         new(
+            id: "webviewparitypage",
+            title: "WebViewParityProbePage",
+            upstreamPath: "App/WebViewParityProbePage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(WebViewParityProbePage),
+            description: "Mirage parity probe: exercises iframe-hosted UrlWebViewSource and HtmlWebViewSource, same-origin navigation commands, same-origin JavaScript evaluation, deterministic cross-origin eval failure, and UserAgent diagnostics."),
+        new(
             id: "tabbedpagegallerymainpage",
             title: "TabbedPageGalleryMainPage",
             upstreamPath: "Pages/Compatibility/TabbedPageGalleryMainPage.xaml",
@@ -464,6 +471,7 @@ public static class ControlsSampleCatalog
             ["graphicsviewparitypage"] = ControlsSampleCategory.ParityProbes,
             ["refreshviewparitypage"] = ControlsSampleCategory.ParityProbes,
             ["swipeviewparitypage"] = ControlsSampleCategory.ParityProbes,
+            ["webviewparitypage"] = ControlsSampleCategory.ParityProbes,
             ["datepickerparitypage"] = ControlsSampleCategory.ParityProbes,
             ["timepickerparitypage"] = ControlsSampleCategory.ParityProbes,
 
