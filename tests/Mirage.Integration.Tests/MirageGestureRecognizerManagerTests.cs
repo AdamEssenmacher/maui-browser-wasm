@@ -358,6 +358,32 @@ public sealed class MirageGestureRecognizerManagerTests
     }
 
     [Fact]
+    public void GestureRecognizerManager_SwipeRecognizer_UsesPointerUpCoordinates_WhenNoMoveEventOccurs()
+    {
+        var view = new ContentView
+        {
+            WidthRequest = 220,
+            HeightRequest = 220
+        };
+
+        var swipes = new List<SwipeDirection>();
+        var swipe = new SwipeGestureRecognizer
+        {
+            Direction = SwipeDirection.Right
+        };
+        swipe.Swiped += (_, args) => swipes.Add(args.Direction);
+        view.GestureRecognizers.Add(swipe);
+
+        var platformView = MiragePlatformView.CreateControl(ComponentKind.ContentContainer);
+        using var manager = new MirageGestureRecognizerManager(view, platformView);
+
+        manager.OnRuntimeEvent("pointerdown", CreatePointerPayload(pointerId: 21, x: 20, y: 60, clientX: 20, clientY: 60, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+        manager.OnRuntimeEvent("pointerup", CreatePointerPayload(pointerId: 21, x: 100, y: 62, clientX: 100, clientY: 62, button: 0, buttons: 0, clickCount: 1, isInsideBounds: true));
+
+        Assert.Equal([SwipeDirection.Right], swipes);
+    }
+
+    [Fact]
     public void GestureRecognizerManager_PinchSequence_DoesNotAlsoFireSwipe()
     {
         var view = new ContentView

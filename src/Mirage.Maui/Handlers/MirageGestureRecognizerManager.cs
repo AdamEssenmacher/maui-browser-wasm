@@ -286,6 +286,15 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         var skipSwipe = false;
         if (_activePointers.TryGetValue(payload.PointerId, out var activePointer))
         {
+            activePointer = activePointer with
+            {
+                LastClientX = payload.ClientX,
+                LastClientY = payload.ClientY,
+                LastX = payload.X,
+                LastY = payload.Y
+            };
+            _activePointers[payload.PointerId] = activePointer;
+
             resolvedPayload = payload with
             {
                 Buttons = payload.Buttons == 0 ? ToBrowserButtons(activePointer.ButtonMask) : payload.Buttons,
