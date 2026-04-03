@@ -30,6 +30,7 @@ public enum ComponentKind
     Stepper,
     RefreshView,
     ProgressBar,
+    SwipeView,
     IndicatorView,
     GraphicsView,
     Map

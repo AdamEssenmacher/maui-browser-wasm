@@ -297,6 +297,13 @@ public static class ControlsSampleCatalog
             pageType: typeof(RefreshViewParityProbePage),
             description: "Mirage parity probe: exercises RefreshView trigger-button refresh, pull-threshold activation across collection and plain content, enabled gating, and deterministic browser diagnostics."),
         new(
+            id: "swipeviewparitypage",
+            title: "SwipeViewParityProbePage",
+            upstreamPath: "App/SwipeViewParityProbePage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(SwipeViewParityProbePage),
+            description: "Mirage parity probe: exercises SwipeView direction switching, reveal/execute modes, SwipeBehaviorOnInvoked, SwipeItemView action content, programmatic open/close, and CollectionView row embedding."),
+        new(
             id: "tabbedpagegallerymainpage",
             title: "TabbedPageGalleryMainPage",
             upstreamPath: "Pages/Compatibility/TabbedPageGalleryMainPage.xaml",
@@ -456,6 +463,7 @@ public static class ControlsSampleCatalog
             ["progressbarparitypage"] = ControlsSampleCategory.ParityProbes,
             ["graphicsviewparitypage"] = ControlsSampleCategory.ParityProbes,
             ["refreshviewparitypage"] = ControlsSampleCategory.ParityProbes,
+            ["swipeviewparitypage"] = ControlsSampleCategory.ParityProbes,
             ["datepickerparitypage"] = ControlsSampleCategory.ParityProbes,
             ["timepickerparitypage"] = ControlsSampleCategory.ParityProbes,
 

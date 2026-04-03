@@ -1,0 +1,24 @@
+{
+  "mauiBaselineCommit": "fc1dadc4d68a809a9c14a7d33ff1289037040471",
+  "handlers": [
+    {
+      "name": "SwipeViewHandler",
+      "mirageType": "MirageSwipeViewHandler",
+      "propertyMapperKeys": [
+        "Content",
+        "LeftItems",
+        "RightItems",
+        "TopItems",
+        "BottomItems",
+        "SwipeTransitionMode"
+      ],
+      "commandMapperKeys": [
+        "RequestOpen",
+        "RequestClose"
+      ],
+      "mirageExtensionPropertyMapperKeys": [
+        "IsEnabled"
+      ]
+    }
+  ]
+}

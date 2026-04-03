@@ -88,7 +88,11 @@ internal abstract class MirageSingleContentHostHandler<TVirtualView> : MirageVie
 
         if (contentHandler.PlatformView is not MiragePlatformView contentPlatformView)
         {
-            throw new InvalidOperationException($"{GetType().Name} requires child handlers to expose MiragePlatformView.");
+            var platformViewType = contentHandler.PlatformView?.GetType().FullName ?? "<null>";
+            throw new InvalidOperationException(
+                $"{GetType().Name} requires child handlers to expose MiragePlatformView. " +
+                $"Content type='{content.GetType().FullName}', child handler='{contentHandler.GetType().FullName}', " +
+                $"platform view='{platformViewType}'.");
         }
 
         platformView.AddChild(contentPlatformView);

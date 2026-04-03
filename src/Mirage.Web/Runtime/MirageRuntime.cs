@@ -23,6 +23,7 @@ public sealed class MirageRuntime : IMirageRuntime
     private readonly Dictionary<(string NodeId, string EventName), int> _eventSubscriptions = new();
     private readonly Dictionary<string, int> _mapProviderInitializationRetries = new(StringComparer.Ordinal);
     private readonly Dictionary<string, PullToRefreshSubscription> _pullToRefreshSubscriptions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, SwipeViewSubscription> _swipeViewSubscriptions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, int> _suppressedFocusEvents = new(StringComparer.Ordinal);
 
     private NodeBase? _currentRoot;
@@ -316,6 +317,58 @@ public sealed class MirageRuntime : IMirageRuntime
         return true;
     }
 
+    public bool TryConfigureNodeSwipeView(string ownerNodeId, bool enabled, string configurationJson)
+    {
+        if (_swipeViewSubscriptions.ContainsKey(ownerNodeId))
+        {
+            RemoveSwipeViewSubscription(ownerNodeId);
+        }
+
+        if (!enabled)
+        {
+            return true;
+        }
+
+        if (!_nodes.TryGetValue(ownerNodeId, out var ownerNode))
+        {
+            return false;
+        }
+
+        var subscriptionId = ownerNode.Element.ConfigureSwipeView(
+            configurationJson,
+            () => _eventSink?.OnEvent(ownerNodeId, "swipestart", ownerNode.Element.ConsumeSwipeViewEventPayload("swipestart")),
+            () => _eventSink?.OnEvent(ownerNodeId, "swipechange", ownerNode.Element.ConsumeSwipeViewEventPayload("swipechange")),
+            () => _eventSink?.OnEvent(ownerNodeId, "swipeend", ownerNode.Element.ConsumeSwipeViewEventPayload("swipeend")),
+            () => _eventSink?.OnEvent(ownerNodeId, "swipeinvoke", ownerNode.Element.ConsumeSwipeViewEventPayload("swipeinvoke")));
+        if (subscriptionId <= 0)
+        {
+            return false;
+        }
+
+        _swipeViewSubscriptions[ownerNodeId] = new SwipeViewSubscription(subscriptionId);
+        return true;
+    }
+
+    public bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated, bool emitEndEvent = true)
+    {
+        if (!_nodes.TryGetValue(ownerNodeId, out var ownerNode))
+        {
+            return false;
+        }
+
+        return ownerNode.Element.RequestSwipeViewOpen(side, animated, emitEndEvent);
+    }
+
+    public bool TryRequestNodeSwipeViewClose(string ownerNodeId, bool animated)
+    {
+        if (!_nodes.TryGetValue(ownerNodeId, out var ownerNode))
+        {
+            return false;
+        }
+
+        return ownerNode.Element.RequestSwipeViewClose(animated);
+    }
+
     public bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)
     {
         displayScale = 1;
@@ -366,6 +419,12 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         _pullToRefreshSubscriptions.Clear();
+        foreach (var subscription in _swipeViewSubscriptions.Values.ToArray())
+        {
+            DomElement.UnsubscribeSwipeView(subscription.SubscriptionId);
+        }
+
+        _swipeViewSubscriptions.Clear();
         _mapProviderInitializationRetries.Clear();
         _suppressedFocusEvents.Clear();
 
@@ -425,6 +484,16 @@ public sealed class MirageRuntime : IMirageRuntime
             default:
                 throw new InvalidOperationException($"Unsupported patch operation: {operation.GetType().Name}");
         }
+    }
+
+    private void RemoveSwipeViewSubscription(string ownerNodeId)
+    {
+        if (!_swipeViewSubscriptions.Remove(ownerNodeId, out var subscription))
+        {
+            return;
+        }
+
+        DomElement.UnsubscribeSwipeView(subscription.SubscriptionId);
     }
 
     private bool TryQueueMutation(PatchOperation operation, DomMutationBatch mutationBatch)
@@ -636,6 +705,7 @@ public sealed class MirageRuntime : IMirageRuntime
 
         RemoveEventSubscriptionsForNode(operation.NodeId);
         RemovePullToRefreshSubscriptionsForNode(operation.NodeId);
+        RemoveSwipeViewSubscriptionsForNode(operation.NodeId);
         _mapProviderInitializationRetries.Remove(operation.NodeId);
         node.DisposeMapAdapter();
         InvokeInterop(() => node.Element.Release());
@@ -668,6 +738,16 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         DomElement.UnsubscribePullToRefresh(subscription.SubscriptionId);
+    }
+
+    private void RemoveSwipeViewSubscriptionsForNode(string nodeId)
+    {
+        if (_swipeViewSubscriptions.Count == 0)
+        {
+            return;
+        }
+
+        RemoveSwipeViewSubscription(nodeId);
     }
 
     private void ApplySetProperty(SetPropertyOperation operation)
@@ -2184,4 +2264,6 @@ public sealed class MirageRuntime : IMirageRuntime
     }
 
     private sealed record PullToRefreshSubscription(string SourceNodeId, int SubscriptionId, double Threshold);
+
+    private sealed record SwipeViewSubscription(int SubscriptionId);
 }

@@ -290,6 +290,36 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         return _runtime.TryConfigureNodePullToRefresh(ownerNodeId, sourceNodeId, enabled, threshold);
     }
 
+    public bool TryConfigureNodeSwipeView(string ownerNodeId, bool enabled, string configurationJson)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TryConfigureNodeSwipeView(ownerNodeId, enabled, configurationJson);
+    }
+
+    public bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated, bool emitEndEvent = true)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TryRequestNodeSwipeViewOpen(ownerNodeId, side, animated, emitEndEvent);
+    }
+
+    public bool TryRequestNodeSwipeViewClose(string ownerNodeId, bool animated)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TryRequestNodeSwipeViewClose(ownerNodeId, animated);
+    }
+
     public bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)
     {
         if (_runtime is null)

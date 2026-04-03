@@ -2,6 +2,19 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-04-02 (SwipeView stabilization sweep: explicit handler/runtime ownership + transition hardening)
+- Kept the current SwipeView architecture but tightened the ownership boundary explicitly: `MirageSwipeViewHandler` owns MAUI-facing open state, pending programmatic commands, disabled gating, and diagnostics, while the browser swipe runtime owns live gesture progress, active axis/side capture, offsets, and DOM visibility.
+- Handler-side open-state, pending-command, and configure-retry mutations now flow through dedicated helpers rather than ad hoc field writes, so disabled state, impossible-open rejection, and rejected post-config reopens all converge on the same closed-state invariant.
+- The browser swipe runtime now funnels gesture/open-state mutations through a smaller set of transition helpers (`begin tracking`, `resolve side`, `start gesture`, `complete open`, `complete close`, `stop tracking`) instead of mutating gesture fields opportunistically inside each event listener.
+- We also widened the proof surface instead of just adding more isolated regressions: the parity probe now covers a reattach-and-open path for programmatic commands during reconfiguration and uses touch for the CollectionView-row action path, so end-to-end coverage better matches the touch-first contract of this wave.
+
+## 2026-04-01 (SwipeView family parity wave: MAUI-shaped handler family + dedicated swipe runtime seam)
+- Added `MirageSwipeViewHandler`, `MirageSwipeItemViewHandler`, and the internal `MirageSwipeItemMenuItemHandler`, then registered `SwipeView` and `SwipeItemView` in `UseMirageBrowserPlatform` so the SwipeView family now runs on a real Mirage handler path instead of remaining a missing row.
+- SwipeView realization now uses a built-in `ControlNode` root plus handler-owned internal chrome (action-strip hosts, clip host, moving track, content host) and a dedicated runtime swipe seam for configuration, four-direction touch/pen tracking, and programmatic open/close requests.
+- Wave 1 covers `Reveal` / `Execute`, `SwipeBehaviorOnInvoked`, `Threshold`, swipe lifecycle event routing, `SwipeItem` action projection, `SwipeItemView` hosted-content actions, and CollectionView-row embedding proof through `SwipeViewParityProbePage`.
+- Browser-specific divergence remains explicit and narrow: mouse drag is still deferred, exact native transition fidelity is approximated deterministically, and the larger upstream SwipeView gallery set stays out of Wave 1 scope.
+- Swipe runtime configuration now retries through initial host materialization so the browser seam still attaches when the first configure attempt races ahead of root-node realization.
+
 ## 2026-04-01 (GraphicsView parity wave: MAUI-shaped handler + DPR-aware canvas host)
 - Added `MirageGraphicsViewHandler` and registered `GraphicsView` in `UseMirageBrowserPlatform`, making `GraphicsView` the explicit canvas-backed exception in Mirage while keeping the handler surface aligned to MAUI (`Background`, `Drawable`, `FlowDirection`, empty command mapper except `Invalidate`).
 - GraphicsView realization now uses a built-in `ControlNode` canvas host (`ComponentKind.GraphicsView`) plus generic runtime canvas seams for backing-store configuration and batched draw-command replay, so redraws stay handler-shaped instead of turning into per-operation JS chatter or a separate widget system.

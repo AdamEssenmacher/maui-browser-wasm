@@ -136,6 +136,27 @@ internal static partial class DomApi
     [JSImport("getTextInputContentHeight", Module)]
     internal static partial double GetTextInputContentHeight(nint element);
 
+    [JSImport("configureSwipeView", Module)]
+    internal static partial int ConfigureSwipeView(
+        nint ownerElement,
+        string configurationJson,
+        [JSMarshalAs<JSType.Function>] Action swipeStartCallback,
+        [JSMarshalAs<JSType.Function>] Action swipeChangeCallback,
+        [JSMarshalAs<JSType.Function>] Action swipeEndCallback,
+        [JSMarshalAs<JSType.Function>] Action swipeInvokeCallback);
+
+    [JSImport("consumeSwipeViewEventPayload", Module)]
+    internal static partial string? ConsumeSwipeViewEventPayload(nint ownerElement, string eventName);
+
+    [JSImport("unsubscribeSwipeView", Module)]
+    internal static partial void UnsubscribeSwipeView(int subscriptionId);
+
+    [JSImport("requestSwipeViewOpen", Module)]
+    internal static partial bool RequestSwipeViewOpen(nint ownerElement, string side, bool animated, bool emitEndEvent);
+
+    [JSImport("requestSwipeViewClose", Module)]
+    internal static partial bool RequestSwipeViewClose(nint ownerElement, bool animated);
+
     [JSImport("focusElement", Module)]
     internal static partial bool FocusElement(nint element);
 

@@ -4502,6 +4502,35 @@ public sealed class HandlerRuntimeIntegrationTests
     }
 
     [Fact]
+    public void RenderCoordinator_SwipeViewBridge_RoutesToRuntimeDeterministically()
+    {
+        var coordinator = new MirageRenderCoordinator(new BrowserDispatcher());
+        var runtime = new RuntimeProbe();
+        coordinator.AttachRuntime(runtime);
+
+        var configured = coordinator.TryConfigureNodeSwipeView(
+            "swipe-owner",
+            enabled: true,
+            """{"enabled":true,"threshold":72,"transitionMode":"reveal","left":{"extent":88,"mode":"reveal","behavior":"auto"},"right":{"extent":0,"mode":"reveal","behavior":"auto"},"top":{"extent":0,"mode":"reveal","behavior":"auto"},"bottom":{"extent":0,"mode":"reveal","behavior":"auto"}}""");
+        var opened = coordinator.TryRequestNodeSwipeViewOpen("swipe-owner", "left", animated: true);
+        var closed = coordinator.TryRequestNodeSwipeViewClose("swipe-owner", animated: false);
+
+        Assert.True(configured);
+        Assert.True(opened);
+        Assert.True(closed);
+        Assert.Equal(1, runtime.ConfigureSwipeViewCallCount);
+        Assert.Equal("swipe-owner", runtime.LastConfiguredSwipeOwnerNodeId);
+        Assert.True(runtime.LastConfigureSwipeEnabled);
+        Assert.Contains("\"threshold\":72", runtime.LastSwipeConfigurationJson, StringComparison.Ordinal);
+        Assert.Equal("swipe-owner", runtime.LastSwipeOpenOwnerNodeId);
+        Assert.Equal("left", runtime.LastSwipeOpenSide);
+        Assert.True(runtime.LastSwipeOpenAnimated);
+        Assert.True(runtime.LastSwipeOpenEmitEndEvent);
+        Assert.Equal("swipe-owner", runtime.LastSwipeCloseOwnerNodeId);
+        Assert.False(runtime.LastSwipeCloseAnimated);
+    }
+
+    [Fact]
     public void BasePage_InstrumentPage_AssignsScrollViewOrientationAutomationIds()
     {
         var page = Assert.IsType<ScrollViewOrientationPage>(
@@ -6375,6 +6404,26 @@ public sealed class HandlerRuntimeIntegrationTests
 
         public double LastConfigurePullThreshold { get; private set; }
 
+        public int ConfigureSwipeViewCallCount { get; private set; }
+
+        public string? LastConfiguredSwipeOwnerNodeId { get; private set; }
+
+        public bool LastConfigureSwipeEnabled { get; private set; }
+
+        public string LastSwipeConfigurationJson { get; private set; } = string.Empty;
+
+        public string? LastSwipeOpenOwnerNodeId { get; private set; }
+
+        public string? LastSwipeOpenSide { get; private set; }
+
+        public bool LastSwipeOpenAnimated { get; private set; }
+
+        public bool LastSwipeOpenEmitEndEvent { get; private set; }
+
+        public string? LastSwipeCloseOwnerNodeId { get; private set; }
+
+        public bool LastSwipeCloseAnimated { get; private set; }
+
         public void SetEventSink(IMirageEventSink? eventSink)
         {
             Sink = eventSink;
@@ -6486,6 +6535,31 @@ public sealed class HandlerRuntimeIntegrationTests
             LastConfiguredPullSourceNodeId = sourceNodeId;
             LastConfigurePullEnabled = enabled;
             LastConfigurePullThreshold = threshold;
+            return true;
+        }
+
+        public bool TryConfigureNodeSwipeView(string ownerNodeId, bool enabled, string configurationJson)
+        {
+            ConfigureSwipeViewCallCount++;
+            LastConfiguredSwipeOwnerNodeId = ownerNodeId;
+            LastConfigureSwipeEnabled = enabled;
+            LastSwipeConfigurationJson = configurationJson;
+            return true;
+        }
+
+        public bool TryRequestNodeSwipeViewOpen(string ownerNodeId, string side, bool animated, bool emitEndEvent = true)
+        {
+            LastSwipeOpenOwnerNodeId = ownerNodeId;
+            LastSwipeOpenSide = side;
+            LastSwipeOpenAnimated = animated;
+            LastSwipeOpenEmitEndEvent = emitEndEvent;
+            return true;
+        }
+
+        public bool TryRequestNodeSwipeViewClose(string ownerNodeId, bool animated)
+        {
+            LastSwipeCloseOwnerNodeId = ownerNodeId;
+            LastSwipeCloseAnimated = animated;
             return true;
         }
 

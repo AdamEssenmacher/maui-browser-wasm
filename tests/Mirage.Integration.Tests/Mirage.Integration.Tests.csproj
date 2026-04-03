@@ -63,6 +63,9 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageRefreshViewHandler.cs" Link="Handlers\MirageRefreshViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageProgressBarHandler.cs" Link="Handlers\MirageProgressBarHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageGraphicsViewHandler.cs" Link="Handlers\MirageGraphicsViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageSwipeViewHandler.cs" Link="Handlers\MirageSwipeViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageSwipeItemViewHandler.cs" Link="Handlers\MirageSwipeItemViewHandler.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageSwipeItemMenuItemHandler.cs" Link="Handlers\MirageSwipeItemMenuItemHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageIndicatorViewHandler.cs" Link="Handlers\MirageIndicatorViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageMapHandler.cs" Link="Handlers\MirageMapHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageMapPinHandler.cs" Link="Handlers\MirageMapPinHandler.cs" />

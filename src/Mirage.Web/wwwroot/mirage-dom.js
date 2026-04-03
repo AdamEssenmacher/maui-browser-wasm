@@ -944,6 +944,7 @@ export function clearChildren(parentHandle) {
 const eventSubscriptions = new Map();
 const trackedEventPayloads = new Map();
 const pullToRefreshStatePayloads = new Map();
+const swipeViewEventPayloads = new Map();
 let nextEventSubscriptionId = 1;
 
 function releaseElementRecursive(element) {
@@ -972,6 +973,12 @@ function releaseElementRecursive(element) {
   }
 
   pullToRefreshStatePayloads.delete(handle);
+  const swipePayloadPrefix = `${handle}:`;
+  for (const key of Array.from(swipeViewEventPayloads.keys())) {
+    if (key.startsWith(swipePayloadPrefix)) {
+      swipeViewEventPayloads.delete(key);
+    }
+  }
 
   handleByElement.delete(element);
   elementByHandle.delete(handle);
@@ -1503,6 +1510,33 @@ export function consumePullToRefreshStateJson(ownerHandle) {
   return typeof payload === "string" ? payload : null;
 }
 
+function publishSwipeViewEvent(ownerHandle, eventName, callback, payload) {
+  if (!Number.isInteger(ownerHandle) || typeof eventName !== "string" || eventName.length === 0) {
+    return;
+  }
+
+  const key = `${ownerHandle}:${eventName}`;
+  swipeViewEventPayloads.set(
+    key,
+    typeof payload === "string" && payload.length > 0 ? payload : null);
+  callback();
+}
+
+export function consumeSwipeViewEventPayload(ownerHandle, eventName) {
+  if (!Number.isInteger(ownerHandle) || typeof eventName !== "string" || eventName.length === 0) {
+    return null;
+  }
+
+  const key = `${ownerHandle}:${eventName}`;
+  if (!swipeViewEventPayloads.has(key)) {
+    return null;
+  }
+
+  const payload = swipeViewEventPayloads.get(key);
+  swipeViewEventPayloads.delete(key);
+  return typeof payload === "string" ? payload : null;
+}
+
 export function configurePullToRefresh(ownerHandle, sourceHandle, threshold, stateCallback, triggerCallback) {
   const owner = fromHandle(ownerHandle);
   const source = fromHandle(sourceHandle);
@@ -1678,6 +1712,706 @@ export function configurePullToRefresh(ownerHandle, sourceHandle, threshold, sta
 
 export function unsubscribePullToRefresh(subscriptionId) {
   removeEventSubscription(subscriptionId);
+}
+
+function normalizeSwipeConfig(configurationJson) {
+  if (typeof configurationJson !== "string" || configurationJson.length === 0) {
+    return null;
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(configurationJson);
+  } catch {
+    return null;
+  }
+
+  const normalizeSide = (side) => {
+    const extent = Number.isFinite(side?.extent) ? Math.max(0, side.extent) : 0;
+    const mode = side?.mode === "execute" ? "execute" : "reveal";
+    const behavior = side?.behavior === "remainopen"
+      ? "remainopen"
+      : side?.behavior === "close"
+        ? "close"
+        : "auto";
+    return { extent, mode, behavior };
+  };
+
+  return {
+    enabled: payload?.enabled !== false,
+    threshold: Number.isFinite(payload?.threshold) ? Math.max(0, payload.threshold) : 72,
+    transitionMode: payload?.transitionMode === "drag" ? "drag" : "reveal",
+    left: normalizeSide(payload?.left),
+    right: normalizeSide(payload?.right),
+    top: normalizeSide(payload?.top),
+    bottom: normalizeSide(payload?.bottom)
+  };
+}
+
+function getSwipeDirectionForSide(side) {
+  switch (side) {
+    case "left":
+      return "right";
+    case "right":
+      return "left";
+    case "top":
+      return "down";
+    case "bottom":
+      return "up";
+    default:
+      return "";
+  }
+}
+
+function getSwipeAxisForSide(side) {
+  return side === "left" || side === "right" ? "horizontal" : "vertical";
+}
+
+function getSwipeHiddenTransform(side, extent) {
+  const distance = Number.isFinite(extent) ? extent : 0;
+  switch (side) {
+    case "left":
+      return `translate3d(${-distance}px, 0, 0)`;
+    case "right":
+      return `translate3d(${distance}px, 0, 0)`;
+    case "top":
+      return `translate3d(0, ${-distance}px, 0)`;
+    case "bottom":
+      return `translate3d(0, ${distance}px, 0)`;
+    default:
+      return "translate3d(0, 0, 0)";
+  }
+}
+
+function getSwipeDragTransform(side, offset, extent) {
+  switch (side) {
+    case "left":
+      return `translate3d(${offset - extent}px, 0, 0)`;
+    case "right":
+      return `translate3d(${offset + extent}px, 0, 0)`;
+    case "top":
+      return `translate3d(0, ${offset - extent}px, 0)`;
+    case "bottom":
+      return `translate3d(0, ${offset + extent}px, 0)`;
+    default:
+      return "translate3d(0, 0, 0)";
+  }
+}
+
+function getSwipeActionSelector(side) {
+  return `[data-maui-sv-action-host='${side}']`;
+}
+
+export function configureSwipeView(ownerHandle, configurationJson, swipeStartCallback, swipeChangeCallback, swipeEndCallback, swipeInvokeCallback) {
+  const owner = fromHandle(ownerHandle);
+  const config = normalizeSwipeConfig(configurationJson);
+  if (!(owner instanceof HTMLElement) || !config) {
+    return 0;
+  }
+
+  const state = {
+    config,
+    tracking: false,
+    pointerId: -1,
+    startX: 0,
+    startY: 0,
+    axis: "",
+    side: "",
+    startOffset: 0,
+    dragDistance: 0,
+    startEmitted: false,
+    currentOffset: 0,
+    openSide: "",
+    captured: false
+  };
+
+  const getTrack = () => owner.querySelector("[data-maui-sv-track='true']");
+  const getActionHost = (side) => owner.querySelector(getSwipeActionSelector(side));
+  const isEnabled = () => state.config.enabled === true;
+  const getSideConfig = (side) => state.config?.[side] ?? { extent: 0, mode: "reveal", behavior: "auto" };
+  const getSideExtent = (side) => getSideConfig(side).extent;
+  const getSideMode = (side) => getSideConfig(side).mode;
+  const getSideBehavior = (side) => getSideConfig(side).behavior;
+  const clampOffsetForSide = (side, offset) => {
+    const extent = getSideExtent(side);
+    const numericOffset = Number.isFinite(offset) ? offset : 0;
+    if (extent <= 0) {
+      return 0;
+    }
+
+    if (side === "left" || side === "top") {
+      return Math.min(extent, Math.max(0, numericOffset));
+    }
+
+    if (side === "right" || side === "bottom") {
+      return Math.max(-extent, Math.min(0, numericOffset));
+    }
+
+    return 0;
+  };
+  const setAnimated = (animated) => {
+    const transitionValue = animated ? "transform 180ms ease" : "none";
+    const track = getTrack();
+    if (track instanceof HTMLElement) {
+      track.style.transition = transitionValue;
+      track.style.willChange = "transform";
+    }
+
+    for (const side of ["left", "right", "top", "bottom"]) {
+      const host = getActionHost(side);
+      if (host instanceof HTMLElement) {
+        host.style.transition = transitionValue;
+        host.style.willChange = "transform";
+      }
+    }
+  };
+
+  const applyOffset = (offset, animated) => {
+    const track = getTrack();
+    const normalizedOffset = Number.isFinite(offset) ? offset : 0;
+    const activeSide = normalizedOffset > 0
+      ? (state.axis === "horizontal" ? "left" : "top")
+      : normalizedOffset < 0
+        ? (state.axis === "horizontal" ? "right" : "bottom")
+        : "";
+    setAnimated(animated);
+
+    if (track instanceof HTMLElement) {
+      if (state.axis === "vertical") {
+        track.style.transform = `translate3d(0, ${normalizedOffset}px, 0)`;
+      } else {
+        track.style.transform = `translate3d(${normalizedOffset}px, 0, 0)`;
+      }
+    }
+
+    for (const side of ["left", "right", "top", "bottom"]) {
+      const host = getActionHost(side);
+      if (!(host instanceof HTMLElement)) {
+        continue;
+      }
+
+      const extent = getSideExtent(side);
+      const isActive = activeSide === side && Math.abs(normalizedOffset) > 0.5 && extent > 0;
+      host.style.visibility = extent > 0 && (isActive || state.openSide === side) ? "visible" : extent > 0 ? "hidden" : "hidden";
+      host.style.pointerEvents = (state.openSide === side && Math.abs(normalizedOffset) > 0.5) ? "auto" : "none";
+
+      if (extent <= 0) {
+        host.style.transform = getSwipeHiddenTransform(side, 0);
+        continue;
+      }
+
+      if (!isActive && state.openSide !== side) {
+        host.style.transform = getSwipeHiddenTransform(side, extent);
+        continue;
+      }
+
+      if (state.config.transitionMode === "drag") {
+        host.style.transform = getSwipeDragTransform(side, normalizedOffset, extent);
+      } else {
+        host.style.transform = "translate3d(0, 0, 0)";
+      }
+    }
+
+    state.currentOffset = normalizedOffset;
+  };
+
+  const emitSwipeStart = (side) => {
+    const direction = getSwipeDirectionForSide(side);
+    if (!direction) {
+      return;
+    }
+
+    publishSwipeViewEvent(ownerHandle, "swipestart", swipeStartCallback, JSON.stringify({ direction }));
+  };
+
+  const emitSwipeChange = (side, offset) => {
+    const direction = getSwipeDirectionForSide(side);
+    if (!direction) {
+      return;
+    }
+
+    publishSwipeViewEvent(
+      ownerHandle,
+      "swipechange",
+      swipeChangeCallback,
+      JSON.stringify({
+        direction,
+        offset: Math.max(0, Math.round(Math.abs(offset)))
+      }));
+  };
+
+  const emitSwipeEnd = (side, isOpen) => {
+    const direction = getSwipeDirectionForSide(side);
+    if (!direction) {
+      return;
+    }
+
+    publishSwipeViewEvent(
+      ownerHandle,
+      "swipeend",
+      swipeEndCallback,
+      JSON.stringify({
+        direction,
+        isOpen: Boolean(isOpen)
+      }));
+  };
+
+  const emitSwipeInvoke = (side, itemIndex, itemKind) => {
+    const direction = getSwipeDirectionForSide(side);
+    if (!direction) {
+      return;
+    }
+
+    publishSwipeViewEvent(
+      ownerHandle,
+      "swipeinvoke",
+      swipeInvokeCallback,
+      JSON.stringify({
+        direction,
+        itemIndex: Number.isInteger(itemIndex) ? itemIndex : 0,
+        itemKind: typeof itemKind === "string" && itemKind.length > 0 ? itemKind : "menu"
+      }));
+  };
+
+  const getOpenOffsetForSide = (side) => {
+    const extent = getSideExtent(side);
+    if (extent <= 0) {
+      return 0;
+    }
+
+    switch (side) {
+      case "left":
+      case "top":
+        return extent;
+      case "right":
+      case "bottom":
+        return -extent;
+      default:
+        return 0;
+    }
+  };
+
+  const getWrapperFromTarget = (target) => {
+    if (!(target instanceof Element) || typeof target.closest !== "function") {
+      return null;
+    }
+
+    return target.closest("[data-maui-sv-action-wrapper='true']");
+  };
+
+  const getOpenActionWrapperFromTarget = (target) => {
+    const wrapper = getWrapperFromTarget(target);
+    if (!(wrapper instanceof HTMLElement)) {
+      return null;
+    }
+
+    const side = wrapper.getAttribute("data-maui-sv-action-side") ?? "";
+    if (!side || side !== state.openSide || !isWrapperInteractive(wrapper)) {
+      return null;
+    }
+
+    return wrapper;
+  };
+
+  const hasInteractiveDescendantTarget = (target, wrapper) => {
+    if (!(target instanceof Element) || !(wrapper instanceof HTMLElement) || typeof target.closest !== "function") {
+      return false;
+    }
+
+    const interactiveSelector = [
+      "button",
+      "input",
+      "select",
+      "textarea",
+      "a[href]",
+      "[contenteditable='true']",
+      "[role='button']",
+      "[role='link']",
+      "[role='checkbox']",
+      "[role='radio']",
+      "[role='switch']",
+      "[role='combobox']",
+      "[tabindex]:not([tabindex='-1'])"
+    ].join(",");
+    const interactive = target.closest(interactiveSelector);
+    return interactive instanceof Element
+      && interactive !== wrapper
+      && wrapper.contains(interactive);
+  };
+
+  const isWrapperInteractive = (wrapper) => {
+    if (!(wrapper instanceof HTMLElement)) {
+      return false;
+    }
+
+    return wrapper.getAttribute("data-maui-sv-action-visible") === "true"
+      && wrapper.getAttribute("data-maui-sv-action-enabled") === "true";
+  };
+
+  const getFirstInvokableWrapper = (side) => {
+    const host = getActionHost(side);
+    if (!(host instanceof HTMLElement)) {
+      return null;
+    }
+
+    const wrappers = host.querySelectorAll("[data-maui-sv-action-wrapper='true']");
+    for (const wrapper of wrappers) {
+      if (isWrapperInteractive(wrapper)) {
+        return wrapper;
+      }
+    }
+
+    return null;
+  };
+
+  // The runtime owns gesture progress, active axis/side selection, offsets, and DOM visibility.
+  // Keep those mutations funneled through these helpers so closed/open invariants stay explicit.
+  const clearGestureTarget = () => {
+    state.side = "";
+    state.axis = "";
+  };
+
+  const setGestureTarget = (side) => {
+    state.side = typeof side === "string" ? side : "";
+    state.axis = state.side ? getSwipeAxisForSide(state.side) : "";
+  };
+
+  const releaseCapturedPointer = () => {
+    if (!state.captured || typeof owner.releasePointerCapture !== "function" || state.pointerId < 0) {
+      state.captured = false;
+      return;
+    }
+
+    try {
+      owner.releasePointerCapture(state.pointerId);
+    } catch {
+      // best effort
+    }
+
+    state.captured = false;
+  };
+
+  const stopTracking = () => {
+    state.tracking = false;
+    releaseCapturedPointer();
+    state.pointerId = -1;
+    state.dragDistance = 0;
+    state.startEmitted = false;
+  };
+
+  const abortTracking = () => {
+    state.tracking = false;
+    state.pointerId = -1;
+    state.captured = false;
+    state.dragDistance = 0;
+    state.startEmitted = false;
+  };
+
+  const beginTracking = (event) => {
+    state.tracking = true;
+    state.pointerId = event.pointerId;
+    state.startX = event.clientX;
+    state.startY = event.clientY;
+    setGestureTarget(state.openSide);
+    state.startOffset = state.currentOffset;
+    state.dragDistance = 0;
+    state.startEmitted = false;
+  };
+
+  const tryResolveTrackingSide = (dx, dy, absDx, absDy) => {
+    if (state.axis) {
+      return true;
+    }
+
+    if (absDx < 10 && absDy < 10) {
+      return false;
+    }
+
+    const preferHorizontal = absDx >= absDy;
+    const nextSide = preferHorizontal
+      ? (dx >= 0 ? "left" : "right")
+      : (dy >= 0 ? "top" : "bottom");
+    if (!(getSideExtent(nextSide) > 0)) {
+      abortTracking();
+      return false;
+    }
+
+    setGestureTarget(nextSide);
+    return true;
+  };
+
+  const ensureGestureStarted = (event, axisDistance) => {
+    if (state.startEmitted) {
+      return true;
+    }
+
+    if (axisDistance < 10) {
+      return false;
+    }
+
+    emitSwipeStart(state.side);
+    if (typeof owner.setPointerCapture === "function") {
+      try {
+        owner.setPointerCapture(event.pointerId);
+        state.captured = true;
+      } catch {
+        state.captured = false;
+      }
+    }
+
+    state.startEmitted = true;
+    return true;
+  };
+
+  const completeOpenState = (side, animated, emitEndEvent) => {
+    state.openSide = side;
+    setGestureTarget(side || state.openSide || "");
+    applyOffset(getOpenOffsetForSide(side), animated);
+    if (emitEndEvent && side) {
+      emitSwipeEnd(side, true);
+    }
+  };
+
+  const completeClosedState = (side, animated, emitEndEvent) => {
+    const resolvedSide = side || state.openSide || state.side;
+    state.openSide = "";
+    clearGestureTarget();
+    applyOffset(0, animated);
+    if (emitEndEvent && resolvedSide) {
+      emitSwipeEnd(resolvedSide, false);
+    }
+  };
+
+  const resolveBehaviorKeepsOpen = (side) => getSideBehavior(side) === "remainopen";
+
+  const invokeWrapper = (side, wrapper, animated) => {
+    if (!(wrapper instanceof HTMLElement) || !isWrapperInteractive(wrapper)) {
+      return false;
+    }
+
+    const itemIndex = Number.parseInt(wrapper.getAttribute("data-maui-sv-action-index") ?? "0", 10);
+    const itemKind = wrapper.getAttribute("data-maui-sv-action-kind") ?? "menu";
+    emitSwipeInvoke(side, Number.isFinite(itemIndex) ? itemIndex : 0, itemKind);
+    if (resolveBehaviorKeepsOpen(side)) {
+      const shouldEmitOpenEnd = state.openSide !== side;
+      completeOpenState(side, animated, shouldEmitOpenEnd);
+    } else {
+      completeClosedState(side, animated, true);
+    }
+
+    return true;
+  };
+
+  const finalizeTracking = (side, releaseWithTrigger) => {
+    const resolvedSide = side || state.side;
+    const extent = getSideExtent(resolvedSide);
+    const mode = getSideMode(resolvedSide);
+    const threshold = Math.min(state.config.threshold, extent > 0 ? extent : state.config.threshold);
+    const absOffset = Math.abs(state.currentOffset);
+    const startOpenProgress = Math.abs(state.startOffset);
+    const dragDistance = state.dragDistance;
+    const gestureStarted = state.startEmitted;
+    const openSideBeforeRelease = state.openSide;
+    const movedFurtherIntoOpen = absOffset > (startOpenProgress + 0.5);
+
+    stopTracking();
+
+    if (!gestureStarted) {
+      if (openSideBeforeRelease) {
+        setGestureTarget(openSideBeforeRelease);
+      } else {
+        clearGestureTarget();
+      }
+
+      return;
+    }
+
+    if (!resolvedSide || extent <= 0) {
+      completeClosedState(resolvedSide, true, true);
+      return;
+    }
+
+    if (releaseWithTrigger && mode === "execute" && absOffset >= threshold && dragDistance >= 10 && movedFurtherIntoOpen) {
+      const wrapper = getFirstInvokableWrapper(resolvedSide);
+      if (invokeWrapper(resolvedSide, wrapper, true)) {
+        return;
+      }
+    }
+
+    if (absOffset >= threshold) {
+      completeOpenState(resolvedSide, true, true);
+      return;
+    }
+
+    completeClosedState(resolvedSide, true, true);
+  };
+
+  state.requestOpen = (side, animated, emitEndEvent) => {
+    if (typeof side !== "string" || side.length === 0) {
+      return false;
+    }
+
+    const extent = getSideExtent(side);
+    if (!(extent > 0)) {
+      return false;
+    }
+
+    setGestureTarget(side);
+    completeOpenState(side, animated, emitEndEvent !== false);
+    return true;
+  };
+
+  state.requestClose = (animated) => {
+    const resolvedSide = state.openSide || state.side;
+    completeClosedState(resolvedSide, animated, true);
+    return true;
+  };
+
+  const pointerDownListener = (event) => {
+    if (!(event instanceof PointerEvent) || state.tracking || !isEnabled()) {
+      return;
+    }
+
+    if (event.pointerType !== "touch" && event.pointerType !== "pen") {
+      return;
+    }
+
+    if (getOpenActionWrapperFromTarget(event.target)) {
+      return;
+    }
+
+    beginTracking(event);
+  };
+
+  const pointerMoveListener = (event) => {
+    if (!(event instanceof PointerEvent) || !state.tracking || event.pointerId !== state.pointerId || !isEnabled()) {
+        return;
+    }
+
+    const dx = event.clientX - state.startX;
+    const dy = event.clientY - state.startY;
+    const absDx = Math.abs(dx);
+    const absDy = Math.abs(dy);
+
+    if (!tryResolveTrackingSide(dx, dy, absDx, absDy)) {
+      if (!state.tracking) {
+        return;
+      }
+    }
+
+    const axisDistance = state.axis === "horizontal" ? absDx : absDy;
+    if (!ensureGestureStarted(event, axisDistance)) {
+      return;
+    }
+
+    const extent = getSideExtent(state.side);
+    if (extent <= 0) {
+        return;
+    }
+
+    const rawOffset = state.startOffset + (state.axis === "horizontal" ? dx : dy);
+    const clampedOffset = clampOffsetForSide(state.side, rawOffset);
+    state.dragDistance = Math.max(state.dragDistance, Math.abs(state.axis === "horizontal" ? dx : dy));
+
+    applyOffset(clampedOffset, false);
+    emitSwipeChange(state.side, clampedOffset);
+    event.preventDefault();
+  };
+
+  const pointerUpListener = (event) => {
+    if (!(event instanceof PointerEvent) || event.pointerId !== state.pointerId) {
+      return;
+    }
+
+    finalizeTracking(state.side, true);
+  };
+
+  const pointerCancelListener = (event) => {
+    if (!state.tracking) {
+      return;
+    }
+
+    if (event instanceof PointerEvent && state.pointerId >= 0 && event.pointerId !== state.pointerId) {
+      return;
+    }
+
+    finalizeTracking(state.side, false);
+  };
+
+  const clickListener = (event) => {
+    if (!isEnabled()) {
+      return;
+    }
+
+    const wrapper = getWrapperFromTarget(event.target);
+    if (!(wrapper instanceof HTMLElement)) {
+      return;
+    }
+
+    const side = wrapper.getAttribute("data-maui-sv-action-side") ?? "";
+    if (!side || side !== state.openSide) {
+      return;
+    }
+
+    if ((wrapper.getAttribute("data-maui-sv-action-kind") ?? "menu") === "view"
+      && hasInteractiveDescendantTarget(event.target, wrapper)) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    invokeWrapper(side, wrapper, true);
+  };
+
+  applyOffset(0, false);
+
+  const subscriptionId = nextEventSubscriptionId++;
+  owner.addEventListener("pointerdown", pointerDownListener, { passive: true });
+  window.addEventListener("pointermove", pointerMoveListener, { passive: false, capture: true });
+  window.addEventListener("pointerup", pointerUpListener, true);
+  window.addEventListener("pointercancel", pointerCancelListener, true);
+  window.addEventListener("blur", pointerCancelListener);
+  owner.addEventListener("click", clickListener, true);
+  eventSubscriptions.set(subscriptionId, {
+    element: owner,
+    dispose: () => {
+      owner.removeEventListener("pointerdown", pointerDownListener);
+      window.removeEventListener("pointermove", pointerMoveListener, true);
+      window.removeEventListener("pointerup", pointerUpListener, true);
+      window.removeEventListener("pointercancel", pointerCancelListener, true);
+      window.removeEventListener("blur", pointerCancelListener);
+      owner.removeEventListener("click", clickListener, true);
+      completeClosedState(state.side || state.openSide, false, false);
+      delete owner.__mirageSwipeViewState;
+    }
+  });
+
+  owner.__mirageSwipeViewState = state;
+  return subscriptionId;
+}
+
+export function unsubscribeSwipeView(subscriptionId) {
+  removeEventSubscription(subscriptionId);
+}
+
+export function requestSwipeViewOpen(ownerHandle, side, animated, emitEndEvent) {
+  const owner = fromHandle(ownerHandle);
+  const state = owner?.__mirageSwipeViewState;
+  if (!(owner instanceof HTMLElement) || !state || typeof state.requestOpen !== "function") {
+    return false;
+  }
+
+  return state.requestOpen(side, !!animated, emitEndEvent);
+}
+
+export function requestSwipeViewClose(ownerHandle, animated) {
+  const owner = fromHandle(ownerHandle);
+  const state = owner?.__mirageSwipeViewState;
+  if (!(owner instanceof HTMLElement) || !state || typeof state.requestClose !== "function") {
+    return false;
+  }
+
+  return state.requestClose(!!animated);
 }
 
 export function setInputValue(elementHandle, value) {

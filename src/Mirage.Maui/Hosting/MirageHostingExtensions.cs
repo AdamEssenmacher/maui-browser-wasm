@@ -69,6 +69,8 @@ public static class MirageHostingExtensions
             handlers.AddHandler(typeof(Stepper), typeof(MirageStepperHandler));
             handlers.AddHandler(typeof(RefreshView), typeof(MirageRefreshViewHandler));
             handlers.AddHandler(typeof(ProgressBar), typeof(MirageProgressBarHandler));
+            handlers.AddHandler(typeof(SwipeView), typeof(MirageSwipeViewHandler));
+            handlers.AddHandler(typeof(SwipeItemView), typeof(MirageSwipeItemViewHandler));
             handlers.AddHandler(typeof(GraphicsView), typeof(MirageGraphicsViewHandler));
             handlers.AddHandler(typeof(IndicatorView), typeof(MirageIndicatorViewHandler));
             handlers.AddHandler(typeof(Image), typeof(MirageImageHandler));

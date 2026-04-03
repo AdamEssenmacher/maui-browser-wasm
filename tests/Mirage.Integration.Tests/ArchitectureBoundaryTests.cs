@@ -707,6 +707,49 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void BrowserPlatform_RegistersSwipeViewFamilyHandlersAsBuiltInControlNode_WithSwipeRuntimeSeam()
+    {
+        var repositoryRoot = GetRepositoryRoot();
+        var hostingPath = Path.Combine(repositoryRoot, "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        var swipeHandlerPath = Path.Combine(repositoryRoot, "src", "Mirage.Maui", "Handlers", "MirageSwipeViewHandler.cs");
+        var swipeItemViewHandlerPath = Path.Combine(repositoryRoot, "src", "Mirage.Maui", "Handlers", "MirageSwipeItemViewHandler.cs");
+        var coordinatorPath = Path.Combine(repositoryRoot, "src", "Mirage.Maui", "Handlers", "MirageRenderCoordinator.cs");
+        var runtimePath = Path.Combine(repositoryRoot, "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        var providerPath = Path.Combine(repositoryRoot, "src", "Mirage.Provider.Fluent", "FluentMirageComponentProvider.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+        Assert.True(File.Exists(swipeHandlerPath), $"Expected SwipeView handler file not found: {swipeHandlerPath}");
+        Assert.True(File.Exists(swipeItemViewHandlerPath), $"Expected SwipeItemView handler file not found: {swipeItemViewHandlerPath}");
+        Assert.True(File.Exists(coordinatorPath), $"Expected render coordinator file not found: {coordinatorPath}");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+        Assert.True(File.Exists(providerPath), $"Expected provider file not found: {providerPath}");
+
+        var hostingText = File.ReadAllText(hostingPath);
+        var swipeHandlerText = File.ReadAllText(swipeHandlerPath);
+        var swipeItemViewHandlerText = File.ReadAllText(swipeItemViewHandlerPath);
+        var coordinatorText = File.ReadAllText(coordinatorPath);
+        var runtimeText = File.ReadAllText(runtimePath);
+        var providerText = File.ReadAllText(providerPath);
+
+        Assert.Contains("typeof(SwipeView)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageSwipeViewHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(SwipeItemView)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("typeof(MirageSwipeItemViewHandler)", hostingText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.SwipeView", swipeHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryConfigureNodeSwipeView(", swipeHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryRequestNodeSwipeViewOpen(", swipeHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryRequestNodeSwipeViewClose(", swipeHandlerText, StringComparison.Ordinal);
+        Assert.Contains("MirageSingleContentHostHandler<SwipeItemView>", swipeItemViewHandlerText, StringComparison.Ordinal);
+        Assert.Contains("TryConfigureNodeSwipeView(", coordinatorText, StringComparison.Ordinal);
+        Assert.Contains("TryRequestNodeSwipeViewOpen(", coordinatorText, StringComparison.Ordinal);
+        Assert.Contains("TryRequestNodeSwipeViewClose(", coordinatorText, StringComparison.Ordinal);
+        Assert.Contains("TryConfigureNodeSwipeView(", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("TryRequestNodeSwipeViewOpen(", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("TryRequestNodeSwipeViewClose(", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("RemoveSwipeViewSubscriptionsForNode(operation.NodeId);", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("ComponentKind.SwipeView", providerText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void BrowserPlatform_RegistersGraphicsViewHandlerAsBuiltInCanvasControlNode()
     {
         var repositoryRoot = GetRepositoryRoot();

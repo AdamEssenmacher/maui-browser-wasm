@@ -50,7 +50,7 @@ public sealed class ControlsSampleHostFixture : IAsyncLifetime
         _sampleProcess = null;
     }
 
-    public async Task<IBrowserContext> NewContextAsync(int width = 1280, int height = 900)
+    public async Task<IBrowserContext> NewContextAsync(int width = 1280, int height = 900, bool hasTouch = false)
     {
         if (Browser is null)
         {
@@ -60,6 +60,7 @@ public sealed class ControlsSampleHostFixture : IAsyncLifetime
         return await Browser.NewContextAsync(new BrowserNewContextOptions
         {
             IgnoreHTTPSErrors = true,
+            HasTouch = hasTouch,
             ViewportSize = new ViewportSize
             {
                 Width = width,
