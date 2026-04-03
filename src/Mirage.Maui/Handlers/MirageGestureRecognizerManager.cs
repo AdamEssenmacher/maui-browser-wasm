@@ -30,6 +30,7 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
     private readonly HashSet<string> _baselineEvents;
     private readonly HashSet<string> _gestureOwnedEvents = new(StringComparer.Ordinal);
     private readonly List<PanGestureState> _activePanGestures = [];
+    private readonly Dictionary<long, int> _pendingSecondaryTapCounts = new();
     private readonly Action? _requestRender;
 
     private PinchGestureState? _activePinchGesture;
@@ -92,6 +93,7 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         _trackedRecognizers.Clear();
         _activePointers.Clear();
         _activePanGestures.Clear();
+        _pendingSecondaryTapCounts.Clear();
         _activePinchGesture = null;
         _suppressNextPrimaryClick = false;
         _suppressNextSecondaryContextMenu = false;
@@ -196,6 +198,7 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         }
 
         const ButtonsMask buttonMask = ButtonsMask.Secondary;
+        var clickCount = ResolveSecondaryTapCount(payload);
         foreach (var recognizer in EnumerateTapRecognizers())
         {
             if (!IsTapButtonMatch(recognizer, buttonMask))
@@ -203,7 +206,7 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
                 continue;
             }
 
-            if (Math.Max(1, recognizer.NumberOfTapsRequired) != Math.Max(1, payload.ClickCount))
+            if (Math.Max(1, recognizer.NumberOfTapsRequired) != clickCount)
             {
                 continue;
             }
@@ -221,6 +224,15 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
 
         var pointerId = payload.PointerId == 0 && _activePointers.Count == 0 ? 1 : payload.PointerId;
         var buttonMask = ResolveButtonMask(payload, defaultToPrimary: true);
+
+        if (buttonMask.HasFlag(ButtonsMask.Secondary) && payload.ClickCount > 0)
+        {
+            _pendingSecondaryTapCounts[pointerId] = payload.ClickCount;
+        }
+        else
+        {
+            _pendingSecondaryTapCounts.Remove(pointerId);
+        }
 
         _activePointers[pointerId] = new ActivePointer(
             pointerId,
@@ -842,12 +854,17 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
             return ButtonsMask.Secondary;
         }
 
-        if ((payload.Buttons & 1) != 0 || payload.Button == 0)
+        if ((payload.Buttons & 1) != 0)
         {
             return ButtonsMask.Primary;
         }
 
-        return defaultToPrimary ? ButtonsMask.Primary : 0;
+        if (payload.Button == 0 && payload.Buttons == 0)
+        {
+            return defaultToPrimary ? ButtonsMask.Primary : 0;
+        }
+
+        return 0;
     }
 
     private bool ArePrimaryPanPointers(long[] pointerIds)
@@ -866,6 +883,21 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         }
 
         return true;
+    }
+
+    private int ResolveSecondaryTapCount(MirageGesturePointerPayload payload)
+    {
+        if (payload.ClickCount > 0)
+        {
+            return Math.Max(1, payload.ClickCount);
+        }
+
+        if (_pendingSecondaryTapCounts.Remove(payload.PointerId, out var clickCount) && clickCount > 0)
+        {
+            return clickCount;
+        }
+
+        return 1;
     }
 
     private static int ToBrowserButtons(ButtonsMask buttonsMask)

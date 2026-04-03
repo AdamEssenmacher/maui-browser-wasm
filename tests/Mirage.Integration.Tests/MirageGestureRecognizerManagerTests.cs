@@ -463,7 +463,10 @@ public sealed class MirageGestureRecognizerManagerTests
     {
         var view = new ContentView();
         var updates = new List<GestureStatus>();
-        var pan = new PanGestureRecognizer();
+        var pan = new PanGestureRecognizer
+        {
+            TouchPoints = 2
+        };
         pan.PanUpdated += (_, args) => updates.Add(args.StatusType);
         view.GestureRecognizers.Add(pan);
 
@@ -475,6 +478,53 @@ public sealed class MirageGestureRecognizerManagerTests
         manager.OnRuntimeEvent("pointerup", CreatePointerPayload(pointerId: 1, x: 80, y: 60, clientX: 80, clientY: 60, button: 2, buttons: 0, clickCount: 1, isInsideBounds: true));
 
         Assert.Empty(updates);
+    }
+
+    [Fact]
+    public void GestureRecognizerManager_AuxiliaryButtonDrag_DoesNotStartPanSwipeOrSuppressNextPrimaryTap()
+    {
+        var view = new ContentView
+        {
+            WidthRequest = 220,
+            HeightRequest = 220
+        };
+
+        var panUpdates = new List<GestureStatus>();
+        var swipes = new List<SwipeDirection>();
+        var tapCount = 0;
+
+        var pan = new PanGestureRecognizer
+        {
+            TouchPoints = 2
+        };
+        pan.PanUpdated += (_, args) => panUpdates.Add(args.StatusType);
+        view.GestureRecognizers.Add(pan);
+
+        var swipe = new SwipeGestureRecognizer
+        {
+            Direction = SwipeDirection.Right
+        };
+        swipe.Swiped += (_, args) => swipes.Add(args.Direction);
+        view.GestureRecognizers.Add(swipe);
+
+        var tap = new TapGestureRecognizer();
+        tap.Tapped += (_, _) => tapCount++;
+        view.GestureRecognizers.Add(tap);
+
+        var platformView = MiragePlatformView.CreateControl(ComponentKind.ContentContainer);
+        using var manager = new MirageGestureRecognizerManager(view, platformView);
+
+        manager.OnRuntimeEvent("pointerdown", CreatePointerPayload(pointerId: 30, x: 30, y: 40, clientX: 30, clientY: 40, button: 1, buttons: 4, clickCount: 1, isInsideBounds: true));
+        manager.OnRuntimeEvent("pointermove", CreatePointerPayload(pointerId: 30, x: 120, y: 42, clientX: 120, clientY: 42, button: 1, buttons: 4, clickCount: 1, isInsideBounds: true));
+        manager.OnRuntimeEvent("pointerup", CreatePointerPayload(pointerId: 30, x: 120, y: 42, clientX: 120, clientY: 42, button: 1, buttons: 0, clickCount: 1, isInsideBounds: true));
+
+        manager.OnRuntimeEvent("pointerdown", CreatePointerPayload(pointerId: 31, x: 15, y: 18, clientX: 15, clientY: 18, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+        manager.OnRuntimeEvent("pointerup", CreatePointerPayload(pointerId: 31, x: 15, y: 18, clientX: 15, clientY: 18, button: 0, buttons: 0, clickCount: 1, isInsideBounds: true));
+        manager.OnRuntimeEvent("click", CreatePointerPayload(pointerId: 31, x: 15, y: 18, clientX: 15, clientY: 18, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+
+        Assert.Empty(panUpdates);
+        Assert.Empty(swipes);
+        Assert.Equal(1, tapCount);
     }
 
     [Fact]
@@ -511,6 +561,38 @@ public sealed class MirageGestureRecognizerManagerTests
 
         Assert.Equal(new Point(31, 40), positionInsideScrollView);
         Assert.Equal(new Point(53, 73), positionInsideContent);
+    }
+
+    [Fact]
+    public void GestureRecognizerManager_SecondaryDoubleTap_UsesPointerDownCount_WhenContextMenuDetailIsZero()
+    {
+        var view = new Label();
+        var eventLog = new List<string>();
+
+        var singleSecondaryTap = new TapGestureRecognizer
+        {
+            Buttons = ButtonsMask.Secondary
+        };
+        singleSecondaryTap.Tapped += (_, _) => eventLog.Add("single");
+
+        var doubleSecondaryTap = new TapGestureRecognizer
+        {
+            Buttons = ButtonsMask.Secondary,
+            NumberOfTapsRequired = 2
+        };
+        doubleSecondaryTap.Tapped += (_, _) => eventLog.Add("double");
+
+        view.GestureRecognizers.Add(singleSecondaryTap);
+        view.GestureRecognizers.Add(doubleSecondaryTap);
+
+        var platformView = MiragePlatformView.CreateControl(ComponentKind.Label);
+        using var manager = new MirageGestureRecognizerManager(view, platformView);
+
+        manager.OnRuntimeEvent("pointerdown", CreatePointerPayload(pointerId: 44, x: 10, y: 12, clientX: 50, clientY: 52, button: 2, buttons: 2, clickCount: 2, isInsideBounds: true));
+        manager.OnRuntimeEvent("pointerup", CreatePointerPayload(pointerId: 44, x: 10, y: 12, clientX: 50, clientY: 52, button: 2, buttons: 0, clickCount: 2, isInsideBounds: true));
+        manager.OnRuntimeEvent("contextmenu", CreatePointerPayload(pointerId: 44, x: 10, y: 12, clientX: 50, clientY: 52, button: 2, buttons: 2, clickCount: 0, isInsideBounds: true));
+
+        Assert.Equal(["double"], eventLog);
     }
 
     private static void DispatchSwipe(MirageGestureRecognizerManager manager, double startX, double startY, double endX, double endY)

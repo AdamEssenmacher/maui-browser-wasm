@@ -1424,7 +1424,7 @@ function buildPointerPayload(event, fallbackElement) {
   const pointerId = Number.isInteger(event.pointerId) ? event.pointerId : 0;
   const button = Number.isInteger(event.button) ? event.button : 0;
   const buttons = Number.isInteger(event.buttons) ? event.buttons : 0;
-  const clickCount = Number.isInteger(event.detail) && event.detail > 0 ? event.detail : 1;
+  const clickCount = Number.isInteger(event.detail) ? event.detail : 0;
   const eventType = typeof event.type === "string" ? event.type : "";
   const isInsideBounds = eventType === "pointerleave"
     ? false
