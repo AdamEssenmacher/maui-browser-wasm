@@ -467,6 +467,50 @@ public sealed class MirageGestureRecognizerManagerTests
     }
 
     [Fact]
+    public void GestureRecognizerManager_ThirdPointerLift_AfterPinchEnds_DoesNotFireSwipe()
+    {
+        var view = new ContentView
+        {
+            WidthRequest = 220,
+            HeightRequest = 220
+        };
+
+        var pinchStatuses = new List<GestureStatus>();
+        var swipes = new List<SwipeDirection>();
+
+        var pinch = new PinchGestureRecognizer();
+        pinch.PinchUpdated += (_, args) => pinchStatuses.Add(args.Status);
+        view.GestureRecognizers.Add(pinch);
+
+        var swipe = new SwipeGestureRecognizer
+        {
+            Direction = SwipeDirection.Right
+        };
+        swipe.Swiped += (_, args) => swipes.Add(args.Direction);
+        view.GestureRecognizers.Add(swipe);
+
+        var platformView = MiragePlatformView.CreateControl(ComponentKind.ContentContainer);
+        using var manager = new MirageGestureRecognizerManager(view, platformView);
+
+        manager.OnRuntimeEvent("pointerdown", CreatePointerPayload(pointerId: 1, x: 40, y: 120, clientX: 40, clientY: 120, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+        manager.OnRuntimeEvent("pointerdown", CreatePointerPayload(pointerId: 3, x: 20, y: 80, clientX: 20, clientY: 80, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+        manager.OnRuntimeEvent("pointerdown", CreatePointerPayload(pointerId: 2, x: 120, y: 120, clientX: 120, clientY: 120, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+
+        manager.OnRuntimeEvent("pointermove", CreatePointerPayload(pointerId: 1, x: 85, y: 120, clientX: 85, clientY: 120, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+        manager.OnRuntimeEvent("pointermove", CreatePointerPayload(pointerId: 2, x: 175, y: 120, clientX: 175, clientY: 120, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+        manager.OnRuntimeEvent("pointermove", CreatePointerPayload(pointerId: 3, x: 150, y: 82, clientX: 150, clientY: 82, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+
+        manager.OnRuntimeEvent("pointerup", CreatePointerPayload(pointerId: 1, x: 85, y: 120, clientX: 85, clientY: 120, button: 0, buttons: 0, clickCount: 1, isInsideBounds: true));
+        manager.OnRuntimeEvent("pointerup", CreatePointerPayload(pointerId: 3, x: 150, y: 82, clientX: 150, clientY: 82, button: 0, buttons: 0, clickCount: 1, isInsideBounds: true));
+        manager.OnRuntimeEvent("pointerup", CreatePointerPayload(pointerId: 2, x: 175, y: 120, clientX: 175, clientY: 120, button: 0, buttons: 0, clickCount: 1, isInsideBounds: true));
+
+        Assert.Equal(GestureStatus.Started, pinchStatuses[0]);
+        Assert.Contains(pinchStatuses, static status => status == GestureStatus.Running);
+        Assert.Equal(GestureStatus.Completed, pinchStatuses[^1]);
+        Assert.Empty(swipes);
+    }
+
+    [Fact]
     public void GestureRecognizerManager_DragWithoutClick_DoesNotSuppressNextUnrelatedTap()
     {
         var view = new ContentView

@@ -248,6 +248,11 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
             false,
             false);
 
+        if (_activePinchGesture is not null && _activePointers.TryGetValue(pointerId, out var pinchActivePointer))
+        {
+            _activePointers[pointerId] = pinchActivePointer with { ParticipatedInPinch = true };
+        }
+
         DispatchPointerRecognizers(static (recognizer, owner, getPosition, args, buttonsMask) =>
             GestureDispatchBridge.SendPointerPressed(recognizer, owner, getPosition, args, buttonsMask), payload);
 
@@ -436,7 +441,7 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
             _activePanGestures.Remove(activePan);
         }
 
-        foreach (var pointerId in pointerIds)
+        foreach (var pointerId in _activePointers.Keys.ToArray())
         {
             if (_activePointers.TryGetValue(pointerId, out var activePointer))
             {
