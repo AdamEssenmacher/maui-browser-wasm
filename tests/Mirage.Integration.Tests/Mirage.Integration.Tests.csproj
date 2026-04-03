@@ -20,6 +20,8 @@
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageFocusStateSynchronizer.cs" Link="Handlers\MirageFocusStateSynchronizer.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MiragePlatformView.cs" Link="Handlers\MiragePlatformView.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageRenderCoordinator.cs" Link="Handlers\MirageRenderCoordinator.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageCompositeRuntimeEventTarget.cs" Link="Handlers\MirageCompositeRuntimeEventTarget.cs" />
+    <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageGestureRecognizerManager.cs" Link="Handlers\MirageGestureRecognizerManager.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageHandlerDisconnect.cs" Link="Handlers\MirageHandlerDisconnect.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageViewHandler.cs" Link="Handlers\MirageViewHandler.cs" />
     <Compile Include="..\..\src\Mirage.Maui\Handlers\MirageSingleContentHostHandler.cs" Link="Handlers\MirageSingleContentHostHandler.cs" />

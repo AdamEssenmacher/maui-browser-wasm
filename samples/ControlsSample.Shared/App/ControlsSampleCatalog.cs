@@ -145,6 +145,62 @@ public static class ControlsSampleCatalog
             description: "Runnable in Mirage today: exercises MAUI OnPlatform default selection alongside browser-backed DeviceInfo idiom classification.",
             pageFactory: CreateDevicePage),
         new(
+            id: "tapgesturegallerypage",
+            title: "TapGestureGalleryPage",
+            upstreamPath: "Pages/Core/TapGestureGalleryPage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(TapGestureGalleryPage),
+            description: "Runnable in Mirage today: exercises TapGestureRecognizer primary/secondary tap routing, multi-tap counts, commands, and GetPosition semantics.",
+            pageFactory: CreateTapGestureGalleryPage),
+        new(
+            id: "pointergesturegallerypage",
+            title: "PointerGestureGalleryPage",
+            upstreamPath: "Pages/Core/PointerGestureGalleryPage.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(PointerGestureGalleryPage),
+            description: "Runnable in Mirage today: exercises PointerGestureRecognizer hover, moved, pressed, released, command routing, and position reporting.",
+            pageFactory: CreatePointerGestureGalleryPage),
+        new(
+            id: "pangesturegallery",
+            title: "PanGestureGallery",
+            upstreamPath: "Pages/Core/PanGestureGalleries/PanGestureGallery.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(PanGestureGallery),
+            description: "Runnable in Mirage today: exposes the upstream PanGesture gallery navigation surface for playground and event-driven pan scenarios.",
+            pageFactory: CreatePanGestureGallery),
+        new(
+            id: "pangestureeventsgallery",
+            title: "PanGestureEventsGallery",
+            upstreamPath: "Pages/Core/PanGestureGalleries/PanGestureEventsGallery.xaml",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(PanGestureEventsGallery),
+            description: "Runnable in Mirage today: exercises PanGestureRecognizer started/running/completed event reporting with cumulative deltas.",
+            pageFactory: CreatePanGestureEventsGallery),
+        new(
+            id: "pangestureplaygroundgallery",
+            title: "PanGesturePlaygroundGallery",
+            upstreamPath: "Pages/Core/PanGestureGalleries/PanGesturePlaygroundGallery.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(PanGesturePlaygroundGallery),
+            description: "Runnable in Mirage today: exercises shared pan and pinch recognizers on a movable/zoomable content surface.",
+            pageFactory: CreatePanGesturePlaygroundGallery),
+        new(
+            id: "pinchgesturetestpage",
+            title: "PinchGestureTestPage",
+            upstreamPath: "Pages/Core/PinchGestureTestPage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(PinchGestureTestPage),
+            description: "Runnable in Mirage today: exercises PinchGestureRecognizer add/remove flow plus scale and scale-origin driven image transforms.",
+            pageFactory: CreatePinchGestureTestPage),
+        new(
+            id: "swipegesturegallerypage",
+            title: "SwipeGestureGalleryPage",
+            upstreamPath: "Pages/Core/SwipeGestureGalleryPage.cs",
+            status: ControlsSampleStatus.Runnable,
+            pageType: typeof(SwipeGestureGalleryPage),
+            description: "Runnable in Mirage today: exercises SwipeGestureRecognizer directional recognition across left, right, up, and down gestures.",
+            pageFactory: CreateSwipeGestureGalleryPage),
+        new(
             id: "contentpagegallery",
             title: "ContentPageGallery",
             upstreamPath: "Pages/Core/ContentPageGalleries/ContentPageGallery.cs",
@@ -446,6 +502,13 @@ public static class ControlsSampleCatalog
             ["appthemebindingpage"] = ControlsSampleCategory.Core,
             ["brushespage"] = ControlsSampleCategory.Core,
             ["devicepage"] = ControlsSampleCategory.Core,
+            ["tapgesturegallerypage"] = ControlsSampleCategory.Core,
+            ["pointergesturegallerypage"] = ControlsSampleCategory.Core,
+            ["pangesturegallery"] = ControlsSampleCategory.Core,
+            ["pangestureeventsgallery"] = ControlsSampleCategory.Core,
+            ["pangestureplaygroundgallery"] = ControlsSampleCategory.Core,
+            ["pinchgesturetestpage"] = ControlsSampleCategory.Core,
+            ["swipegesturegallerypage"] = ControlsSampleCategory.Core,
             ["contentpagegallery"] = ControlsSampleCategory.Core,
             ["transformationspage"] = ControlsSampleCategory.Core,
             ["borderpage"] = ControlsSampleCategory.Core,
@@ -637,6 +700,135 @@ public static class ControlsSampleCatalog
             "Desktop",
             "TV",
             "Watch");
+
+        return page;
+    }
+
+    private static Page CreateTapGestureGalleryPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new TapGestureGalleryPage();
+
+        SetNamedElementAutomationId(page, "windowPosition", "controls-sample-tapgesturepage-window-position");
+        SetNamedElementAutomationId(page, "relativeToToggleButtonPosition", "controls-sample-tapgesturepage-toggle-position");
+        SetNamedElementAutomationId(page, "relativeToContainerPosition", "controls-sample-tapgesturepage-self-position");
+        SetNamedElementAutomationId(page, "changeColorBoxView", "controls-sample-tapgesturepage-status");
+        SetNamedElementAutomationId(page, "toggleButton", "controls-sample-tapgesturepage-toggle-single");
+        SetLabelAutomationIdByTextCandidates(page, "controls-sample-tapgesturepage-single", "Tap me!");
+        SetLabelAutomationIdByTextCandidates(page, "controls-sample-tapgesturepage-double", "Double Tap me!! Right Clicking Me Shouldn't Do Anything!");
+        SetLabelAutomationIdByTextCandidates(page, "controls-sample-tapgesturepage-secondary", "Right click me¡");
+        SetLabelAutomationIdByTextCandidates(page, "controls-sample-tapgesturepage-primary-secondary", "Right or Left click me¡");
+        SetLabelAutomationIdByTextCandidates(page, "controls-sample-tapgesturepage-double-either", "Double Click Me! ");
+        SetLabelAutomationIdByTextCandidates(page, "controls-sample-tapgesturepage-triple", "Triple click me!!!");
+
+        return page;
+    }
+
+    private static Page CreatePointerGestureGalleryPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new PointerGestureGalleryPage();
+
+        SetNamedElementAutomationId(page, "pgrLabel", "controls-sample-pointergesturepage-press-target");
+        SetNamedElementAutomationId(page, "pgrPositionLabel", "controls-sample-pointergesturepage-press-status");
+        SetNamedElementAutomationId(page, "pgrPositionToWindow", "controls-sample-pointergesturepage-press-window-position");
+        SetNamedElementAutomationId(page, "pgrPositionToThisLabel", "controls-sample-pointergesturepage-press-self-position");
+        SetNamedElementAutomationId(page, "hoverLabel", "controls-sample-pointergesturepage-hover-target");
+        SetNamedElementAutomationId(page, "positionLabel", "controls-sample-pointergesturepage-hover-status");
+        SetNamedElementAutomationId(page, "positionToWindow", "controls-sample-pointergesturepage-hover-window-position");
+        SetNamedElementAutomationId(page, "positionToThisLabel", "controls-sample-pointergesturepage-hover-self-position");
+        SetNamedElementAutomationId(page, "colorfulHoverLabel", "controls-sample-pointergesturepage-color-target");
+
+        return page;
+    }
+
+    private static Page CreatePanGestureGallery(IServiceProvider services)
+    {
+        _ = services;
+        var page = new PanGestureGallery();
+
+        SetButtonAutomationIdByText(page, "PanGesture Playground", "controls-sample-pangesturegallery-open-playground");
+        SetButtonAutomationIdByText(page, "PanGesture Events Gallery", "controls-sample-pangesturegallery-open-events");
+
+        return page;
+    }
+
+    private static Page CreatePanGestureEventsGallery(IServiceProvider services)
+    {
+        _ = services;
+        var page = new PanGestureEventsGallery();
+
+        SetNamedElementAutomationId(page, "InfoLabel", "controls-sample-pangestureevents-info");
+        var topGrid = FindDescendants<Grid>(page)
+            .FirstOrDefault(candidate => candidate.GestureRecognizers.OfType<PanGestureRecognizer>().Any());
+        if (topGrid is not null && string.IsNullOrWhiteSpace(topGrid.AutomationId))
+        {
+            topGrid.AutomationId = "controls-sample-pangestureevents-target";
+        }
+
+        return page;
+    }
+
+    private static Page CreatePanGesturePlaygroundGallery(IServiceProvider services)
+    {
+        _ = services;
+        var page = new PanGesturePlaygroundGallery();
+
+        SetLabelAutomationIdByTextCandidates(page, "controls-sample-pangestureplayground-status", "Use two fingers to pinch. Use one finger to pan.");
+        var container = FindDescendants<PanGesturePlaygroundGallery.PanContainer>(page).FirstOrDefault();
+        if (container is not null && string.IsNullOrWhiteSpace(container.AutomationId))
+        {
+            container.AutomationId = "controls-sample-pangestureplayground-surface";
+        }
+
+        var image = FindDescendants<Image>(page).FirstOrDefault();
+        if (image is not null && string.IsNullOrWhiteSpace(image.AutomationId))
+        {
+            image.AutomationId = "controls-sample-pangestureplayground-image";
+        }
+
+        return page;
+    }
+
+    private static Page CreatePinchGestureTestPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new PinchGestureTestPage();
+
+        SetButtonAutomationIdByText(page, "add pinch gesture", "controls-sample-pinchgesturepage-add");
+        SetButtonAutomationIdByText(page, "remove pinch gesture", "controls-sample-pinchgesturepage-remove");
+        var container = FindDescendants<PinchToZoomContainer>(page).FirstOrDefault();
+        if (container is not null && string.IsNullOrWhiteSpace(container.AutomationId))
+        {
+            container.AutomationId = "controls-sample-pinchgesturepage-surface";
+        }
+
+        var image = FindDescendants<Image>(page).FirstOrDefault();
+        if (image is not null && string.IsNullOrWhiteSpace(image.AutomationId))
+        {
+            image.AutomationId = "controls-sample-pinchgesturepage-image";
+        }
+
+        return page;
+    }
+
+    private static Page CreateSwipeGestureGalleryPage(IServiceProvider services)
+    {
+        _ = services;
+        var page = new SwipeGestureGalleryPage();
+
+        SetLabelAutomationIdByTextCandidates(page, "controls-sample-swipegesturepage-status", "Use one finger and swipe inside the gray box.");
+        var container = FindDescendants<SwipeGestureGalleryPage.SwipeContainer>(page).FirstOrDefault();
+        if (container is not null && string.IsNullOrWhiteSpace(container.AutomationId))
+        {
+            container.AutomationId = "controls-sample-swipegesturepage-container";
+        }
+
+        var image = FindDescendants<Image>(page).FirstOrDefault();
+        if (image is not null && string.IsNullOrWhiteSpace(image.AutomationId))
+        {
+            image.AutomationId = "controls-sample-swipegesturepage-target";
+        }
 
         return page;
     }

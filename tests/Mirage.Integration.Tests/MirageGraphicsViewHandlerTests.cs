@@ -406,6 +406,31 @@ public sealed class MirageGraphicsViewHandlerTests
             graphicsView.InteractionLog);
     }
 
+    [Fact]
+    public void GraphicsViewHandler_AttachedGestureRecognizers_CoexistWithDirectInteractionRouting()
+    {
+        var coordinator = new CanvasCoordinatorProbe();
+        var graphicsView = new TestGraphicsView();
+        var tapCount = 0;
+        var tap = new TapGestureRecognizer();
+        tap.Tapped += (_, _) => tapCount++;
+        graphicsView.GestureRecognizers.Add(tap);
+
+        var (handler, _, _) = CreateAttachedHandler(graphicsView, coordinator);
+
+        coordinator.OnEvent(handler.PlatformView.NodeId, "pointerdown", CreateGesturePointerPayload(pointerId: 2, x: 30, y: 32, clientX: 30, clientY: 32, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+        coordinator.OnEvent(handler.PlatformView.NodeId, "pointerup", CreateGesturePointerPayload(pointerId: 2, x: 42, y: 44, clientX: 42, clientY: 44, button: 0, buttons: 0, clickCount: 1, isInsideBounds: true));
+        coordinator.OnEvent(handler.PlatformView.NodeId, "click", CreateGesturePointerPayload(pointerId: 2, x: 42, y: 44, clientX: 42, clientY: 44, button: 0, buttons: 1, clickCount: 1, isInsideBounds: true));
+
+        Assert.Equal(1, tapCount);
+        Assert.Equal(
+            [
+                "start:[30,32]",
+                "end:[42,44]:inside=True"
+            ],
+            graphicsView.InteractionLog);
+    }
+
     private static string CreatePointerPayload(long pointerId, float x, float y, bool isInsideBounds)
     {
         return JsonSerializer.Serialize(new
@@ -414,6 +439,23 @@ public sealed class MirageGraphicsViewHandlerTests
             pointerType = "mouse",
             x,
             y,
+            isInsideBounds
+        });
+    }
+
+    private static string CreateGesturePointerPayload(long pointerId, float x, float y, float clientX, float clientY, int button, int buttons, int clickCount, bool isInsideBounds)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            pointerId,
+            pointerType = "mouse",
+            x,
+            y,
+            clientX,
+            clientY,
+            button,
+            buttons,
+            clickCount,
             isInsideBounds
         });
     }
@@ -440,6 +482,7 @@ public sealed class MirageGraphicsViewHandlerTests
     private sealed class CanvasCoordinatorProbe : IMirageRenderCoordinator
     {
         private readonly Queue<Action> _pendingDelayedActions = [];
+        private readonly Dictionary<string, IMirageRuntimeEventTarget> _eventTargets = new(StringComparer.Ordinal);
         private int _nodeIdCounter;
 
         public int ConfigureCanvasCallCount { get; private set; }
@@ -466,17 +509,28 @@ public sealed class MirageGraphicsViewHandlerTests
 
         public void Register(MiragePlatformView platformView, IMirageRuntimeEventTarget? eventTarget)
         {
-            _ = eventTarget;
             if (string.IsNullOrWhiteSpace(platformView.NodeId))
             {
                 var localId = Interlocked.Increment(ref _nodeIdCounter);
                 platformView.AssignNodeId($"mirage-graphics-node-{localId:D4}");
             }
+
+            if (eventTarget is null)
+            {
+                _eventTargets.Remove(platformView.NodeId);
+            }
+            else
+            {
+                _eventTargets[platformView.NodeId] = eventTarget;
+            }
         }
 
         public void Unregister(MiragePlatformView platformView)
         {
-            _ = platformView;
+            if (!string.IsNullOrWhiteSpace(platformView.NodeId))
+            {
+                _eventTargets.Remove(platformView.NodeId);
+            }
         }
 
         public void SetRoot(MiragePlatformView? root)
@@ -529,6 +583,14 @@ public sealed class MirageGraphicsViewHandlerTests
             left = 0;
             top = 0;
             return false;
+        }
+
+        public void OnEvent(string nodeId, string eventName, string? payload)
+        {
+            if (_eventTargets.TryGetValue(nodeId, out var target))
+            {
+                target.OnRuntimeEvent(eventName, payload);
+            }
         }
 
         public bool TrySetNodeScrollPosition(string nodeId, double left, double top, out double actualLeft, out double actualTop)
@@ -618,13 +680,6 @@ public sealed class MirageGraphicsViewHandlerTests
             return string.IsNullOrWhiteSpace(LastCanvasJson)
                 ? null
                 : JsonSerializer.Deserialize<CanvasPayloadProbe>(LastCanvasJson, JsonOptions);
-        }
-
-        public void OnEvent(string nodeId, string eventName, string? payload)
-        {
-            _ = nodeId;
-            _ = eventName;
-            _ = payload;
         }
 
         public void FlushAllDelayed()

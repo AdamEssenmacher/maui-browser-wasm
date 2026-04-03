@@ -1601,7 +1601,7 @@ public sealed class MirageRuntime : IMirageRuntime
         {
             return controlDescriptor.EventMappings.TryGetValue(eventName, out var mapped)
                 ? mapped
-                : new ProviderEventDescriptor(eventName);
+                : CreateFallbackEventDescriptor(eventName);
         }
 
         if (node.TryGetWebDescriptor(out var webDescriptor))
@@ -1613,10 +1613,26 @@ public sealed class MirageRuntime : IMirageRuntime
 
             return webDescriptor.EventMappings.TryGetValue(eventName, out var mapped)
                 ? mapped
-                : new ProviderEventDescriptor(eventName);
+                : CreateFallbackEventDescriptor(eventName);
         }
 
-        return new ProviderEventDescriptor(eventName);
+        return CreateFallbackEventDescriptor(eventName);
+    }
+
+    private static ProviderEventDescriptor CreateFallbackEventDescriptor(string eventName)
+    {
+        return eventName switch
+        {
+            "click" => new ProviderEventDescriptor("click", EventTarget.Self, EventPayloadKind.Pointer),
+            "contextmenu" => new ProviderEventDescriptor("contextmenu", EventTarget.Self, EventPayloadKind.Pointer),
+            "pointerdown" => new ProviderEventDescriptor("pointerdown", EventTarget.Self, EventPayloadKind.Pointer),
+            "pointermove" => new ProviderEventDescriptor("pointermove", EventTarget.Self, EventPayloadKind.Pointer),
+            "pointerup" => new ProviderEventDescriptor("pointerup", EventTarget.Self, EventPayloadKind.Pointer),
+            "pointercancel" => new ProviderEventDescriptor("pointercancel", EventTarget.Self, EventPayloadKind.Pointer),
+            "pointerenter" => new ProviderEventDescriptor("pointerenter", EventTarget.Self, EventPayloadKind.Pointer),
+            "pointerleave" => new ProviderEventDescriptor("pointerleave", EventTarget.Self, EventPayloadKind.Pointer),
+            _ => new ProviderEventDescriptor(eventName)
+        };
     }
 
     private void ApplyDetachEvent(DetachEventOperation operation)

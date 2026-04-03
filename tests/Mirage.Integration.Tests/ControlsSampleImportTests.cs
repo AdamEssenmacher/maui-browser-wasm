@@ -96,40 +96,7 @@ public sealed class ControlsSampleImportTests
     [Fact]
     public void AppThemeBindingPage_PageFactory_AssignsExpectedAutomationIds()
     {
-        var originalSynchronizationContext = SynchronizationContext.Current;
-        var originalDispatcherProvider = DispatcherProvider.Current;
-        Exception? exception = null;
-        Page? createdPage = null;
-
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(new ImmediateSynchronizationContext());
-            DispatcherProvider.SetCurrent(new BrowserDispatcherProvider());
-
-            var dispatcher = Dispatcher.GetForCurrentThread();
-            Assert.NotNull(dispatcher);
-
-            var dispatchSucceeded = dispatcher!.Dispatch(() =>
-            {
-                _ = new ControlsSampleApp();
-#pragma warning disable CS0612 // IFontNamedSizeService is required for upstream sample compatibility controls.
-                DependencyService.Register<IFontNamedSizeService, TestFontNamedSizeService>();
-#pragma warning restore CS0612
-
-                var entry = Assert.Single(ControlsSampleCatalog.All, candidate => candidate.Id == "appthemebindingpage");
-                exception = Record.Exception(() => createdPage = entry.CreatePage(NullServiceProvider.Instance));
-            });
-
-            Assert.True(dispatchSucceeded);
-        }
-        finally
-        {
-            DispatcherProvider.SetCurrent(originalDispatcherProvider);
-            SynchronizationContext.SetSynchronizationContext(originalSynchronizationContext);
-        }
-
-        Assert.Null(exception);
-        Assert.NotNull(createdPage);
+        var createdPage = CreateCatalogPage("appthemebindingpage");
 
         var labels = FindDescendants<Label>(createdPage!).ToArray();
 
@@ -140,6 +107,58 @@ public sealed class ControlsSampleImportTests
         Assert.Equal(
             "This text use LightSecondaryColor Resource (Orange Color) in light mode, and DarkSecondaryColor Resource (Teal Color) in dark mode.",
             resourceLabel.Text);
+    }
+
+    [Theory]
+    [InlineData("tapgesturegallerypage", "Pages/Core/TapGestureGalleryPage.cs", typeof(TapGestureGalleryPage))]
+    [InlineData("pointergesturegallerypage", "Pages/Core/PointerGestureGalleryPage.xaml", typeof(PointerGestureGalleryPage))]
+    [InlineData("pangesturegallery", "Pages/Core/PanGestureGalleries/PanGestureGallery.cs", typeof(PanGestureGallery))]
+    [InlineData("pangestureeventsgallery", "Pages/Core/PanGestureGalleries/PanGestureEventsGallery.xaml", typeof(PanGestureEventsGallery))]
+    [InlineData("pangestureplaygroundgallery", "Pages/Core/PanGestureGalleries/PanGesturePlaygroundGallery.cs", typeof(PanGesturePlaygroundGallery))]
+    [InlineData("pinchgesturetestpage", "Pages/Core/PinchGestureTestPage.cs", typeof(PinchGestureTestPage))]
+    [InlineData("swipegesturegallerypage", "Pages/Core/SwipeGestureGalleryPage.cs", typeof(SwipeGestureGalleryPage))]
+    public void GestureGalleryCatalogEntries_AreRunnableCore(string entryId, string upstreamPath, Type pageType)
+    {
+        var entry = Assert.Single(ControlsSampleCatalog.All, candidate => candidate.Id == entryId);
+
+        Assert.Equal(upstreamPath, entry.UpstreamPath);
+        Assert.Equal(ControlsSampleStatus.Runnable, entry.Status);
+        Assert.Equal(ControlsSampleCategory.Core, entry.Category);
+        Assert.Equal(pageType, entry.PageType);
+        Assert.NotNull(entry.PageFactory);
+    }
+
+    [Fact]
+    public void GestureGalleryPageFactories_AssignExpectedAutomationIds()
+    {
+        var tapPage = CreateCatalogPage("tapgesturegallerypage");
+        Assert.Single(FindDescendants<Button>(tapPage), button => button.AutomationId == "controls-sample-tapgesturepage-toggle-single");
+        Assert.Single(FindDescendants<Label>(tapPage), label => label.AutomationId == "controls-sample-tapgesturepage-single");
+        Assert.Single(FindDescendants<Label>(tapPage), label => label.AutomationId == "controls-sample-tapgesturepage-status");
+
+        var pointerPage = CreateCatalogPage("pointergesturegallerypage");
+        Assert.Single(FindDescendants<Label>(pointerPage), label => label.AutomationId == "controls-sample-pointergesturepage-press-target");
+        Assert.Single(FindDescendants<Label>(pointerPage), label => label.AutomationId == "controls-sample-pointergesturepage-color-target");
+
+        var panEventsPage = CreateCatalogPage("pangestureeventsgallery");
+        Assert.Single(FindDescendants<Grid>(panEventsPage), grid => grid.AutomationId == "controls-sample-pangestureevents-target");
+        Assert.Single(FindDescendants<Label>(panEventsPage), label => label.AutomationId == "controls-sample-pangestureevents-info");
+
+        var panPlaygroundPage = CreateCatalogPage("pangestureplaygroundgallery");
+        Assert.Single(
+            FindDescendants<PanGesturePlaygroundGallery.PanContainer>(panPlaygroundPage),
+            container => container.AutomationId == "controls-sample-pangestureplayground-surface");
+        Assert.Single(FindDescendants<Image>(panPlaygroundPage), image => image.AutomationId == "controls-sample-pangestureplayground-image");
+
+        var pinchPage = CreateCatalogPage("pinchgesturetestpage");
+        Assert.Single(FindDescendants<Button>(pinchPage), button => button.AutomationId == "controls-sample-pinchgesturepage-add");
+        Assert.Single(
+            FindDescendants<PinchToZoomContainer>(pinchPage),
+            container => container.AutomationId == "controls-sample-pinchgesturepage-surface");
+
+        var swipePage = CreateCatalogPage("swipegesturegallerypage");
+        Assert.Single(FindDescendants<Label>(swipePage), label => label.AutomationId == "controls-sample-swipegesturepage-status");
+        Assert.Single(FindDescendants<Image>(swipePage), image => image.AutomationId == "controls-sample-swipegesturepage-target");
     }
 
     [Fact]
@@ -334,6 +353,45 @@ public sealed class ControlsSampleImportTests
         }
 
         throw new DirectoryNotFoundException("Unable to locate repository root containing Mirage.sln.");
+    }
+
+    private static Page CreateCatalogPage(string entryId)
+    {
+        var originalSynchronizationContext = SynchronizationContext.Current;
+        var originalDispatcherProvider = DispatcherProvider.Current;
+        Exception? exception = null;
+        Page? createdPage = null;
+
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(new ImmediateSynchronizationContext());
+            DispatcherProvider.SetCurrent(new BrowserDispatcherProvider());
+
+            var dispatcher = Dispatcher.GetForCurrentThread();
+            Assert.NotNull(dispatcher);
+
+            var dispatchSucceeded = dispatcher!.Dispatch(() =>
+            {
+                _ = new ControlsSampleApp();
+#pragma warning disable CS0612 // IFontNamedSizeService is required for upstream sample compatibility controls.
+                DependencyService.Register<IFontNamedSizeService, TestFontNamedSizeService>();
+#pragma warning restore CS0612
+
+                var entry = Assert.Single(ControlsSampleCatalog.All, candidate => candidate.Id == entryId);
+                exception = Record.Exception(() => createdPage = entry.CreatePage(NullServiceProvider.Instance));
+            });
+
+            Assert.True(dispatchSucceeded);
+        }
+        finally
+        {
+            DispatcherProvider.SetCurrent(originalDispatcherProvider);
+            SynchronizationContext.SetSynchronizationContext(originalSynchronizationContext);
+        }
+
+        Assert.Null(exception);
+        Assert.NotNull(createdPage);
+        return createdPage!;
     }
 
     private static IEnumerable<TElement> FindDescendants<TElement>(Element root)

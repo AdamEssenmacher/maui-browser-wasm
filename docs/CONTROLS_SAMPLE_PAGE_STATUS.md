@@ -70,18 +70,18 @@ Visual legend:
 | `ModalPage.xaml` | `Pages/Core/ModalPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `MultiWindowPage.xaml` | `Pages/Core/MultiWindowPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `NavigationGallery.xaml` | `Pages/Core/NavigationGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `PanGestureEventsGallery.xaml` | `Pages/Core/PanGestureGalleries/PanGestureEventsGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `PanGestureGallery.cs` | `Pages/Core/PanGestureGalleries/PanGestureGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `PanGesturePlaygroundGallery.cs` | `Pages/Core/PanGestureGalleries/PanGesturePlaygroundGallery.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `PinchGestureTestPage.cs` | `Pages/Core/PinchGestureTestPage.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `PointerGestureGalleryPage.xaml` | `Pages/Core/PointerGestureGalleryPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
+| `PanGestureEventsGallery.xaml` | `Pages/Core/PanGestureGalleries/PanGestureEventsGallery.xaml` | `[x]` | `[x]` | `[ ]` |
+| `PanGestureGallery.cs` | `Pages/Core/PanGestureGalleries/PanGestureGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `PanGesturePlaygroundGallery.cs` | `Pages/Core/PanGestureGalleries/PanGesturePlaygroundGallery.cs` | `[x]` | `[x]` | `[ ]` |
+| `PinchGestureTestPage.cs` | `Pages/Core/PinchGestureTestPage.cs` | `[x]` | `[x]` | `[ ]` |
+| `PointerGestureGalleryPage.xaml` | `Pages/Core/PointerGestureGalleryPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `SemanticsPage.xaml` | `Pages/Core/SemanticsPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `InvalidateShadowHostPage.xaml` | `Pages/Core/ShadowGalleries/InvalidateShadowHostPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ShadowPage.cs` | `Pages/Core/ShadowGalleries/ShadowPage.cs` | `[ ]` | `[ ]` | `[ ]` |
 | `ShadowPlaygroundPage.xaml` | `Pages/Core/ShadowGalleries/ShadowPlaygroundPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `ShellChromeGallery.xaml` | `Pages/Core/ShellGalleries/ShellChromeGallery.xaml` | `[ ]` | `[ ]` | `[ ]` |
-| `SwipeGestureGalleryPage.cs` | `Pages/Core/SwipeGestureGalleryPage.cs` | `[ ]` | `[ ]` | `[ ]` |
-| `TapGestureGalleryPage.cs` | `Pages/Core/TapGestureGalleryPage.cs` | `[ ]` | `[ ]` | `[ ]` |
+| `SwipeGestureGalleryPage.cs` | `Pages/Core/SwipeGestureGalleryPage.cs` | `[x]` | `[x]` | `[ ]` |
+| `TapGestureGalleryPage.cs` | `Pages/Core/TapGestureGalleryPage.cs` | `[x]` | `[x]` | `[ ]` |
 | `ToolbarPage.xaml` | `Pages/Core/ToolbarPage.xaml` | `[ ]` | `[ ]` | `[ ]` |
 | `TransformationsPage.xaml` | `Pages/Core/TransformationsPage.xaml` | `[x]` | `[x]` | `[ ]` |
 | `WindowTitleBar.xaml` | `Pages/Core/WindowTitleBar.xaml` | `[ ]` | `[ ]` | `[ ]` |
