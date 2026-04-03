@@ -388,6 +388,7 @@ public sealed class MirageRuntime : IMirageRuntime
             : 0;
         var subscriptionId = node.Element.ConfigureWebView(
             configurationJson,
+            () => _eventSink?.OnEvent(nodeId, "navigating", node.Element.ConsumeWebViewEventPayload("navigating")),
             () => _eventSink?.OnEvent(nodeId, "navigated", node.Element.ConsumeWebViewEventPayload("navigated")),
             () => _eventSink?.OnEvent(nodeId, "evalresult", node.Element.ConsumeWebViewEventPayload("evalresult")));
         if (subscriptionId <= 0)
@@ -402,6 +403,16 @@ public sealed class MirageRuntime : IMirageRuntime
 
         _webViewSubscriptions[nodeId] = new WebViewSubscription(subscriptionId);
         return true;
+    }
+
+    public bool TryRequestNodeWebViewNavigate(string nodeId, string url)
+    {
+        if (string.IsNullOrWhiteSpace(url) || !_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        return node.Element.RequestWebViewNavigate(url);
     }
 
     public bool TryRequestNodeWebViewGoBack(string nodeId)

@@ -193,13 +193,15 @@ public sealed class DomElement
 
     public int ConfigureWebView(
         string configurationJson,
+        Action navigatingCallback,
         Action navigatedCallback,
         Action evalResultCallback)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(configurationJson);
+        ArgumentNullException.ThrowIfNull(navigatingCallback);
         ArgumentNullException.ThrowIfNull(navigatedCallback);
         ArgumentNullException.ThrowIfNull(evalResultCallback);
-        return DomApi.ConfigureWebView(Handle, configurationJson, navigatedCallback, evalResultCallback);
+        return DomApi.ConfigureWebView(Handle, configurationJson, navigatingCallback, navigatedCallback, evalResultCallback);
     }
 
     public string? ConsumeWebViewEventPayload(string eventName)
@@ -211,6 +213,12 @@ public sealed class DomElement
     public static void UnsubscribeWebView(int subscriptionId) => DomApi.UnsubscribeWebView(subscriptionId);
 
     public bool RequestWebViewGoBack() => DomApi.RequestWebViewGoBack(Handle);
+
+    public bool RequestWebViewNavigate(string url)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(url);
+        return DomApi.RequestWebViewNavigate(Handle, url);
+    }
 
     public bool RequestWebViewGoForward() => DomApi.RequestWebViewGoForward(Handle);
 

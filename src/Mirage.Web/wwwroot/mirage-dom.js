@@ -2476,8 +2476,15 @@ function normalizeWebViewConfig(configurationJson) {
 }
 
 function cloneWebViewEntry(entry) {
+  const sourceKind = entry?.sourceKind === "html"
+    ? "html"
+    : entry?.sourceKind === "unsupported"
+      ? "unsupported"
+      : entry?.sourceKind === "none"
+        ? "none"
+        : "url";
   return {
-    sourceKind: entry?.sourceKind === "html" ? "html" : "url",
+    sourceKind,
     url: typeof entry?.url === "string" && entry.url.length > 0 ? entry.url : "about:blank",
     html: typeof entry?.html === "string" ? entry.html : ""
   };
@@ -2503,14 +2510,26 @@ function webViewEntriesEqual(left, right) {
 
 function resolveWebViewEntryFromConfig(config) {
   if (!config) {
-    return { sourceKind: "url", url: "about:blank", html: "" };
+    return { sourceKind: "none", url: "about:blank", html: "" };
   }
 
   if (config.sourceKind === "html") {
     return { sourceKind: "html", url: "about:srcdoc", html: config.html ?? "" };
   }
 
+  if (config.sourceKind === "unsupported") {
+    return { sourceKind: "unsupported", url: config.url ?? "about:blank", html: "" };
+  }
+
+  if (config.sourceKind === "none") {
+    return { sourceKind: "none", url: config.url ?? "about:blank", html: "" };
+  }
+
   return { sourceKind: "url", url: config.url ?? "about:blank", html: "" };
+}
+
+function isPreservedWebViewSourceKind(sourceKind) {
+  return sourceKind === "unsupported" || sourceKind === "none";
 }
 
 function canEvaluateWebViewScript(iframe) {
@@ -2560,6 +2579,17 @@ function resolveWebViewEntryFromDocument(iframe, state) {
     };
   }
 
+  const preservedSourceKind = state?.currentEntry?.sourceKind ?? state?.config?.sourceKind;
+  if (href === "about:blank" && isPreservedWebViewSourceKind(preservedSourceKind)) {
+    return {
+      sourceKind: preservedSourceKind,
+      url: typeof state?.currentEntry?.url === "string" && state.currentEntry.url.length > 0
+        ? state.currentEntry.url
+        : "about:blank",
+      html: ""
+    };
+  }
+
   return {
     sourceKind: "url",
     url: href,
@@ -2603,7 +2633,7 @@ function syncWebViewHistoryFromDocument(iframe, state) {
   state.historyIndex = state.history.length - 1;
 }
 
-function installWebViewDocumentNavigationObserver(iframe, state) {
+function installWebViewDocumentNavigationObserver(elementHandle, iframe, state) {
   let doc;
   try {
     doc = iframe?.contentDocument;
@@ -2611,16 +2641,23 @@ function installWebViewDocumentNavigationObserver(iframe, state) {
     return;
   }
 
-  if (!(doc instanceof Document) || doc.__mirageWebViewNavigationObserverInstalled) {
+  if (!doc || doc.nodeType !== 9 || doc.__mirageWebViewNavigationObserverInstalled) {
     return;
   }
 
   doc.__mirageWebViewNavigationObserverInstalled = true;
   doc.addEventListener("click", (event) => {
-    const target = event.target instanceof Element
-      ? event.target.closest("a[href]")
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    const targetElement = event.target && event.target.nodeType === 1
+      ? event.target
+      : event.target?.parentElement ?? null;
+    const target = typeof targetElement?.closest === "function"
+      ? targetElement.closest("a[href]")
       : null;
-    if (!(target instanceof HTMLAnchorElement)) {
+    if (!target || typeof target.getAttribute !== "function") {
       return;
     }
 
@@ -2639,6 +2676,18 @@ function installWebViewDocumentNavigationObserver(iframe, state) {
     } catch {
       state.pendingDocumentNavigationUrl = href;
     }
+
+    if (typeof state.navigatingCallback !== "function") {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    window.setTimeout(() => {
+      publishWebViewEvent(elementHandle, "navigating", state.navigatingCallback, JSON.stringify({
+        url: state.pendingDocumentNavigationUrl
+      }));
+    }, 0);
   }, true);
 }
 
@@ -2658,7 +2707,7 @@ function serializeWebViewEvalResult(value) {
   }
 }
 
-export function configureWebView(elementHandle, configurationJson, navigatedCallback, evalResultCallback) {
+export function configureWebView(elementHandle, configurationJson, navigatingCallback, navigatedCallback, evalResultCallback) {
   const iframe = fromHandle(elementHandle);
   if (!(iframe instanceof HTMLIFrameElement)) {
     return 0;
@@ -2674,6 +2723,7 @@ export function configureWebView(elementHandle, configurationJson, navigatedCall
     const priorSourceVersion = Number.isFinite(existingState.config?.sourceVersion)
       ? Math.trunc(existingState.config.sourceVersion)
       : 0;
+    existingState.navigatingCallback = navigatingCallback;
     existingState.config = config;
     const nextEntry = resolveWebViewEntryFromConfig(config);
     if (!webViewEntriesEqual(existingState.currentEntry, nextEntry)
@@ -2686,6 +2736,7 @@ export function configureWebView(elementHandle, configurationJson, navigatedCall
   const state = {
     subscriptionId: 0,
     config,
+    navigatingCallback,
     history: [],
     historyIndex: -1,
     currentEntry: null,
@@ -2799,7 +2850,7 @@ export function configureWebView(elementHandle, configurationJson, navigatedCall
 
   const publishNavigated = (result) => {
     syncWebViewHistoryFromDocument(iframe, state);
-    installWebViewDocumentNavigationObserver(iframe, state);
+    installWebViewDocumentNavigationObserver(elementHandle, iframe, state);
     const currentEntry = cloneWebViewEntry(state.currentEntry);
     publishWebViewEvent(elementHandle, "navigated", navigatedCallback, JSON.stringify({
       url: resolveWebViewLocation(iframe, state),
@@ -2847,6 +2898,25 @@ export function requestWebViewGoBack(elementHandle) {
   }
 
   return state.requestGoBack();
+}
+
+export function requestWebViewNavigate(elementHandle, url) {
+  const iframe = fromHandle(elementHandle);
+  const state = iframe?.__mirageWebViewState;
+  if (!(iframe instanceof HTMLIFrameElement)
+    || !state
+    || typeof state.applyEntry !== "function"
+    || typeof url !== "string"
+    || url.length === 0) {
+    return false;
+  }
+
+  state.applyEntry({
+    sourceKind: "url",
+    url,
+    html: ""
+  }, true);
+  return true;
 }
 
 export function requestWebViewGoForward(elementHandle) {

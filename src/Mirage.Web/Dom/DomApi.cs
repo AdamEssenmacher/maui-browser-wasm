@@ -161,6 +161,7 @@ internal static partial class DomApi
     internal static partial int ConfigureWebView(
         nint element,
         string configurationJson,
+        [JSMarshalAs<JSType.Function>] Action navigatingCallback,
         [JSMarshalAs<JSType.Function>] Action navigatedCallback,
         [JSMarshalAs<JSType.Function>] Action evalResultCallback);
 
@@ -172,6 +173,9 @@ internal static partial class DomApi
 
     [JSImport("requestWebViewGoBack", Module)]
     internal static partial bool RequestWebViewGoBack(nint element);
+
+    [JSImport("requestWebViewNavigate", Module)]
+    internal static partial bool RequestWebViewNavigate(nint element, string url);
 
     [JSImport("requestWebViewGoForward", Module)]
     internal static partial bool RequestWebViewGoForward(nint element);

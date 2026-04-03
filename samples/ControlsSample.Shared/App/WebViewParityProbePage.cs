@@ -22,6 +22,7 @@ public sealed class WebViewParityProbePage : ContentPage
     private string _lastEvalResult = "<none>";
     private string _lastEvalError = "<none>";
     private bool _alternateUserAgentEnabled;
+    private bool _cancelPageBNavigation;
 
     public WebViewParityProbePage()
     {
@@ -120,7 +121,8 @@ public sealed class WebViewParityProbePage : ContentPage
                     Children =
                     {
                         CreateButton("Eval", "controls-sample-webview-parity-eval", Eval),
-                        CreateButton("Eval Async", "controls-sample-webview-parity-eval-async", EvaluateAsync)
+                        CreateButton("Eval Async", "controls-sample-webview-parity-eval-async", EvaluateAsync),
+                        CreateButton("Block Page B", "controls-sample-webview-parity-toggle-block-page-b", ToggleBlockPageB)
                     }
                 }
             }
@@ -234,11 +236,21 @@ public sealed class WebViewParityProbePage : ContentPage
         UpdateStateLabels();
     }
 
+    private void ToggleBlockPageB()
+    {
+        _cancelPageBNavigation = !_cancelPageBNavigation;
+        UpdateStateLabels();
+    }
+
     private void OnWebViewNavigating(object? sender, WebNavigatingEventArgs e)
     {
         _ = sender;
         _navigatingCount++;
         _lastNavigatingUrl = string.IsNullOrWhiteSpace(e.Url) ? "<none>" : e.Url;
+        if (_cancelPageBNavigation && _lastNavigatingUrl.EndsWith(PageBUrl, StringComparison.Ordinal))
+        {
+            e.Cancel = true;
+        }
         UpdateStateLabels();
     }
 
@@ -256,7 +268,7 @@ public sealed class WebViewParityProbePage : ContentPage
         _navigationStateLabel.Text =
             $"currentUrl={_lastNavigatedUrl} navigating={_navigatingCount} navigated={_navigatedCount} canGoBack={_webView.CanGoBack} canGoForward={_webView.CanGoForward}";
         _sourceStateLabel.Text =
-            $"sourceMode={_sourceMode} sourceKind={sourceKind} lastNavigating={_lastNavigatingUrl}";
+            $"sourceMode={_sourceMode} sourceKind={sourceKind} lastNavigating={_lastNavigatingUrl} blockPageB={_cancelPageBNavigation}";
         _evalStateLabel.Text =
             $"evalResult={_lastEvalResult} evalError={_lastEvalError}";
 

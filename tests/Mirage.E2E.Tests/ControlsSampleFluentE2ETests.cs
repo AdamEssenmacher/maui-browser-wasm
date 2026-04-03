@@ -1946,6 +1946,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         const string toggleUserAgentSelector = "[data-automation-id='controls-sample-webview-parity-toggle-useragent']";
         const string evalSelector = "[data-automation-id='controls-sample-webview-parity-eval']";
         const string evalAsyncSelector = "[data-automation-id='controls-sample-webview-parity-eval-async']";
+        const string toggleBlockPageBSelector = "[data-automation-id='controls-sample-webview-parity-toggle-block-page-b']";
         const string inlineToPageASelector = "[data-automation-id='controls-sample-webview-probe-link-inline-to-page-a']";
         const string pageAToPageBSelector = "[data-automation-id='controls-sample-webview-probe-link-page-a-to-page-b']";
 
@@ -1984,6 +1985,45 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 });
         }
 
+        async Task<int> ReadNavigationCounterAsync(string counterName)
+        {
+            var text = await page.Locator(navigationStateSelector).InnerTextAsync();
+            var token = $"{counterName}=";
+            var start = text.IndexOf(token, StringComparison.Ordinal);
+            Assert.True(start >= 0, $"Navigation state label did not contain counter token '{token}'. Text: {text}");
+            start += token.Length;
+            var end = text.IndexOf(' ', start);
+            var valueText = end >= 0 ? text[start..end] : text[start..];
+            return int.Parse(valueText, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        async Task WaitForNavigationCounterGreaterThanAsync(string counterName, int baseline)
+        {
+            await page.WaitForFunctionAsync(
+                """
+                (args) => {
+                    const text = document.querySelector(args.selector)?.textContent ?? "";
+                    const token = `${args.counterName}=`;
+                    const start = text.indexOf(token);
+                    if (start < 0) {
+                        return false;
+                    }
+
+                    const from = start + token.length;
+                    const end = text.indexOf(" ", from);
+                    const raw = end >= 0 ? text.slice(from, end) : text.slice(from);
+                    const next = Number.parseInt(raw, 10);
+                    return Number.isFinite(next) && next > args.baseline;
+                }
+                """,
+                new
+                {
+                    selector = navigationStateSelector,
+                    counterName,
+                    baseline
+                });
+        }
+
         await page.WaitForSelectorAsync(hostSelector);
         await page.Locator(hostSelector).ScrollIntoViewIfNeededAsync();
         var frame = page.FrameLocator(hostSelector);
@@ -2003,6 +2043,15 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await WaitForLabelTextContainsAsync(page, navigationStateSelector, "canGoBack=True");
         await page.Locator(evalAsyncSelector).ClickAsync();
         await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-a");
+
+        await page.Locator(toggleBlockPageBSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, sourceStateSelector, "blockPageB=True");
+        var blockedNavigatingBaseline = await ReadNavigationCounterAsync("navigating");
+        await frame.Locator(pageAToPageBSelector).ClickAsync();
+        await WaitForNavigationCounterGreaterThanAsync("navigating", blockedNavigatingBaseline);
+        await WaitForLabelTextContainsAsync(page, sourceStateSelector, "/webview-probe/page-b.html");
+        await page.Locator(toggleBlockPageBSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, sourceStateSelector, "blockPageB=False");
 
         await frame.Locator(pageAToPageBSelector).ClickAsync();
         await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-b.html");

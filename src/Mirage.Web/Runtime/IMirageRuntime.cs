@@ -55,6 +55,8 @@ public interface IMirageRuntime : IDisposable
 
     bool TryConfigureNodeWebView(string nodeId, bool enabled, string configurationJson) => false;
 
+    bool TryRequestNodeWebViewNavigate(string nodeId, string url) => false;
+
     bool TryRequestNodeWebViewGoBack(string nodeId) => false;
 
     bool TryRequestNodeWebViewGoForward(string nodeId) => false;

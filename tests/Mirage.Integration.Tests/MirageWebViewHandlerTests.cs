@@ -209,6 +209,78 @@ public sealed class MirageWebViewHandlerTests
     }
 
     [Fact]
+    public void WebViewHandler_RuntimeNavigatingRequest_CanCancelInFrameLinkNavigation()
+    {
+        var webView = new WebView
+        {
+            Source = new UrlWebViewSource { Url = "/webview-probe/page-a.html" }
+        };
+        var navigatingCount = 0;
+        string? lastNavigatingUrl = null;
+        webView.Navigating += (_, args) =>
+        {
+            navigatingCount++;
+            lastNavigatingUrl = args.Url;
+            args.Cancel = true;
+        };
+
+        var (handler, _, coordinator, runtime) = CreateAttachedHandler(webView);
+        var baselineNavigatingCount = navigatingCount;
+
+        coordinator.OnEvent(handler.PlatformView.NodeId, "navigating", """{"url":"/webview-probe/page-b.html"}""");
+
+        Assert.Equal(baselineNavigatingCount + 1, navigatingCount);
+        Assert.Equal("/webview-probe/page-b.html", lastNavigatingUrl);
+        Assert.Equal("cancel", handler.PlatformView.GetPropertyString("LastNavigationResultState"));
+        Assert.Equal(0, runtime.NavigateCallCount);
+    }
+
+    [Fact]
+    public void WebViewHandler_RuntimeNavigatingEvent_RequestsInFrameNavigationWhenAllowed()
+    {
+        var webView = new WebView
+        {
+            Source = new UrlWebViewSource { Url = "/webview-probe/page-a.html" }
+        };
+
+        var (handler, _, coordinator, runtime) = CreateAttachedHandler(webView);
+
+        coordinator.OnEvent(handler.PlatformView.NodeId, "navigating", """{"url":"/webview-probe/page-b.html"}""");
+
+        Assert.Equal(1, runtime.NavigateCallCount);
+        Assert.Equal("/webview-probe/page-b.html", runtime.LastNavigateUrl);
+    }
+
+    [Fact]
+    public void WebViewHandler_UnsupportedSourceKind_RemainsUnsupportedAfterNavigatedAndReconfigure()
+    {
+        var webView = new WebView
+        {
+            Source = new UnsupportedWebViewSource()
+        };
+
+        var (handler, _, coordinator, runtime) = CreateAttachedHandler(webView);
+        using (var initialConfig = JsonDocument.Parse(runtime.LastConfigurationJson))
+        {
+            Assert.Equal("unsupported", initialConfig.RootElement.GetProperty("SourceKind").GetString());
+        }
+
+        coordinator.OnEvent(
+            handler.PlatformView.NodeId,
+            "navigated",
+            """{"url":"about:blank","sourceKind":"unsupported","html":null,"canGoBack":false,"canGoForward":false,"canEvaluateJavaScript":false,"result":"success"}""");
+
+        Assert.Equal("unsupported", handler.PlatformView.GetPropertyString("SourceKindState"));
+
+        var configured = InvokeConfigureRuntime(handler);
+
+        Assert.True(configured);
+        using var replayConfig = JsonDocument.Parse(runtime.LastConfigurationJson);
+        Assert.Equal("unsupported", replayConfig.RootElement.GetProperty("SourceKind").GetString());
+        Assert.Equal("about:blank", replayConfig.RootElement.GetProperty("Url").GetString());
+    }
+
+    [Fact]
     public void WebViewHandler_NavigationCommands_AndRuntimeEvents_UpdateManagedState()
     {
         var webView = new WebView
@@ -406,11 +478,15 @@ public sealed class MirageWebViewHandlerTests
 
         public int ReloadCallCount { get; private set; }
 
+        public int NavigateCallCount { get; private set; }
+
         public long LastEvalRequestId { get; private set; }
 
         public string LastEvalScript { get; private set; } = string.Empty;
 
         public bool LastEvalCaptureResult { get; private set; }
+
+        public string LastNavigateUrl { get; private set; } = string.Empty;
 
         public void Dispose()
         {
@@ -544,6 +620,14 @@ public sealed class MirageWebViewHandlerTests
         public bool TryConfigureNodeWebView(string nodeId, bool enabled, string configurationJson)
         {
             Configurations.Add(new WebViewConfigurationCall(nodeId, enabled, configurationJson));
+            return true;
+        }
+
+        public bool TryRequestNodeWebViewNavigate(string nodeId, string url)
+        {
+            _ = nodeId;
+            NavigateCallCount++;
+            LastNavigateUrl = url;
             return true;
         }
 
@@ -792,6 +876,13 @@ public sealed class MirageWebViewHandlerTests
             return _configureResults.Count > 0 ? _configureResults.Dequeue() : true;
         }
 
+        public bool TryRequestNodeWebViewNavigate(string nodeId, string url)
+        {
+            _ = nodeId;
+            _ = url;
+            return false;
+        }
+
         public bool TryRequestNodeWebViewGoBack(string nodeId)
         {
             _ = nodeId;
@@ -875,6 +966,14 @@ public sealed class MirageWebViewHandlerTests
 
         public void Dispose()
         {
+        }
+    }
+
+    private sealed class UnsupportedWebViewSource : WebViewSource
+    {
+        public override void Load(IWebViewDelegate renderer)
+        {
+            _ = renderer;
         }
     }
 

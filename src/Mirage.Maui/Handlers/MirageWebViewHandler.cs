@@ -118,6 +118,9 @@ internal sealed class MirageWebViewHandler : MirageViewHandler<IWebView>, IWebVi
     {
         switch (eventName)
         {
+            case "navigating":
+                HandleRuntimeNavigatingEvent(payload);
+                break;
             case "navigated":
                 HandleNavigated(payload);
                 break;
@@ -349,6 +352,48 @@ internal sealed class MirageWebViewHandler : MirageViewHandler<IWebView>, IWebVi
         _pendingNavigationEvent = WebNavigationEvent.NewPage;
     }
 
+    private void HandleRuntimeNavigatingEvent(string? payload)
+    {
+        if (!TryDeserialize(payload, out WebViewNavigatingPayload? next) || next is null)
+        {
+            return;
+        }
+
+        var url = string.IsNullOrWhiteSpace(next.Url)
+            ? _currentUrl
+            : next.Url!;
+        var canceled = TrySendNavigating(WebNavigationEvent.NewPage, url);
+        if (canceled)
+        {
+            _lastNavigationResult = "cancel";
+            if (UpdateNavigationStateProjection())
+            {
+                RequestRender();
+            }
+
+            return;
+        }
+
+        if (Coordinator is null || string.IsNullOrWhiteSpace(PlatformView.NodeId))
+        {
+            return;
+        }
+
+        var accepted = Coordinator.TryRequestNodeWebViewNavigate(PlatformView.NodeId, url);
+        if (!accepted)
+        {
+            ConfigureRuntime();
+            accepted = Coordinator.TryRequestNodeWebViewNavigate(PlatformView.NodeId, url);
+        }
+
+        if (!accepted)
+        {
+            return;
+        }
+
+        _pendingNavigationEvent = WebNavigationEvent.NewPage;
+    }
+
     private void HandleEvalResult(string? payload)
     {
         if (!TryDeserialize(payload, out WebViewEvalResultPayload? next) || next is null)
@@ -552,7 +597,16 @@ internal sealed class MirageWebViewHandler : MirageViewHandler<IWebView>, IWebVi
 
     private void CommitSourceConfiguration(IWebViewSource? source, bool advanceSourceVersion)
     {
-        _committedSourceConfiguration = BuildRuntimeConfigurationCore(source, userAgent: null, sourceVersion: 0);
+        CommitRuntimeConfiguration(BuildRuntimeConfigurationCore(source, userAgent: null, sourceVersion: 0), advanceSourceVersion);
+    }
+
+    private void CommitRuntimeConfiguration(WebViewRuntimeConfiguration configuration, bool advanceSourceVersion)
+    {
+        _committedSourceConfiguration = configuration with
+        {
+            UserAgent = null,
+            SourceVersion = 0
+        };
         _committedSourceInitialized = true;
         if (advanceSourceVersion)
         {
@@ -570,6 +624,21 @@ internal sealed class MirageWebViewHandler : MirageViewHandler<IWebView>, IWebVi
                 {
                     Html = payload.Html ?? string.Empty
                 },
+                advanceSourceVersion: false);
+            return;
+        }
+
+        if (string.Equals(payload.SourceKind, SourceKindUnsupported, StringComparison.Ordinal)
+            || string.Equals(payload.SourceKind, SourceKindNone, StringComparison.Ordinal))
+        {
+            CommitRuntimeConfiguration(
+                new WebViewRuntimeConfiguration(
+                    Enabled: true,
+                    SourceKind: payload.SourceKind!,
+                    Url: string.IsNullOrWhiteSpace(url) ? "about:blank" : url,
+                    Html: null,
+                    UserAgent: null,
+                    SourceVersion: 0),
                 advanceSourceVersion: false);
             return;
         }
@@ -796,6 +865,9 @@ internal sealed class MirageWebViewHandler : MirageViewHandler<IWebView>, IWebVi
         bool CanGoForward,
         bool CanEvaluateJavaScript,
         string? Result);
+
+    private sealed record WebViewNavigatingPayload(
+        string? Url);
 
     private sealed record WebViewEvalResultPayload(
         long RequestId,
