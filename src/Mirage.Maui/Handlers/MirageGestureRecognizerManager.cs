@@ -233,6 +233,7 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
             payload.ClientY,
             payload.X,
             payload.Y,
+            false,
             false);
 
         DispatchPointerRecognizers(static (recognizer, owner, getPosition, args, buttonsMask) =>
@@ -282,6 +283,7 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
     private void HandlePointerUp(MirageGesturePointerPayload payload)
     {
         var resolvedPayload = payload;
+        var skipSwipe = false;
         if (_activePointers.TryGetValue(payload.PointerId, out var activePointer))
         {
             resolvedPayload = payload with
@@ -289,6 +291,7 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
                 Buttons = payload.Buttons == 0 ? ToBrowserButtons(activePointer.ButtonMask) : payload.Buttons,
                 Button = payload.Button == 0 && activePointer.ButtonMask == ButtonsMask.Secondary ? 2 : payload.Button
             };
+            skipSwipe = activePointer.ParticipatedInPinch;
         }
 
         DispatchPointerRecognizers(static (recognizer, owner, getPosition, args, buttonsMask) =>
@@ -296,7 +299,10 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
 
         CompletePinchIfPointerEnded(payload.PointerId);
         CompletePanGesturesForPointer(payload.PointerId, canceled: false);
-        DetectSwipe(payload.PointerId);
+        if (!skipSwipe)
+        {
+            DetectSwipe(payload.PointerId);
+        }
 
         if (_activePointers.Remove(payload.PointerId, out var pointer) && pointer.ExceededTapThreshold)
         {
@@ -407,6 +413,14 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         {
             ((IPanGestureController)activePan.Recognizer).SendPanCanceled(_view, activePan.GestureId);
             _activePanGestures.Remove(activePan);
+        }
+
+        foreach (var pointerId in pointerIds)
+        {
+            if (_activePointers.TryGetValue(pointerId, out var activePointer))
+            {
+                _activePointers[pointerId] = activePointer with { ParticipatedInPinch = true };
+            }
         }
 
         var origin = CreateScaleOrigin(initialMidpoint);
@@ -904,7 +918,8 @@ internal sealed class MirageGestureRecognizerManager : IMirageRuntimeEventTarget
         double LastClientY,
         double LastX,
         double LastY,
-        bool ExceededTapThreshold);
+        bool ExceededTapThreshold,
+        bool ParticipatedInPinch);
 
     private sealed record PanGestureState(
         PanGestureRecognizer Recognizer,
