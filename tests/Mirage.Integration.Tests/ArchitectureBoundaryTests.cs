@@ -786,6 +786,20 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void MirageRuntime_NormalizesPointerShapedDescriptors_WhenProviderPayloadIsOmitted()
+    {
+        var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
+        Assert.True(File.Exists(runtimePath), $"Expected runtime file not found: {runtimePath}");
+
+        var runtimeText = File.ReadAllText(runtimePath);
+
+        Assert.Contains("NormalizePointerEventDescriptor(mapped)", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("\"click\" => descriptor with { PayloadKind = EventPayloadKind.Pointer }", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("\"pointerdown\" => descriptor with { PayloadKind = EventPayloadKind.Pointer }", runtimeText, StringComparison.Ordinal);
+        Assert.Contains("\"pointerleave\" => descriptor with { PayloadKind = EventPayloadKind.Pointer }", runtimeText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void CollectionViewHandler_UsesMauiShapedHierarchy_AndGenericScrollSeam()
     {
         var handlersPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Handlers");

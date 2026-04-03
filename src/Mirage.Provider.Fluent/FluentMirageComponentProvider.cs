@@ -37,7 +37,7 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 }),
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
-                    ["click"] = new("click"),
+                    ["click"] = new("click", EventTarget.Self, EventPayloadKind.Pointer),
                     ["scroll"] = new("scroll")
                 }),
             [ComponentKind.VerticalStack] = new(
@@ -111,7 +111,7 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 }),
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
-                    ["click"] = new("click")
+                    ["click"] = new("click", EventTarget.Self, EventPayloadKind.Pointer)
                 },
                 valueElementTagName: "span",
                 secondaryElementTagName: "img",
@@ -170,10 +170,10 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 }),
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
-                    ["click"] = new("click"),
-                    ["pointerdown"] = new("pointerdown"),
-                    ["pointerup"] = new("pointerup"),
-                    ["pointercancel"] = new("pointercancel"),
+                    ["click"] = new("click", EventTarget.Self, EventPayloadKind.Pointer),
+                    ["pointerdown"] = new("pointerdown", EventTarget.Self, EventPayloadKind.Pointer),
+                    ["pointerup"] = new("pointerup", EventTarget.Self, EventPayloadKind.Pointer),
+                    ["pointercancel"] = new("pointercancel", EventTarget.Self, EventPayloadKind.Pointer),
                     ["keydown"] = new("keydown", EventTarget.Self, EventPayloadKind.Key),
                     ["load"] = new("load", EventTarget.SecondaryElement, EventPayloadKind.SourceAttribute),
                     ["error"] = new("error", EventTarget.SecondaryElement, EventPayloadKind.SourceAttribute)
@@ -216,7 +216,7 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 propertyMappings: CommonProperties,
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
-                    ["click"] = new("click")
+                    ["click"] = new("click", EventTarget.Self, EventPayloadKind.Pointer)
                 }),
             [ComponentKind.Switch] = new(
                 ComponentKind.Switch,
@@ -477,7 +477,7 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 elementName,
                 eventMappings: new Dictionary<string, ProviderEventDescriptor>(StringComparer.Ordinal)
                 {
-                    ["click"] = new("click"),
+                    ["click"] = new("click", EventTarget.Self, EventPayloadKind.Pointer),
                     ["keydown"] = new("keydown", EventTarget.Self, EventPayloadKind.Key)
                 },
                 supportsAttributes: true,

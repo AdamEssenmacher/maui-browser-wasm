@@ -1600,7 +1600,7 @@ public sealed class MirageRuntime : IMirageRuntime
         if (node.TryGetControlDescriptor(out var controlDescriptor))
         {
             return controlDescriptor.EventMappings.TryGetValue(eventName, out var mapped)
-                ? mapped
+                ? NormalizePointerEventDescriptor(mapped)
                 : CreateFallbackEventDescriptor(eventName);
         }
 
@@ -1612,11 +1612,32 @@ public sealed class MirageRuntime : IMirageRuntime
             }
 
             return webDescriptor.EventMappings.TryGetValue(eventName, out var mapped)
-                ? mapped
+                ? NormalizePointerEventDescriptor(mapped)
                 : CreateFallbackEventDescriptor(eventName);
         }
 
         return CreateFallbackEventDescriptor(eventName);
+    }
+
+    private static ProviderEventDescriptor NormalizePointerEventDescriptor(ProviderEventDescriptor descriptor)
+    {
+        if (descriptor.PayloadKind != EventPayloadKind.None)
+        {
+            return descriptor;
+        }
+
+        return descriptor.DomEventName switch
+        {
+            "click" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            "contextmenu" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            "pointerdown" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            "pointermove" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            "pointerup" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            "pointercancel" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            "pointerenter" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            "pointerleave" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            _ => descriptor
+        };
     }
 
     private static ProviderEventDescriptor CreateFallbackEventDescriptor(string eventName)
