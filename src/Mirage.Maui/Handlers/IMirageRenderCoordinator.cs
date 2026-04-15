@@ -63,7 +63,9 @@ public interface IMirageRenderCoordinator : IMirageEventSink
 
     bool TryConfigureNodeWebView(string nodeId, bool enabled, string configurationJson) => false;
 
-    bool TryRequestNodeWebViewNavigate(string nodeId, string url) => false;
+    bool TryRequestNodeWebViewNavigate(string nodeId, long requestId, string url) => false;
+
+    bool TryCancelNodeWebViewNavigation(string nodeId, long requestId) => false;
 
     bool TryRequestNodeWebViewGoBack(string nodeId) => false;
 

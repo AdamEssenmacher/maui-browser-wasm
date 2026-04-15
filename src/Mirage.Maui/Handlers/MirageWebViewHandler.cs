@@ -384,6 +384,7 @@ internal sealed class MirageWebViewHandler : MirageViewHandler<IWebView>, IWebVi
         if (canceled)
         {
             _lastNavigationResult = "cancel";
+            _ = Coordinator?.TryCancelNodeWebViewNavigation(PlatformView.NodeId, next.RequestId);
             if (UpdateNavigationStateProjection())
             {
                 RequestRender();
@@ -397,11 +398,11 @@ internal sealed class MirageWebViewHandler : MirageViewHandler<IWebView>, IWebVi
             return;
         }
 
-        var accepted = Coordinator.TryRequestNodeWebViewNavigate(PlatformView.NodeId, url);
+        var accepted = Coordinator.TryRequestNodeWebViewNavigate(PlatformView.NodeId, next.RequestId, url);
         if (!accepted)
         {
             ConfigureRuntime();
-            accepted = Coordinator.TryRequestNodeWebViewNavigate(PlatformView.NodeId, url);
+            accepted = Coordinator.TryRequestNodeWebViewNavigate(PlatformView.NodeId, next.RequestId, url);
         }
 
         if (!accepted)
@@ -885,7 +886,8 @@ internal sealed class MirageWebViewHandler : MirageViewHandler<IWebView>, IWebVi
         string? Result);
 
     private sealed record WebViewNavigatingPayload(
-        string? Url);
+        string? Url,
+        long RequestId = 0);
 
     private sealed record WebViewEvalResultPayload(
         long RequestId,

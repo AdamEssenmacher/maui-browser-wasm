@@ -175,7 +175,15 @@ internal static partial class DomApi
     internal static partial bool RequestWebViewGoBack(nint element);
 
     [JSImport("requestWebViewNavigate", Module)]
-    internal static partial bool RequestWebViewNavigate(nint element, string url);
+    internal static partial bool RequestWebViewNavigate(
+        nint element,
+        [JSMarshalAs<JSType.Number>] long requestId,
+        string url);
+
+    [JSImport("cancelWebViewNavigation", Module)]
+    internal static partial bool CancelWebViewNavigation(
+        nint element,
+        [JSMarshalAs<JSType.Number>] long requestId);
 
     [JSImport("requestWebViewGoForward", Module)]
     internal static partial bool RequestWebViewGoForward(nint element);

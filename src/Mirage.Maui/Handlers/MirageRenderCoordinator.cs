@@ -330,14 +330,24 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         return _runtime.TryConfigureNodeWebView(nodeId, enabled, configurationJson);
     }
 
-    public bool TryRequestNodeWebViewNavigate(string nodeId, string url)
+    public bool TryRequestNodeWebViewNavigate(string nodeId, long requestId, string url)
     {
         if (_runtime is null)
         {
             return false;
         }
 
-        return _runtime.TryRequestNodeWebViewNavigate(nodeId, url);
+        return _runtime.TryRequestNodeWebViewNavigate(nodeId, requestId, url);
+    }
+
+    public bool TryCancelNodeWebViewNavigation(string nodeId, long requestId)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TryCancelNodeWebViewNavigation(nodeId, requestId);
     }
 
     public bool TryRequestNodeWebViewGoBack(string nodeId)

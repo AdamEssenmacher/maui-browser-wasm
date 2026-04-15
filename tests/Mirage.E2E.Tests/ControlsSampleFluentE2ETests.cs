@@ -1949,6 +1949,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         const string toggleBlockPageBSelector = "[data-automation-id='controls-sample-webview-parity-toggle-block-page-b']";
         const string inlineToPageASelector = "[data-automation-id='controls-sample-webview-probe-link-inline-to-page-a']";
         const string pageAToPageBSelector = "[data-automation-id='controls-sample-webview-probe-link-page-a-to-page-b']";
+        const string pageAToPageBSubmitSelector = "[data-automation-id='controls-sample-webview-probe-submit-page-a-to-page-b']";
 
         async Task WaitForHostAttributeAsync(string attributeName, string expectedValue)
         {
@@ -2050,6 +2051,15 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await frame.Locator(pageAToPageBSelector).ClickAsync();
         await WaitForNavigationCounterGreaterThanAsync("navigating", blockedNavigatingBaseline);
         await WaitForLabelTextContainsAsync(page, sourceStateSelector, "/webview-probe/page-b.html");
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-a.html");
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-a");
+        var blockedSubmitNavigatingBaseline = await ReadNavigationCounterAsync("navigating");
+        await frame.Locator(pageAToPageBSubmitSelector).ClickAsync();
+        await WaitForNavigationCounterGreaterThanAsync("navigating", blockedSubmitNavigatingBaseline);
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-a.html");
+        await page.Locator(evalAsyncSelector).ClickAsync();
+        await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-a");
         await page.Locator(toggleBlockPageBSelector).ClickAsync();
         await WaitForLabelTextContainsAsync(page, sourceStateSelector, "blockPageB=False");
 

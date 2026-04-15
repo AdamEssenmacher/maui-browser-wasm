@@ -405,14 +405,24 @@ public sealed class MirageRuntime : IMirageRuntime
         return true;
     }
 
-    public bool TryRequestNodeWebViewNavigate(string nodeId, string url)
+    public bool TryRequestNodeWebViewNavigate(string nodeId, long requestId, string url)
     {
         if (string.IsNullOrWhiteSpace(url) || !_nodes.TryGetValue(nodeId, out var node))
         {
             return false;
         }
 
-        return node.Element.RequestWebViewNavigate(url);
+        return node.Element.RequestWebViewNavigate(requestId, url);
+    }
+
+    public bool TryCancelNodeWebViewNavigation(string nodeId, long requestId)
+    {
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        return node.Element.CancelWebViewNavigation(requestId);
     }
 
     public bool TryRequestNodeWebViewGoBack(string nodeId)

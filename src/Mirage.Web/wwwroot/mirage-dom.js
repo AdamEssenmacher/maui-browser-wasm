@@ -2550,8 +2550,8 @@ function resolveWebViewLocation(iframe, state) {
     // Cross-origin or not yet ready; fall through to deterministic stored URL.
   }
 
-  if (typeof state?.pendingDocumentNavigationUrl === "string" && state.pendingDocumentNavigationUrl.length > 0) {
-    return state.pendingDocumentNavigationUrl;
+  if (typeof state?.pendingDocumentNavigation?.url === "string" && state.pendingDocumentNavigation.url.length > 0) {
+    return state.pendingDocumentNavigation.url;
   }
 
   return state?.currentEntry?.url ?? state?.config?.url ?? "about:blank";
@@ -2599,10 +2599,10 @@ function resolveWebViewEntryFromDocument(iframe, state) {
 
 function syncWebViewHistoryFromDocument(iframe, state) {
   const loadedEntry = resolveWebViewEntryFromDocument(iframe, state)
-    ?? (typeof state?.pendingDocumentNavigationUrl === "string" && state.pendingDocumentNavigationUrl.length > 0
+    ?? (typeof state?.pendingDocumentNavigation?.url === "string" && state.pendingDocumentNavigation.url.length > 0
       ? {
           sourceKind: "url",
-          url: state.pendingDocumentNavigationUrl,
+          url: state.pendingDocumentNavigation.url,
           html: ""
         }
       : null);
@@ -2631,6 +2631,75 @@ function syncWebViewHistoryFromDocument(iframe, state) {
   state.history = state.history.slice(0, state.historyIndex + 1);
   state.history.push(cloneWebViewEntry(normalizedLoadedEntry));
   state.historyIndex = state.history.length - 1;
+}
+
+function queueWebViewDocumentNavigation(elementHandle, state, url, event) {
+  if (typeof url !== "string" || url.length === 0 || typeof state?.navigatingCallback !== "function") {
+    return false;
+  }
+
+  const requestId = Number.isFinite(state.nextNavigationRequestId)
+    ? Math.trunc(state.nextNavigationRequestId) + 1
+    : 1;
+  state.nextNavigationRequestId = requestId;
+  state.pendingDocumentNavigation = { requestId, url };
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  window.setTimeout(() => {
+    const pending = state.pendingDocumentNavigation;
+    if (!pending || pending.requestId !== requestId) {
+      return;
+    }
+
+    publishWebViewEvent(elementHandle, "navigating", state.navigatingCallback, JSON.stringify({
+      requestId,
+      url
+    }));
+  }, 0);
+  return true;
+}
+
+function resolveWebViewFormNavigationUrl(form, doc) {
+  if (!form || typeof form.getAttribute !== "function") {
+    return null;
+  }
+
+  const rawTarget = (form.getAttribute("target") ?? "").trim();
+  if (rawTarget.length > 0 && rawTarget.toLowerCase() !== "_self") {
+    return null;
+  }
+
+  const rawMethod = (form.getAttribute("method") ?? "get").trim().toLowerCase();
+  if (rawMethod !== "get" && rawMethod !== "dialog") {
+    return null;
+  }
+
+  const action = form.getAttribute("action") ?? doc?.location?.href ?? "";
+  if (typeof action !== "string" || action.length === 0) {
+    return null;
+  }
+
+  let url;
+  try {
+    url = new URL(action, doc.baseURI);
+  } catch {
+    return action;
+  }
+
+  if (rawMethod === "get") {
+    try {
+      const data = new FormData(form);
+      const search = new URLSearchParams(data);
+      const query = search.toString();
+      if (query.length > 0) {
+        url.search = query;
+      }
+    } catch {
+      // Leave the action URL intact when a form contains values FormData cannot serialize.
+    }
+  }
+
+  return url.href;
 }
 
 function installWebViewDocumentNavigationObserver(elementHandle, iframe, state) {
@@ -2671,23 +2740,26 @@ function installWebViewDocumentNavigationObserver(elementHandle, iframe, state) 
       return;
     }
 
+    let url;
     try {
-      state.pendingDocumentNavigationUrl = new URL(href, doc.baseURI).href;
+      url = new URL(href, doc.baseURI).href;
     } catch {
-      state.pendingDocumentNavigationUrl = href;
+      url = href;
     }
 
-    if (typeof state.navigatingCallback !== "function") {
+    queueWebViewDocumentNavigation(elementHandle, state, url, event);
+  }, true);
+
+  doc.addEventListener("submit", (event) => {
+    if (event.defaultPrevented) {
       return;
     }
 
-    event.preventDefault();
-    event.stopPropagation();
-    window.setTimeout(() => {
-      publishWebViewEvent(elementHandle, "navigating", state.navigatingCallback, JSON.stringify({
-        url: state.pendingDocumentNavigationUrl
-      }));
-    }, 0);
+    const form = event.target;
+    const url = resolveWebViewFormNavigationUrl(form, doc);
+    if (url) {
+      queueWebViewDocumentNavigation(elementHandle, state, url, event);
+    }
   }, true);
 }
 
@@ -2741,12 +2813,13 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
     historyIndex: -1,
     currentEntry: null,
     currentUrl: config.sourceKind === "html" ? "about:srcdoc" : config.url,
-    pendingDocumentNavigationUrl: null,
+    nextNavigationRequestId: 0,
+    pendingDocumentNavigation: null,
     applyEntry(entry, updateHistory) {
       const normalizedEntry = cloneWebViewEntry(entry);
       state.currentEntry = normalizedEntry;
       state.currentUrl = normalizedEntry.sourceKind === "html" ? "about:srcdoc" : normalizedEntry.url;
-      state.pendingDocumentNavigationUrl = null;
+      state.pendingDocumentNavigation = null;
 
       if (updateHistory) {
         const currentHistoryEntry = state.historyIndex >= 0 ? state.history[state.historyIndex] : null;
@@ -2861,7 +2934,7 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
       canEvaluateJavaScript: canEvaluateWebViewScript(iframe),
       result: typeof result === "string" && result.length > 0 ? result : "success"
     }));
-    state.pendingDocumentNavigationUrl = null;
+    state.pendingDocumentNavigation = null;
   };
 
   const loadListener = () => publishNavigated("success");
@@ -2900,7 +2973,7 @@ export function requestWebViewGoBack(elementHandle) {
   return state.requestGoBack();
 }
 
-export function requestWebViewNavigate(elementHandle, url) {
+export function requestWebViewNavigate(elementHandle, requestId, url) {
   const iframe = fromHandle(elementHandle);
   const state = iframe?.__mirageWebViewState;
   if (!(iframe instanceof HTMLIFrameElement)
@@ -2911,12 +2984,36 @@ export function requestWebViewNavigate(elementHandle, url) {
     return false;
   }
 
+  const normalizedRequestId = Number.isFinite(requestId) ? Math.trunc(requestId) : 0;
+  if (normalizedRequestId > 0) {
+    const pending = state.pendingDocumentNavigation;
+    if (!pending || pending.requestId !== normalizedRequestId) {
+      return false;
+    }
+  }
+
   state.applyEntry({
     sourceKind: "url",
     url,
     html: ""
   }, true);
   return true;
+}
+
+export function cancelWebViewNavigation(elementHandle, requestId) {
+  const iframe = fromHandle(elementHandle);
+  const state = iframe?.__mirageWebViewState;
+  if (!(iframe instanceof HTMLIFrameElement) || !state) {
+    return false;
+  }
+
+  const normalizedRequestId = Number.isFinite(requestId) ? Math.trunc(requestId) : 0;
+  if (normalizedRequestId <= 0 || state.pendingDocumentNavigation?.requestId === normalizedRequestId) {
+    state.pendingDocumentNavigation = null;
+    return true;
+  }
+
+  return false;
 }
 
 export function requestWebViewGoForward(elementHandle) {

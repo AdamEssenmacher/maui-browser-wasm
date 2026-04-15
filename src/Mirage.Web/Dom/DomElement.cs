@@ -214,11 +214,13 @@ public sealed class DomElement
 
     public bool RequestWebViewGoBack() => DomApi.RequestWebViewGoBack(Handle);
 
-    public bool RequestWebViewNavigate(string url)
+    public bool RequestWebViewNavigate(long requestId, string url)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(url);
-        return DomApi.RequestWebViewNavigate(Handle, url);
+        return DomApi.RequestWebViewNavigate(Handle, requestId, url);
     }
+
+    public bool CancelWebViewNavigation(long requestId) => DomApi.CancelWebViewNavigation(Handle, requestId);
 
     public bool RequestWebViewGoForward() => DomApi.RequestWebViewGoForward(Handle);
 

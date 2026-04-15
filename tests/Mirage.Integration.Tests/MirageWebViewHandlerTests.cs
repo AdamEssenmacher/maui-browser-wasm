@@ -227,12 +227,14 @@ public sealed class MirageWebViewHandlerTests
         var (handler, _, coordinator, runtime) = CreateAttachedHandler(webView);
         var baselineNavigatingCount = navigatingCount;
 
-        coordinator.OnEvent(handler.PlatformView.NodeId, "navigating", """{"url":"/webview-probe/page-b.html"}""");
+        coordinator.OnEvent(handler.PlatformView.NodeId, "navigating", """{"url":"/webview-probe/page-b.html","requestId":42}""");
 
         Assert.Equal(baselineNavigatingCount + 1, navigatingCount);
         Assert.Equal("/webview-probe/page-b.html", lastNavigatingUrl);
         Assert.Equal("cancel", handler.PlatformView.GetPropertyString("LastNavigationResultState"));
         Assert.Equal(0, runtime.NavigateCallCount);
+        Assert.Equal(1, runtime.CancelNavigationCallCount);
+        Assert.Equal(42, runtime.LastCancelNavigationRequestId);
     }
 
     [Fact]
@@ -245,9 +247,10 @@ public sealed class MirageWebViewHandlerTests
 
         var (handler, _, coordinator, runtime) = CreateAttachedHandler(webView);
 
-        coordinator.OnEvent(handler.PlatformView.NodeId, "navigating", """{"url":"/webview-probe/page-b.html"}""");
+        coordinator.OnEvent(handler.PlatformView.NodeId, "navigating", """{"url":"/webview-probe/page-b.html","requestId":43}""");
 
         Assert.Equal(1, runtime.NavigateCallCount);
+        Assert.Equal(43, runtime.LastNavigateRequestId);
         Assert.Equal("/webview-probe/page-b.html", runtime.LastNavigateUrl);
     }
 
@@ -506,6 +509,8 @@ public sealed class MirageWebViewHandlerTests
 
         public int NavigateCallCount { get; private set; }
 
+        public int CancelNavigationCallCount { get; private set; }
+
         public long LastEvalRequestId { get; private set; }
 
         public string LastEvalScript { get; private set; } = string.Empty;
@@ -513,6 +518,10 @@ public sealed class MirageWebViewHandlerTests
         public bool LastEvalCaptureResult { get; private set; }
 
         public string LastNavigateUrl { get; private set; } = string.Empty;
+
+        public long LastNavigateRequestId { get; private set; }
+
+        public long LastCancelNavigationRequestId { get; private set; }
 
         public void Dispose()
         {
@@ -649,11 +658,20 @@ public sealed class MirageWebViewHandlerTests
             return true;
         }
 
-        public bool TryRequestNodeWebViewNavigate(string nodeId, string url)
+        public bool TryRequestNodeWebViewNavigate(string nodeId, long requestId, string url)
         {
             _ = nodeId;
             NavigateCallCount++;
+            LastNavigateRequestId = requestId;
             LastNavigateUrl = url;
+            return true;
+        }
+
+        public bool TryCancelNodeWebViewNavigation(string nodeId, long requestId)
+        {
+            _ = nodeId;
+            CancelNavigationCallCount++;
+            LastCancelNavigationRequestId = requestId;
             return true;
         }
 
@@ -902,10 +920,18 @@ public sealed class MirageWebViewHandlerTests
             return _configureResults.Count > 0 ? _configureResults.Dequeue() : true;
         }
 
-        public bool TryRequestNodeWebViewNavigate(string nodeId, string url)
+        public bool TryRequestNodeWebViewNavigate(string nodeId, long requestId, string url)
         {
             _ = nodeId;
+            _ = requestId;
             _ = url;
+            return false;
+        }
+
+        public bool TryCancelNodeWebViewNavigation(string nodeId, long requestId)
+        {
+            _ = nodeId;
+            _ = requestId;
             return false;
         }
 
