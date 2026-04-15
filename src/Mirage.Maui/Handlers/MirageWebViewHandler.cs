@@ -148,21 +148,30 @@ internal sealed class MirageWebViewHandler : MirageViewHandler<IWebView>, IWebVi
     {
         _ = webView;
         _ = args;
-        handler.TryRequestNavigationCommand(WebNavigationEvent.Back, static (coordinator, nodeId) => coordinator.TryRequestNodeWebViewGoBack(nodeId));
+        handler.TryRequestNavigationCommand(
+            WebNavigationEvent.Back,
+            static handler => handler._canGoBack,
+            static (coordinator, nodeId) => coordinator.TryRequestNodeWebViewGoBack(nodeId));
     }
 
     public static void MapGoForward(MirageWebViewHandler handler, IWebView webView, object? args)
     {
         _ = webView;
         _ = args;
-        handler.TryRequestNavigationCommand(WebNavigationEvent.Forward, static (coordinator, nodeId) => coordinator.TryRequestNodeWebViewGoForward(nodeId));
+        handler.TryRequestNavigationCommand(
+            WebNavigationEvent.Forward,
+            static handler => handler._canGoForward,
+            static (coordinator, nodeId) => coordinator.TryRequestNodeWebViewGoForward(nodeId));
     }
 
     public static void MapReload(MirageWebViewHandler handler, IWebView webView, object? args)
     {
         _ = webView;
         _ = args;
-        handler.TryRequestNavigationCommand(WebNavigationEvent.Refresh, static (coordinator, nodeId) => coordinator.TryRequestNodeWebViewReload(nodeId));
+        handler.TryRequestNavigationCommand(
+            WebNavigationEvent.Refresh,
+            static handler => handler._committedSourceInitialized,
+            static (coordinator, nodeId) => coordinator.TryRequestNodeWebViewReload(nodeId));
     }
 
     public static void MapEval(MirageWebViewHandler handler, IWebView webView, object? args)
@@ -260,9 +269,18 @@ internal sealed class MirageWebViewHandler : MirageViewHandler<IWebView>, IWebVi
 
     private bool TryRequestNavigationCommand(
         WebNavigationEvent navigationEvent,
+        Func<MirageWebViewHandler, bool> canRequest,
         Func<IMirageRenderCoordinator, string, bool> request)
     {
+        ArgumentNullException.ThrowIfNull(canRequest);
+        ArgumentNullException.ThrowIfNull(request);
+
         if (Coordinator is null || string.IsNullOrWhiteSpace(PlatformView.NodeId))
+        {
+            return false;
+        }
+
+        if (!canRequest(this))
         {
             return false;
         }

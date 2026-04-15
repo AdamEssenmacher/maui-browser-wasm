@@ -290,6 +290,11 @@ public sealed class MirageWebViewHandlerTests
 
         var (handler, _, coordinator, runtime) = CreateAttachedHandler(webView);
 
+        coordinator.OnEvent(
+            handler.PlatformView.NodeId,
+            "navigated",
+            """{"url":"/webview-probe/page-b.html","canGoBack":true,"canGoForward":true,"canEvaluateJavaScript":true,"result":"success"}""");
+
         MirageWebViewHandler.MapGoBack(handler, webView, args: null);
         MirageWebViewHandler.MapGoForward(handler, webView, args: null);
         MirageWebViewHandler.MapReload(handler, webView, args: null);
@@ -310,6 +315,27 @@ public sealed class MirageWebViewHandlerTests
         Assert.Equal("success", handler.PlatformView.GetPropertyString("LastNavigationResultState"));
         Assert.True(webView.CanGoBack);
         Assert.False(webView.CanGoForward);
+    }
+
+    [Fact]
+    public void WebViewHandler_UnavailableBackForwardCommands_DoNotRaiseNavigating()
+    {
+        var webView = new WebView
+        {
+            Source = new UrlWebViewSource { Url = "/webview-probe/page-a.html" }
+        };
+        var navigatingCount = 0;
+        webView.Navigating += (_, _) => navigatingCount++;
+
+        var (handler, _, _, runtime) = CreateAttachedHandler(webView);
+        var baselineNavigatingCount = navigatingCount;
+
+        MirageWebViewHandler.MapGoBack(handler, webView, args: null);
+        MirageWebViewHandler.MapGoForward(handler, webView, args: null);
+
+        Assert.Equal(baselineNavigatingCount, navigatingCount);
+        Assert.Equal(0, runtime.GoBackCallCount);
+        Assert.Equal(0, runtime.GoForwardCallCount);
     }
 
     [Fact]
