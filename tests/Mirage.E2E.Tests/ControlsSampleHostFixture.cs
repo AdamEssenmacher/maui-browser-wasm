@@ -83,12 +83,12 @@ public sealed class ControlsSampleHostFixture : IAsyncLifetime
             var startInfo = new ProcessStartInfo
             {
                 FileName = "dotnet",
-                Arguments = $"run --project \"{sampleProjectPath}\" --configuration Release --no-build --no-launch-profile",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 WorkingDirectory = repoRoot
             };
+            SampleHostRunSettings.ConfigureDotnetRun(startInfo, sampleProjectPath);
 
             var process = new Process
             {

@@ -300,7 +300,7 @@ Run the test suites:
 ```bash
 dotnet test tests/Mirage.Core.Tests/Mirage.Core.Tests.csproj --configuration Release --no-build
 dotnet test tests/Mirage.Integration.Tests/Mirage.Integration.Tests.csproj --configuration Release --no-build
-dotnet test tests/Mirage.E2E.Tests/Mirage.E2E.Tests.csproj --configuration Release --no-build
+MIRAGE_E2E_HOST_NO_BUILD=1 dotnet test tests/Mirage.E2E.Tests/Mirage.E2E.Tests.csproj --configuration Release --no-build
 ```
 
 Run the local slowness matrix:
