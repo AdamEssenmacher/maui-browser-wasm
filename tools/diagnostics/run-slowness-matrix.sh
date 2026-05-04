@@ -19,6 +19,7 @@ mkdir -p "${run_root}"
 
 matrix_runs="${MIRAGE_MATRIX_RUNS:-5}"
 test_project="tests/Mirage.E2E.Tests/Mirage.E2E.Tests.csproj"
+showcase_project="samples/Showcase.Fluent/Showcase.Fluent.csproj"
 matrix_configuration="${MIRAGE_MATRIX_CONFIGURATION:-Debug}"
 budget_file="${MIRAGE_PERF_BUDGET_FILE:-}"
 budget_enabled=0
@@ -195,6 +196,8 @@ run_mode() {
         MIRAGE_DIAGNOSTICS=1 \
         MIRAGE_HOT_RELOAD="${hot_reload_value}" \
         MIRAGE_DIAGNOSTICS_LOG_FILE="${diagnostics_log}" \
+        MIRAGE_E2E_HOST_CONFIGURATION="${matrix_configuration}" \
+        MIRAGE_E2E_HOST_NO_BUILD=1 \
         dotnet test "${test_project}" \
           --nologo \
           --configuration "${matrix_configuration}" \
@@ -446,6 +449,13 @@ EOF
 
   echo
 }
+
+echo "Building E2E test project and Showcase host (${matrix_configuration})..."
+(
+  cd "${repo_root}"
+  dotnet build "${test_project}" --configuration "${matrix_configuration}"
+  dotnet build "${showcase_project}" --configuration "${matrix_configuration}"
+)
 
 run_mode "hotreload-on" "1"
 run_mode "hotreload-off" "0"
