@@ -152,3 +152,15 @@ Until then, the supported story is:
 - built-in Mirage controls on the `ControlNode` path
 - raw custom-element hosting on the `WebNode` path
 - explicit special-case subsystems such as the map provider seam
+
+## 12. External project intake policy
+
+External MAUI/WASM projects, including Avalonia-backed hybrids, are research inputs by default. Mirage can import process lessons such as parity ledgers, focused samples, and explicit status tracking, but code reuse needs a separate architectural review.
+
+Reusable code must preserve Mirage's core constraints:
+
+- DOM nodes remain the platform views.
+- CSS remains the styling system.
+- ARIA/browser accessibility remains first-class, not a painted-surface afterthought.
+- MAUI handler architecture remains the integration surface.
+- Browser services belong in Mirage-owned DI/runtime seams instead of sample-local glue.

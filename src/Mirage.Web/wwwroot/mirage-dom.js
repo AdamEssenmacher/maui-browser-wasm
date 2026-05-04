@@ -4498,8 +4498,11 @@ export function openExternalUri(uri, target) {
       return true;
     }
 
+    const hadUserActivation = typeof navigator === "undefined"
+      || !navigator.userActivation
+      || navigator.userActivation.isActive;
     const opened = window.open(uri, resolvedTarget, "noopener,noreferrer");
-    return !!opened;
+    return !!opened || hadUserActivation;
   } catch {
     return false;
   }
@@ -4606,7 +4609,7 @@ export function startGeolocationWatch(enableHighAccuracy, minimumTimeMs, changed
   }
 
   const subscriptionId = nextEventSubscriptionId++;
-  const options = buildGeolocationOptions(enableHighAccuracy, Math.max(1000, Number(minimumTimeMs) || 1000));
+  const options = buildGeolocationOptions(enableHighAccuracy, 10000);
   const watchId = navigator.geolocation.watchPosition(
     (position) => {
       geolocationWatchPayloads.set(subscriptionId, locationPayloadFromPosition(position));
@@ -4647,6 +4650,8 @@ export function unsubscribeGeolocationWatch(subscriptionId) {
   removeEventSubscription(subscriptionId);
 }
 
+const activeSpeechCancelers = new Set();
+
 export async function speakText(text, rate, pitch, volume) {
   if (typeof window === "undefined" || !window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") {
     return false;
@@ -4659,6 +4664,18 @@ export async function speakText(text, rate, pitch, volume) {
 
   return await new Promise((resolve) => {
     const utterance = new SpeechSynthesisUtterance(normalized);
+    let settled = false;
+    const finish = (result) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      activeSpeechCancelers.delete(cancel);
+      resolve(result);
+    };
+    const cancel = () => finish(false);
+
     if (Number.isFinite(rate) && rate > 0) {
       utterance.rate = Math.max(0.1, Math.min(10, rate));
     }
@@ -4669,10 +4686,29 @@ export async function speakText(text, rate, pitch, volume) {
       utterance.volume = Math.max(0, Math.min(1, volume));
     }
 
-    utterance.onend = () => resolve(true);
-    utterance.onerror = () => resolve(false);
+    utterance.onend = () => finish(true);
+    utterance.onerror = () => finish(false);
+    activeSpeechCancelers.add(cancel);
     window.speechSynthesis.speak(utterance);
   });
+}
+
+export function cancelSpeech() {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    return;
+  }
+
+  const cancelers = Array.from(activeSpeechCancelers);
+  activeSpeechCancelers.clear();
+  for (const cancel of cancelers) {
+    cancel();
+  }
+
+  try {
+    window.speechSynthesis.cancel();
+  } catch {
+    // Best effort cancellation only.
+  }
 }
 
 function tryGetLocalStorage() {

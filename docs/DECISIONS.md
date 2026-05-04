@@ -2,6 +2,12 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-05-04 (Avalonia comparison applied: Mirage-owned semantics + DI-first Essentials)
+- Kept `Avalonia.Controls.Maui` and `AvaloniaMauiHybrid` as research inputs only: their MAUI retargeting and status-ledger discipline are useful, but their drawn Avalonia browser backend does not satisfy Mirage's DOM/CSS/ARIA platform goal.
+- Marked the legacy `Maui.Browser*` tree as read-only reference material so new browser work stays on the active `Mirage.*` handler/runtime path.
+- Added the next DI-first browser Essentials tranche (`ISemanticScreenReader`, `IBrowser`, `IClipboard`, `ILauncher`, `IDeviceDisplay`, `IGeolocation`, `ITextToSpeech`) through `UseMirageBrowserPlatform()` and Mirage-owned DOM interop, while keeping static patching limited to the already-proven private-field path.
+- Expanded the Showcase Essentials Lab so these injected services can be exercised from the active browser sample instead of app-local glue.
+
 ## 2026-04-02 (SwipeView stabilization sweep: explicit handler/runtime ownership + transition hardening)
 - Kept the current SwipeView architecture but tightened the ownership boundary explicitly: `MirageSwipeViewHandler` owns MAUI-facing open state, pending programmatic commands, disabled gating, and diagnostics, while the browser swipe runtime owns live gesture progress, active axis/side capture, offsets, and DOM visibility.
 - Handler-side open-state, pending-command, and configure-retry mutations now flow through dedicated helpers rather than ad hoc field writes, so disabled state, impossible-open rejection, and rejected post-config reopens all converge on the same closed-state invariant.

@@ -257,6 +257,46 @@ internal static partial class DomApi
     [JSImport("setDocumentTitle", Module)]
     internal static partial void SetDocumentTitle(string? title);
 
+    [JSImport("announceSemanticText", Module)]
+    internal static partial void AnnounceSemanticText(string? text);
+
+    [JSImport("openExternalUri", Module)]
+    internal static partial bool OpenExternalUri(string uri, string target);
+
+    [JSImport("setClipboardText", Module)]
+    internal static partial Task<bool> SetClipboardTextAsync(string? text);
+
+    [JSImport("getClipboardText", Module)]
+    internal static partial Task<string?> GetClipboardTextAsync();
+
+    [JSImport("hasClipboardText", Module)]
+    internal static partial bool HasClipboardText();
+
+    [JSImport("getDisplayInfo", Module)]
+    internal static partial double[] GetDisplayInfo();
+
+    [JSImport("getCurrentGeolocationJson", Module)]
+    internal static partial Task<string?> GetCurrentGeolocationJsonAsync(bool enableHighAccuracy, double timeoutMs);
+
+    [JSImport("startGeolocationWatch", Module)]
+    internal static partial int StartGeolocationWatch(
+        bool enableHighAccuracy,
+        double minimumTimeMs,
+        [JSMarshalAs<JSType.Function>] Action changedCallback,
+        [JSMarshalAs<JSType.Function>] Action failedCallback);
+
+    [JSImport("consumeGeolocationWatchPayloadJson", Module)]
+    internal static partial string? ConsumeGeolocationWatchPayloadJson(int subscriptionId);
+
+    [JSImport("unsubscribeGeolocationWatch", Module)]
+    internal static partial void UnsubscribeGeolocationWatch(int subscriptionId);
+
+    [JSImport("speakText", Module)]
+    internal static partial Task<bool> SpeakTextAsync(string text, double rate, double pitch, double volume);
+
+    [JSImport("cancelSpeech", Module)]
+    internal static partial void CancelSpeech();
+
     [JSImport("getLocalStorageItem", Module)]
     internal static partial string? GetLocalStorageItem(string key);
 

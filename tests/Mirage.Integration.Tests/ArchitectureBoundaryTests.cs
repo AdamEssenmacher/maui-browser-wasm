@@ -960,6 +960,96 @@ public sealed class ArchitectureBoundaryTests
     }
 
     [Fact]
+    public void MirageHostingExtensions_RegistersDiFirstBrowserEssentialsServices()
+    {
+        var hostingPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Maui", "Hosting", "MirageHostingExtensions.cs");
+        Assert.True(File.Exists(hostingPath), $"Expected hosting extensions file not found: {hostingPath}");
+
+        var text = File.ReadAllText(hostingPath);
+        foreach (var marker in new[]
+        {
+            "TryAddSingleton<ISemanticScreenReader, MirageBrowserSemanticScreenReader>()",
+            "TryAddSingleton<IBrowser, MirageBrowserBrowser>()",
+            "TryAddSingleton<IClipboard, MirageBrowserClipboard>()",
+            "TryAddSingleton<ILauncher, MirageBrowserLauncher>()",
+            "TryAddSingleton<IDeviceDisplay, MirageBrowserDeviceDisplay>()",
+            "TryAddSingleton<IGeolocation, MirageBrowserGeolocation>()",
+            "TryAddSingleton<ITextToSpeech, MirageBrowserTextToSpeech>()"
+        })
+        {
+            Assert.Contains(marker, text, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void MirageWeb_ExposesBrowserEssentialsInteropWithoutProviderCoupling()
+    {
+        var domApiPath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Dom", "DomApi.cs");
+        var domModulePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "wwwroot", "mirage-dom.js");
+        Assert.True(File.Exists(domApiPath), $"Expected DomApi file not found: {domApiPath}");
+        Assert.True(File.Exists(domModulePath), $"Expected DOM module file not found: {domModulePath}");
+
+        var domApiText = File.ReadAllText(domApiPath);
+        var domModuleText = File.ReadAllText(domModulePath);
+        foreach (var marker in new[]
+        {
+            "announceSemanticText",
+            "openExternalUri",
+            "setClipboardText",
+            "getClipboardText",
+            "hasClipboardText",
+            "getDisplayInfo",
+            "getCurrentGeolocationJson",
+            "startGeolocationWatch",
+            "consumeGeolocationWatchPayloadJson",
+            "unsubscribeGeolocationWatch",
+            "speakText",
+            "cancelSpeech"
+        })
+        {
+            Assert.Contains(marker, domApiText, StringComparison.Ordinal);
+            Assert.True(
+                domModuleText.Contains($"export function {marker}", StringComparison.Ordinal)
+                || domModuleText.Contains($"export async function {marker}", StringComparison.Ordinal),
+                $"Expected mirage-dom.js to export browser Essentials interop function '{marker}'.");
+        }
+    }
+
+    [Fact]
+    public void LegacyMauiBrowserStack_IsDocumentedAsNonAuthoritative()
+    {
+        var root = GetRepositoryRoot();
+        foreach (var relativePath in new[]
+        {
+            Path.Combine("src", "Maui.Browser", "README.md"),
+            Path.Combine("src", "Maui.Browser.Sample", "README.md"),
+            Path.Combine("tests", "Maui.Browser.E2E.Tests", "README.md")
+        })
+        {
+            var path = Path.Combine(root, relativePath);
+            Assert.True(File.Exists(path), $"Expected legacy notice file not found: {path}");
+
+            var text = File.ReadAllText(path);
+            Assert.Contains("legacy", text, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Mirage", text, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void ExternalMauiWasmProjects_AreDocumentedAsResearchInputs()
+    {
+        var root = GetRepositoryRoot();
+        var decisionsText = File.ReadAllText(Path.Combine(root, "docs", "DECISIONS.md"));
+        var guardrailsText = File.ReadAllText(Path.Combine(root, "docs", "ARCHITECTURE_GUARDRAILS.md"));
+
+        Assert.Contains("Avalonia.Controls.Maui", decisionsText, StringComparison.Ordinal);
+        Assert.Contains("AvaloniaMauiHybrid", decisionsText, StringComparison.Ordinal);
+        Assert.Contains("research inputs", guardrailsText, StringComparison.Ordinal);
+        Assert.Contains("DOM nodes remain the platform views", guardrailsText, StringComparison.Ordinal);
+        Assert.Contains("MAUI handler architecture remains the integration surface", guardrailsText, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MirageRuntime_BatchesNonStructuralDomMutations_AndLogsBatchDiagnostics()
     {
         var runtimePath = Path.Combine(GetRepositoryRoot(), "src", "Mirage.Web", "Runtime", "MirageRuntime.cs");
