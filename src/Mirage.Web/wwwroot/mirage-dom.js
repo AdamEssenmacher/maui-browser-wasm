@@ -1560,9 +1560,10 @@ function publishWebViewEvent(ownerHandle, eventName, callback, payload) {
   callback();
 }
 
-const webViewIframeSandbox = "allow-scripts allow-forms allow-same-origin";
+const webViewIframeSandbox = "allow-scripts allow-forms";
 const webViewBridgeMarker = "data-mirage-webview-bridge";
 const webViewBridgeTokenPlaceholder = "__MIRAGE_WEBVIEW_BRIDGE_TOKEN__";
+const webViewBridgeUrlPlaceholder = "__MIRAGE_WEBVIEW_BRIDGE_URL__";
 const webViewBridgeScript = `
 (function () {
   if (window.__mirageWebViewBridgeInstalled) {
@@ -1571,13 +1572,14 @@ const webViewBridgeScript = `
 
   window.__mirageWebViewBridgeInstalled = true;
   const bridgeToken = __MIRAGE_WEBVIEW_BRIDGE_TOKEN__;
+  const bridgeUrl = __MIRAGE_WEBVIEW_BRIDGE_URL__;
 
   function post(type, payload) {
     window.parent.postMessage(Object.assign({
       __mirageWebView: true,
       bridgeToken: bridgeToken,
       type: type,
-      url: window.location.href
+      url: bridgeUrl || window.location.href
     }, payload || {}), "*");
   }
 
@@ -1761,21 +1763,23 @@ const webViewBridgeScript = `
   window.addEventListener("load", ready, { once: true });
 })();`;
 
-function getWebViewBridgeScriptElement(bridgeToken) {
+function getWebViewBridgeScriptElement(bridgeToken, bridgeUrl) {
   const tokenLiteral = JSON.stringify(typeof bridgeToken === "string" ? bridgeToken : "");
+  const urlLiteral = JSON.stringify(typeof bridgeUrl === "string" && bridgeUrl.length > 0 ? bridgeUrl : null);
   const script = webViewBridgeScript
     .replace(webViewBridgeTokenPlaceholder, tokenLiteral)
+    .replace(webViewBridgeUrlPlaceholder, urlLiteral)
     .replace(/<\/script/gi, "<\\/script");
   return `<script ${webViewBridgeMarker}="true">\n${script}\n</script>`;
 }
 
-function injectWebViewBridge(html, bridgeToken) {
+function injectWebViewBridge(html, bridgeToken, bridgeUrl) {
   const source = typeof html === "string" ? html : "";
   if (source.includes(webViewBridgeMarker) || source.includes("__mirageWebViewBridgeInstalled")) {
     return source;
   }
 
-  const script = getWebViewBridgeScriptElement(bridgeToken);
+  const script = getWebViewBridgeScriptElement(bridgeToken, bridgeUrl);
   const headEnd = source.search(/<\/head\s*>/i);
   if (headEnd >= 0) {
     return `${source.slice(0, headEnd)}${script}${source.slice(headEnd)}`;
@@ -1790,6 +1794,71 @@ function injectWebViewBridge(html, bridgeToken) {
   }
 
   return `${script}${source}`;
+}
+
+function escapeWebViewHtmlAttribute(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;");
+}
+
+function injectWebViewBase(html, url) {
+  const source = typeof html === "string" ? html : "";
+  if (typeof url !== "string" || url.length === 0 || /<base(?:\s|>)/i.test(source)) {
+    return source;
+  }
+
+  const base = `<base href="${escapeWebViewHtmlAttribute(url)}">`;
+  const headStart = source.search(/<head(?:\s|>)/i);
+  if (headStart >= 0) {
+    const headOpenEnd = source.indexOf(">", headStart);
+    if (headOpenEnd >= 0) {
+      return `${source.slice(0, headOpenEnd + 1)}${base}${source.slice(headOpenEnd + 1)}`;
+    }
+  }
+
+  return `${base}${source}`;
+}
+
+function canBridgeWebViewUrl(url) {
+  if (typeof url !== "string" || url.length === 0) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(url, document.baseURI);
+    return (parsed.protocol === "http:" || parsed.protocol === "https:")
+      && parsed.origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+async function loadWebViewUrlThroughBridge(iframe, state, entry, navigationVersion, bridgeToken) {
+  const url = entry?.url;
+  if (typeof url !== "string" || url.length === 0) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(url, { credentials: "same-origin" });
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!response.ok || !contentType.toLowerCase().includes("text/html")) {
+      return false;
+    }
+
+    const html = await response.text();
+    if (state.navigationVersion !== navigationVersion || !webViewEntriesEqual(state.currentEntry, entry)) {
+      return true;
+    }
+
+    iframe.removeAttribute("src");
+    iframe.srcdoc = injectWebViewBridge(injectWebViewBase(html, url), bridgeToken, url);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function ensureWebViewSandbox(iframe) {
@@ -2786,7 +2855,7 @@ function isPreservedWebViewSourceKind(sourceKind) {
 }
 
 function canEvaluateWebViewScript(iframe, state) {
-  if (state?.bridgeReady === true && state?.currentEntry?.sourceKind === "html") {
+  if (state?.bridgeReady === true && typeof state?.bridgeToken === "string") {
     return true;
   }
 
@@ -2833,6 +2902,17 @@ function resolveWebViewEntryFromDocument(iframe, state) {
   }
 
   if (href === "about:srcdoc") {
+    if (state?.currentEntry?.sourceKind === "url") {
+      const bridgedUrl = typeof state?.bridgeUrl === "string" && state.bridgeUrl.length > 0
+        ? state.bridgeUrl
+        : state.currentEntry.url;
+      return {
+        sourceKind: "url",
+        url: bridgedUrl,
+        html: ""
+      };
+    }
+
     return {
       sourceKind: "html",
       url: "about:srcdoc",
@@ -3125,6 +3205,7 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
     pendingDocumentNavigation: null,
     bridgeReady: false,
     bridgeToken: null,
+    bridgeExpected: false,
     bridgeUrl: null,
     applyEntry(entry, updateHistory) {
       const normalizedEntry = cloneWebViewEntry(entry);
@@ -3137,7 +3218,8 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
       state.currentUrl = normalizedEntry.sourceKind === "html" ? "about:srcdoc" : normalizedEntry.url;
       state.pendingDocumentNavigation = null;
       state.bridgeReady = false;
-      state.bridgeToken = normalizedEntry.sourceKind === "html" ? createWebViewBridgeToken() : null;
+      state.bridgeExpected = normalizedEntry.sourceKind === "html" || canBridgeWebViewUrl(normalizedEntry.url);
+      state.bridgeToken = state.bridgeExpected ? createWebViewBridgeToken() : null;
       state.bridgeUrl = null;
       ensureWebViewSandbox(iframe);
 
@@ -3154,7 +3236,22 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
 
       if (normalizedEntry.sourceKind === "html") {
         iframe.removeAttribute("src");
-        iframe.srcdoc = injectWebViewBridge(normalizedEntry.html ?? "", state.bridgeToken);
+        iframe.srcdoc = injectWebViewBridge(normalizedEntry.html ?? "", state.bridgeToken, null);
+      } else if (state.bridgeExpected && typeof state.bridgeToken === "string") {
+        const bridgeToken = state.bridgeToken;
+        const navigationVersion = state.navigationVersion;
+        loadWebViewUrlThroughBridge(iframe, state, normalizedEntry, navigationVersion, bridgeToken)
+          .then((loadedThroughBridge) => {
+            if (loadedThroughBridge || state.navigationVersion !== navigationVersion || !webViewEntriesEqual(state.currentEntry, normalizedEntry)) {
+              return;
+            }
+
+            state.bridgeExpected = false;
+            state.bridgeToken = null;
+            state.bridgeUrl = null;
+            iframe.removeAttribute("srcdoc");
+            iframe.src = normalizedEntry.url ?? "about:blank";
+          });
       } else {
         iframe.removeAttribute("srcdoc");
         iframe.src = normalizedEntry.url ?? "about:blank";
@@ -3202,7 +3299,7 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
         return true;
       }
 
-      if (state.bridgeReady === true && state.currentEntry?.sourceKind === "html" && typeof state.bridgeToken === "string") {
+      if (state.bridgeReady === true && typeof state.bridgeToken === "string") {
         try {
           iframe.contentWindow?.postMessage({
             __mirageWebView: true,
@@ -3288,7 +3385,7 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
   };
 
   const loadListener = () => {
-    if (state.currentEntry?.sourceKind === "html" && state.bridgeReady !== true) {
+    if (state.bridgeExpected === true && state.bridgeReady !== true) {
       return;
     }
 
@@ -3304,8 +3401,7 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
       return;
     }
 
-    if (state.currentEntry?.sourceKind !== "html"
-      || typeof state.bridgeToken !== "string"
+    if (typeof state.bridgeToken !== "string"
       || state.bridgeToken.length === 0
       || message.bridgeToken !== state.bridgeToken) {
       return;

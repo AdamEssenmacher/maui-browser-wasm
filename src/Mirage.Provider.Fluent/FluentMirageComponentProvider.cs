@@ -378,7 +378,7 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
                 "iframe",
                 defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
                 {
-                    ["sandbox"] = "allow-scripts allow-forms allow-same-origin"
+                    ["sandbox"] = "allow-scripts allow-forms"
                 },
                 propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
