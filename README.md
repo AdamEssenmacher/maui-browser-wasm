@@ -291,15 +291,16 @@ Reference providers currently live in `Mirage.Provider.Fluent` and `Mirage.Provi
 Install the Playwright browser for E2E:
 
 ```bash
+dotnet build Mirage.CI.slnf --configuration Release
 pwsh tests/Mirage.E2E.Tests/bin/Release/net10.0/playwright.ps1 install --with-deps chromium
 ```
 
 Run the test suites:
 
 ```bash
-dotnet test tests/Mirage.Core.Tests/Mirage.Core.Tests.csproj
-dotnet test tests/Mirage.Integration.Tests/Mirage.Integration.Tests.csproj
-dotnet test tests/Mirage.E2E.Tests/Mirage.E2E.Tests.csproj
+dotnet test tests/Mirage.Core.Tests/Mirage.Core.Tests.csproj --configuration Release --no-build
+dotnet test tests/Mirage.Integration.Tests/Mirage.Integration.Tests.csproj --configuration Release --no-build
+dotnet test tests/Mirage.E2E.Tests/Mirage.E2E.Tests.csproj --configuration Release --no-build
 ```
 
 Run the local slowness matrix:

@@ -2,6 +2,11 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-05-04 (Local validation hardening: prebuilt E2E hosts + Mac Catalyst RIDs)
+- `ControlsSample.Maui` now declares Mac Catalyst runtime identifiers explicitly so full-solution Release restore/build produces assets for the SDK's Mac Catalyst runtime graph instead of depending on implicit defaults.
+- Mirage E2E fixtures now launch sample hosts with `dotnet run --no-build`, making the Release solution build the single source of build work and avoiding nested MSBuild child-node startup failures inside Playwright fixture initialization.
+- The maintained validation lane remains `Mirage.CI.slnf` plus active `Mirage.*` tests; legacy `Maui.Browser*` tests stay reference-only unless they are deliberately revived as a separate lane.
+
 ## 2026-04-02 (SwipeView stabilization sweep: explicit handler/runtime ownership + transition hardening)
 - Kept the current SwipeView architecture but tightened the ownership boundary explicitly: `MirageSwipeViewHandler` owns MAUI-facing open state, pending programmatic commands, disabled gating, and diagnostics, while the browser swipe runtime owns live gesture progress, active axis/side capture, offsets, and DOM visibility.
 - Handler-side open-state, pending-command, and configure-retry mutations now flow through dedicated helpers rather than ad hoc field writes, so disabled state, impossible-open rejection, and rejected post-config reopens all converge on the same closed-state invariant.
