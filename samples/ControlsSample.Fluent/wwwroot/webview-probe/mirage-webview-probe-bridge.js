@@ -38,28 +38,69 @@
     }
   }
 
-  function resolveFormUrl(form) {
-    const rawTarget = (form.getAttribute("target") || "").trim().toLowerCase();
+  function isPlainPrimaryClick(event) {
+    return !!event
+      && !event.defaultPrevented
+      && event.button === 0
+      && !event.metaKey
+      && !event.ctrlKey
+      && !event.shiftKey
+      && !event.altKey;
+  }
+
+  function readSubmitterAttribute(submitter, submitterAttribute, form, formAttribute, fallback) {
+    if (submitter && typeof submitter.getAttribute === "function") {
+      const submitterValue = submitter.getAttribute(submitterAttribute);
+      if (typeof submitterValue === "string" && submitterValue.length > 0) {
+        return submitterValue;
+      }
+    }
+
+    const formValue = form.getAttribute(formAttribute);
+    return typeof formValue === "string" ? formValue : fallback;
+  }
+
+  function createFormData(form, submitter) {
+    if (submitter) {
+      try {
+        return new FormData(form, submitter);
+      } catch {
+        const fallback = new FormData(form);
+        const name = typeof submitter.name === "string" ? submitter.name : "";
+        if (name.length > 0 && !submitter.disabled) {
+          fallback.append(name, typeof submitter.value === "string" ? submitter.value : "");
+        }
+
+        return fallback;
+      }
+    }
+
+    return new FormData(form);
+  }
+
+  function resolveFormUrl(form, submitter) {
+    const rawTarget = readSubmitterAttribute(submitter, "formtarget", form, "target", "").trim().toLowerCase();
     if (rawTarget.length > 0 && rawTarget !== "_self") {
       return null;
     }
 
-    const rawMethod = (form.getAttribute("method") || "get").trim().toLowerCase();
+    const rawMethod = readSubmitterAttribute(submitter, "formmethod", form, "method", "get").trim().toLowerCase();
     if (rawMethod !== "get") {
       return null;
     }
 
-    const url = resolveUrl(form.getAttribute("action") || window.location.href);
+    const url = resolveUrl(readSubmitterAttribute(submitter, "formaction", form, "action", window.location.href));
     if (!url) {
       return null;
     }
 
     try {
       const next = new URL(url, document.baseURI);
-      const query = new URLSearchParams(new FormData(form)).toString();
-      if (query.length > 0) {
-        next.search = query;
+      const query = new URLSearchParams(createFormData(form, submitter));
+      for (const [key, value] of query) {
+        next.searchParams.append(key, value);
       }
+
       return next.href;
     } catch {
       return url;
@@ -67,7 +108,7 @@
   }
 
   document.addEventListener("click", function (event) {
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+    if (!isPlainPrimaryClick(event)) {
       return;
     }
 
@@ -101,7 +142,7 @@
       return;
     }
 
-    const url = resolveFormUrl(form);
+    const url = resolveFormUrl(form, event.submitter || null);
     if (!url) {
       return;
     }

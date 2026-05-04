@@ -3,7 +3,6 @@
 <head>
   <meta charset="utf-8" />
   <title>WebView Probe A</title>
-  <script src="/webview-probe/mirage-webview-probe-bridge.js"></script>
 </head>
 <body data-probe="page-a">
   <main>
@@ -15,8 +14,17 @@
     <p>
       <a data-automation-id="controls-sample-webview-probe-link-page-a-to-cross-origin" href="#">Go to Cross-Origin Probe</a>
     </p>
-    <form data-automation-id="controls-sample-webview-probe-form-page-a-to-page-b" action="/webview-probe/page-b.html" method="get">
-      <button type="submit" data-automation-id="controls-sample-webview-probe-submit-page-a-to-page-b">Submit to Probe Page B</button>
+    <form data-automation-id="controls-sample-webview-probe-form-page-a-to-page-b" action="/webview-probe/page-b.html?fixed=1" method="get">
+      <input type="hidden" name="probe" value="page-a-form" />
+      <button type="submit" name="submitter" value="default" data-automation-id="controls-sample-webview-probe-submit-page-a-to-page-b">Submit to Probe Page B</button>
+      <button
+        type="submit"
+        name="submitter"
+        value="override"
+        formaction="/webview-probe/page-b.html?override=1"
+        formmethod="get"
+        formtarget="_self"
+        data-automation-id="controls-sample-webview-probe-submit-override-page-a-to-page-b">Submit override to Probe Page B</button>
     </form>
   </main>
   <script>

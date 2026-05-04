@@ -1950,6 +1950,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         const string inlineToPageASelector = "[data-automation-id='controls-sample-webview-probe-link-inline-to-page-a']";
         const string pageAToPageBSelector = "[data-automation-id='controls-sample-webview-probe-link-page-a-to-page-b']";
         const string pageAToPageBSubmitSelector = "[data-automation-id='controls-sample-webview-probe-submit-page-a-to-page-b']";
+        const string pageAToPageBOverrideSubmitSelector = "[data-automation-id='controls-sample-webview-probe-submit-override-page-a-to-page-b']";
 
         async Task WaitForHostAttributeAsync(string attributeName, string expectedValue)
         {
@@ -2025,12 +2026,39 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
                 });
         }
 
+        async Task WaitForNavigationCounterEqualAsync(string counterName, int expected)
+        {
+            await page.WaitForFunctionAsync(
+                """
+                (args) => {
+                    const text = document.querySelector(args.selector)?.textContent ?? "";
+                    const token = `${args.counterName}=`;
+                    const start = text.indexOf(token);
+                    if (start < 0) {
+                        return false;
+                    }
+
+                    const from = start + token.length;
+                    const end = text.indexOf(" ", from);
+                    const raw = end >= 0 ? text.slice(from, end) : text.slice(from);
+                    const next = Number.parseInt(raw, 10);
+                    return Number.isFinite(next) && next === args.expected;
+                }
+                """,
+                new
+                {
+                    selector = navigationStateSelector,
+                    counterName,
+                    expected
+                });
+        }
+
         await page.WaitForSelectorAsync(hostSelector);
         await page.Locator(hostSelector).ScrollIntoViewIfNeededAsync();
         var frame = page.FrameLocator(hostSelector);
 
         Assert.Equal("WebView", await page.GetAttributeAsync(hostSelector, "data-mirage-kind"));
-        Assert.Equal("allow-scripts allow-forms", await page.GetAttributeAsync(hostSelector, "sandbox"));
+        Assert.Equal("allow-scripts allow-forms allow-same-origin", await page.GetAttributeAsync(hostSelector, "sandbox"));
 
         await WaitForHostAttributeAsync("data-maui-wv-source-kind", "html");
         await WaitForHostAttributeAsync("data-maui-wv-eval-capability", "same-origin");
@@ -2040,11 +2068,69 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await page.Locator(evalAsyncSelector).ClickAsync();
         await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=inline:sync");
 
+        var inlineToPageANavigatedBaseline = await ReadNavigationCounterAsync("navigated");
         await frame.Locator(inlineToPageASelector).ClickAsync();
         await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-a.html");
+        await WaitForNavigationCounterEqualAsync("navigated", inlineToPageANavigatedBaseline + 1);
+        await page.WaitForTimeoutAsync(150);
+        Assert.Equal(inlineToPageANavigatedBaseline + 1, await ReadNavigationCounterAsync("navigated"));
         await WaitForLabelTextContainsAsync(page, navigationStateSelector, "canGoBack=True");
         await page.Locator(evalAsyncSelector).ClickAsync();
         await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-a");
+
+        var modifiedClickPrevented = await frame.Locator(pageAToPageBSelector).EvaluateAsync<bool>(
+            """
+            element => {
+                let preventedByObserver = false;
+                element.addEventListener("click", event => {
+                    preventedByObserver = event.defaultPrevented;
+                    event.preventDefault();
+                }, { once: true });
+                const event = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, ctrlKey: true });
+                element.dispatchEvent(event);
+                return preventedByObserver;
+            }
+            """);
+        Assert.False(modifiedClickPrevented);
+
+        var middleClickPrevented = await frame.Locator(pageAToPageBSelector).EvaluateAsync<bool>(
+            """
+            element => {
+                let preventedByObserver = false;
+                element.addEventListener("click", event => {
+                    preventedByObserver = event.defaultPrevented;
+                    event.preventDefault();
+                }, { once: true });
+                const event = new MouseEvent("click", { bubbles: true, cancelable: true, button: 1 });
+                element.dispatchEvent(event);
+                return preventedByObserver;
+            }
+            """);
+        Assert.False(middleClickPrevented);
+
+        var spoofedNavigatedBaseline = await ReadNavigationCounterAsync("navigated");
+        await frame.Locator("body").EvaluateAsync<string>(
+            """
+            () => {
+                window.parent.postMessage({
+                    __mirageWebView: true,
+                    type: "ready",
+                    url: "/webview-probe/spoofed.html"
+                }, "*");
+                window.parent.postMessage({
+                    __mirageWebView: true,
+                    type: "evalresult",
+                    requestId: 999999,
+                    success: true,
+                    result: "spoofed",
+                    error: null
+                }, "*");
+                return "posted";
+            }
+            """);
+        await page.WaitForTimeoutAsync(150);
+        Assert.Equal(spoofedNavigatedBaseline, await ReadNavigationCounterAsync("navigated"));
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-a.html");
 
         await page.Locator(toggleBlockPageBSelector).ClickAsync();
         await WaitForLabelTextContainsAsync(page, sourceStateSelector, "blockPageB=True");
@@ -2058,6 +2144,8 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         var blockedSubmitNavigatingBaseline = await ReadNavigationCounterAsync("navigating");
         await frame.Locator(pageAToPageBSubmitSelector).ClickAsync();
         await WaitForNavigationCounterGreaterThanAsync("navigating", blockedSubmitNavigatingBaseline);
+        await WaitForLabelTextContainsAsync(page, sourceStateSelector, "fixed=1");
+        await WaitForLabelTextContainsAsync(page, sourceStateSelector, "probe=page-a-form");
         await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-a.html");
         await page.Locator(evalAsyncSelector).ClickAsync();
         await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=page-a");
@@ -2134,6 +2222,22 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         await WaitForHostAttributeAsync("data-maui-wv-eval-capability", "same-origin");
         await page.Locator(evalAsyncSelector).ClickAsync();
         await WaitForLabelTextContainsAsync(page, evalStateSelector, "evalResult=inline");
+
+        await page.Locator(loadPageASelector).ClickAsync();
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-a.html");
+        var formSubmitNavigatedBaseline = await ReadNavigationCounterAsync("navigated");
+        await frame.Locator(pageAToPageBSubmitSelector).ClickAsync();
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-b.html?fixed=1");
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "probe=page-a-form");
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "submitter=default");
+        await WaitForNavigationCounterEqualAsync("navigated", formSubmitNavigatedBaseline + 1);
+
+        await page.Locator(loadPageASelector).ClickAsync();
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-a.html");
+        await frame.Locator(pageAToPageBOverrideSubmitSelector).ClickAsync();
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "/webview-probe/page-b.html?override=1");
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "probe=page-a-form");
+        await WaitForHostAttributeContainingAsync("data-maui-wv-url", "submitter=override");
     }
 
     [Fact]

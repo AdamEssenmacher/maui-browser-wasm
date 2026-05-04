@@ -285,7 +285,7 @@ public sealed class ProviderValidationTests
         var descriptor = provider.ResolveControl(ComponentKind.WebView);
 
         Assert.Equal("iframe", descriptor.ElementTagName);
-        Assert.Equal("allow-scripts allow-forms", descriptor.DefaultAttributes["sandbox"]);
+        Assert.Equal("allow-scripts allow-forms allow-same-origin", descriptor.DefaultAttributes["sandbox"]);
         Assert.True(descriptor.PropertyMappings.ContainsKey("AutomationId"));
         Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["SourceKindState"].Target);
         Assert.Equal("data-maui-wv-source-kind", descriptor.PropertyMappings["SourceKindState"].Name);

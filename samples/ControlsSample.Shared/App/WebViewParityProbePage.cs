@@ -247,7 +247,7 @@ public sealed class WebViewParityProbePage : ContentPage
         _ = sender;
         _navigatingCount++;
         _lastNavigatingUrl = string.IsNullOrWhiteSpace(e.Url) ? "<none>" : e.Url;
-        if (_cancelPageBNavigation && _lastNavigatingUrl.EndsWith(PageBUrl, StringComparison.Ordinal))
+        if (_cancelPageBNavigation && IsPageBUrl(_lastNavigatingUrl))
         {
             e.Cancel = true;
         }
@@ -302,5 +302,11 @@ public sealed class WebViewParityProbePage : ContentPage
                 </html>
                 """
         };
+    }
+
+    private static bool IsPageBUrl(string url)
+    {
+        var path = url.Split(['?', '#'], 2)[0];
+        return path.EndsWith(PageBUrl, StringComparison.Ordinal);
     }
 }

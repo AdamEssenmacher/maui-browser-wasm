@@ -1560,8 +1560,9 @@ function publishWebViewEvent(ownerHandle, eventName, callback, payload) {
   callback();
 }
 
-const webViewIframeSandbox = "allow-scripts allow-forms";
+const webViewIframeSandbox = "allow-scripts allow-forms allow-same-origin";
 const webViewBridgeMarker = "data-mirage-webview-bridge";
+const webViewBridgeTokenPlaceholder = "__MIRAGE_WEBVIEW_BRIDGE_TOKEN__";
 const webViewBridgeScript = `
 (function () {
   if (window.__mirageWebViewBridgeInstalled) {
@@ -1569,10 +1570,12 @@ const webViewBridgeScript = `
   }
 
   window.__mirageWebViewBridgeInstalled = true;
+  const bridgeToken = __MIRAGE_WEBVIEW_BRIDGE_TOKEN__;
 
   function post(type, payload) {
     window.parent.postMessage(Object.assign({
       __mirageWebView: true,
+      bridgeToken: bridgeToken,
       type: type,
       url: window.location.href
     }, payload || {}), "*");
@@ -1603,28 +1606,69 @@ const webViewBridgeScript = `
     }
   }
 
-  function resolveFormUrl(form) {
-    const rawTarget = (form.getAttribute("target") || "").trim().toLowerCase();
+  function isPlainPrimaryClick(event) {
+    return !!event
+      && !event.defaultPrevented
+      && event.button === 0
+      && !event.metaKey
+      && !event.ctrlKey
+      && !event.shiftKey
+      && !event.altKey;
+  }
+
+  function readSubmitterAttribute(submitter, submitterAttribute, form, formAttribute, fallback) {
+    if (submitter && typeof submitter.getAttribute === "function") {
+      const submitterValue = submitter.getAttribute(submitterAttribute);
+      if (typeof submitterValue === "string" && submitterValue.length > 0) {
+        return submitterValue;
+      }
+    }
+
+    const formValue = form.getAttribute(formAttribute);
+    return typeof formValue === "string" ? formValue : fallback;
+  }
+
+  function createFormData(form, submitter) {
+    if (submitter) {
+      try {
+        return new FormData(form, submitter);
+      } catch {
+        const fallback = new FormData(form);
+        const name = typeof submitter.name === "string" ? submitter.name : "";
+        if (name.length > 0 && !submitter.disabled) {
+          fallback.append(name, typeof submitter.value === "string" ? submitter.value : "");
+        }
+
+        return fallback;
+      }
+    }
+
+    return new FormData(form);
+  }
+
+  function resolveFormUrl(form, submitter) {
+    const rawTarget = readSubmitterAttribute(submitter, "formtarget", form, "target", "").trim().toLowerCase();
     if (rawTarget.length > 0 && rawTarget !== "_self") {
       return null;
     }
 
-    const rawMethod = (form.getAttribute("method") || "get").trim().toLowerCase();
+    const rawMethod = readSubmitterAttribute(submitter, "formmethod", form, "method", "get").trim().toLowerCase();
     if (rawMethod !== "get") {
       return null;
     }
 
-    const url = resolveUrl(form.getAttribute("action") || window.location.href);
+    const url = resolveUrl(readSubmitterAttribute(submitter, "formaction", form, "action", window.location.href));
     if (!url) {
       return null;
     }
 
     try {
       const next = new URL(url, document.baseURI);
-      const query = new URLSearchParams(new FormData(form)).toString();
-      if (query.length > 0) {
-        next.search = query;
+      const query = new URLSearchParams(createFormData(form, submitter));
+      for (const [key, value] of query) {
+        next.searchParams.append(key, value);
       }
+
       return next.href;
     } catch {
       return url;
@@ -1632,7 +1676,7 @@ const webViewBridgeScript = `
   }
 
   document.addEventListener("click", function (event) {
-    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+    if (!isPlainPrimaryClick(event)) {
       return;
     }
 
@@ -1666,7 +1710,7 @@ const webViewBridgeScript = `
       return;
     }
 
-    const url = resolveFormUrl(form);
+    const url = resolveFormUrl(form, event.submitter || null);
     if (!url) {
       return;
     }
@@ -1678,7 +1722,10 @@ const webViewBridgeScript = `
 
   window.addEventListener("message", function (event) {
     const message = event.data;
-    if (!message || message.__mirageWebView !== true || message.type !== "evaluate") {
+    if (!message
+      || message.__mirageWebView !== true
+      || message.type !== "evaluate"
+      || message.bridgeToken !== bridgeToken) {
       return;
     }
 
@@ -1716,25 +1763,32 @@ const webViewBridgeScript = `
   window.addEventListener("load", ready, { once: true });
 })();`;
 
-function getWebViewBridgeScriptElement() {
-  return `<script ${webViewBridgeMarker}="true">\n${webViewBridgeScript.replace(/<\/script/gi, "<\\/script")}\n</script>`;
+function getWebViewBridgeScriptElement(bridgeToken) {
+  const tokenLiteral = JSON.stringify(typeof bridgeToken === "string" ? bridgeToken : "");
+  const script = webViewBridgeScript
+    .replace(webViewBridgeTokenPlaceholder, tokenLiteral)
+    .replace(/<\/script/gi, "<\\/script");
+  return `<script ${webViewBridgeMarker}="true">\n${script}\n</script>`;
 }
 
-function injectWebViewBridge(html) {
+function injectWebViewBridge(html, bridgeToken) {
   const source = typeof html === "string" ? html : "";
   if (source.includes(webViewBridgeMarker) || source.includes("__mirageWebViewBridgeInstalled")) {
     return source;
   }
 
-  const script = getWebViewBridgeScriptElement();
+  const script = getWebViewBridgeScriptElement(bridgeToken);
   const headEnd = source.search(/<\/head\s*>/i);
   if (headEnd >= 0) {
     return `${source.slice(0, headEnd)}${script}${source.slice(headEnd)}`;
   }
 
-  const bodyEnd = source.search(/<\/body\s*>/i);
-  if (bodyEnd >= 0) {
-    return `${source.slice(0, bodyEnd)}${script}${source.slice(bodyEnd)}`;
+  const bodyStart = source.search(/<body(?:\s|>)/i);
+  if (bodyStart >= 0) {
+    const bodyOpenEnd = source.indexOf(">", bodyStart);
+    if (bodyOpenEnd >= 0) {
+      return `${source.slice(0, bodyOpenEnd + 1)}${script}${source.slice(bodyOpenEnd + 1)}`;
+    }
   }
 
   return `${script}${source}`;
@@ -2697,6 +2751,18 @@ function webViewEntriesEqual(left, right) {
     && (left?.html ?? "") === (right?.html ?? "");
 }
 
+function createWebViewBridgeToken() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    try {
+      return crypto.randomUUID();
+    } catch {
+      // Fall through to deterministic-shape entropy below.
+    }
+  }
+
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
 function resolveWebViewEntryFromConfig(config) {
   if (!config) {
     return { sourceKind: "none", url: "about:blank", html: "" };
@@ -2722,7 +2788,7 @@ function isPreservedWebViewSourceKind(sourceKind) {
 }
 
 function canEvaluateWebViewScript(iframe, state) {
-  if (state?.bridgeReady === true) {
+  if (state?.bridgeReady === true && state?.currentEntry?.sourceKind === "html") {
     return true;
   }
 
@@ -2858,22 +2924,62 @@ function queueWebViewDocumentNavigation(elementHandle, state, url, event) {
   return true;
 }
 
-function resolveWebViewFormNavigationUrl(form, doc) {
+function isPlainPrimaryWebViewClick(event) {
+  return !!event
+    && !event.defaultPrevented
+    && event.button === 0
+    && !event.metaKey
+    && !event.ctrlKey
+    && !event.shiftKey
+    && !event.altKey;
+}
+
+function readWebViewSubmitterAttribute(submitter, submitterAttribute, form, formAttribute, fallback) {
+  if (submitter && typeof submitter.getAttribute === "function") {
+    const submitterValue = submitter.getAttribute(submitterAttribute);
+    if (typeof submitterValue === "string" && submitterValue.length > 0) {
+      return submitterValue;
+    }
+  }
+
+  const formValue = form.getAttribute(formAttribute);
+  return typeof formValue === "string" ? formValue : fallback;
+}
+
+function createWebViewFormData(form, submitter) {
+  if (submitter) {
+    try {
+      return new FormData(form, submitter);
+    } catch {
+      const fallback = new FormData(form);
+      const name = typeof submitter.name === "string" ? submitter.name : "";
+      if (name.length > 0 && !submitter.disabled) {
+        fallback.append(name, typeof submitter.value === "string" ? submitter.value : "");
+      }
+
+      return fallback;
+    }
+  }
+
+  return new FormData(form);
+}
+
+function resolveWebViewFormNavigationUrl(form, doc, submitter) {
   if (!form || typeof form.getAttribute !== "function") {
     return null;
   }
 
-  const rawTarget = (form.getAttribute("target") ?? "").trim();
+  const rawTarget = readWebViewSubmitterAttribute(submitter, "formtarget", form, "target", "").trim();
   if (rawTarget.length > 0 && rawTarget.toLowerCase() !== "_self") {
     return null;
   }
 
-  const rawMethod = (form.getAttribute("method") ?? "get").trim().toLowerCase();
+  const rawMethod = readWebViewSubmitterAttribute(submitter, "formmethod", form, "method", "get").trim().toLowerCase();
   if (rawMethod !== "get") {
     return null;
   }
 
-  const action = form.getAttribute("action") ?? doc?.location?.href ?? "";
+  const action = readWebViewSubmitterAttribute(submitter, "formaction", form, "action", doc?.location?.href ?? "");
   if (typeof action !== "string" || action.length === 0) {
     return null;
   }
@@ -2887,11 +2993,9 @@ function resolveWebViewFormNavigationUrl(form, doc) {
 
   if (rawMethod === "get") {
     try {
-      const data = new FormData(form);
-      const search = new URLSearchParams(data);
-      const query = search.toString();
-      if (query.length > 0) {
-        url.search = query;
+      const search = new URLSearchParams(createWebViewFormData(form, submitter));
+      for (const [key, value] of search) {
+        url.searchParams.append(key, value);
       }
     } catch {
       // Leave the action URL intact when a form contains values FormData cannot serialize.
@@ -2915,7 +3019,7 @@ function installWebViewDocumentNavigationObserver(elementHandle, iframe, state) 
 
   doc.__mirageWebViewNavigationObserverInstalled = true;
   doc.addEventListener("click", (event) => {
-    if (event.defaultPrevented) {
+    if (!isPlainPrimaryWebViewClick(event)) {
       return;
     }
 
@@ -2955,7 +3059,7 @@ function installWebViewDocumentNavigationObserver(elementHandle, iframe, state) 
     }
 
     const form = event.target;
-    const url = resolveWebViewFormNavigationUrl(form, doc);
+    const url = resolveWebViewFormNavigationUrl(form, doc, event.submitter || null);
     if (url) {
       queueWebViewDocumentNavigation(elementHandle, state, url, event);
     }
@@ -3013,19 +3117,29 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
     history: [],
     historyIndex: -1,
     currentEntry: null,
-	    currentUrl: config.sourceKind === "html" ? "about:srcdoc" : config.url,
-	    nextNavigationRequestId: 0,
-	    pendingDocumentNavigation: null,
-	    bridgeReady: false,
-	    bridgeUrl: null,
-	    applyEntry(entry, updateHistory) {
-	      const normalizedEntry = cloneWebViewEntry(entry);
-	      state.currentEntry = normalizedEntry;
-	      state.currentUrl = normalizedEntry.sourceKind === "html" ? "about:srcdoc" : normalizedEntry.url;
-	      state.pendingDocumentNavigation = null;
-	      state.bridgeReady = false;
-	      state.bridgeUrl = null;
-	      ensureWebViewSandbox(iframe);
+    currentUrl: config.sourceKind === "html" ? "about:srcdoc" : config.url,
+    nextNavigationRequestId: 0,
+    navigationVersion: 0,
+    navigatedVersion: -1,
+    navigatedKey: "",
+    pendingDocumentNavigation: null,
+    bridgeReady: false,
+    bridgeToken: null,
+    bridgeUrl: null,
+    applyEntry(entry, updateHistory) {
+      const normalizedEntry = cloneWebViewEntry(entry);
+      state.navigationVersion = Number.isFinite(state.navigationVersion)
+        ? Math.trunc(state.navigationVersion) + 1
+        : 1;
+      state.navigatedVersion = -1;
+      state.navigatedKey = "";
+      state.currentEntry = normalizedEntry;
+      state.currentUrl = normalizedEntry.sourceKind === "html" ? "about:srcdoc" : normalizedEntry.url;
+      state.pendingDocumentNavigation = null;
+      state.bridgeReady = false;
+      state.bridgeToken = normalizedEntry.sourceKind === "html" ? createWebViewBridgeToken() : null;
+      state.bridgeUrl = null;
+      ensureWebViewSandbox(iframe);
 
       if (updateHistory) {
         const currentHistoryEntry = state.historyIndex >= 0 ? state.history[state.historyIndex] : null;
@@ -3038,14 +3152,14 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
         state.history[state.historyIndex] = cloneWebViewEntry(normalizedEntry);
       }
 
-	      if (normalizedEntry.sourceKind === "html") {
-	        iframe.removeAttribute("src");
-	        iframe.srcdoc = injectWebViewBridge(normalizedEntry.html ?? "");
-	      } else {
-	        iframe.removeAttribute("srcdoc");
-	        iframe.src = normalizedEntry.url ?? "about:blank";
-	      }
-	    },
+      if (normalizedEntry.sourceKind === "html") {
+        iframe.removeAttribute("src");
+        iframe.srcdoc = injectWebViewBridge(normalizedEntry.html ?? "", state.bridgeToken);
+      } else {
+        iframe.removeAttribute("srcdoc");
+        iframe.src = normalizedEntry.url ?? "about:blank";
+      }
+    },
     requestGoBack() {
       if (state.historyIndex <= 0) {
         return false;
@@ -3077,9 +3191,9 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
         return false;
       }
 
-	      const canEvaluate = canEvaluateWebViewScript(iframe, state);
-	      if (!canEvaluate) {
-	        publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+      const canEvaluate = canEvaluateWebViewScript(iframe, state);
+      if (!canEvaluate) {
+        publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
           requestId,
           success: false,
           result: null,
@@ -3088,28 +3202,29 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
         return true;
       }
 
-	      if (state.bridgeReady === true) {
-	        try {
-	          iframe.contentWindow?.postMessage({
-	            __mirageWebView: true,
-	            type: "evaluate",
-	            requestId,
-	            script,
-	            captureResult
-	          }, "*");
-	          return true;
-	        } catch {
-	          publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
-	            requestId,
-	            success: false,
-	            result: null,
-	            error: "Cross-origin or opaque-origin content prevented JavaScript evaluation."
-	          }));
-	          return true;
-	        }
-	      }
+      if (state.bridgeReady === true && state.currentEntry?.sourceKind === "html" && typeof state.bridgeToken === "string") {
+        try {
+          iframe.contentWindow?.postMessage({
+            __mirageWebView: true,
+            bridgeToken: state.bridgeToken,
+            type: "evaluate",
+            requestId,
+            script,
+            captureResult
+          }, "*");
+          return true;
+        } catch {
+          publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+            requestId,
+            success: false,
+            result: null,
+            error: "Cross-origin or opaque-origin content prevented JavaScript evaluation."
+          }));
+          return true;
+        }
+      }
 
-	      let win;
+      let win;
       try {
         win = iframe.contentWindow;
       } catch {
@@ -3146,59 +3261,80 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
         });
       return true;
     }
-	  };
+  };
 
-	  const publishNavigated = (result) => {
-	    syncWebViewHistoryFromDocument(iframe, state);
-	    installWebViewDocumentNavigationObserver(elementHandle, iframe, state);
-	    const currentEntry = cloneWebViewEntry(state.currentEntry);
+  const publishNavigated = (result) => {
+    syncWebViewHistoryFromDocument(iframe, state);
+    installWebViewDocumentNavigationObserver(elementHandle, iframe, state);
+    const currentEntry = cloneWebViewEntry(state.currentEntry);
+    const resolvedUrl = resolveWebViewLocation(iframe, state);
+    const navigatedKey = `${state.navigationVersion}:${currentEntry.sourceKind}:${resolvedUrl}`;
+    if (state.navigatedVersion === state.navigationVersion && state.navigatedKey === navigatedKey) {
+      return;
+    }
+
     publishWebViewEvent(elementHandle, "navigated", navigatedCallback, JSON.stringify({
-      url: resolveWebViewLocation(iframe, state),
+      url: resolvedUrl,
       sourceKind: currentEntry.sourceKind,
       html: currentEntry.sourceKind === "html" ? currentEntry.html : null,
-	      canGoBack: state.historyIndex > 0,
-	      canGoForward: state.historyIndex >= 0 && state.historyIndex < state.history.length - 1,
-	      canEvaluateJavaScript: canEvaluateWebViewScript(iframe, state),
-	      result: typeof result === "string" && result.length > 0 ? result : "success"
-	    }));
-	    state.pendingDocumentNavigation = null;
-	  };
+      canGoBack: state.historyIndex > 0,
+      canGoForward: state.historyIndex >= 0 && state.historyIndex < state.history.length - 1,
+      canEvaluateJavaScript: canEvaluateWebViewScript(iframe, state),
+      result: typeof result === "string" && result.length > 0 ? result : "success"
+    }));
+    state.navigatedVersion = state.navigationVersion;
+    state.navigatedKey = navigatedKey;
+    state.pendingDocumentNavigation = null;
+  };
 
-	  const loadListener = () => publishNavigated("success");
-	  const messageListener = (event) => {
-	    if (event.source !== iframe.contentWindow) {
-	      return;
-	    }
+  const loadListener = () => {
+    if (state.currentEntry?.sourceKind === "html" && state.bridgeReady !== true) {
+      return;
+    }
 
-	    const message = event.data;
-	    if (!message || message.__mirageWebView !== true || typeof message.type !== "string") {
-	      return;
-	    }
+    publishNavigated("success");
+  };
+  const messageListener = (event) => {
+    if (event.source !== iframe.contentWindow) {
+      return;
+    }
 
-	    if (typeof message.url === "string" && message.url.length > 0) {
-	      state.bridgeUrl = message.url;
-	    }
+    const message = event.data;
+    if (!message || message.__mirageWebView !== true || typeof message.type !== "string") {
+      return;
+    }
 
-	    switch (message.type) {
-	      case "ready":
-	        state.bridgeReady = true;
-	        publishNavigated("success");
-	        break;
-	      case "navigating":
-	        queueWebViewDocumentNavigation(elementHandle, state, message.url, null);
-	        break;
-	      case "evalresult":
-	        publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
-	          requestId: Number.isFinite(message.requestId) ? Math.trunc(message.requestId) : 0,
-	          success: message.success === true,
-	          result: typeof message.result === "string" ? message.result : null,
-	          error: typeof message.error === "string" ? message.error : null
-	        }));
-	        break;
-	    }
-	  };
-	  iframe.addEventListener("load", loadListener);
-	  window.addEventListener("message", messageListener);
+    if (state.currentEntry?.sourceKind !== "html"
+      || typeof state.bridgeToken !== "string"
+      || state.bridgeToken.length === 0
+      || message.bridgeToken !== state.bridgeToken) {
+      return;
+    }
+
+    if (typeof message.url === "string" && message.url.length > 0) {
+      state.bridgeUrl = message.url;
+    }
+
+    switch (message.type) {
+      case "ready":
+        state.bridgeReady = true;
+        publishNavigated("success");
+        break;
+      case "navigating":
+        queueWebViewDocumentNavigation(elementHandle, state, message.url, null);
+        break;
+      case "evalresult":
+        publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+          requestId: Number.isFinite(message.requestId) ? Math.trunc(message.requestId) : 0,
+          success: message.success === true,
+          result: typeof message.result === "string" ? message.result : null,
+          error: typeof message.error === "string" ? message.error : null
+        }));
+        break;
+    }
+  };
+  iframe.addEventListener("load", loadListener);
+  window.addEventListener("message", messageListener);
 
   const initialEntry = resolveWebViewEntryFromConfig(config);
   state.history = [cloneWebViewEntry(initialEntry)];
@@ -3207,13 +3343,13 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
 
   const subscriptionId = nextEventSubscriptionId++;
   eventSubscriptions.set(subscriptionId, {
-	    element: iframe,
-	    dispose: () => {
-	      iframe.removeEventListener("load", loadListener);
-	      window.removeEventListener("message", messageListener);
-	      delete iframe.__mirageWebViewState;
-	    }
-	  });
+    element: iframe,
+    dispose: () => {
+      iframe.removeEventListener("load", loadListener);
+      window.removeEventListener("message", messageListener);
+      delete iframe.__mirageWebViewState;
+    }
+  });
 
   state.subscriptionId = subscriptionId;
   iframe.__mirageWebViewState = state;
