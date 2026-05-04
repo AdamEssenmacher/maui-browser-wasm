@@ -1696,9 +1696,8 @@ const webViewBridgeScript = `
     }
 
     event.preventDefault();
-    event.stopPropagation();
     post("navigating", { url: url });
-  }, true);
+  });
 
   document.addEventListener("submit", function (event) {
     if (event.defaultPrevented) {
@@ -1716,9 +1715,8 @@ const webViewBridgeScript = `
     }
 
     event.preventDefault();
-    event.stopPropagation();
     post("navigating", { url: url });
-  }, true);
+  });
 
   window.addEventListener("message", function (event) {
     const message = event.data;
@@ -2898,7 +2896,7 @@ function syncWebViewHistoryFromDocument(iframe, state) {
   state.historyIndex = state.history.length - 1;
 }
 
-function queueWebViewDocumentNavigation(elementHandle, state, url, event) {
+function queueWebViewDocumentNavigation(elementHandle, state, url) {
   if (typeof url !== "string" || url.length === 0 || typeof state?.navigatingCallback !== "function") {
     return false;
   }
@@ -2908,8 +2906,6 @@ function queueWebViewDocumentNavigation(elementHandle, state, url, event) {
     : 1;
   state.nextNavigationRequestId = requestId;
   state.pendingDocumentNavigation = { requestId, url };
-  event?.preventDefault?.();
-  event?.stopPropagation?.();
   window.setTimeout(() => {
     const pending = state.pendingDocumentNavigation;
     if (!pending || pending.requestId !== requestId) {
@@ -3050,8 +3046,10 @@ function installWebViewDocumentNavigationObserver(elementHandle, iframe, state) 
       url = href;
     }
 
-    queueWebViewDocumentNavigation(elementHandle, state, url, event);
-  }, true);
+    if (queueWebViewDocumentNavigation(elementHandle, state, url)) {
+      event.preventDefault();
+    }
+  });
 
   doc.addEventListener("submit", (event) => {
     if (event.defaultPrevented) {
@@ -3061,9 +3059,11 @@ function installWebViewDocumentNavigationObserver(elementHandle, iframe, state) 
     const form = event.target;
     const url = resolveWebViewFormNavigationUrl(form, doc, event.submitter || null);
     if (url) {
-      queueWebViewDocumentNavigation(elementHandle, state, url, event);
+      if (queueWebViewDocumentNavigation(elementHandle, state, url)) {
+        event.preventDefault();
+      }
     }
-  }, true);
+  });
 }
 
 function serializeWebViewEvalResult(value) {
@@ -3321,7 +3321,7 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
         publishNavigated("success");
         break;
       case "navigating":
-        queueWebViewDocumentNavigation(elementHandle, state, message.url, null);
+        queueWebViewDocumentNavigation(elementHandle, state, message.url);
         break;
       case "evalresult":
         publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({

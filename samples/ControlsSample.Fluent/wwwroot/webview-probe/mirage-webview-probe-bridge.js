@@ -128,9 +128,8 @@
     }
 
     event.preventDefault();
-    event.stopPropagation();
     post("navigating", { url });
-  }, true);
+  });
 
   document.addEventListener("submit", function (event) {
     if (event.defaultPrevented) {
@@ -148,9 +147,8 @@
     }
 
     event.preventDefault();
-    event.stopPropagation();
     post("navigating", { url });
-  }, true);
+  });
 
   window.addEventListener("message", function (event) {
     const message = event.data;
