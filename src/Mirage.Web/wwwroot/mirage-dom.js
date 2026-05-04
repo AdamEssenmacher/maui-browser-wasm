@@ -946,7 +946,10 @@ const trackedEventPayloads = new Map();
 const pullToRefreshStatePayloads = new Map();
 const swipeViewEventPayloads = new Map();
 const webViewEventPayloads = new Map();
+const geolocationWatchPayloads = new Map();
 let nextEventSubscriptionId = 1;
+let clipboardFallbackText = null;
+let semanticAnnouncerElement = null;
 
 function releaseElementRecursive(element) {
   for (const child of Array.from(element.children)) {
@@ -1555,6 +1558,192 @@ function publishWebViewEvent(ownerHandle, eventName, callback, payload) {
     key,
     typeof payload === "string" && payload.length > 0 ? payload : null);
   callback();
+}
+
+const webViewIframeSandbox = "allow-scripts allow-forms";
+const webViewBridgeMarker = "data-mirage-webview-bridge";
+const webViewBridgeScript = `
+(function () {
+  if (window.__mirageWebViewBridgeInstalled) {
+    return;
+  }
+
+  window.__mirageWebViewBridgeInstalled = true;
+
+  function post(type, payload) {
+    window.parent.postMessage(Object.assign({
+      __mirageWebView: true,
+      type: type,
+      url: window.location.href
+    }, payload || {}), "*");
+  }
+
+  function serialize(value) {
+    if (typeof value === "undefined") {
+      return "";
+    }
+    if (value === null || typeof value === "string") {
+      return value ?? "";
+    }
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+
+  function resolveUrl(value) {
+    if (typeof value !== "string" || value.length === 0) {
+      return null;
+    }
+    try {
+      return new URL(value, document.baseURI).href;
+    } catch {
+      return value;
+    }
+  }
+
+  function resolveFormUrl(form) {
+    const rawTarget = (form.getAttribute("target") || "").trim().toLowerCase();
+    if (rawTarget.length > 0 && rawTarget !== "_self") {
+      return null;
+    }
+
+    const rawMethod = (form.getAttribute("method") || "get").trim().toLowerCase();
+    if (rawMethod !== "get") {
+      return null;
+    }
+
+    const url = resolveUrl(form.getAttribute("action") || window.location.href);
+    if (!url) {
+      return null;
+    }
+
+    try {
+      const next = new URL(url, document.baseURI);
+      const query = new URLSearchParams(new FormData(form)).toString();
+      if (query.length > 0) {
+        next.search = query;
+      }
+      return next.href;
+    } catch {
+      return url;
+    }
+  }
+
+  document.addEventListener("click", function (event) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+
+    const anchor = event.target && event.target.closest ? event.target.closest("a[href]") : null;
+    if (!anchor) {
+      return;
+    }
+
+    const rawTarget = (anchor.getAttribute("target") || "").trim().toLowerCase();
+    if (rawTarget.length > 0 && rawTarget !== "_self") {
+      return;
+    }
+
+    const url = resolveUrl(anchor.getAttribute("href"));
+    if (!url) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    post("navigating", { url: url });
+  }, true);
+
+  document.addEventListener("submit", function (event) {
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    const form = event.target;
+    if (!form || typeof form.getAttribute !== "function") {
+      return;
+    }
+
+    const url = resolveFormUrl(form);
+    if (!url) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    post("navigating", { url: url });
+  }, true);
+
+  window.addEventListener("message", function (event) {
+    const message = event.data;
+    if (!message || message.__mirageWebView !== true || message.type !== "evaluate") {
+      return;
+    }
+
+    const requestId = Number.isFinite(message.requestId) ? Math.trunc(message.requestId) : 0;
+    const captureResult = message.captureResult === true;
+    try {
+      const result = (0, eval)(message.script || "");
+      if (captureResult) {
+        post("evalresult", {
+          requestId: requestId,
+          success: true,
+          result: serialize(result),
+          error: null
+        });
+      }
+    } catch (error) {
+      post("evalresult", {
+        requestId: requestId,
+        success: false,
+        result: null,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  function ready() {
+    post("ready");
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", ready, { once: true });
+  } else {
+    ready();
+  }
+  window.addEventListener("load", ready, { once: true });
+})();`;
+
+function getWebViewBridgeScriptElement() {
+  return `<script ${webViewBridgeMarker}="true">\n${webViewBridgeScript.replace(/<\/script/gi, "<\\/script")}\n</script>`;
+}
+
+function injectWebViewBridge(html) {
+  const source = typeof html === "string" ? html : "";
+  if (source.includes(webViewBridgeMarker) || source.includes("__mirageWebViewBridgeInstalled")) {
+    return source;
+  }
+
+  const script = getWebViewBridgeScriptElement();
+  const headEnd = source.search(/<\/head\s*>/i);
+  if (headEnd >= 0) {
+    return `${source.slice(0, headEnd)}${script}${source.slice(headEnd)}`;
+  }
+
+  const bodyEnd = source.search(/<\/body\s*>/i);
+  if (bodyEnd >= 0) {
+    return `${source.slice(0, bodyEnd)}${script}${source.slice(bodyEnd)}`;
+  }
+
+  return `${script}${source}`;
+}
+
+function ensureWebViewSandbox(iframe) {
+  if (iframe instanceof HTMLIFrameElement) {
+    iframe.setAttribute("sandbox", webViewIframeSandbox);
+  }
 }
 
 export function consumeWebViewEventPayload(ownerHandle, eventName) {
@@ -2532,7 +2721,11 @@ function isPreservedWebViewSourceKind(sourceKind) {
   return sourceKind === "unsupported" || sourceKind === "none";
 }
 
-function canEvaluateWebViewScript(iframe) {
+function canEvaluateWebViewScript(iframe, state) {
+  if (state?.bridgeReady === true) {
+    return true;
+  }
+
   try {
     return Boolean(iframe?.contentWindow?.document);
   } catch {
@@ -2554,6 +2747,10 @@ function resolveWebViewLocation(iframe, state) {
     return state.pendingDocumentNavigation.url;
   }
 
+  if (typeof state?.bridgeUrl === "string" && state.bridgeUrl.length > 0) {
+    return state.bridgeUrl;
+  }
+
   return state?.currentEntry?.url ?? state?.config?.url ?? "about:blank";
 }
 
@@ -2562,7 +2759,9 @@ function resolveWebViewEntryFromDocument(iframe, state) {
   try {
     href = iframe?.contentWindow?.location?.href;
   } catch {
-    return null;
+    href = typeof state?.bridgeUrl === "string" && state.bridgeUrl.length > 0
+      ? state.bridgeUrl
+      : null;
   }
 
   if (typeof href !== "string" || href.length === 0) {
@@ -2670,7 +2869,7 @@ function resolveWebViewFormNavigationUrl(form, doc) {
   }
 
   const rawMethod = (form.getAttribute("method") ?? "get").trim().toLowerCase();
-  if (rawMethod !== "get" && rawMethod !== "dialog") {
+  if (rawMethod !== "get") {
     return null;
   }
 
@@ -2785,6 +2984,8 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
     return 0;
   }
 
+  ensureWebViewSandbox(iframe);
+
   const config = normalizeWebViewConfig(configurationJson);
   if (!config) {
     return 0;
@@ -2812,14 +3013,19 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
     history: [],
     historyIndex: -1,
     currentEntry: null,
-    currentUrl: config.sourceKind === "html" ? "about:srcdoc" : config.url,
-    nextNavigationRequestId: 0,
-    pendingDocumentNavigation: null,
-    applyEntry(entry, updateHistory) {
-      const normalizedEntry = cloneWebViewEntry(entry);
-      state.currentEntry = normalizedEntry;
-      state.currentUrl = normalizedEntry.sourceKind === "html" ? "about:srcdoc" : normalizedEntry.url;
-      state.pendingDocumentNavigation = null;
+	    currentUrl: config.sourceKind === "html" ? "about:srcdoc" : config.url,
+	    nextNavigationRequestId: 0,
+	    pendingDocumentNavigation: null,
+	    bridgeReady: false,
+	    bridgeUrl: null,
+	    applyEntry(entry, updateHistory) {
+	      const normalizedEntry = cloneWebViewEntry(entry);
+	      state.currentEntry = normalizedEntry;
+	      state.currentUrl = normalizedEntry.sourceKind === "html" ? "about:srcdoc" : normalizedEntry.url;
+	      state.pendingDocumentNavigation = null;
+	      state.bridgeReady = false;
+	      state.bridgeUrl = null;
+	      ensureWebViewSandbox(iframe);
 
       if (updateHistory) {
         const currentHistoryEntry = state.historyIndex >= 0 ? state.history[state.historyIndex] : null;
@@ -2832,14 +3038,14 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
         state.history[state.historyIndex] = cloneWebViewEntry(normalizedEntry);
       }
 
-      if (normalizedEntry.sourceKind === "html") {
-        iframe.removeAttribute("src");
-        iframe.srcdoc = normalizedEntry.html ?? "";
-      } else {
-        iframe.removeAttribute("srcdoc");
-        iframe.src = normalizedEntry.url ?? "about:blank";
-      }
-    },
+	      if (normalizedEntry.sourceKind === "html") {
+	        iframe.removeAttribute("src");
+	        iframe.srcdoc = injectWebViewBridge(normalizedEntry.html ?? "");
+	      } else {
+	        iframe.removeAttribute("srcdoc");
+	        iframe.src = normalizedEntry.url ?? "about:blank";
+	      }
+	    },
     requestGoBack() {
       if (state.historyIndex <= 0) {
         return false;
@@ -2871,9 +3077,9 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
         return false;
       }
 
-      const canEvaluate = canEvaluateWebViewScript(iframe);
-      if (!canEvaluate) {
-        publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+	      const canEvaluate = canEvaluateWebViewScript(iframe, state);
+	      if (!canEvaluate) {
+	        publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
           requestId,
           success: false,
           result: null,
@@ -2882,7 +3088,28 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
         return true;
       }
 
-      let win;
+	      if (state.bridgeReady === true) {
+	        try {
+	          iframe.contentWindow?.postMessage({
+	            __mirageWebView: true,
+	            type: "evaluate",
+	            requestId,
+	            script,
+	            captureResult
+	          }, "*");
+	          return true;
+	        } catch {
+	          publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+	            requestId,
+	            success: false,
+	            result: null,
+	            error: "Cross-origin or opaque-origin content prevented JavaScript evaluation."
+	          }));
+	          return true;
+	        }
+	      }
+
+	      let win;
       try {
         win = iframe.contentWindow;
       } catch {
@@ -2919,26 +3146,59 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
         });
       return true;
     }
-  };
+	  };
 
-  const publishNavigated = (result) => {
-    syncWebViewHistoryFromDocument(iframe, state);
-    installWebViewDocumentNavigationObserver(elementHandle, iframe, state);
-    const currentEntry = cloneWebViewEntry(state.currentEntry);
+	  const publishNavigated = (result) => {
+	    syncWebViewHistoryFromDocument(iframe, state);
+	    installWebViewDocumentNavigationObserver(elementHandle, iframe, state);
+	    const currentEntry = cloneWebViewEntry(state.currentEntry);
     publishWebViewEvent(elementHandle, "navigated", navigatedCallback, JSON.stringify({
       url: resolveWebViewLocation(iframe, state),
       sourceKind: currentEntry.sourceKind,
       html: currentEntry.sourceKind === "html" ? currentEntry.html : null,
-      canGoBack: state.historyIndex > 0,
-      canGoForward: state.historyIndex >= 0 && state.historyIndex < state.history.length - 1,
-      canEvaluateJavaScript: canEvaluateWebViewScript(iframe),
-      result: typeof result === "string" && result.length > 0 ? result : "success"
-    }));
-    state.pendingDocumentNavigation = null;
-  };
+	      canGoBack: state.historyIndex > 0,
+	      canGoForward: state.historyIndex >= 0 && state.historyIndex < state.history.length - 1,
+	      canEvaluateJavaScript: canEvaluateWebViewScript(iframe, state),
+	      result: typeof result === "string" && result.length > 0 ? result : "success"
+	    }));
+	    state.pendingDocumentNavigation = null;
+	  };
 
-  const loadListener = () => publishNavigated("success");
-  iframe.addEventListener("load", loadListener);
+	  const loadListener = () => publishNavigated("success");
+	  const messageListener = (event) => {
+	    if (event.source !== iframe.contentWindow) {
+	      return;
+	    }
+
+	    const message = event.data;
+	    if (!message || message.__mirageWebView !== true || typeof message.type !== "string") {
+	      return;
+	    }
+
+	    if (typeof message.url === "string" && message.url.length > 0) {
+	      state.bridgeUrl = message.url;
+	    }
+
+	    switch (message.type) {
+	      case "ready":
+	        state.bridgeReady = true;
+	        publishNavigated("success");
+	        break;
+	      case "navigating":
+	        queueWebViewDocumentNavigation(elementHandle, state, message.url, null);
+	        break;
+	      case "evalresult":
+	        publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+	          requestId: Number.isFinite(message.requestId) ? Math.trunc(message.requestId) : 0,
+	          success: message.success === true,
+	          result: typeof message.result === "string" ? message.result : null,
+	          error: typeof message.error === "string" ? message.error : null
+	        }));
+	        break;
+	    }
+	  };
+	  iframe.addEventListener("load", loadListener);
+	  window.addEventListener("message", messageListener);
 
   const initialEntry = resolveWebViewEntryFromConfig(config);
   state.history = [cloneWebViewEntry(initialEntry)];
@@ -2947,12 +3207,13 @@ export function configureWebView(elementHandle, configurationJson, navigatingCal
 
   const subscriptionId = nextEventSubscriptionId++;
   eventSubscriptions.set(subscriptionId, {
-    element: iframe,
-    dispose: () => {
-      iframe.removeEventListener("load", loadListener);
-      delete iframe.__mirageWebViewState;
-    }
-  });
+	    element: iframe,
+	    dispose: () => {
+	      iframe.removeEventListener("load", loadListener);
+	      window.removeEventListener("message", messageListener);
+	      delete iframe.__mirageWebViewState;
+	    }
+	  });
 
   state.subscriptionId = subscriptionId;
   iframe.__mirageWebViewState = state;
@@ -4185,6 +4446,233 @@ export function setDocumentTitle(title) {
   }
 
   document.title = title ?? "";
+}
+
+function ensureSemanticAnnouncer() {
+  if (typeof document === "undefined" || !document.body) {
+    return null;
+  }
+
+  if (semanticAnnouncerElement && semanticAnnouncerElement.isConnected) {
+    return semanticAnnouncerElement;
+  }
+
+  semanticAnnouncerElement = document.createElement("div");
+  semanticAnnouncerElement.setAttribute("aria-live", "polite");
+  semanticAnnouncerElement.setAttribute("aria-atomic", "true");
+  semanticAnnouncerElement.setAttribute("data-mirage-semantic-announcer", "true");
+  semanticAnnouncerElement.style.position = "absolute";
+  semanticAnnouncerElement.style.width = "1px";
+  semanticAnnouncerElement.style.height = "1px";
+  semanticAnnouncerElement.style.margin = "-1px";
+  semanticAnnouncerElement.style.padding = "0";
+  semanticAnnouncerElement.style.border = "0";
+  semanticAnnouncerElement.style.overflow = "hidden";
+  semanticAnnouncerElement.style.clip = "rect(0 0 0 0)";
+  semanticAnnouncerElement.style.whiteSpace = "nowrap";
+  document.body.appendChild(semanticAnnouncerElement);
+  return semanticAnnouncerElement;
+}
+
+export function announceSemanticText(text) {
+  const announcer = ensureSemanticAnnouncer();
+  if (!announcer) {
+    return;
+  }
+
+  announcer.textContent = "";
+  setTimeout(() => {
+    announcer.textContent = typeof text === "string" ? text : "";
+  }, 0);
+}
+
+export function openExternalUri(uri, target) {
+  if (typeof uri !== "string" || uri.length === 0 || typeof window === "undefined") {
+    return false;
+  }
+
+  const resolvedTarget = target === "_self" ? "_self" : "_blank";
+  try {
+    if (resolvedTarget === "_self") {
+      window.location.assign(uri);
+      return true;
+    }
+
+    const opened = window.open(uri, resolvedTarget, "noopener,noreferrer");
+    return !!opened;
+  } catch {
+    return false;
+  }
+}
+
+export async function setClipboardText(text) {
+  const normalized = typeof text === "string" ? text : "";
+
+  if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    try {
+      await navigator.clipboard.writeText(normalized);
+      clipboardFallbackText = normalized;
+      return true;
+    } catch {
+      // Keep the fallback path useful for deterministic browser-host tests.
+    }
+  }
+
+  clipboardFallbackText = normalized;
+  return true;
+}
+
+export async function getClipboardText() {
+  if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.readText === "function") {
+    try {
+      const value = await navigator.clipboard.readText();
+      clipboardFallbackText = typeof value === "string" ? value : null;
+      return clipboardFallbackText;
+    } catch {
+      // Fall through to the last Mirage-written value.
+    }
+  }
+
+  return clipboardFallbackText;
+}
+
+export function hasClipboardText() {
+  return typeof clipboardFallbackText === "string" && clipboardFallbackText.length > 0;
+}
+
+export function getDisplayInfo() {
+  const width = typeof window !== "undefined" && Number.isFinite(window.innerWidth) ? window.innerWidth : 1024;
+  const height = typeof window !== "undefined" && Number.isFinite(window.innerHeight) ? window.innerHeight : 768;
+  const density = typeof window !== "undefined" && Number.isFinite(window.devicePixelRatio) && window.devicePixelRatio > 0
+    ? window.devicePixelRatio
+    : 1;
+  const orientation = width >= height ? 2 : 1;
+  const angle = typeof screen !== "undefined" && screen.orientation && Number.isFinite(screen.orientation.angle)
+    ? screen.orientation.angle
+    : 0;
+  const rotation = angle === 90 ? 2 : angle === 180 ? 3 : angle === 270 ? 4 : 1;
+
+  return [width, height, density, orientation, rotation];
+}
+
+function buildGeolocationOptions(enableHighAccuracy, timeoutMs) {
+  const timeout = Number.isFinite(timeoutMs) && timeoutMs > 0 ? Math.max(1, timeoutMs) : 10000;
+  return {
+    enableHighAccuracy: !!enableHighAccuracy,
+    timeout,
+    maximumAge: 0
+  };
+}
+
+function locationPayloadFromPosition(position) {
+  const coords = position && position.coords ? position.coords : {};
+  return JSON.stringify({
+    ok: true,
+    latitude: Number.isFinite(coords.latitude) ? coords.latitude : 0,
+    longitude: Number.isFinite(coords.longitude) ? coords.longitude : 0,
+    altitude: Number.isFinite(coords.altitude) ? coords.altitude : null,
+    accuracy: Number.isFinite(coords.accuracy) ? coords.accuracy : null,
+    altitudeAccuracy: Number.isFinite(coords.altitudeAccuracy) ? coords.altitudeAccuracy : null,
+    speed: Number.isFinite(coords.speed) ? coords.speed : null,
+    heading: Number.isFinite(coords.heading) ? coords.heading : null,
+    timestamp: Number.isFinite(position?.timestamp) ? position.timestamp : Date.now()
+  });
+}
+
+function locationPayloadFromError(error) {
+  return JSON.stringify({
+    ok: false,
+    code: Number.isFinite(error?.code) ? error.code : 0,
+    message: typeof error?.message === "string" ? error.message : "Geolocation failed"
+  });
+}
+
+export async function getCurrentGeolocationJson(enableHighAccuracy, timeoutMs) {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    return JSON.stringify({ ok: false, code: 0, message: "Geolocation is not supported by this browser" });
+  }
+
+  return await new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => resolve(locationPayloadFromPosition(position)),
+      (error) => resolve(locationPayloadFromError(error)),
+      buildGeolocationOptions(enableHighAccuracy, timeoutMs));
+  });
+}
+
+export function startGeolocationWatch(enableHighAccuracy, minimumTimeMs, changedCallback, failedCallback) {
+  if (typeof navigator === "undefined" || !navigator.geolocation || typeof navigator.geolocation.watchPosition !== "function") {
+    return 0;
+  }
+
+  const subscriptionId = nextEventSubscriptionId++;
+  const options = buildGeolocationOptions(enableHighAccuracy, Math.max(1000, Number(minimumTimeMs) || 1000));
+  const watchId = navigator.geolocation.watchPosition(
+    (position) => {
+      geolocationWatchPayloads.set(subscriptionId, locationPayloadFromPosition(position));
+      changedCallback();
+    },
+    (error) => {
+      geolocationWatchPayloads.set(subscriptionId, locationPayloadFromError(error));
+      failedCallback();
+    },
+    options);
+
+  eventSubscriptions.set(subscriptionId, {
+    dispose: () => {
+      try {
+        navigator.geolocation.clearWatch(watchId);
+      } catch {
+        // Best effort cleanup only.
+      }
+
+      geolocationWatchPayloads.delete(subscriptionId);
+    }
+  });
+
+  return subscriptionId;
+}
+
+export function consumeGeolocationWatchPayloadJson(subscriptionId) {
+  if (!geolocationWatchPayloads.has(subscriptionId)) {
+    return null;
+  }
+
+  const payload = geolocationWatchPayloads.get(subscriptionId);
+  geolocationWatchPayloads.delete(subscriptionId);
+  return typeof payload === "string" ? payload : null;
+}
+
+export function unsubscribeGeolocationWatch(subscriptionId) {
+  removeEventSubscription(subscriptionId);
+}
+
+export async function speakText(text, rate, pitch, volume) {
+  if (typeof window === "undefined" || !window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") {
+    return false;
+  }
+
+  const normalized = typeof text === "string" ? text : "";
+  if (normalized.length === 0) {
+    return true;
+  }
+
+  return await new Promise((resolve) => {
+    const utterance = new SpeechSynthesisUtterance(normalized);
+    if (Number.isFinite(rate) && rate > 0) {
+      utterance.rate = Math.max(0.1, Math.min(10, rate));
+    }
+    if (Number.isFinite(pitch) && pitch > 0) {
+      utterance.pitch = Math.max(0, Math.min(2, pitch));
+    }
+    if (Number.isFinite(volume) && volume >= 0) {
+      utterance.volume = Math.max(0, Math.min(1, volume));
+    }
+
+    utterance.onend = () => resolve(true);
+    utterance.onerror = () => resolve(false);
+    window.speechSynthesis.speak(utterance);
+  });
 }
 
 function tryGetLocalStorage() {

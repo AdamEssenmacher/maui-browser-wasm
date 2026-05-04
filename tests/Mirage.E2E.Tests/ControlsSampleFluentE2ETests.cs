@@ -2030,6 +2030,7 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         var frame = page.FrameLocator(hostSelector);
 
         Assert.Equal("WebView", await page.GetAttributeAsync(hostSelector, "data-mirage-kind"));
+        Assert.Equal("allow-scripts allow-forms", await page.GetAttributeAsync(hostSelector, "sandbox"));
 
         await WaitForHostAttributeAsync("data-maui-wv-source-kind", "html");
         await WaitForHostAttributeAsync("data-maui-wv-eval-capability", "same-origin");

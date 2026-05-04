@@ -14,7 +14,7 @@
     },
     {
       "id": "webview-browser-cross-origin-eval-restricted",
-      "summary": "Eval and EvaluateJavaScriptAsync only execute when browser same-origin rules allow iframe scripting. Cross-origin or opaque-origin content returns deterministic failure/no-op behavior instead of claiming native parity.",
+      "summary": "Eval and EvaluateJavaScriptAsync execute only for bridge-enabled controlled inline or same-origin probe content inside the sandboxed iframe host. Cross-origin, opaque-origin, or non-bridge content returns deterministic failure/no-op behavior instead of claiming native parity.",
       "upstreamReference": "src/Core/src/Handlers/WebView/WebViewHandler.Android.cs",
       "testReference": "WebViewParityProbe_ProjectsIframeNavigationAndEvaluationState"
     },

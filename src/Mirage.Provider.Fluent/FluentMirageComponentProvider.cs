@@ -376,6 +376,10 @@ public sealed class FluentMirageComponentProvider : IMirageComponentProvider
             [ComponentKind.WebView] = new(
                 ComponentKind.WebView,
                 "iframe",
+                defaultAttributes: new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["sandbox"] = "allow-scripts allow-forms"
+                },
                 propertyMappings: WithCommonProperties(new Dictionary<string, ProviderPropertyDescriptor>(StringComparer.Ordinal)
                 {
                     ["SourceKindState"] = new(PropertyTarget.Attribute, "data-maui-wv-source-kind"),

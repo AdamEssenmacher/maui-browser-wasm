@@ -938,3 +938,7 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Browser realization uses a native `iframe` host (`ComponentKind.WebView`) plus a dedicated runtime seam for source projection, navigation commands, and correlated JavaScript evaluation results. This keeps browsing behavior DOM-native while preserving MAUI handler ownership of state, commands, and events.
 - Wave 1 scope is intentionally narrow and explicit: `UrlWebViewSource`, `HtmlWebViewSource`, handler-driven `GoBack` / `GoForward` / `Reload`, `Navigating` / `Navigated`, and same-origin `Eval` / `EvaluateJavaScriptAsync` are supported and covered by the dedicated ControlsSample parity probe.
 - Browser-specific divergences remain explicit: per-WebView `UserAgent` override is diagnostic-only on the browser host, cross-origin or opaque-origin evaluation fails deterministically, `FileWebViewSource` and packaged asset loading are deferred, and `HybridWebView` remains a separate future wave.
+
+## 2026-05-04 (WebView iframe isolation hardening)
+- WebView iframe hosts now carry a runtime-enforced sandbox before any `src` / `srcdoc` assignment. The sandbox permits scripts and forms for parity probe behavior but omits same-origin and top-navigation privileges so embedded content cannot script the Mirage host page directly.
+- Same-origin probe evaluation and pre-navigation observation now use an explicit message bridge for controlled inline/probe content. This keeps the browser isolation boundary explicit while preserving the Wave 1 deterministic WebView parity proof.

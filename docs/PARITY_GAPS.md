@@ -140,7 +140,7 @@ Upstream MAUI shared-code risks for unofficial/browser targets are tracked separ
 - Deferred: mouse-drag parity, exact native transition/animation fidelity, and the broader upstream SwipeView gallery set remain explicit follow-up work rather than claimed Wave 1 behavior.
 
 27. WebView parity depth
-- Current behavior: `WebView` now maps through `MirageWebViewHandler` on the built-in `ControlNode` path with a native browser `iframe` host, deterministic `UrlWebViewSource` / `HtmlWebViewSource` projection, handler-driven `GoBack` / `GoForward` / `Reload`, and same-origin `Eval` / `EvaluateJavaScriptAsync`.
+- Current behavior: `WebView` now maps through `MirageWebViewHandler` on the built-in `ControlNode` path with a sandboxed native browser `iframe` host, deterministic `UrlWebViewSource` / `HtmlWebViewSource` projection, handler-driven `GoBack` / `GoForward` / `Reload`, and bridge-backed `Eval` / `EvaluateJavaScriptAsync` for controlled inline/probe content.
 - Current behavior: handler-driven source changes now update `CanGoBack` / `CanGoForward` and route deterministic `Navigating` / `Navigated` callbacks through the MAUI `IWebView` surface, while cross-origin or opaque-origin JavaScript evaluation fails deterministically instead of hanging or claiming success.
 - Deferred: `FileWebViewSource`, packaged/local asset loading, `HtmlWebViewSource.BaseUrl` relative resource resolution, cookie synchronization, fullscreen/process callbacks, real per-WebView request-header `UserAgent` override, richer cancellation fidelity for arbitrary in-frame browsing, and `HybridWebView` remain explicit follow-up work.
 
