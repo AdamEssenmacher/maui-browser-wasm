@@ -2,6 +2,12 @@
 
 Keep this short. Append new entries with date and a 2–5 sentence rationale.
 
+## 2026-05-04 (Local validation hardening: prebuilt E2E hosts + Mac Catalyst RIDs)
+- `ControlsSample.Maui` now declares Mac Catalyst runtime identifiers explicitly so full-solution Release restore/build produces assets for the SDK's Mac Catalyst runtime graph instead of depending on implicit defaults.
+- Mirage E2E fixtures can launch sample hosts with `dotnet run --no-build` when `MIRAGE_E2E_HOST_NO_BUILD=1`, making the Release solution build the single source of build work for maintained validation while preserving build-as-needed behavior for ad hoc local entrypoints.
+- The slowness matrix now prebuilds its E2E test project and Showcase host for `MIRAGE_MATRIX_CONFIGURATION`, then opts into prebuilt host launch with the matching `MIRAGE_E2E_HOST_CONFIGURATION`.
+- The maintained validation lane remains `Mirage.CI.slnf` plus active `Mirage.*` tests; legacy `Maui.Browser*` tests stay reference-only unless they are deliberately revived as a separate lane.
+
 ## 2026-05-04 (Avalonia comparison applied: Mirage-owned semantics + DI-first Essentials)
 - Kept `Avalonia.Controls.Maui` and `AvaloniaMauiHybrid` as research inputs only: their MAUI retargeting and status-ledger discipline are useful, but their drawn Avalonia browser backend does not satisfy Mirage's DOM/CSS/ARIA platform goal.
 - Marked the legacy `Maui.Browser*` tree as read-only reference material so new browser work stays on the active `Mirage.*` handler/runtime path.
