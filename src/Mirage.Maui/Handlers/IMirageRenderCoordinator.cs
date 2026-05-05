@@ -61,6 +61,20 @@ public interface IMirageRenderCoordinator : IMirageEventSink
 
     bool TryRequestNodeSwipeViewClose(string ownerNodeId, bool animated) => false;
 
+    bool TryConfigureNodeWebView(string nodeId, bool enabled, string configurationJson) => false;
+
+    bool TryRequestNodeWebViewNavigate(string nodeId, long requestId, string url) => false;
+
+    bool TryCancelNodeWebViewNavigation(string nodeId, long requestId) => false;
+
+    bool TryRequestNodeWebViewGoBack(string nodeId) => false;
+
+    bool TryRequestNodeWebViewGoForward(string nodeId) => false;
+
+    bool TryRequestNodeWebViewReload(string nodeId) => false;
+
+    bool TryEvaluateNodeWebViewScript(string nodeId, long requestId, string script, bool captureResult) => false;
+
     bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)
     {
         displayScale = 1;

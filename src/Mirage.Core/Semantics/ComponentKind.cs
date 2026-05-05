@@ -32,6 +32,7 @@ public enum ComponentKind
     ProgressBar,
     SwipeView,
     IndicatorView,
+    WebView,
     GraphicsView,
     Map
 }

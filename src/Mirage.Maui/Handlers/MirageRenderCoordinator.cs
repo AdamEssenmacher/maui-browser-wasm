@@ -320,6 +320,76 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         return _runtime.TryRequestNodeSwipeViewClose(ownerNodeId, animated);
     }
 
+    public bool TryConfigureNodeWebView(string nodeId, bool enabled, string configurationJson)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TryConfigureNodeWebView(nodeId, enabled, configurationJson);
+    }
+
+    public bool TryRequestNodeWebViewNavigate(string nodeId, long requestId, string url)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TryRequestNodeWebViewNavigate(nodeId, requestId, url);
+    }
+
+    public bool TryCancelNodeWebViewNavigation(string nodeId, long requestId)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TryCancelNodeWebViewNavigation(nodeId, requestId);
+    }
+
+    public bool TryRequestNodeWebViewGoBack(string nodeId)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TryRequestNodeWebViewGoBack(nodeId);
+    }
+
+    public bool TryRequestNodeWebViewGoForward(string nodeId)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TryRequestNodeWebViewGoForward(nodeId);
+    }
+
+    public bool TryRequestNodeWebViewReload(string nodeId)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TryRequestNodeWebViewReload(nodeId);
+    }
+
+    public bool TryEvaluateNodeWebViewScript(string nodeId, long requestId, string script, bool captureResult)
+    {
+        if (_runtime is null)
+        {
+            return false;
+        }
+
+        return _runtime.TryEvaluateNodeWebViewScript(nodeId, requestId, script, captureResult);
+    }
+
     public bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)
     {
         if (_runtime is null)
@@ -504,8 +574,9 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
             return snapshot.Node;
         }
 
-        var childNodes = new List<NodeBase>(platformView.Children.Count);
-        foreach (var child in platformView.Children)
+        var childViews = platformView.Children.ToArray();
+        var childNodes = new List<NodeBase>(childViews.Length);
+        foreach (var child in childViews)
         {
             childNodes.Add(MaterializeNode(child, previousSnapshot, nextSnapshot, ref rematerializedNodeCount, ref reusedNodeCount));
         }
@@ -546,14 +617,14 @@ internal sealed class MirageRenderCoordinator : IMirageRenderCoordinator
         IDictionary<string, NodeSnapshot> nextSnapshot,
         ref int reusedNodeCount)
     {
-        var childViews = platformView.Children;
+        var childViews = platformView.Children.ToArray();
         var childNodes = node.Children;
-        if (childViews.Count != childNodes.Count)
+        if (childViews.Length != childNodes.Count)
         {
             return;
         }
 
-        for (var index = 0; index < childViews.Count; index++)
+        for (var index = 0; index < childViews.Length; index++)
         {
             var childView = childViews[index];
             var childNode = childNodes[index];

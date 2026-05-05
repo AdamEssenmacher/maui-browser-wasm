@@ -24,6 +24,7 @@ public sealed class MirageRuntime : IMirageRuntime
     private readonly Dictionary<string, int> _mapProviderInitializationRetries = new(StringComparer.Ordinal);
     private readonly Dictionary<string, PullToRefreshSubscription> _pullToRefreshSubscriptions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, SwipeViewSubscription> _swipeViewSubscriptions = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, WebViewSubscription> _webViewSubscriptions = new(StringComparer.Ordinal);
     private readonly Dictionary<string, int> _suppressedFocusEvents = new(StringComparer.Ordinal);
 
     private NodeBase? _currentRoot;
@@ -369,6 +370,101 @@ public sealed class MirageRuntime : IMirageRuntime
         return ownerNode.Element.RequestSwipeViewClose(animated);
     }
 
+    public bool TryConfigureNodeWebView(string nodeId, bool enabled, string configurationJson)
+    {
+        if (!enabled)
+        {
+            RemoveWebViewSubscription(nodeId);
+            return true;
+        }
+
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        var priorSubscriptionId = _webViewSubscriptions.TryGetValue(nodeId, out var existing)
+            ? existing.SubscriptionId
+            : 0;
+        var subscriptionId = node.Element.ConfigureWebView(
+            configurationJson,
+            () => _eventSink?.OnEvent(nodeId, "navigating", node.Element.ConsumeWebViewEventPayload("navigating")),
+            () => _eventSink?.OnEvent(nodeId, "navigated", node.Element.ConsumeWebViewEventPayload("navigated")),
+            () => _eventSink?.OnEvent(nodeId, "evalresult", node.Element.ConsumeWebViewEventPayload("evalresult")));
+        if (subscriptionId <= 0)
+        {
+            return false;
+        }
+
+        if (priorSubscriptionId > 0 && priorSubscriptionId != subscriptionId)
+        {
+            DomElement.UnsubscribeWebView(priorSubscriptionId);
+        }
+
+        _webViewSubscriptions[nodeId] = new WebViewSubscription(subscriptionId);
+        return true;
+    }
+
+    public bool TryRequestNodeWebViewNavigate(string nodeId, long requestId, string url)
+    {
+        if (string.IsNullOrWhiteSpace(url) || !_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        return node.Element.RequestWebViewNavigate(requestId, url);
+    }
+
+    public bool TryCancelNodeWebViewNavigation(string nodeId, long requestId)
+    {
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        return node.Element.CancelWebViewNavigation(requestId);
+    }
+
+    public bool TryRequestNodeWebViewGoBack(string nodeId)
+    {
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        return node.Element.RequestWebViewGoBack();
+    }
+
+    public bool TryRequestNodeWebViewGoForward(string nodeId)
+    {
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        return node.Element.RequestWebViewGoForward();
+    }
+
+    public bool TryRequestNodeWebViewReload(string nodeId)
+    {
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        return node.Element.RequestWebViewReload();
+    }
+
+    public bool TryEvaluateNodeWebViewScript(string nodeId, long requestId, string script, bool captureResult)
+    {
+        if (!_nodes.TryGetValue(nodeId, out var node))
+        {
+            return false;
+        }
+
+        return node.Element.EvaluateWebViewScript(requestId, script, captureResult);
+    }
+
     public bool TryConfigureNodeCanvas(string nodeId, double logicalWidth, double logicalHeight, out double displayScale)
     {
         displayScale = 1;
@@ -425,6 +521,12 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         _swipeViewSubscriptions.Clear();
+        foreach (var subscription in _webViewSubscriptions.Values.ToArray())
+        {
+            DomElement.UnsubscribeWebView(subscription.SubscriptionId);
+        }
+
+        _webViewSubscriptions.Clear();
         _mapProviderInitializationRetries.Clear();
         _suppressedFocusEvents.Clear();
 
@@ -494,6 +596,16 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         DomElement.UnsubscribeSwipeView(subscription.SubscriptionId);
+    }
+
+    private void RemoveWebViewSubscription(string nodeId)
+    {
+        if (!_webViewSubscriptions.Remove(nodeId, out var subscription))
+        {
+            return;
+        }
+
+        DomElement.UnsubscribeWebView(subscription.SubscriptionId);
     }
 
     private bool TryQueueMutation(PatchOperation operation, DomMutationBatch mutationBatch)
@@ -706,6 +818,7 @@ public sealed class MirageRuntime : IMirageRuntime
         RemoveEventSubscriptionsForNode(operation.NodeId);
         RemovePullToRefreshSubscriptionsForNode(operation.NodeId);
         RemoveSwipeViewSubscriptionsForNode(operation.NodeId);
+        RemoveWebViewSubscriptionsForNode(operation.NodeId);
         _mapProviderInitializationRetries.Remove(operation.NodeId);
         node.DisposeMapAdapter();
         InvokeInterop(() => node.Element.Release());
@@ -748,6 +861,16 @@ public sealed class MirageRuntime : IMirageRuntime
         }
 
         RemoveSwipeViewSubscription(nodeId);
+    }
+
+    private void RemoveWebViewSubscriptionsForNode(string nodeId)
+    {
+        if (_webViewSubscriptions.Count == 0)
+        {
+            return;
+        }
+
+        RemoveWebViewSubscription(nodeId);
     }
 
     private void ApplySetProperty(SetPropertyOperation operation)
@@ -2266,4 +2389,6 @@ public sealed class MirageRuntime : IMirageRuntime
     private sealed record PullToRefreshSubscription(string SourceNodeId, int SubscriptionId, double Threshold);
 
     private sealed record SwipeViewSubscription(int SubscriptionId);
+
+    private sealed record WebViewSubscription(int SubscriptionId);
 }

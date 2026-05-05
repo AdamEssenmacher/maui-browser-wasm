@@ -53,6 +53,10 @@
                             x:Name="AppInfoPatchStatusLabel"
                             AutomationId="showcase-essentials-lab-appinfo-patched"
                             Text="AppInfo patched: pending" />
+                        <Label
+                            x:Name="DeviceInfoPatchStatusLabel"
+                            AutomationId="showcase-essentials-lab-deviceinfo-patched"
+                            Text="DeviceInfo patched: pending" />
                     </VerticalStackLayout>
                 </ContentView>
 
@@ -159,6 +163,127 @@
                                 LineBreakMode="WordWrap"
                                 Text="Loading..." />
                         </Grid>
+                    </VerticalStackLayout>
+                </ContentView>
+
+                <ContentView Style="{StaticResource ShowcaseSectionCardFrame}">
+                    <VerticalStackLayout
+                        AutomationId="showcase-essentials-lab-device-card"
+                        Style="{StaticResource ShowcaseSectionCardBody}">
+                        <Label
+                            AutomationId="showcase-essentials-lab-device-title"
+                            Style="{StaticResource SubHeadline}"
+                            HorizontalOptions="Start"
+                            HorizontalTextAlignment="Start"
+                            Text="Device snapshot" />
+                        <Grid
+                            AutomationId="showcase-essentials-lab-device-grid"
+                            ColumnDefinitions="*,*"
+                            ColumnSpacing="16"
+                            RowDefinitions="Auto,Auto,Auto">
+                            <Label
+                                Grid.Row="0"
+                                Grid.Column="0"
+                                AutomationId="showcase-essentials-lab-device-static-title"
+                                Style="{StaticResource SubHeadline}"
+                                Text="Static" />
+                            <Label
+                                Grid.Row="0"
+                                Grid.Column="1"
+                                AutomationId="showcase-essentials-lab-device-di-title"
+                                Style="{StaticResource SubHeadline}"
+                                Text="Injected" />
+                            <Label
+                                x:Name="StaticDeviceInfoLabel"
+                                Grid.Row="1"
+                                Grid.Column="0"
+                                AutomationId="showcase-essentials-lab-device-static"
+                                LineBreakMode="WordWrap"
+                                Text="Loading..." />
+                            <Label
+                                x:Name="InjectedDeviceInfoLabel"
+                                Grid.Row="1"
+                                Grid.Column="1"
+                                AutomationId="showcase-essentials-lab-device-di"
+                                LineBreakMode="WordWrap"
+                                Text="Loading..." />
+                            <Label
+                                x:Name="DeviceDisplayLabel"
+                                Grid.Row="2"
+                                Grid.ColumnSpan="2"
+                                AutomationId="showcase-essentials-lab-device-display"
+                                LineBreakMode="WordWrap"
+                                Text="Display: pending" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </ContentView>
+
+                <ContentView Style="{StaticResource ShowcaseSectionCardFrame}">
+                    <VerticalStackLayout
+                        AutomationId="showcase-essentials-lab-browser-card"
+                        Style="{StaticResource ShowcaseSectionCardBody}">
+                        <Label
+                            AutomationId="showcase-essentials-lab-browser-title"
+                            Style="{StaticResource SubHeadline}"
+                            HorizontalOptions="Start"
+                            HorizontalTextAlignment="Start"
+                            Text="Browser services" />
+                        <HorizontalStackLayout
+                            AutomationId="showcase-essentials-lab-semantic-buttons"
+                            Spacing="10">
+                            <Button
+                                AutomationId="showcase-essentials-lab-announce"
+                                Clicked="OnAnnounceClicked"
+                                Text="Announce" />
+                            <Button
+                                AutomationId="showcase-essentials-lab-speak"
+                                Clicked="OnSpeakClicked"
+                                Text="Speak" />
+                        </HorizontalStackLayout>
+                        <Label
+                            x:Name="SemanticScreenReaderStatusLabel"
+                            AutomationId="showcase-essentials-lab-semantic-status"
+                            Text="Screen reader: pending" />
+                        <Label
+                            x:Name="TextToSpeechStatusLabel"
+                            AutomationId="showcase-essentials-lab-tts-status"
+                            Text="Text-to-speech: pending" />
+                        <HorizontalStackLayout
+                            AutomationId="showcase-essentials-lab-clipboard-buttons"
+                            Spacing="10">
+                            <Button
+                                AutomationId="showcase-essentials-lab-clipboard-write"
+                                Clicked="OnClipboardWriteClicked"
+                                Text="Write clipboard" />
+                            <Button
+                                AutomationId="showcase-essentials-lab-clipboard-read"
+                                Clicked="OnClipboardReadClicked"
+                                Text="Read clipboard" />
+                        </HorizontalStackLayout>
+                        <Label
+                            x:Name="ClipboardStatusLabel"
+                            AutomationId="showcase-essentials-lab-clipboard-status"
+                            Text="Clipboard: pending" />
+                        <HorizontalStackLayout
+                            AutomationId="showcase-essentials-lab-launch-location-buttons"
+                            Spacing="10">
+                            <Button
+                                AutomationId="showcase-essentials-lab-launch"
+                                Clicked="OnCheckLaunchClicked"
+                                Text="Check launch" />
+                            <Button
+                                AutomationId="showcase-essentials-lab-location"
+                                Clicked="OnLocationClicked"
+                                Text="Location" />
+                        </HorizontalStackLayout>
+                        <Label
+                            x:Name="LaunchStatusLabel"
+                            AutomationId="showcase-essentials-lab-launch-status"
+                            Text="Launch: pending" />
+                        <Label
+                            x:Name="LocationStatusLabel"
+                            AutomationId="showcase-essentials-lab-location-status"
+                            Text="Location: pending" />
                     </VerticalStackLayout>
                 </ContentView>
 

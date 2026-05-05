@@ -945,7 +945,11 @@ const eventSubscriptions = new Map();
 const trackedEventPayloads = new Map();
 const pullToRefreshStatePayloads = new Map();
 const swipeViewEventPayloads = new Map();
+const webViewEventPayloads = new Map();
+const geolocationWatchPayloads = new Map();
 let nextEventSubscriptionId = 1;
+let clipboardFallbackText = null;
+let semanticAnnouncerElement = null;
 
 function releaseElementRecursive(element) {
   for (const child of Array.from(element.children)) {
@@ -977,6 +981,13 @@ function releaseElementRecursive(element) {
   for (const key of Array.from(swipeViewEventPayloads.keys())) {
     if (key.startsWith(swipePayloadPrefix)) {
       swipeViewEventPayloads.delete(key);
+    }
+  }
+
+  const webViewPayloadPrefix = `${handle}:`;
+  for (const key of Array.from(webViewEventPayloads.keys())) {
+    if (key.startsWith(webViewPayloadPrefix)) {
+      webViewEventPayloads.delete(key);
     }
   }
 
@@ -1534,6 +1545,340 @@ export function consumeSwipeViewEventPayload(ownerHandle, eventName) {
 
   const payload = swipeViewEventPayloads.get(key);
   swipeViewEventPayloads.delete(key);
+  return typeof payload === "string" ? payload : null;
+}
+
+function publishWebViewEvent(ownerHandle, eventName, callback, payload) {
+  if (!Number.isInteger(ownerHandle) || typeof eventName !== "string" || eventName.length === 0) {
+    return;
+  }
+
+  const key = `${ownerHandle}:${eventName}`;
+  webViewEventPayloads.set(
+    key,
+    typeof payload === "string" && payload.length > 0 ? payload : null);
+  callback();
+}
+
+const webViewIframeSandbox = "allow-scripts allow-forms";
+const webViewBridgeMarker = "data-mirage-webview-bridge";
+const webViewBridgeTokenPlaceholder = "__MIRAGE_WEBVIEW_BRIDGE_TOKEN__";
+const webViewBridgeUrlPlaceholder = "__MIRAGE_WEBVIEW_BRIDGE_URL__";
+const webViewBridgeScript = `
+(function () {
+  if (window.__mirageWebViewBridgeInstalled) {
+    return;
+  }
+
+  window.__mirageWebViewBridgeInstalled = true;
+  const bridgeToken = __MIRAGE_WEBVIEW_BRIDGE_TOKEN__;
+  const bridgeUrl = __MIRAGE_WEBVIEW_BRIDGE_URL__;
+
+  function post(type, payload) {
+    window.parent.postMessage(Object.assign({
+      __mirageWebView: true,
+      bridgeToken: bridgeToken,
+      type: type,
+      url: bridgeUrl || window.location.href
+    }, payload || {}), "*");
+  }
+
+  function serialize(value) {
+    if (typeof value === "undefined") {
+      return "";
+    }
+    if (value === null || typeof value === "string") {
+      return value ?? "";
+    }
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  }
+
+  function resolveUrl(value) {
+    if (typeof value !== "string" || value.length === 0) {
+      return null;
+    }
+    try {
+      return new URL(value, document.baseURI).href;
+    } catch {
+      return value;
+    }
+  }
+
+  function isPlainPrimaryClick(event) {
+    return !!event
+      && !event.defaultPrevented
+      && event.button === 0
+      && !event.metaKey
+      && !event.ctrlKey
+      && !event.shiftKey
+      && !event.altKey;
+  }
+
+  function readSubmitterAttribute(submitter, submitterAttribute, form, formAttribute, fallback) {
+    if (submitter && typeof submitter.getAttribute === "function") {
+      const submitterValue = submitter.getAttribute(submitterAttribute);
+      if (typeof submitterValue === "string" && submitterValue.length > 0) {
+        return submitterValue;
+      }
+    }
+
+    const formValue = form.getAttribute(formAttribute);
+    return typeof formValue === "string" ? formValue : fallback;
+  }
+
+  function createFormData(form, submitter) {
+    if (submitter) {
+      try {
+        return new FormData(form, submitter);
+      } catch {
+        const fallback = new FormData(form);
+        const name = typeof submitter.name === "string" ? submitter.name : "";
+        if (name.length > 0 && !submitter.disabled) {
+          fallback.append(name, typeof submitter.value === "string" ? submitter.value : "");
+        }
+
+        return fallback;
+      }
+    }
+
+    return new FormData(form);
+  }
+
+  function resolveFormUrl(form, submitter) {
+    const rawTarget = readSubmitterAttribute(submitter, "formtarget", form, "target", "").trim().toLowerCase();
+    if (rawTarget.length > 0 && rawTarget !== "_self") {
+      return null;
+    }
+
+    const rawMethod = readSubmitterAttribute(submitter, "formmethod", form, "method", "get").trim().toLowerCase();
+    if (rawMethod !== "get") {
+      return null;
+    }
+
+    const url = resolveUrl(readSubmitterAttribute(submitter, "formaction", form, "action", window.location.href));
+    if (!url) {
+      return null;
+    }
+
+    try {
+      const next = new URL(url, document.baseURI);
+      const query = new URLSearchParams(createFormData(form, submitter));
+      for (const [key, value] of query) {
+        next.searchParams.append(key, value);
+      }
+
+      return next.href;
+    } catch {
+      return url;
+    }
+  }
+
+  document.addEventListener("click", function (event) {
+    if (!isPlainPrimaryClick(event)) {
+      return;
+    }
+
+    const anchor = event.target && event.target.closest ? event.target.closest("a[href]") : null;
+    if (!anchor) {
+      return;
+    }
+
+    const rawTarget = (anchor.getAttribute("target") || "").trim().toLowerCase();
+    if (rawTarget.length > 0 && rawTarget !== "_self") {
+      return;
+    }
+
+    const url = resolveUrl(anchor.getAttribute("href"));
+    if (!url) {
+      return;
+    }
+
+    event.preventDefault();
+    post("navigating", { url: url });
+  });
+
+  document.addEventListener("submit", function (event) {
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    const form = event.target;
+    if (!form || typeof form.getAttribute !== "function") {
+      return;
+    }
+
+    const url = resolveFormUrl(form, event.submitter || null);
+    if (!url) {
+      return;
+    }
+
+    event.preventDefault();
+    post("navigating", { url: url });
+  });
+
+  window.addEventListener("message", function (event) {
+    const message = event.data;
+    if (!message
+      || message.__mirageWebView !== true
+      || message.type !== "evaluate"
+      || message.bridgeToken !== bridgeToken) {
+      return;
+    }
+
+    const requestId = Number.isFinite(message.requestId) ? Math.trunc(message.requestId) : 0;
+    const captureResult = message.captureResult === true;
+    try {
+      const result = (0, eval)(message.script || "");
+      if (captureResult) {
+        post("evalresult", {
+          requestId: requestId,
+          success: true,
+          result: serialize(result),
+          error: null
+        });
+      }
+    } catch (error) {
+      post("evalresult", {
+        requestId: requestId,
+        success: false,
+        result: null,
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  function ready() {
+    post("ready");
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", ready, { once: true });
+  } else {
+    ready();
+  }
+  window.addEventListener("load", ready, { once: true });
+})();`;
+
+function getWebViewBridgeScriptElement(bridgeToken, bridgeUrl) {
+  const tokenLiteral = JSON.stringify(typeof bridgeToken === "string" ? bridgeToken : "");
+  const urlLiteral = JSON.stringify(typeof bridgeUrl === "string" && bridgeUrl.length > 0 ? bridgeUrl : null);
+  const script = webViewBridgeScript
+    .replace(webViewBridgeTokenPlaceholder, tokenLiteral)
+    .replace(webViewBridgeUrlPlaceholder, urlLiteral)
+    .replace(/<\/script/gi, "<\\/script");
+  return `<script ${webViewBridgeMarker}="true">\n${script}\n</script>`;
+}
+
+function injectWebViewBridge(html, bridgeToken, bridgeUrl) {
+  const source = typeof html === "string" ? html : "";
+  if (source.includes(webViewBridgeMarker) || source.includes("__mirageWebViewBridgeInstalled")) {
+    return source;
+  }
+
+  const script = getWebViewBridgeScriptElement(bridgeToken, bridgeUrl);
+  const headEnd = source.search(/<\/head\s*>/i);
+  if (headEnd >= 0) {
+    return `${source.slice(0, headEnd)}${script}${source.slice(headEnd)}`;
+  }
+
+  const bodyStart = source.search(/<body(?:\s|>)/i);
+  if (bodyStart >= 0) {
+    const bodyOpenEnd = source.indexOf(">", bodyStart);
+    if (bodyOpenEnd >= 0) {
+      return `${source.slice(0, bodyOpenEnd + 1)}${script}${source.slice(bodyOpenEnd + 1)}`;
+    }
+  }
+
+  return `${script}${source}`;
+}
+
+function escapeWebViewHtmlAttribute(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;");
+}
+
+function injectWebViewBase(html, url) {
+  const source = typeof html === "string" ? html : "";
+  if (typeof url !== "string" || url.length === 0 || /<base(?:\s|>)/i.test(source)) {
+    return source;
+  }
+
+  const base = `<base href="${escapeWebViewHtmlAttribute(url)}">`;
+  const headStart = source.search(/<head(?:\s|>)/i);
+  if (headStart >= 0) {
+    const headOpenEnd = source.indexOf(">", headStart);
+    if (headOpenEnd >= 0) {
+      return `${source.slice(0, headOpenEnd + 1)}${base}${source.slice(headOpenEnd + 1)}`;
+    }
+  }
+
+  return `${base}${source}`;
+}
+
+function canBridgeWebViewUrl(url) {
+  if (typeof url !== "string" || url.length === 0) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(url, document.baseURI);
+    return (parsed.protocol === "http:" || parsed.protocol === "https:")
+      && parsed.origin === window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+async function loadWebViewUrlThroughBridge(iframe, state, entry, navigationVersion, bridgeToken) {
+  const url = entry?.url;
+  if (typeof url !== "string" || url.length === 0) {
+    return false;
+  }
+
+  try {
+    const response = await fetch(url, { credentials: "same-origin" });
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!response.ok || !contentType.toLowerCase().includes("text/html")) {
+      return false;
+    }
+
+    const html = await response.text();
+    if (state.navigationVersion !== navigationVersion || !webViewEntriesEqual(state.currentEntry, entry)) {
+      return true;
+    }
+
+    iframe.removeAttribute("src");
+    iframe.srcdoc = injectWebViewBridge(injectWebViewBase(html, url), bridgeToken, url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function ensureWebViewSandbox(iframe) {
+  if (iframe instanceof HTMLIFrameElement) {
+    iframe.setAttribute("sandbox", webViewIframeSandbox);
+  }
+}
+
+export function consumeWebViewEventPayload(ownerHandle, eventName) {
+  if (!Number.isInteger(ownerHandle) || typeof eventName !== "string" || eventName.length === 0) {
+    return null;
+  }
+
+  const key = `${ownerHandle}:${eventName}`;
+  if (!webViewEventPayloads.has(key)) {
+    return null;
+  }
+
+  const payload = webViewEventPayloads.get(key);
+  webViewEventPayloads.delete(key);
   return typeof payload === "string" ? payload : null;
 }
 
@@ -2392,6 +2737,806 @@ export function configureSwipeView(ownerHandle, configurationJson, swipeStartCal
 
 export function unsubscribeSwipeView(subscriptionId) {
   removeEventSubscription(subscriptionId);
+}
+
+function normalizeWebViewConfig(configurationJson) {
+  if (typeof configurationJson !== "string" || configurationJson.length === 0) {
+    return null;
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(configurationJson);
+  } catch {
+    return null;
+  }
+
+  const rawSourceKind = payload?.sourceKind ?? payload?.SourceKind;
+  const rawUrl = payload?.url ?? payload?.Url;
+  const rawHtml = payload?.html ?? payload?.Html;
+  const rawUserAgent = payload?.userAgent ?? payload?.UserAgent;
+  const rawEnabled = payload?.enabled ?? payload?.Enabled;
+  const rawSourceVersion = payload?.sourceVersion ?? payload?.SourceVersion;
+
+  const sourceKind = rawSourceKind === "html"
+    ? "html"
+    : rawSourceKind === "url"
+      ? "url"
+      : rawSourceKind === "unsupported"
+        ? "unsupported"
+        : "none";
+  const url = typeof rawUrl === "string" && rawUrl.length > 0
+    ? rawUrl
+    : "about:blank";
+  const html = typeof rawHtml === "string"
+    ? rawHtml
+    : "";
+  const userAgent = typeof rawUserAgent === "string"
+    ? rawUserAgent
+    : "";
+
+  return {
+    enabled: rawEnabled !== false,
+    sourceKind,
+    url,
+    html,
+    userAgent,
+    sourceVersion: Number.isFinite(rawSourceVersion) ? Math.trunc(rawSourceVersion) : 0
+  };
+}
+
+function cloneWebViewEntry(entry) {
+  const sourceKind = entry?.sourceKind === "html"
+    ? "html"
+    : entry?.sourceKind === "unsupported"
+      ? "unsupported"
+      : entry?.sourceKind === "none"
+        ? "none"
+        : "url";
+  return {
+    sourceKind,
+    url: typeof entry?.url === "string" && entry.url.length > 0 ? entry.url : "about:blank",
+    html: typeof entry?.html === "string" ? entry.html : ""
+  };
+}
+
+function webViewEntriesEqual(left, right) {
+  const normalizeUrl = (value) => {
+    if (typeof value !== "string" || value.length === 0) {
+      return "";
+    }
+
+    try {
+      return new URL(value, window.location.href).href;
+    } catch {
+      return value;
+    }
+  };
+
+  return (left?.sourceKind ?? "") === (right?.sourceKind ?? "")
+    && normalizeUrl(left?.url ?? "") === normalizeUrl(right?.url ?? "")
+    && (left?.html ?? "") === (right?.html ?? "");
+}
+
+function createWebViewBridgeToken() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    try {
+      return crypto.randomUUID();
+    } catch {
+      // Fall through to deterministic-shape entropy below.
+    }
+  }
+
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
+function resolveWebViewEntryFromConfig(config) {
+  if (!config) {
+    return { sourceKind: "none", url: "about:blank", html: "" };
+  }
+
+  if (config.sourceKind === "html") {
+    return { sourceKind: "html", url: "about:srcdoc", html: config.html ?? "" };
+  }
+
+  if (config.sourceKind === "unsupported") {
+    return { sourceKind: "unsupported", url: config.url ?? "about:blank", html: "" };
+  }
+
+  if (config.sourceKind === "none") {
+    return { sourceKind: "none", url: config.url ?? "about:blank", html: "" };
+  }
+
+  return { sourceKind: "url", url: config.url ?? "about:blank", html: "" };
+}
+
+function isPreservedWebViewSourceKind(sourceKind) {
+  return sourceKind === "unsupported" || sourceKind === "none";
+}
+
+function canEvaluateWebViewScript(iframe, state) {
+  if (state?.bridgeReady === true && typeof state?.bridgeToken === "string") {
+    return true;
+  }
+
+  try {
+    return Boolean(iframe?.contentWindow?.document);
+  } catch {
+    return false;
+  }
+}
+
+function resolveWebViewLocation(iframe, state) {
+  try {
+    const href = iframe?.contentWindow?.location?.href;
+    if (typeof href === "string" && href.length > 0) {
+      return href;
+    }
+  } catch {
+    // Cross-origin or not yet ready; fall through to deterministic stored URL.
+  }
+
+  if (typeof state?.pendingDocumentNavigation?.url === "string" && state.pendingDocumentNavigation.url.length > 0) {
+    return state.pendingDocumentNavigation.url;
+  }
+
+  if (typeof state?.bridgeUrl === "string" && state.bridgeUrl.length > 0) {
+    return state.bridgeUrl;
+  }
+
+  return state?.currentEntry?.url ?? state?.config?.url ?? "about:blank";
+}
+
+function resolveWebViewEntryFromDocument(iframe, state) {
+  let href;
+  try {
+    href = iframe?.contentWindow?.location?.href;
+  } catch {
+    href = typeof state?.bridgeUrl === "string" && state.bridgeUrl.length > 0
+      ? state.bridgeUrl
+      : null;
+  }
+
+  if (typeof href !== "string" || href.length === 0) {
+    return null;
+  }
+
+  if (href === "about:srcdoc") {
+    if (state?.currentEntry?.sourceKind === "url") {
+      const bridgedUrl = typeof state?.bridgeUrl === "string" && state.bridgeUrl.length > 0
+        ? state.bridgeUrl
+        : state.currentEntry.url;
+      return {
+        sourceKind: "url",
+        url: bridgedUrl,
+        html: ""
+      };
+    }
+
+    return {
+      sourceKind: "html",
+      url: "about:srcdoc",
+      html: typeof state?.config?.html === "string"
+        ? state.config.html
+        : (typeof state?.currentEntry?.html === "string" ? state.currentEntry.html : "")
+    };
+  }
+
+  const preservedSourceKind = state?.currentEntry?.sourceKind ?? state?.config?.sourceKind;
+  if (href === "about:blank" && isPreservedWebViewSourceKind(preservedSourceKind)) {
+    return {
+      sourceKind: preservedSourceKind,
+      url: typeof state?.currentEntry?.url === "string" && state.currentEntry.url.length > 0
+        ? state.currentEntry.url
+        : "about:blank",
+      html: ""
+    };
+  }
+
+  return {
+    sourceKind: "url",
+    url: href,
+    html: ""
+  };
+}
+
+function syncWebViewHistoryFromDocument(iframe, state) {
+  const loadedEntry = resolveWebViewEntryFromDocument(iframe, state)
+    ?? (typeof state?.pendingDocumentNavigation?.url === "string" && state.pendingDocumentNavigation.url.length > 0
+      ? {
+          sourceKind: "url",
+          url: state.pendingDocumentNavigation.url,
+          html: ""
+        }
+      : null);
+  if (!loadedEntry) {
+    return;
+  }
+
+  const normalizedLoadedEntry = cloneWebViewEntry(loadedEntry);
+  state.currentEntry = normalizedLoadedEntry;
+  state.currentUrl = normalizedLoadedEntry.sourceKind === "html"
+    ? "about:srcdoc"
+    : normalizedLoadedEntry.url;
+
+  if (state.historyIndex < 0) {
+    state.history = [cloneWebViewEntry(normalizedLoadedEntry)];
+    state.historyIndex = 0;
+    return;
+  }
+
+  const currentHistoryEntry = state.history[state.historyIndex];
+  if (webViewEntriesEqual(currentHistoryEntry, normalizedLoadedEntry)) {
+    state.history[state.historyIndex] = cloneWebViewEntry(normalizedLoadedEntry);
+    return;
+  }
+
+  state.history = state.history.slice(0, state.historyIndex + 1);
+  state.history.push(cloneWebViewEntry(normalizedLoadedEntry));
+  state.historyIndex = state.history.length - 1;
+}
+
+function queueWebViewDocumentNavigation(elementHandle, state, url) {
+  if (typeof url !== "string" || url.length === 0 || typeof state?.navigatingCallback !== "function") {
+    return false;
+  }
+
+  const requestId = Number.isFinite(state.nextNavigationRequestId)
+    ? Math.trunc(state.nextNavigationRequestId) + 1
+    : 1;
+  state.nextNavigationRequestId = requestId;
+  state.pendingDocumentNavigation = { requestId, url };
+  window.setTimeout(() => {
+    const pending = state.pendingDocumentNavigation;
+    if (!pending || pending.requestId !== requestId) {
+      return;
+    }
+
+    publishWebViewEvent(elementHandle, "navigating", state.navigatingCallback, JSON.stringify({
+      requestId,
+      url
+    }));
+  }, 0);
+  return true;
+}
+
+function isPlainPrimaryWebViewClick(event) {
+  return !!event
+    && !event.defaultPrevented
+    && event.button === 0
+    && !event.metaKey
+    && !event.ctrlKey
+    && !event.shiftKey
+    && !event.altKey;
+}
+
+function readWebViewSubmitterAttribute(submitter, submitterAttribute, form, formAttribute, fallback) {
+  if (submitter && typeof submitter.getAttribute === "function") {
+    const submitterValue = submitter.getAttribute(submitterAttribute);
+    if (typeof submitterValue === "string" && submitterValue.length > 0) {
+      return submitterValue;
+    }
+  }
+
+  const formValue = form.getAttribute(formAttribute);
+  return typeof formValue === "string" ? formValue : fallback;
+}
+
+function createWebViewFormData(form, submitter) {
+  if (submitter) {
+    try {
+      return new FormData(form, submitter);
+    } catch {
+      const fallback = new FormData(form);
+      const name = typeof submitter.name === "string" ? submitter.name : "";
+      if (name.length > 0 && !submitter.disabled) {
+        fallback.append(name, typeof submitter.value === "string" ? submitter.value : "");
+      }
+
+      return fallback;
+    }
+  }
+
+  return new FormData(form);
+}
+
+function resolveWebViewFormNavigationUrl(form, doc, submitter) {
+  if (!form || typeof form.getAttribute !== "function") {
+    return null;
+  }
+
+  const rawTarget = readWebViewSubmitterAttribute(submitter, "formtarget", form, "target", "").trim();
+  if (rawTarget.length > 0 && rawTarget.toLowerCase() !== "_self") {
+    return null;
+  }
+
+  const rawMethod = readWebViewSubmitterAttribute(submitter, "formmethod", form, "method", "get").trim().toLowerCase();
+  if (rawMethod !== "get") {
+    return null;
+  }
+
+  const action = readWebViewSubmitterAttribute(submitter, "formaction", form, "action", doc?.location?.href ?? "");
+  if (typeof action !== "string" || action.length === 0) {
+    return null;
+  }
+
+  let url;
+  try {
+    url = new URL(action, doc.baseURI);
+  } catch {
+    return action;
+  }
+
+  if (rawMethod === "get") {
+    try {
+      const search = new URLSearchParams(createWebViewFormData(form, submitter));
+      for (const [key, value] of search) {
+        url.searchParams.append(key, value);
+      }
+    } catch {
+      // Leave the action URL intact when a form contains values FormData cannot serialize.
+    }
+  }
+
+  return url.href;
+}
+
+function installWebViewDocumentNavigationObserver(elementHandle, iframe, state) {
+  let doc;
+  try {
+    doc = iframe?.contentDocument;
+  } catch {
+    return;
+  }
+
+  if (!doc || doc.nodeType !== 9 || doc.__mirageWebViewNavigationObserverInstalled) {
+    return;
+  }
+
+  doc.__mirageWebViewNavigationObserverInstalled = true;
+  doc.addEventListener("click", (event) => {
+    if (!isPlainPrimaryWebViewClick(event)) {
+      return;
+    }
+
+    const targetElement = event.target && event.target.nodeType === 1
+      ? event.target
+      : event.target?.parentElement ?? null;
+    const target = typeof targetElement?.closest === "function"
+      ? targetElement.closest("a[href]")
+      : null;
+    if (!target || typeof target.getAttribute !== "function") {
+      return;
+    }
+
+    const rawTarget = (target.getAttribute("target") ?? "").trim();
+    if (rawTarget.length > 0 && rawTarget.toLowerCase() !== "_self") {
+      return;
+    }
+
+    const href = target.getAttribute("href") ?? target.href;
+    if (typeof href !== "string" || href.length === 0) {
+      return;
+    }
+
+    let url;
+    try {
+      url = new URL(href, doc.baseURI).href;
+    } catch {
+      url = href;
+    }
+
+    if (queueWebViewDocumentNavigation(elementHandle, state, url)) {
+      event.preventDefault();
+    }
+  });
+
+  doc.addEventListener("submit", (event) => {
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    const form = event.target;
+    const url = resolveWebViewFormNavigationUrl(form, doc, event.submitter || null);
+    if (url) {
+      if (queueWebViewDocumentNavigation(elementHandle, state, url)) {
+        event.preventDefault();
+      }
+    }
+  });
+}
+
+function serializeWebViewEvalResult(value) {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+export function configureWebView(elementHandle, configurationJson, navigatingCallback, navigatedCallback, evalResultCallback) {
+  const iframe = fromHandle(elementHandle);
+  if (!(iframe instanceof HTMLIFrameElement)) {
+    return 0;
+  }
+
+  ensureWebViewSandbox(iframe);
+
+  const config = normalizeWebViewConfig(configurationJson);
+  if (!config) {
+    return 0;
+  }
+
+  const existingState = iframe.__mirageWebViewState;
+  if (existingState && typeof existingState.applyEntry === "function") {
+    const priorSourceVersion = Number.isFinite(existingState.config?.sourceVersion)
+      ? Math.trunc(existingState.config.sourceVersion)
+      : 0;
+    existingState.navigatingCallback = navigatingCallback;
+    existingState.config = config;
+    const nextEntry = resolveWebViewEntryFromConfig(config);
+    if (!webViewEntriesEqual(existingState.currentEntry, nextEntry)
+      || priorSourceVersion !== config.sourceVersion) {
+      existingState.applyEntry(nextEntry, true);
+    }
+    return Number.isInteger(existingState.subscriptionId) ? existingState.subscriptionId : 0;
+  }
+
+  const state = {
+    subscriptionId: 0,
+    config,
+    navigatingCallback,
+    history: [],
+    historyIndex: -1,
+    currentEntry: null,
+    currentUrl: config.sourceKind === "html" ? "about:srcdoc" : config.url,
+    nextNavigationRequestId: 0,
+    navigationVersion: 0,
+    navigatedVersion: -1,
+    navigatedKey: "",
+    pendingDocumentNavigation: null,
+    bridgeReady: false,
+    bridgeToken: null,
+    bridgeExpected: false,
+    bridgeUrl: null,
+    applyEntry(entry, updateHistory) {
+      const normalizedEntry = cloneWebViewEntry(entry);
+      state.navigationVersion = Number.isFinite(state.navigationVersion)
+        ? Math.trunc(state.navigationVersion) + 1
+        : 1;
+      state.navigatedVersion = -1;
+      state.navigatedKey = "";
+      state.currentEntry = normalizedEntry;
+      state.currentUrl = normalizedEntry.sourceKind === "html" ? "about:srcdoc" : normalizedEntry.url;
+      state.pendingDocumentNavigation = null;
+      state.bridgeReady = false;
+      state.bridgeExpected = normalizedEntry.sourceKind === "html" || canBridgeWebViewUrl(normalizedEntry.url);
+      state.bridgeToken = state.bridgeExpected ? createWebViewBridgeToken() : null;
+      state.bridgeUrl = null;
+      ensureWebViewSandbox(iframe);
+
+      if (updateHistory) {
+        const currentHistoryEntry = state.historyIndex >= 0 ? state.history[state.historyIndex] : null;
+        if (!webViewEntriesEqual(currentHistoryEntry, normalizedEntry)) {
+          state.history = state.history.slice(0, state.historyIndex + 1);
+          state.history.push(cloneWebViewEntry(normalizedEntry));
+          state.historyIndex = state.history.length - 1;
+        }
+      } else if (state.historyIndex >= 0) {
+        state.history[state.historyIndex] = cloneWebViewEntry(normalizedEntry);
+      }
+
+      if (normalizedEntry.sourceKind === "html") {
+        iframe.removeAttribute("src");
+        iframe.srcdoc = injectWebViewBridge(normalizedEntry.html ?? "", state.bridgeToken, null);
+      } else if (state.bridgeExpected && typeof state.bridgeToken === "string") {
+        const bridgeToken = state.bridgeToken;
+        const navigationVersion = state.navigationVersion;
+        loadWebViewUrlThroughBridge(iframe, state, normalizedEntry, navigationVersion, bridgeToken)
+          .then((loadedThroughBridge) => {
+            if (loadedThroughBridge || state.navigationVersion !== navigationVersion || !webViewEntriesEqual(state.currentEntry, normalizedEntry)) {
+              return;
+            }
+
+            state.bridgeExpected = false;
+            state.bridgeToken = null;
+            state.bridgeUrl = null;
+            iframe.removeAttribute("srcdoc");
+            iframe.src = normalizedEntry.url ?? "about:blank";
+          });
+      } else {
+        iframe.removeAttribute("srcdoc");
+        iframe.src = normalizedEntry.url ?? "about:blank";
+      }
+    },
+    requestGoBack() {
+      if (state.historyIndex <= 0) {
+        return false;
+      }
+
+      state.historyIndex -= 1;
+      state.applyEntry(state.history[state.historyIndex], false);
+      return true;
+    },
+    requestGoForward() {
+      if (state.historyIndex >= state.history.length - 1) {
+        return false;
+      }
+
+      state.historyIndex += 1;
+      state.applyEntry(state.history[state.historyIndex], false);
+      return true;
+    },
+    requestReload() {
+      if (state.historyIndex < 0 || state.historyIndex >= state.history.length) {
+        return false;
+      }
+
+      state.applyEntry(state.history[state.historyIndex], false);
+      return true;
+    },
+    evaluate(script, requestId, captureResult) {
+      if (typeof script !== "string" || script.length === 0) {
+        return false;
+      }
+
+      const canEvaluate = canEvaluateWebViewScript(iframe, state);
+      if (!canEvaluate) {
+        publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+          requestId,
+          success: false,
+          result: null,
+          error: "Cross-origin or opaque-origin content prevented JavaScript evaluation."
+        }));
+        return true;
+      }
+
+      if (state.bridgeReady === true && typeof state.bridgeToken === "string") {
+        try {
+          iframe.contentWindow?.postMessage({
+            __mirageWebView: true,
+            bridgeToken: state.bridgeToken,
+            type: "evaluate",
+            requestId,
+            script,
+            captureResult
+          }, "*");
+          return true;
+        } catch {
+          publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+            requestId,
+            success: false,
+            result: null,
+            error: "Cross-origin or opaque-origin content prevented JavaScript evaluation."
+          }));
+          return true;
+        }
+      }
+
+      let win;
+      try {
+        win = iframe.contentWindow;
+      } catch {
+        publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+          requestId,
+          success: false,
+          result: null,
+          error: "Cross-origin or opaque-origin content prevented JavaScript evaluation."
+        }));
+        return true;
+      }
+
+      Promise.resolve()
+        .then(() => win.eval(script))
+        .then((result) => {
+          if (!captureResult && requestId <= 0) {
+            return;
+          }
+
+          publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+            requestId,
+            success: true,
+            result: serializeWebViewEvalResult(result),
+            error: null
+          }));
+        })
+        .catch((error) => {
+          publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+            requestId,
+            success: false,
+            result: null,
+            error: error instanceof Error ? (error.message || error.toString()) : String(error ?? "Unknown JavaScript evaluation error.")
+          }));
+        });
+      return true;
+    }
+  };
+
+  const publishNavigated = (result) => {
+    syncWebViewHistoryFromDocument(iframe, state);
+    installWebViewDocumentNavigationObserver(elementHandle, iframe, state);
+    const currentEntry = cloneWebViewEntry(state.currentEntry);
+    const resolvedUrl = resolveWebViewLocation(iframe, state);
+    const navigatedKey = `${state.navigationVersion}:${currentEntry.sourceKind}:${resolvedUrl}`;
+    if (state.navigatedVersion === state.navigationVersion && state.navigatedKey === navigatedKey) {
+      return;
+    }
+
+    publishWebViewEvent(elementHandle, "navigated", navigatedCallback, JSON.stringify({
+      url: resolvedUrl,
+      sourceKind: currentEntry.sourceKind,
+      html: currentEntry.sourceKind === "html" ? currentEntry.html : null,
+      canGoBack: state.historyIndex > 0,
+      canGoForward: state.historyIndex >= 0 && state.historyIndex < state.history.length - 1,
+      canEvaluateJavaScript: canEvaluateWebViewScript(iframe, state),
+      result: typeof result === "string" && result.length > 0 ? result : "success"
+    }));
+    state.navigatedVersion = state.navigationVersion;
+    state.navigatedKey = navigatedKey;
+    state.pendingDocumentNavigation = null;
+  };
+
+  const loadListener = () => {
+    if (state.bridgeExpected === true && state.bridgeReady !== true) {
+      return;
+    }
+
+    publishNavigated("success");
+  };
+  const messageListener = (event) => {
+    if (event.source !== iframe.contentWindow) {
+      return;
+    }
+
+    const message = event.data;
+    if (!message || message.__mirageWebView !== true || typeof message.type !== "string") {
+      return;
+    }
+
+    if (typeof state.bridgeToken !== "string"
+      || state.bridgeToken.length === 0
+      || message.bridgeToken !== state.bridgeToken) {
+      return;
+    }
+
+    if (typeof message.url === "string" && message.url.length > 0) {
+      state.bridgeUrl = message.url;
+    }
+
+    switch (message.type) {
+      case "ready":
+        state.bridgeReady = true;
+        publishNavigated("success");
+        break;
+      case "navigating":
+        queueWebViewDocumentNavigation(elementHandle, state, message.url);
+        break;
+      case "evalresult":
+        publishWebViewEvent(elementHandle, "evalresult", evalResultCallback, JSON.stringify({
+          requestId: Number.isFinite(message.requestId) ? Math.trunc(message.requestId) : 0,
+          success: message.success === true,
+          result: typeof message.result === "string" ? message.result : null,
+          error: typeof message.error === "string" ? message.error : null
+        }));
+        break;
+    }
+  };
+  iframe.addEventListener("load", loadListener);
+  window.addEventListener("message", messageListener);
+
+  const initialEntry = resolveWebViewEntryFromConfig(config);
+  state.history = [cloneWebViewEntry(initialEntry)];
+  state.historyIndex = 0;
+  state.applyEntry(initialEntry, false);
+
+  const subscriptionId = nextEventSubscriptionId++;
+  eventSubscriptions.set(subscriptionId, {
+    element: iframe,
+    dispose: () => {
+      iframe.removeEventListener("load", loadListener);
+      window.removeEventListener("message", messageListener);
+      delete iframe.__mirageWebViewState;
+    }
+  });
+
+  state.subscriptionId = subscriptionId;
+  iframe.__mirageWebViewState = state;
+  return subscriptionId;
+}
+
+export function unsubscribeWebView(subscriptionId) {
+  removeEventSubscription(subscriptionId);
+}
+
+export function requestWebViewGoBack(elementHandle) {
+  const iframe = fromHandle(elementHandle);
+  const state = iframe?.__mirageWebViewState;
+  if (!(iframe instanceof HTMLIFrameElement) || !state || typeof state.requestGoBack !== "function") {
+    return false;
+  }
+
+  return state.requestGoBack();
+}
+
+export function requestWebViewNavigate(elementHandle, requestId, url) {
+  const iframe = fromHandle(elementHandle);
+  const state = iframe?.__mirageWebViewState;
+  if (!(iframe instanceof HTMLIFrameElement)
+    || !state
+    || typeof state.applyEntry !== "function"
+    || typeof url !== "string"
+    || url.length === 0) {
+    return false;
+  }
+
+  const normalizedRequestId = Number.isFinite(requestId) ? Math.trunc(requestId) : 0;
+  if (normalizedRequestId > 0) {
+    const pending = state.pendingDocumentNavigation;
+    if (!pending || pending.requestId !== normalizedRequestId) {
+      return false;
+    }
+  }
+
+  state.applyEntry({
+    sourceKind: "url",
+    url,
+    html: ""
+  }, true);
+  return true;
+}
+
+export function cancelWebViewNavigation(elementHandle, requestId) {
+  const iframe = fromHandle(elementHandle);
+  const state = iframe?.__mirageWebViewState;
+  if (!(iframe instanceof HTMLIFrameElement) || !state) {
+    return false;
+  }
+
+  const normalizedRequestId = Number.isFinite(requestId) ? Math.trunc(requestId) : 0;
+  if (normalizedRequestId <= 0 || state.pendingDocumentNavigation?.requestId === normalizedRequestId) {
+    state.pendingDocumentNavigation = null;
+    return true;
+  }
+
+  return false;
+}
+
+export function requestWebViewGoForward(elementHandle) {
+  const iframe = fromHandle(elementHandle);
+  const state = iframe?.__mirageWebViewState;
+  if (!(iframe instanceof HTMLIFrameElement) || !state || typeof state.requestGoForward !== "function") {
+    return false;
+  }
+
+  return state.requestGoForward();
+}
+
+export function requestWebViewReload(elementHandle) {
+  const iframe = fromHandle(elementHandle);
+  const state = iframe?.__mirageWebViewState;
+  if (!(iframe instanceof HTMLIFrameElement) || !state || typeof state.requestReload !== "function") {
+    return false;
+  }
+
+  return state.requestReload();
+}
+
+export function evaluateWebViewScript(elementHandle, requestId, script, captureResult) {
+  const iframe = fromHandle(elementHandle);
+  const state = iframe?.__mirageWebViewState;
+  if (!(iframe instanceof HTMLIFrameElement) || !state || typeof state.evaluate !== "function") {
+    return false;
+  }
+
+  return state.evaluate(script, Number.isFinite(requestId) ? Math.trunc(requestId) : 0, Boolean(captureResult));
 }
 
 export function requestSwipeViewOpen(ownerHandle, side, animated, emitEndEvent) {
@@ -3533,6 +4678,269 @@ export function setDocumentTitle(title) {
   }
 
   document.title = title ?? "";
+}
+
+function ensureSemanticAnnouncer() {
+  if (typeof document === "undefined" || !document.body) {
+    return null;
+  }
+
+  if (semanticAnnouncerElement && semanticAnnouncerElement.isConnected) {
+    return semanticAnnouncerElement;
+  }
+
+  semanticAnnouncerElement = document.createElement("div");
+  semanticAnnouncerElement.setAttribute("aria-live", "polite");
+  semanticAnnouncerElement.setAttribute("aria-atomic", "true");
+  semanticAnnouncerElement.setAttribute("data-mirage-semantic-announcer", "true");
+  semanticAnnouncerElement.style.position = "absolute";
+  semanticAnnouncerElement.style.width = "1px";
+  semanticAnnouncerElement.style.height = "1px";
+  semanticAnnouncerElement.style.margin = "-1px";
+  semanticAnnouncerElement.style.padding = "0";
+  semanticAnnouncerElement.style.border = "0";
+  semanticAnnouncerElement.style.overflow = "hidden";
+  semanticAnnouncerElement.style.clip = "rect(0 0 0 0)";
+  semanticAnnouncerElement.style.whiteSpace = "nowrap";
+  document.body.appendChild(semanticAnnouncerElement);
+  return semanticAnnouncerElement;
+}
+
+export function announceSemanticText(text) {
+  const announcer = ensureSemanticAnnouncer();
+  if (!announcer) {
+    return;
+  }
+
+  announcer.textContent = "";
+  setTimeout(() => {
+    announcer.textContent = typeof text === "string" ? text : "";
+  }, 0);
+}
+
+export function openExternalUri(uri, target) {
+  if (typeof uri !== "string" || uri.length === 0 || typeof window === "undefined") {
+    return false;
+  }
+
+  const resolvedTarget = target === "_self" ? "_self" : "_blank";
+  try {
+    if (resolvedTarget === "_self") {
+      window.location.assign(uri);
+      return true;
+    }
+
+    const hadUserActivation = typeof navigator === "undefined"
+      || !navigator.userActivation
+      || navigator.userActivation.isActive;
+    const opened = window.open(uri, resolvedTarget, "noopener,noreferrer");
+    return !!opened || hadUserActivation;
+  } catch {
+    return false;
+  }
+}
+
+export async function setClipboardText(text) {
+  const normalized = typeof text === "string" ? text : "";
+
+  if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    try {
+      await navigator.clipboard.writeText(normalized);
+      clipboardFallbackText = normalized;
+      return true;
+    } catch {
+      // Keep the fallback path useful for deterministic browser-host tests.
+    }
+  }
+
+  clipboardFallbackText = normalized;
+  return true;
+}
+
+export async function getClipboardText() {
+  if (typeof navigator !== "undefined" && navigator.clipboard && typeof navigator.clipboard.readText === "function") {
+    try {
+      const value = await navigator.clipboard.readText();
+      clipboardFallbackText = typeof value === "string" ? value : null;
+      return clipboardFallbackText;
+    } catch {
+      // Fall through to the last Mirage-written value.
+    }
+  }
+
+  return clipboardFallbackText;
+}
+
+export function hasClipboardText() {
+  return typeof clipboardFallbackText === "string" && clipboardFallbackText.length > 0;
+}
+
+export function getDisplayInfo() {
+  const width = typeof window !== "undefined" && Number.isFinite(window.innerWidth) ? window.innerWidth : 1024;
+  const height = typeof window !== "undefined" && Number.isFinite(window.innerHeight) ? window.innerHeight : 768;
+  const density = typeof window !== "undefined" && Number.isFinite(window.devicePixelRatio) && window.devicePixelRatio > 0
+    ? window.devicePixelRatio
+    : 1;
+  const orientation = width >= height ? 2 : 1;
+  const angle = typeof screen !== "undefined" && screen.orientation && Number.isFinite(screen.orientation.angle)
+    ? screen.orientation.angle
+    : 0;
+  const rotation = angle === 90 ? 2 : angle === 180 ? 3 : angle === 270 ? 4 : 1;
+
+  return [width, height, density, orientation, rotation];
+}
+
+function buildGeolocationOptions(enableHighAccuracy, timeoutMs) {
+  const timeout = Number.isFinite(timeoutMs) && timeoutMs > 0 ? Math.max(1, timeoutMs) : 10000;
+  return {
+    enableHighAccuracy: !!enableHighAccuracy,
+    timeout,
+    maximumAge: 0
+  };
+}
+
+function locationPayloadFromPosition(position) {
+  const coords = position && position.coords ? position.coords : {};
+  return JSON.stringify({
+    ok: true,
+    latitude: Number.isFinite(coords.latitude) ? coords.latitude : 0,
+    longitude: Number.isFinite(coords.longitude) ? coords.longitude : 0,
+    altitude: Number.isFinite(coords.altitude) ? coords.altitude : null,
+    accuracy: Number.isFinite(coords.accuracy) ? coords.accuracy : null,
+    altitudeAccuracy: Number.isFinite(coords.altitudeAccuracy) ? coords.altitudeAccuracy : null,
+    speed: Number.isFinite(coords.speed) ? coords.speed : null,
+    heading: Number.isFinite(coords.heading) ? coords.heading : null,
+    timestamp: Number.isFinite(position?.timestamp) ? position.timestamp : Date.now()
+  });
+}
+
+function locationPayloadFromError(error) {
+  return JSON.stringify({
+    ok: false,
+    code: Number.isFinite(error?.code) ? error.code : 0,
+    message: typeof error?.message === "string" ? error.message : "Geolocation failed"
+  });
+}
+
+export async function getCurrentGeolocationJson(enableHighAccuracy, timeoutMs) {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    return JSON.stringify({ ok: false, code: 0, message: "Geolocation is not supported by this browser" });
+  }
+
+  return await new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => resolve(locationPayloadFromPosition(position)),
+      (error) => resolve(locationPayloadFromError(error)),
+      buildGeolocationOptions(enableHighAccuracy, timeoutMs));
+  });
+}
+
+export function startGeolocationWatch(enableHighAccuracy, minimumTimeMs, changedCallback, failedCallback) {
+  if (typeof navigator === "undefined" || !navigator.geolocation || typeof navigator.geolocation.watchPosition !== "function") {
+    return 0;
+  }
+
+  const subscriptionId = nextEventSubscriptionId++;
+  const options = buildGeolocationOptions(enableHighAccuracy, 10000);
+  const watchId = navigator.geolocation.watchPosition(
+    (position) => {
+      geolocationWatchPayloads.set(subscriptionId, locationPayloadFromPosition(position));
+      changedCallback();
+    },
+    (error) => {
+      geolocationWatchPayloads.set(subscriptionId, locationPayloadFromError(error));
+      failedCallback();
+    },
+    options);
+
+  eventSubscriptions.set(subscriptionId, {
+    dispose: () => {
+      try {
+        navigator.geolocation.clearWatch(watchId);
+      } catch {
+        // Best effort cleanup only.
+      }
+
+      geolocationWatchPayloads.delete(subscriptionId);
+    }
+  });
+
+  return subscriptionId;
+}
+
+export function consumeGeolocationWatchPayloadJson(subscriptionId) {
+  if (!geolocationWatchPayloads.has(subscriptionId)) {
+    return null;
+  }
+
+  const payload = geolocationWatchPayloads.get(subscriptionId);
+  geolocationWatchPayloads.delete(subscriptionId);
+  return typeof payload === "string" ? payload : null;
+}
+
+export function unsubscribeGeolocationWatch(subscriptionId) {
+  removeEventSubscription(subscriptionId);
+}
+
+const activeSpeechCancelers = new Set();
+
+export async function speakText(text, rate, pitch, volume) {
+  if (typeof window === "undefined" || !window.speechSynthesis || typeof SpeechSynthesisUtterance === "undefined") {
+    return false;
+  }
+
+  const normalized = typeof text === "string" ? text : "";
+  if (normalized.length === 0) {
+    return true;
+  }
+
+  return await new Promise((resolve) => {
+    const utterance = new SpeechSynthesisUtterance(normalized);
+    let settled = false;
+    const finish = (result) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      activeSpeechCancelers.delete(cancel);
+      resolve(result);
+    };
+    const cancel = () => finish(false);
+
+    if (Number.isFinite(rate) && rate > 0) {
+      utterance.rate = Math.max(0.1, Math.min(10, rate));
+    }
+    if (Number.isFinite(pitch) && pitch > 0) {
+      utterance.pitch = Math.max(0, Math.min(2, pitch));
+    }
+    if (Number.isFinite(volume) && volume >= 0) {
+      utterance.volume = Math.max(0, Math.min(1, volume));
+    }
+
+    utterance.onend = () => finish(true);
+    utterance.onerror = () => finish(false);
+    activeSpeechCancelers.add(cancel);
+    window.speechSynthesis.speak(utterance);
+  });
+}
+
+export function cancelSpeech() {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    return;
+  }
+
+  const cancelers = Array.from(activeSpeechCancelers);
+  activeSpeechCancelers.clear();
+  for (const cancel of cancelers) {
+    cancel();
+  }
+
+  try {
+    window.speechSynthesis.cancel();
+  } catch {
+    // Best effort cancellation only.
+  }
 }
 
 function tryGetLocalStorage() {

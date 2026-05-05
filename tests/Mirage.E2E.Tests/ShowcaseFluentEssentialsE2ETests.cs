@@ -40,9 +40,11 @@ public sealed class ShowcaseFluentEssentialsE2ETests : IClassFixture<ShowcaseHos
             @"() => {
                 const prefs = document.querySelector('[data-automation-id=""showcase-essentials-lab-preferences-patched""]');
                 const appInfo = document.querySelector('[data-automation-id=""showcase-essentials-lab-appinfo-patched""]');
-                return !!prefs && !!appInfo
+                const deviceInfo = document.querySelector('[data-automation-id=""showcase-essentials-lab-deviceinfo-patched""]');
+                return !!prefs && !!appInfo && !!deviceInfo
                     && (prefs.textContent || '').trim().endsWith('true')
-                    && (appInfo.textContent || '').trim().endsWith('true');
+                    && (appInfo.textContent || '').trim().endsWith('true')
+                    && (deviceInfo.textContent || '').trim().endsWith('true');
             }");
 
         await page.Locator("[data-automation-id='showcase-essentials-lab-reset']").ClickAsync();
@@ -56,6 +58,37 @@ public sealed class ShowcaseFluentEssentialsE2ETests : IClassFixture<ShowcaseHos
 
         Assert.False(string.IsNullOrWhiteSpace(staticSummary));
         Assert.Equal(staticSummary, injectedSummary);
+
+        var staticDeviceSummary = await page.Locator("[data-automation-id='showcase-essentials-lab-device-static']").InnerTextAsync();
+        var injectedDeviceSummary = await page.Locator("[data-automation-id='showcase-essentials-lab-device-di']").InnerTextAsync();
+        var displaySummary = await page.Locator("[data-automation-id='showcase-essentials-lab-device-display']").InnerTextAsync();
+
+        Assert.Equal(staticDeviceSummary, injectedDeviceSummary);
+        Assert.Contains("Platform=Browser", injectedDeviceSummary, StringComparison.Ordinal);
+        Assert.Contains("Width=", displaySummary, StringComparison.Ordinal);
+
+        await page.Locator("[data-automation-id='showcase-essentials-lab-announce']").ClickAsync();
+        await page.WaitForFunctionAsync(
+            @"() => {
+                const status = document.querySelector('[data-automation-id=""showcase-essentials-lab-semantic-status""]');
+                const announcer = document.querySelector('[data-mirage-semantic-announcer=""true""]');
+                return !!status && !!announcer
+                    && (status.textContent || '').includes('Announced')
+                    && (announcer.textContent || '').includes('Mirage browser semantic screen reader announcement');
+            }");
+
+        await page.Locator("[data-automation-id='showcase-essentials-lab-clipboard-write']").ClickAsync();
+        await page.WaitForFunctionAsync(
+            @"() => {
+                const status = document.querySelector('[data-automation-id=""showcase-essentials-lab-clipboard-status""]');
+                return !!status && (status.textContent || '').includes('Wrote: Mirage clipboard');
+            }");
+        await page.Locator("[data-automation-id='showcase-essentials-lab-clipboard-read']").ClickAsync();
+        await page.WaitForFunctionAsync(
+            @"() => {
+                const status = document.querySelector('[data-automation-id=""showcase-essentials-lab-clipboard-status""]');
+                return !!status && (status.textContent || '').includes('Read: Mirage clipboard');
+            }");
 
         await page.ReloadAsync();
         await page.WaitForSelectorAsync("[data-automation-id='showcase-page-essentials-lab']");

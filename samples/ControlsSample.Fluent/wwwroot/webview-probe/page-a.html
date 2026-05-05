@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>WebView Probe A</title>
+</head>
+<body data-probe="page-a">
+  <main>
+    <h1>Probe Page A</h1>
+    <p>Mirage WebView same-origin probe page A.</p>
+    <p>
+      <a data-automation-id="controls-sample-webview-probe-link-page-a-to-page-b" href="/webview-probe/page-b.html">Go to Probe Page B</a>
+    </p>
+    <p>
+      <a data-automation-id="controls-sample-webview-probe-link-page-a-to-cross-origin" href="#">Go to Cross-Origin Probe</a>
+    </p>
+    <p>
+      <a data-automation-id="controls-sample-webview-probe-link-page-a-script-cancel" href="/webview-probe/page-b.html?script=cancel">Cancel navigation from page script</a>
+    </p>
+    <p>
+      <a data-automation-id="controls-sample-webview-probe-link-page-a-script-mutate" href="/webview-probe/page-b.html?script=original">Mutate navigation from page script</a>
+    </p>
+    <form data-automation-id="controls-sample-webview-probe-form-page-a-to-page-b" action="/webview-probe/page-b.html?fixed=1" method="get">
+      <input type="hidden" name="probe" value="page-a-form" />
+      <button type="submit" name="submitter" value="default" data-automation-id="controls-sample-webview-probe-submit-page-a-to-page-b">Submit to Probe Page B</button>
+      <button
+        type="submit"
+        name="submitter"
+        value="override"
+        formaction="/webview-probe/page-b.html?override=1"
+        formmethod="get"
+        formtarget="_self"
+        data-automation-id="controls-sample-webview-probe-submit-override-page-a-to-page-b">Submit override to Probe Page B</button>
+    </form>
+    <form data-automation-id="controls-sample-webview-probe-form-page-a-script-mutate" action="/webview-probe/page-b.html?form=original" method="get">
+      <input type="hidden" name="probe" value="page-a-form-script" />
+      <button type="submit" data-automation-id="controls-sample-webview-probe-submit-script-mutate-page-a-to-page-b">Submit mutated by page script</button>
+    </form>
+  </main>
+  <script>
+    window.webViewProbeToken = "page-a";
+    const crossOriginLink = document.querySelector("[data-automation-id='controls-sample-webview-probe-link-page-a-to-cross-origin']");
+    if (crossOriginLink) {
+      const alternateHost = window.location.hostname === "127.0.0.1" ? "localhost" : "127.0.0.1";
+      crossOriginLink.href = `${window.location.protocol}//${alternateHost}:${window.location.port}/webview-probe/page-b.html`;
+    }
+
+    const cancelLink = document.querySelector("[data-automation-id='controls-sample-webview-probe-link-page-a-script-cancel']");
+    if (cancelLink) {
+      cancelLink.addEventListener("click", event => {
+        event.preventDefault();
+        document.body.setAttribute("data-script-cancel-ran", "true");
+      });
+    }
+
+    const mutateLink = document.querySelector("[data-automation-id='controls-sample-webview-probe-link-page-a-script-mutate']");
+    if (mutateLink) {
+      mutateLink.addEventListener("click", () => {
+        mutateLink.href = "/webview-probe/page-b.html?script=mutated";
+        document.body.setAttribute("data-script-mutate-ran", "true");
+      });
+    }
+
+    const mutateForm = document.querySelector("[data-automation-id='controls-sample-webview-probe-form-page-a-script-mutate']");
+    if (mutateForm) {
+      mutateForm.addEventListener("submit", () => {
+        mutateForm.action = "/webview-probe/page-b.html?form=mutated";
+        document.body.setAttribute("data-script-form-mutate-ran", "true");
+      });
+    }
+  </script>
+</body>
+</html>

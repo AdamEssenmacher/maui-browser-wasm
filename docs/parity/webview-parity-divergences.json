@@ -1,0 +1,28 @@
+{
+  "entries": [
+    {
+      "id": "webview-wave1-no-file-or-app-package-source",
+      "summary": "Wave 1 supports UrlWebViewSource and HtmlWebViewSource on the iframe host but intentionally defers FileWebViewSource, packaged asset loading, and HtmlWebViewSource.BaseUrl-relative resource resolution.",
+      "upstreamReference": "src/Core/src/Handlers/WebView/WebViewHandler.Android.cs",
+      "testReference": "WebViewHandler_ProjectsUrlAndHtmlSources_AndUserAgentDiagnostics"
+    },
+    {
+      "id": "webview-browser-useragent-override-diagnostics-only",
+      "summary": "Mirage keeps the MAUI UserAgent mapper surface and deterministic diagnostics projection, but browser iframe hosts do not support a real per-WebView request-header User-Agent override in Wave 1.",
+      "upstreamReference": "src/Core/src/Handlers/WebView/WebViewHandler.iOS.cs",
+      "testReference": "WebViewHandler_ProjectsUrlAndHtmlSources_AndUserAgentDiagnostics"
+    },
+    {
+      "id": "webview-browser-cross-origin-eval-restricted",
+      "summary": "Eval and EvaluateJavaScriptAsync execute only for bridge-enabled controlled inline or same-origin probe content inside the sandboxed iframe host. Cross-origin, opaque-origin, or non-bridge content returns deterministic failure/no-op behavior instead of claiming native parity.",
+      "upstreamReference": "src/Core/src/Handlers/WebView/WebViewHandler.Android.cs",
+      "testReference": "WebViewParityProbe_ProjectsIframeNavigationAndEvaluationState"
+    },
+    {
+      "id": "webview-browser-process-cookies-fullscreen-deferred",
+      "summary": "Wave 1 does not implement ProcessTerminated, browser cookie synchronization, fullscreen media/process callbacks, or HybridWebView bridging on the iframe host.",
+      "upstreamReference": "src/Core/src/Handlers/WebView/WebViewHandler.iOS.cs",
+      "testReference": "WebViewParityContract_DivergencesAreWellFormedAndTestBacked"
+    }
+  ]
+}

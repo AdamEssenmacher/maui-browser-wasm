@@ -157,6 +157,47 @@ internal static partial class DomApi
     [JSImport("requestSwipeViewClose", Module)]
     internal static partial bool RequestSwipeViewClose(nint ownerElement, bool animated);
 
+    [JSImport("configureWebView", Module)]
+    internal static partial int ConfigureWebView(
+        nint element,
+        string configurationJson,
+        [JSMarshalAs<JSType.Function>] Action navigatingCallback,
+        [JSMarshalAs<JSType.Function>] Action navigatedCallback,
+        [JSMarshalAs<JSType.Function>] Action evalResultCallback);
+
+    [JSImport("consumeWebViewEventPayload", Module)]
+    internal static partial string? ConsumeWebViewEventPayload(nint element, string eventName);
+
+    [JSImport("unsubscribeWebView", Module)]
+    internal static partial void UnsubscribeWebView(int subscriptionId);
+
+    [JSImport("requestWebViewGoBack", Module)]
+    internal static partial bool RequestWebViewGoBack(nint element);
+
+    [JSImport("requestWebViewNavigate", Module)]
+    internal static partial bool RequestWebViewNavigate(
+        nint element,
+        [JSMarshalAs<JSType.Number>] long requestId,
+        string url);
+
+    [JSImport("cancelWebViewNavigation", Module)]
+    internal static partial bool CancelWebViewNavigation(
+        nint element,
+        [JSMarshalAs<JSType.Number>] long requestId);
+
+    [JSImport("requestWebViewGoForward", Module)]
+    internal static partial bool RequestWebViewGoForward(nint element);
+
+    [JSImport("requestWebViewReload", Module)]
+    internal static partial bool RequestWebViewReload(nint element);
+
+    [JSImport("evaluateWebViewScript", Module)]
+    internal static partial bool EvaluateWebViewScript(
+        nint element,
+        [JSMarshalAs<JSType.Number>] long requestId,
+        string script,
+        bool captureResult);
+
     [JSImport("focusElement", Module)]
     internal static partial bool FocusElement(nint element);
 
@@ -215,6 +256,46 @@ internal static partial class DomApi
 
     [JSImport("setDocumentTitle", Module)]
     internal static partial void SetDocumentTitle(string? title);
+
+    [JSImport("announceSemanticText", Module)]
+    internal static partial void AnnounceSemanticText(string? text);
+
+    [JSImport("openExternalUri", Module)]
+    internal static partial bool OpenExternalUri(string uri, string target);
+
+    [JSImport("setClipboardText", Module)]
+    internal static partial Task<bool> SetClipboardTextAsync(string? text);
+
+    [JSImport("getClipboardText", Module)]
+    internal static partial Task<string?> GetClipboardTextAsync();
+
+    [JSImport("hasClipboardText", Module)]
+    internal static partial bool HasClipboardText();
+
+    [JSImport("getDisplayInfo", Module)]
+    internal static partial double[] GetDisplayInfo();
+
+    [JSImport("getCurrentGeolocationJson", Module)]
+    internal static partial Task<string?> GetCurrentGeolocationJsonAsync(bool enableHighAccuracy, double timeoutMs);
+
+    [JSImport("startGeolocationWatch", Module)]
+    internal static partial int StartGeolocationWatch(
+        bool enableHighAccuracy,
+        double minimumTimeMs,
+        [JSMarshalAs<JSType.Function>] Action changedCallback,
+        [JSMarshalAs<JSType.Function>] Action failedCallback);
+
+    [JSImport("consumeGeolocationWatchPayloadJson", Module)]
+    internal static partial string? ConsumeGeolocationWatchPayloadJson(int subscriptionId);
+
+    [JSImport("unsubscribeGeolocationWatch", Module)]
+    internal static partial void UnsubscribeGeolocationWatch(int subscriptionId);
+
+    [JSImport("speakText", Module)]
+    internal static partial Task<bool> SpeakTextAsync(string text, double rate, double pitch, double volume);
+
+    [JSImport("cancelSpeech", Module)]
+    internal static partial void CancelSpeech();
 
     [JSImport("getLocalStorageItem", Module)]
     internal static partial string? GetLocalStorageItem(string key);

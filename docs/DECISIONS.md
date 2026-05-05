@@ -8,6 +8,12 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - The slowness matrix now prebuilds its E2E test project and Showcase host for `MIRAGE_MATRIX_CONFIGURATION`, then opts into prebuilt host launch with the matching `MIRAGE_E2E_HOST_CONFIGURATION`.
 - The maintained validation lane remains `Mirage.CI.slnf` plus active `Mirage.*` tests; legacy `Maui.Browser*` tests stay reference-only unless they are deliberately revived as a separate lane.
 
+## 2026-05-04 (Avalonia comparison applied: Mirage-owned semantics + DI-first Essentials)
+- Kept `Avalonia.Controls.Maui` and `AvaloniaMauiHybrid` as research inputs only: their MAUI retargeting and status-ledger discipline are useful, but their drawn Avalonia browser backend does not satisfy Mirage's DOM/CSS/ARIA platform goal.
+- Marked the legacy `Maui.Browser*` tree as read-only reference material so new browser work stays on the active `Mirage.*` handler/runtime path.
+- Added the next DI-first browser Essentials tranche (`ISemanticScreenReader`, `IBrowser`, `IClipboard`, `ILauncher`, `IDeviceDisplay`, `IGeolocation`, `ITextToSpeech`) through `UseMirageBrowserPlatform()` and Mirage-owned DOM interop, while keeping static patching limited to the already-proven private-field path.
+- Expanded the Showcase Essentials Lab so these injected services can be exercised from the active browser sample instead of app-local glue.
+
 ## 2026-04-02 (SwipeView stabilization sweep: explicit handler/runtime ownership + transition hardening)
 - Kept the current SwipeView architecture but tightened the ownership boundary explicitly: `MirageSwipeViewHandler` owns MAUI-facing open state, pending programmatic commands, disabled gating, and diagnostics, while the browser swipe runtime owns live gesture progress, active axis/side capture, offsets, and DOM visibility.
 - Handler-side open-state, pending-command, and configure-retry mutations now flow through dedicated helpers rather than ad hoc field writes, so disabled state, impossible-open rejection, and rejected post-config reopens all converge on the same closed-state invariant.
@@ -938,3 +944,13 @@ Keep this short. Append new entries with date and a 2–5 sentence rationale.
 - Added a small browser soft-input bridge for Mirage hosts that maps `ShowSoftInputAsync` / `HideSoftInputAsync` to best-effort focus / unfocus behavior on the underlying text input node. This is intentionally browser-scoped focus semantics, not virtual-keyboard visibility tracking.
 - `EntryPage` keeps the upstream sample implementation unchanged; the wrapper only reroutes the two soft-input buttons through the bridge when the Mirage bridge service is present, so native hosts continue using the existing MAUI sample handlers without wrapper-specific behavior.
 - Extended `MirageEditorHandler` with `Editor.AutoSize` mapping and implemented `AutoSize="TextChanges"` via browser-native textarea content measurement (`scrollHeight` through the runtime seam) rather than speculative .NET text measurement, keeping layout ownership MAUI-first while allowing the realized editor height to grow and shrink with wrapped content.
+
+## 2026-04-03 (WebView Handler Parity Wave)
+- Added a dedicated `MirageWebViewHandler` and registered `WebView` in `UseMirageBrowserPlatform`, so Mirage now owns the MAUI `WebViewHandler` mapper/command surface on the `ControlNode` path instead of leaving `WebView` unimplemented.
+- Browser realization uses a native `iframe` host (`ComponentKind.WebView`) plus a dedicated runtime seam for source projection, navigation commands, and correlated JavaScript evaluation results. This keeps browsing behavior DOM-native while preserving MAUI handler ownership of state, commands, and events.
+- Wave 1 scope is intentionally narrow and explicit: `UrlWebViewSource`, `HtmlWebViewSource`, handler-driven `GoBack` / `GoForward` / `Reload`, `Navigating` / `Navigated`, and same-origin `Eval` / `EvaluateJavaScriptAsync` are supported and covered by the dedicated ControlsSample parity probe.
+- Browser-specific divergences remain explicit: per-WebView `UserAgent` override is diagnostic-only on the browser host, cross-origin or opaque-origin evaluation fails deterministically, `FileWebViewSource` and packaged asset loading are deferred, and `HybridWebView` remains a separate future wave.
+
+## 2026-05-04 (WebView iframe isolation hardening)
+- WebView iframe hosts now carry a runtime-enforced sandbox before any `src` / `srcdoc` assignment. The sandbox permits scripts and forms for parity probe behavior but omits same-origin and top-navigation privileges so embedded content cannot script the Mirage host page directly.
+- Same-origin probe evaluation and pre-navigation observation now use an explicit message bridge for controlled inline/probe content. This keeps the browser isolation boundary explicit while preserving the Wave 1 deterministic WebView parity proof.

@@ -279,6 +279,25 @@ public sealed class ProviderValidationTests
     }
 
     [Fact]
+    public void FluentWebViewDescriptor_MapsIframeDiagnosticsProjectionChannels()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var descriptor = provider.ResolveControl(ComponentKind.WebView);
+
+        Assert.Equal("iframe", descriptor.ElementTagName);
+        Assert.Equal("allow-scripts allow-forms", descriptor.DefaultAttributes["sandbox"]);
+        Assert.True(descriptor.PropertyMappings.ContainsKey("AutomationId"));
+        Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["SourceKindState"].Target);
+        Assert.Equal("data-maui-wv-source-kind", descriptor.PropertyMappings["SourceKindState"].Name);
+        Assert.Equal("data-maui-wv-url", descriptor.PropertyMappings["CurrentUrlState"].Name);
+        Assert.Equal("data-maui-wv-can-go-back", descriptor.PropertyMappings["CanGoBackState"].Name);
+        Assert.Equal("data-maui-wv-can-go-forward", descriptor.PropertyMappings["CanGoForwardState"].Name);
+        Assert.Equal("data-maui-wv-eval-capability", descriptor.PropertyMappings["EvalCapabilityState"].Name);
+        Assert.Equal("data-maui-wv-user-agent", descriptor.PropertyMappings["UserAgentState"].Name);
+        Assert.Empty(descriptor.EventMappings);
+    }
+
+    [Fact]
     public void FluentStepperDescriptor_MapsSplitButtonProjectionChannels()
     {
         IMirageComponentProvider provider = new FluentMirageComponentProvider();

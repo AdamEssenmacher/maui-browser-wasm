@@ -190,6 +190,48 @@ public sealed class DomElement
     }
 
     public bool RequestSwipeViewClose(bool animated) => DomApi.RequestSwipeViewClose(Handle, animated);
+
+    public int ConfigureWebView(
+        string configurationJson,
+        Action navigatingCallback,
+        Action navigatedCallback,
+        Action evalResultCallback)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(configurationJson);
+        ArgumentNullException.ThrowIfNull(navigatingCallback);
+        ArgumentNullException.ThrowIfNull(navigatedCallback);
+        ArgumentNullException.ThrowIfNull(evalResultCallback);
+        return DomApi.ConfigureWebView(Handle, configurationJson, navigatingCallback, navigatedCallback, evalResultCallback);
+    }
+
+    public string? ConsumeWebViewEventPayload(string eventName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(eventName);
+        return DomApi.ConsumeWebViewEventPayload(Handle, eventName);
+    }
+
+    public static void UnsubscribeWebView(int subscriptionId) => DomApi.UnsubscribeWebView(subscriptionId);
+
+    public bool RequestWebViewGoBack() => DomApi.RequestWebViewGoBack(Handle);
+
+    public bool RequestWebViewNavigate(long requestId, string url)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(url);
+        return DomApi.RequestWebViewNavigate(Handle, requestId, url);
+    }
+
+    public bool CancelWebViewNavigation(long requestId) => DomApi.CancelWebViewNavigation(Handle, requestId);
+
+    public bool RequestWebViewGoForward() => DomApi.RequestWebViewGoForward(Handle);
+
+    public bool RequestWebViewReload() => DomApi.RequestWebViewReload(Handle);
+
+    public bool EvaluateWebViewScript(long requestId, string script, bool captureResult)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(script);
+        return DomApi.EvaluateWebViewScript(Handle, requestId, script, captureResult);
+    }
+
     public bool Focus() => DomApi.FocusElement(Handle);
 
     public void Blur() => DomApi.BlurElement(Handle);
@@ -279,6 +321,60 @@ public sealed class DomElement
     public static string GetDocumentTitle() => DomApi.GetDocumentTitle();
 
     public static void SetDocumentTitle(string? title) => DomApi.SetDocumentTitle(title);
+
+    public static void AnnounceSemanticText(string? text) => DomApi.AnnounceSemanticText(text);
+
+    public static bool OpenExternalUri(Uri uri, string target)
+    {
+        ArgumentNullException.ThrowIfNull(uri);
+        ArgumentException.ThrowIfNullOrWhiteSpace(target);
+        return DomApi.OpenExternalUri(uri.AbsoluteUri, target);
+    }
+
+    public static Task<bool> SetClipboardTextAsync(string? text) => DomApi.SetClipboardTextAsync(text);
+
+    public static Task<string?> GetClipboardTextAsync() => DomApi.GetClipboardTextAsync();
+
+    public static bool HasClipboardText() => DomApi.HasClipboardText();
+
+    public static (double Width, double Height, double Density, int Orientation, int Rotation) GetDisplayInfo()
+    {
+        var values = DomApi.GetDisplayInfo();
+        return (
+            values.Length > 0 ? values[0] : 0,
+            values.Length > 1 ? values[1] : 0,
+            values.Length > 2 ? values[2] : 1,
+            values.Length > 3 ? (int)values[3] : 0,
+            values.Length > 4 ? (int)values[4] : 0);
+    }
+
+    public static Task<string?> GetCurrentGeolocationJsonAsync(bool enableHighAccuracy, double timeoutMs) =>
+        DomApi.GetCurrentGeolocationJsonAsync(enableHighAccuracy, timeoutMs);
+
+    public static int StartGeolocationWatch(
+        bool enableHighAccuracy,
+        double minimumTimeMs,
+        Action changedCallback,
+        Action failedCallback)
+    {
+        ArgumentNullException.ThrowIfNull(changedCallback);
+        ArgumentNullException.ThrowIfNull(failedCallback);
+        return DomApi.StartGeolocationWatch(enableHighAccuracy, minimumTimeMs, changedCallback, failedCallback);
+    }
+
+    public static string? ConsumeGeolocationWatchPayloadJson(int subscriptionId) =>
+        DomApi.ConsumeGeolocationWatchPayloadJson(subscriptionId);
+
+    public static void UnsubscribeGeolocationWatch(int subscriptionId) =>
+        DomApi.UnsubscribeGeolocationWatch(subscriptionId);
+
+    public static Task<bool> SpeakTextAsync(string text, double rate, double pitch, double volume)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        return DomApi.SpeakTextAsync(text, rate, pitch, volume);
+    }
+
+    public static void CancelSpeech() => DomApi.CancelSpeech();
 
     public static string? GetLocalStorageItem(string key)
     {
