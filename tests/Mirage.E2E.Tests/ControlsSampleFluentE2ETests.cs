@@ -144,6 +144,13 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             ["appthemebindingpage"] = "core",
             ["brushespage"] = "core",
             ["devicepage"] = "core",
+            ["tapgesturegallerypage"] = "core",
+            ["pointergesturegallerypage"] = "core",
+            ["pangesturegallery"] = "core",
+            ["pangestureeventsgallery"] = "core",
+            ["pangestureplaygroundgallery"] = "core",
+            ["pinchgesturetestpage"] = "core",
+            ["swipegesturegallerypage"] = "core",
             ["contentpagegallery"] = "core",
             ["transformationspage"] = "core",
             ["borderpage"] = "core",
@@ -4262,6 +4269,363 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
     }
 
     [Fact]
+    public async Task TapGestureGalleryPage_IsRunnable_AndSupportsSharedTapRouting()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var (page, diagnostics) = await OpenAsync(context);
+
+        const string pageSelector = "[data-automation-id='controls-sample-page-tapgesturegallerypage']";
+        const string statusSelector = "[data-automation-id='controls-sample-tapgesturepage-status']";
+        const string windowPositionSelector = "[data-automation-id='controls-sample-tapgesturepage-window-position']";
+        const string togglePositionSelector = "[data-automation-id='controls-sample-tapgesturepage-toggle-position']";
+        const string selfPositionSelector = "[data-automation-id='controls-sample-tapgesturepage-self-position']";
+        const string toggleSingleSelector = "[data-automation-id='controls-sample-tapgesturepage-toggle-single']";
+        const string singleSelector = "[data-automation-id='controls-sample-tapgesturepage-single']";
+        const string doubleSelector = "[data-automation-id='controls-sample-tapgesturepage-double']";
+        const string tripleSelector = "[data-automation-id='controls-sample-tapgesturepage-triple']";
+        const string secondarySelector = "[data-automation-id='controls-sample-tapgesturepage-secondary']";
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "tapgesturegallerypage");
+                await page.WaitForSelectorAsync(pageSelector);
+                await page.WaitForSelectorAsync(statusSelector);
+            });
+
+        await DispatchSyntheticMouseEventAsync(page, singleSelector, "click", detail: 1);
+        await WaitForCssPropertyToEqualAsync(page, statusSelector, "background-color", "rgb(152, 251, 152)");
+        await WaitForLabelTextContainsAsync(page, windowPositionSelector, "Position inside window:");
+        await WaitForLabelTextContainsAsync(page, togglePositionSelector, "Position relative to toggle button:");
+        await WaitForLabelTextContainsAsync(page, selfPositionSelector, "Position inside my view:");
+
+        await DispatchSyntheticMouseEventAsync(page, doubleSelector, "click", detail: 2);
+        await WaitForCssPropertyToEqualAsync(page, statusSelector, "background-color", "rgb(0, 255, 255)");
+
+        await DispatchSyntheticMouseEventAsync(page, tripleSelector, "click", detail: 3);
+        await WaitForCssPropertyToEqualAsync(page, statusSelector, "background-color", "rgb(128, 128, 0)");
+
+        await DispatchSyntheticMouseEventAsync(page, secondarySelector, "contextmenu", button: 2, buttons: 2, detail: 1);
+        await WaitForCssPropertyToEqualAsync(page, statusSelector, "background-color", "rgb(255, 127, 80)");
+
+        var disabledBackgroundBaseline = await ReadCssPropertyAsync(page, statusSelector, "background-color");
+        var disabledTextBaseline = await page.Locator(statusSelector).InnerTextAsync();
+        await page.Locator(toggleSingleSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(150);
+        await DispatchSyntheticMouseEventAsync(page, singleSelector, "click", detail: 1);
+        await page.WaitForTimeoutAsync(120);
+        Assert.Equal(disabledBackgroundBaseline, await ReadCssPropertyAsync(page, statusSelector, "background-color"));
+        Assert.Equal(disabledTextBaseline, await page.Locator(statusSelector).InnerTextAsync());
+
+        await page.Locator(toggleSingleSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(150);
+        await DispatchSyntheticMouseEventAsync(page, singleSelector, "click", detail: 1);
+        await WaitForCssPropertyToEqualAsync(page, statusSelector, "background-color", "rgb(152, 251, 152)");
+    }
+
+    [Fact]
+    public async Task PointerGestureGalleryPage_IsRunnable_AndSupportsHoverPressReleaseAndCommands()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var (page, diagnostics) = await OpenAsync(context);
+
+        const string pageSelector = "[data-automation-id='controls-sample-page-pointergesturegallerypage']";
+        const string pressTargetSelector = "[data-automation-id='controls-sample-pointergesturepage-press-target']";
+        const string pressStatusSelector = "[data-automation-id='controls-sample-pointergesturepage-press-status']";
+        const string pressWindowSelector = "[data-automation-id='controls-sample-pointergesturepage-press-window-position']";
+        const string pressSelfSelector = "[data-automation-id='controls-sample-pointergesturepage-press-self-position']";
+        const string hoverTargetSelector = "[data-automation-id='controls-sample-pointergesturepage-hover-target']";
+        const string hoverStatusSelector = "[data-automation-id='controls-sample-pointergesturepage-hover-status']";
+        const string hoverWindowSelector = "[data-automation-id='controls-sample-pointergesturepage-hover-window-position']";
+        const string hoverSelfSelector = "[data-automation-id='controls-sample-pointergesturepage-hover-self-position']";
+        const string colorTargetSelector = "[data-automation-id='controls-sample-pointergesturepage-color-target']";
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "pointergesturegallerypage");
+                await page.WaitForSelectorAsync(pageSelector);
+                await page.WaitForSelectorAsync(pressTargetSelector);
+            });
+
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            pressTargetSelector,
+            [
+                new("pointerenter", 1, 0.35, 0.45, buttons: 0, pointerType: "mouse"),
+                new("pointermove", 1, 0.55, 0.50, buttons: 0, pointerType: "mouse")
+            ]);
+        await WaitForLabelTextContainsAsync(page, pressTargetSelector, "Thanks for hovering me! Now press me!");
+        await WaitForLabelTextContainsAsync(page, pressStatusSelector, "Pointer position is at:");
+        await WaitForLabelTextContainsAsync(page, pressWindowSelector, "Pointer position inside window:");
+        await WaitForLabelTextContainsAsync(page, pressSelfSelector, "Pointer position relative to this label:");
+
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            pressTargetSelector,
+            [
+                new("pointerdown", 1, 0.55, 0.50, button: 0, buttons: 1, pointerType: "mouse"),
+                new("pointerup", 1, 0.58, 0.53, button: 0, buttons: 0, pointerType: "mouse")
+            ]);
+        await WaitForLabelTextContainsAsync(page, pressTargetSelector, "Thanks for releasing me! Press me again or leave me!");
+
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            pressTargetSelector,
+            [new("pointerleave", 1, 1.05, 1.05, buttons: 0, pointerType: "mouse")]);
+        await WaitForLabelTextContainsAsync(page, pressTargetSelector, "Hover me again!");
+
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            hoverTargetSelector,
+            [
+                new("pointerenter", 2, 0.30, 0.40, buttons: 0, pointerType: "mouse"),
+                new("pointermove", 2, 0.60, 0.55, buttons: 0, pointerType: "mouse")
+            ]);
+        await WaitForLabelTextContainsAsync(page, hoverTargetSelector, "Thanks for hovering me!");
+        await WaitForLabelTextContainsAsync(page, hoverStatusSelector, "Pointer position is at:");
+        await WaitForLabelTextContainsAsync(page, hoverWindowSelector, "Pointer position inside window:");
+        await WaitForLabelTextContainsAsync(page, hoverSelfSelector, "Pointer position relative to this label:");
+
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            colorTargetSelector,
+            [new("pointerenter", 3, 0.50, 0.50, buttons: 0, pointerType: "mouse")]);
+        await WaitForCssPropertyToEqualAsync(page, colorTargetSelector, "color", "rgb(0, 128, 0)");
+
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            colorTargetSelector,
+            [new("pointerleave", 3, 1.05, 1.05, buttons: 0, pointerType: "mouse")]);
+        await WaitForCssPropertyToEqualAsync(page, colorTargetSelector, "color", "rgb(0, 0, 0)");
+    }
+
+    [Fact]
+    public async Task PanGestureGallery_IsRunnable_AndExposesNestedEntries()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var (page, diagnostics) = await OpenAsync(context);
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "pangesturegallery");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-pangesturegallery']");
+                await page.WaitForSelectorAsync("text=PanGesture Playground");
+                await page.WaitForSelectorAsync("text=PanGesture Events Gallery");
+            });
+    }
+
+    [Fact]
+    public async Task PanGestureEventsGallery_IsRunnable_AndReportsPanUpdates()
+    {
+        await using var context = await _fixture.NewContextAsync();
+        var (page, diagnostics) = await OpenAsync(context);
+
+        const string targetSelector = "[data-automation-id='controls-sample-pangestureevents-target']";
+        const string infoSelector = "[data-automation-id='controls-sample-pangestureevents-info']";
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "pangestureeventsgallery");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-pangestureeventsgallery']");
+                await page.WaitForSelectorAsync(targetSelector);
+            });
+
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            targetSelector,
+            [
+                new("pointerdown", 1, 0.25, 0.35, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointermove", 1, 0.55, 0.65, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointerup", 1, 0.55, 0.65, button: 0, buttons: 0, pointerType: "touch")
+            ]);
+
+        await WaitForLabelTextContainsAsync(page, infoSelector, "StatusType: Completed");
+        await WaitForLabelTextContainsAsync(page, infoSelector, "TotalX:");
+        await WaitForLabelTextContainsAsync(page, infoSelector, "TotalY:");
+    }
+
+    [Fact]
+    public async Task PanGesturePlaygroundGallery_IsRunnable_AndRespondsToPanAndPinch()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1400, height: 1200);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        const string surfaceSelector = "[data-automation-id='controls-sample-pangestureplayground-surface']";
+        const string imageSelector = "[data-automation-id='controls-sample-pangestureplayground-image']";
+        const string statusSelector = "[data-automation-id='controls-sample-pangestureplayground-status']";
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "pangestureplaygroundgallery");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-pangestureplaygroundgallery']");
+                await page.WaitForSelectorAsync(surfaceSelector);
+                await page.WaitForSelectorAsync(imageSelector);
+            });
+
+        var imageRectBeforePan = await ReadBoundingClientRectAsync(page, imageSelector);
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            surfaceSelector,
+            [
+                new("pointerdown", 1, 0.35, 0.35, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointermove", 1, 0.55, 0.52, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointerup", 1, 0.55, 0.52, button: 0, buttons: 0, pointerType: "touch")
+            ]);
+        await WaitForLabelTextContainsAsync(page, statusSelector, "x:");
+        var imageRectAfterPan = await WaitForBoundingClientRectChangeAsync(page, imageSelector, imageRectBeforePan, timeoutMs: 4000);
+        Assert.True(AnyBoundingClientRectDimensionChanged(imageRectBeforePan, imageRectAfterPan));
+
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            surfaceSelector,
+            [
+                new("pointerdown", 1, 0.35, 0.35, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointerdown", 2, 0.65, 0.65, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointermove", 1, 0.20, 0.20, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointermove", 2, 0.80, 0.80, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointerup", 2, 0.80, 0.80, button: 0, buttons: 0, pointerType: "touch"),
+                new("pointerup", 1, 0.20, 0.20, button: 0, buttons: 0, pointerType: "touch")
+            ]);
+
+        var imageRectAfterPinch = await WaitForBoundingClientRectChangeAsync(page, imageSelector, imageRectAfterPan, timeoutMs: 4000);
+        Assert.True(AnyBoundingClientRectDimensionChanged(imageRectAfterPan, imageRectAfterPinch));
+    }
+
+    [Fact]
+    public async Task PinchGestureTestPage_IsRunnable_AndSupportsAddAndRemoveGesture()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1400, height: 1200);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        const string addSelector = "[data-automation-id='controls-sample-pinchgesturepage-add']";
+        const string removeSelector = "[data-automation-id='controls-sample-pinchgesturepage-remove']";
+        const string surfaceSelector = "[data-automation-id='controls-sample-pinchgesturepage-surface']";
+        const string imageSelector = "[data-automation-id='controls-sample-pinchgesturepage-image']";
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "pinchgesturetestpage");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-pinchgesturetestpage']");
+                await page.WaitForSelectorAsync(addSelector);
+                await page.WaitForSelectorAsync(surfaceSelector);
+                await page.WaitForSelectorAsync(imageSelector);
+            });
+
+        var rectBeforePinch = await ReadBoundingClientRectAsync(page, imageSelector);
+        await page.Locator(addSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(150);
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            surfaceSelector,
+            [
+                new("pointerdown", 1, 0.35, 0.35, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointerdown", 2, 0.65, 0.65, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointermove", 1, 0.20, 0.20, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointermove", 2, 0.80, 0.80, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointerup", 2, 0.80, 0.80, button: 0, buttons: 0, pointerType: "touch"),
+                new("pointerup", 1, 0.20, 0.20, button: 0, buttons: 0, pointerType: "touch")
+            ]);
+
+        var rectAfterAdd = await WaitForBoundingClientRectChangeAsync(page, imageSelector, rectBeforePinch, timeoutMs: 4000);
+        Assert.True(AnyBoundingClientRectDimensionChanged(rectBeforePinch, rectAfterAdd));
+
+        await page.Locator(removeSelector).ClickAsync();
+        await page.WaitForTimeoutAsync(150);
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            surfaceSelector,
+            [
+                new("pointerdown", 3, 0.30, 0.30, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointerdown", 4, 0.70, 0.70, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointermove", 3, 0.10, 0.10, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointermove", 4, 0.90, 0.90, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointerup", 4, 0.90, 0.90, button: 0, buttons: 0, pointerType: "touch"),
+                new("pointerup", 3, 0.10, 0.10, button: 0, buttons: 0, pointerType: "touch")
+            ]);
+        await page.WaitForTimeoutAsync(150);
+
+        var rectAfterRemove = await ReadBoundingClientRectAsync(page, imageSelector);
+        Assert.False(AnyBoundingClientRectDimensionChanged(rectAfterAdd, rectAfterRemove));
+    }
+
+    [Fact]
+    public async Task SwipeGestureGalleryPage_IsRunnable_AndRecognizesAllDirections()
+    {
+        await using var context = await _fixture.NewContextAsync(width: 1400, height: 1200);
+        var (page, diagnostics) = await OpenAsync(context);
+
+        const string targetSelector = "[data-automation-id='controls-sample-swipegesturepage-target']";
+        const string statusSelector = "[data-automation-id='controls-sample-swipegesturepage-status']";
+
+        await NavigateWithDiagnosticsAsync(
+            page,
+            diagnostics,
+            async () =>
+            {
+                await OpenCatalogEntryAsync(page, diagnostics, "swipegesturegallerypage");
+                await page.WaitForSelectorAsync("[data-automation-id='controls-sample-page-swipegesturegallerypage']");
+                await page.WaitForSelectorAsync(targetSelector);
+            });
+
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            targetSelector,
+            [
+                new("pointerdown", 1, 0.75, 0.50, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointermove", 1, 0.15, 0.52, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointerup", 1, 0.15, 0.52, button: 0, buttons: 0, pointerType: "touch")
+            ]);
+        await WaitForLabelTextContainsAsync(page, statusSelector, "You swiped left.");
+
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            targetSelector,
+            [
+                new("pointerdown", 2, 0.20, 0.45, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointermove", 2, 0.82, 0.48, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointerup", 2, 0.82, 0.48, button: 0, buttons: 0, pointerType: "touch")
+            ]);
+        await WaitForLabelTextContainsAsync(page, statusSelector, "You swiped right.");
+
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            targetSelector,
+            [
+                new("pointerdown", 3, 0.50, 0.78, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointermove", 3, 0.48, 0.15, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointerup", 3, 0.48, 0.15, button: 0, buttons: 0, pointerType: "touch")
+            ]);
+        await WaitForLabelTextContainsAsync(page, statusSelector, "You swiped up.");
+
+        await DispatchSyntheticPointerSequenceAsync(
+            page,
+            targetSelector,
+            [
+                new("pointerdown", 4, 0.48, 0.20, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointermove", 4, 0.52, 0.84, button: 0, buttons: 1, pointerType: "touch"),
+                new("pointerup", 4, 0.52, 0.84, button: 0, buttons: 0, pointerType: "touch")
+            ]);
+        await WaitForLabelTextContainsAsync(page, statusSelector, "You swiped down.");
+    }
+
+    [Fact]
     public async Task ImagePage_IsRunnable_AndExercisesResolverBackedSourcesStreamAndGifPlayback()
     {
         await using var context = await _fixture.NewContextAsync(width: 1200, height: 1400);
@@ -6808,6 +7172,137 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
         return await ReadCssPropertyAsync(page, selector, propertyName);
     }
 
+    private static async Task<string> ReadInlineStyleValueAsync(IPage page, string selector, string styleName)
+    {
+        return await page.EvaluateAsync<string>(
+            """
+            ({ selector, styleName }) => {
+                const element = document.querySelector(selector);
+                if (!(element instanceof HTMLElement) || typeof styleName !== "string" || styleName.length === 0) {
+                    return "";
+                }
+
+                return (element.style.getPropertyValue(styleName).trim() || element.style[styleName] || "").trim();
+            }
+            """,
+            new { selector, styleName });
+    }
+
+    private static async Task<string> WaitForInlineStyleValueChangeAsync(IPage page, string selector, string styleName, string baselineValue, int timeoutMs = 3000)
+    {
+        await page.WaitForFunctionAsync(
+            """
+            ({ selector, styleName, baselineValue }) => {
+                const element = document.querySelector(selector);
+                if (!(element instanceof HTMLElement) || typeof styleName !== "string" || styleName.length === 0) {
+                    return false;
+                }
+
+                const value = (element.style.getPropertyValue(styleName).trim() || element.style[styleName] || "").trim();
+                return value.length > 0 && value !== baselineValue;
+            }
+            """,
+            new { selector, styleName, baselineValue },
+            new()
+            {
+                Timeout = timeoutMs
+            });
+
+        return await ReadInlineStyleValueAsync(page, selector, styleName);
+    }
+
+    private static async Task DispatchSyntheticMouseEventAsync(
+        IPage page,
+        string selector,
+        string eventName,
+        double xRatio = 0.5,
+        double yRatio = 0.5,
+        int button = 0,
+        int buttons = 1,
+        int detail = 1)
+    {
+        var dispatched = await page.EvaluateAsync<bool>(
+            """
+            ({ selector, eventName, xRatio, yRatio, button, buttons, detail }) => {
+                const element = document.querySelector(selector);
+                if (!(element instanceof HTMLElement) || typeof eventName !== "string" || eventName.length === 0) {
+                    return false;
+                }
+
+                const rect = element.getBoundingClientRect();
+                const clientX = rect.left + (rect.width * xRatio);
+                const clientY = rect.top + (rect.height * yRatio);
+                const event = new MouseEvent(eventName, {
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true,
+                    clientX,
+                    clientY,
+                    button,
+                    buttons,
+                    detail
+                });
+
+                element.dispatchEvent(event);
+                return true;
+            }
+            """,
+            new
+            {
+                selector,
+                eventName,
+                xRatio,
+                yRatio,
+                button,
+                buttons,
+                detail
+            });
+
+        Assert.True(dispatched, $"Failed to dispatch synthetic mouse event '{eventName}' for selector '{selector}'.");
+    }
+
+    private static async Task DispatchSyntheticPointerSequenceAsync(IPage page, string selector, IReadOnlyList<SyntheticPointerStep> steps)
+    {
+        var dispatched = await page.EvaluateAsync<bool>(
+            """
+            ({ selector, steps }) => {
+                const element = document.querySelector(selector);
+                if (!(element instanceof HTMLElement) || !Array.isArray(steps) || steps.length === 0) {
+                    return false;
+                }
+
+                const rect = element.getBoundingClientRect();
+                for (const step of steps) {
+                    if (!step || typeof step.eventName !== "string" || step.eventName.length === 0) {
+                        return false;
+                    }
+
+                    const clientX = rect.left + (rect.width * step.xRatio);
+                    const clientY = rect.top + (rect.height * step.yRatio);
+                    const event = new PointerEvent(step.eventName, {
+                        bubbles: true,
+                        cancelable: true,
+                        composed: true,
+                        pointerId: step.pointerId,
+                        pointerType: step.pointerType ?? "touch",
+                        isPrimary: step.pointerId === 1,
+                        clientX,
+                        clientY,
+                        button: step.button,
+                        buttons: step.buttons
+                    });
+
+                    element.dispatchEvent(event);
+                }
+
+                return true;
+            }
+            """,
+            new { selector, steps });
+
+        Assert.True(dispatched, $"Failed to dispatch synthetic pointer sequence for selector '{selector}'.");
+    }
+
     private static async Task ClickCollectionNavButtonAsync(IPage page, string locatorSelector, string domSelector)
     {
         try
@@ -6873,4 +7368,13 @@ public sealed class ControlsSampleFluentE2ETests : IClassFixture<ControlsSampleH
             });
         }
     }
+
+    private sealed record SyntheticPointerStep(
+        string eventName,
+        long pointerId,
+        double xRatio,
+        double yRatio,
+        int button = 0,
+        int buttons = 0,
+        string pointerType = "touch");
 }

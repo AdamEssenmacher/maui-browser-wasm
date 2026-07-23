@@ -1351,6 +1351,9 @@ function tryCapturePointer(element, eventName, event) {
 export function subscribeEvent(elementHandle, eventName, callback) {
   const element = fromHandle(elementHandle);
   const listener = (event) => {
+    if (eventName === "contextmenu" && typeof event?.preventDefault === "function") {
+      event.preventDefault();
+    }
     tryCapturePointer(element, eventName, event);
     callback();
   };
@@ -1419,6 +1422,9 @@ function buildPointerPayload(event, fallbackElement) {
     ? event.pointerType
     : "mouse";
   const pointerId = Number.isInteger(event.pointerId) ? event.pointerId : 0;
+  const button = Number.isInteger(event.button) ? event.button : 0;
+  const buttons = Number.isInteger(event.buttons) ? event.buttons : 0;
+  const clickCount = Number.isInteger(event.detail) ? event.detail : 0;
   const eventType = typeof event.type === "string" ? event.type : "";
   const isInsideBounds = eventType === "pointerleave"
     ? false
@@ -1429,6 +1435,11 @@ function buildPointerPayload(event, fallbackElement) {
     pointerType,
     x: Number.isFinite(localX) ? localX : 0,
     y: Number.isFinite(localY) ? localY : 0,
+    clientX,
+    clientY,
+    button,
+    buttons,
+    clickCount,
     isInsideBounds
   });
 }
@@ -1460,6 +1471,9 @@ export function consumeTrackedEventPayload(elementHandle, payloadKind) {
 export function subscribeEventWithPayload(elementHandle, eventName, payloadKind, callback) {
   const element = fromHandle(elementHandle);
   const listener = (event) => {
+    if (eventName === "contextmenu" && typeof event?.preventDefault === "function") {
+      event.preventDefault();
+    }
     tryCapturePointer(element, eventName, event);
     setTrackedEventPayload(elementHandle, payloadKind, getEventPayload(event, payloadKind, element));
     callback();

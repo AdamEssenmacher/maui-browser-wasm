@@ -1600,8 +1600,8 @@ public sealed class MirageRuntime : IMirageRuntime
         if (node.TryGetControlDescriptor(out var controlDescriptor))
         {
             return controlDescriptor.EventMappings.TryGetValue(eventName, out var mapped)
-                ? mapped
-                : new ProviderEventDescriptor(eventName);
+                ? NormalizePointerEventDescriptor(mapped)
+                : CreateFallbackEventDescriptor(eventName);
         }
 
         if (node.TryGetWebDescriptor(out var webDescriptor))
@@ -1612,11 +1612,48 @@ public sealed class MirageRuntime : IMirageRuntime
             }
 
             return webDescriptor.EventMappings.TryGetValue(eventName, out var mapped)
-                ? mapped
-                : new ProviderEventDescriptor(eventName);
+                ? NormalizePointerEventDescriptor(mapped)
+                : CreateFallbackEventDescriptor(eventName);
         }
 
-        return new ProviderEventDescriptor(eventName);
+        return CreateFallbackEventDescriptor(eventName);
+    }
+
+    private static ProviderEventDescriptor NormalizePointerEventDescriptor(ProviderEventDescriptor descriptor)
+    {
+        if (descriptor.PayloadKind != EventPayloadKind.None)
+        {
+            return descriptor;
+        }
+
+        return descriptor.DomEventName switch
+        {
+            "click" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            "contextmenu" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            "pointerdown" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            "pointermove" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            "pointerup" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            "pointercancel" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            "pointerenter" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            "pointerleave" => descriptor with { PayloadKind = EventPayloadKind.Pointer },
+            _ => descriptor
+        };
+    }
+
+    private static ProviderEventDescriptor CreateFallbackEventDescriptor(string eventName)
+    {
+        return eventName switch
+        {
+            "click" => new ProviderEventDescriptor("click", EventTarget.Self, EventPayloadKind.Pointer),
+            "contextmenu" => new ProviderEventDescriptor("contextmenu", EventTarget.Self, EventPayloadKind.Pointer),
+            "pointerdown" => new ProviderEventDescriptor("pointerdown", EventTarget.Self, EventPayloadKind.Pointer),
+            "pointermove" => new ProviderEventDescriptor("pointermove", EventTarget.Self, EventPayloadKind.Pointer),
+            "pointerup" => new ProviderEventDescriptor("pointerup", EventTarget.Self, EventPayloadKind.Pointer),
+            "pointercancel" => new ProviderEventDescriptor("pointercancel", EventTarget.Self, EventPayloadKind.Pointer),
+            "pointerenter" => new ProviderEventDescriptor("pointerenter", EventTarget.Self, EventPayloadKind.Pointer),
+            "pointerleave" => new ProviderEventDescriptor("pointerleave", EventTarget.Self, EventPayloadKind.Pointer),
+            _ => new ProviderEventDescriptor(eventName)
+        };
     }
 
     private void ApplyDetachEvent(DetachEventOperation operation)

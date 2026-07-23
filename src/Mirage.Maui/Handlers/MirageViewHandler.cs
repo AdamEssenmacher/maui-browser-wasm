@@ -1,6 +1,7 @@
 using Mirage.Core.Diagnostics;
 using Mirage.Core.Semantics;
 using Microsoft.Maui;
+using Microsoft.Maui.Controls;
 using Microsoft.Maui.Handlers;
 using Microsoft.Maui.Platform;
 
@@ -11,6 +12,8 @@ public abstract class MirageViewHandler<TVirtualView> : ViewHandler<TVirtualView
 {
     private static readonly IDisposable NoopRenderBatchScope = new NoopDisposable();
     private readonly Func<MiragePlatformView> _platformViewFactory;
+    private IMirageRuntimeEventTarget? _registeredRuntimeEventTarget;
+    private MirageGestureRecognizerManager? _gestureRecognizerManager;
 
     protected MirageViewHandler(
         ComponentKind kind,
@@ -54,13 +57,21 @@ public abstract class MirageViewHandler<TVirtualView> : ViewHandler<TVirtualView
 
     protected override void ConnectHandler(MiragePlatformView platformView)
     {
-        var eventTarget = this as IMirageRuntimeEventTarget;
-        Coordinator?.Register(platformView, eventTarget);
+        _gestureRecognizerManager = VirtualView is View view
+            ? new MirageGestureRecognizerManager(view, platformView, RequestRender)
+            : null;
+        _registeredRuntimeEventTarget = MirageCompositeRuntimeEventTarget.Create(
+            this as IMirageRuntimeEventTarget,
+            _gestureRecognizerManager);
+        Coordinator?.Register(platformView, _registeredRuntimeEventTarget);
         base.ConnectHandler(platformView);
     }
 
     protected override void DisconnectHandler(MiragePlatformView platformView)
     {
+        _gestureRecognizerManager?.Dispose();
+        _gestureRecognizerManager = null;
+        _registeredRuntimeEventTarget = null;
         Coordinator?.Unregister(platformView);
         base.DisconnectHandler(platformView);
     }

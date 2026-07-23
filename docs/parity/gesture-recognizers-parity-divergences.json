@@ -1,0 +1,16 @@
+{
+  "entries": [
+    {
+      "id": "gesture-recognizers-span-hit-regions-deferred",
+      "summary": "View-level gesture recognizers are implemented in this wave, but `Span.GestureRecognizers` hit-region parity for formatted text remains deferred.",
+      "upstreamReference": "src/Controls/src/Core/Span.cs",
+      "testReference": "GestureRecognizersParityContract_DocumentsDeferredSpanAndWheelParity"
+    },
+    {
+      "id": "gesture-recognizers-wheel-trackpad-pinch-deferred",
+      "summary": "Pinch recognition is based on active pointer pairs; Mirage does not emulate pinch from wheel or trackpad gestures in this wave.",
+      "upstreamReference": "src/Controls/src/Core/PinchGestureRecognizer.cs",
+      "testReference": "GestureRecognizersParityContract_DocumentsDeferredSpanAndWheelParity"
+    }
+  ]
+}

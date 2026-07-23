@@ -22,7 +22,7 @@ public sealed class ProviderValidationTests
     [Fact]
     public void FluentProvider_ResolvesAllPhaseOneKinds()
     {
-        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+        var provider = new FluentMirageComponentProvider();
 
         foreach (var kind in Enum.GetValues<ComponentKind>())
         {
@@ -184,7 +184,7 @@ public sealed class ProviderValidationTests
         Assert.True(descriptor.PropertyMappings.ContainsKey("AutomationId"));
         Assert.True(descriptor.EventMappings.ContainsKey("click"));
         Assert.Equal("click", descriptor.EventMappings["click"].DomEventName);
-        Assert.Equal(EventPayloadKind.None, descriptor.EventMappings["click"].PayloadKind);
+        Assert.Equal(EventPayloadKind.Pointer, descriptor.EventMappings["click"].PayloadKind);
     }
 
     [Fact]
@@ -370,6 +370,7 @@ public sealed class ProviderValidationTests
         Assert.Equal(PropertyTarget.Attribute, descriptor.PropertyMappings["CollectionViewHostedRole"].Target);
         Assert.Equal("data-maui-cv-hosted-role", descriptor.PropertyMappings["CollectionViewHostedRole"].Name);
         Assert.True(descriptor.EventMappings.ContainsKey("scroll"));
+        Assert.Equal(EventPayloadKind.Pointer, descriptor.EventMappings["click"].PayloadKind);
     }
 
     [Fact]
@@ -388,6 +389,25 @@ public sealed class ProviderValidationTests
         Assert.True(descriptor.EventMappings.ContainsKey("pointerleave"));
         Assert.Equal(EventPayloadKind.Pointer, descriptor.EventMappings["pointerdown"].PayloadKind);
         Assert.Equal(EventPayloadKind.Pointer, descriptor.EventMappings["pointermove"].PayloadKind);
+    }
+
+    [Fact]
+    public void FluentInteractiveDescriptors_MapGestureFacingEventsToPointerPayload()
+    {
+        IMirageComponentProvider provider = new FluentMirageComponentProvider();
+
+        var button = provider.ResolveControl(ComponentKind.Button);
+        var imageButton = provider.ResolveControl(ComponentKind.ImageButton);
+        var radioButton = provider.ResolveControl(ComponentKind.RadioButton);
+        var webButton = provider.ResolveWebNode("button");
+
+        Assert.Equal(EventPayloadKind.Pointer, button.EventMappings["click"].PayloadKind);
+        Assert.Equal(EventPayloadKind.Pointer, imageButton.EventMappings["click"].PayloadKind);
+        Assert.Equal(EventPayloadKind.Pointer, imageButton.EventMappings["pointerdown"].PayloadKind);
+        Assert.Equal(EventPayloadKind.Pointer, imageButton.EventMappings["pointerup"].PayloadKind);
+        Assert.Equal(EventPayloadKind.Pointer, imageButton.EventMappings["pointercancel"].PayloadKind);
+        Assert.Equal(EventPayloadKind.Pointer, radioButton.EventMappings["click"].PayloadKind);
+        Assert.Equal(EventPayloadKind.Pointer, webButton.EventMappings["click"].PayloadKind);
     }
 
     [Fact]

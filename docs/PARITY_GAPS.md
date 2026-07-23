@@ -127,7 +127,12 @@ Upstream MAUI shared-code risks for unofficial/browser targets are tracked separ
 - Current behavior: `DrawText(IAttributedText, ...)` now degrades to deterministic plain-text content replay through the current canvas text state, so Wave 1 no longer drops attributed text entirely even though span-level styling is still deferred.
 - Deferred: `DrawImage` / `IImage` bridge depth, advanced text measurement/layout (`GetStringSize`, attributed span styling, justified/overflow fidelity), broader clip/path measurement breadth, and non-solid stroke-paint breadth remain explicit Wave 2 divergences for the browser canvas backend.
 
-25. CarouselView parity depth
+26. Gesture recognizer substrate parity depth
+- Current behavior: `View.GestureRecognizers` now flow through a shared `MirageGestureRecognizerManager` owned at the `MirageViewHandler` layer, with browser pointer payloads driving `TapGestureRecognizer`, `PanGestureRecognizer`, `PinchGestureRecognizer`, `PointerGestureRecognizer`, and `SwipeGestureRecognizer`.
+- Current behavior: tap position reporting, secondary-button taps, pan totals/status transitions, pinch scale/origin, pointer hover/press/release, and swipe direction detection are implemented against raw browser `click` / `contextmenu` / `pointer*` events without control-specific gesture hacks.
+- Deferred: `Span.GestureRecognizers` hit-region parity for formatted text, wheel/trackpad-to-pinch emulation, and deeper platform-specific simultaneous gesture-policy fidelity remain out of scope in this wave.
+
+27. CarouselView parity depth
 - Current behavior: `CarouselView` now maps through `MirageCarouselViewHandler : MirageItemsViewHandler<CarouselView>` on the built-in ControlNode path, with browser-native snap scrolling, two-way `Position`/`CurrentItem` synchronization, programmatic `ScrollTo`, horizontal/vertical `LinearItemsLayout` support, `PeekAreaInsets` sizing, and `IsSwipeEnabled` interaction gating.
 - Current behavior: Mirage now maintains handler-owned loop clones plus settled wraparound, updates `IsDragging` and `VisibleViews` from runtime scroll activity, and applies `CurrentItem` / `NextItem` / `PreviousItem` / `DefaultItem` visual states to realized item views without item-handler churn.
 - Current behavior: linked `IndicatorView` parity stays on the MAUI path; Mirage does not add a Carousel-only side channel and instead proves the existing MAUI binding linkage through the dedicated probe page.
